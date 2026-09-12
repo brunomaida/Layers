@@ -1,0 +1,308 @@
+.shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-base);
+}
+
+.toolbar {
+  height: 2.875rem;
+  flex: 0 0 2.875rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  gap: var(--sp-3);
+  padding: 0 0.625rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bdr);
+}
+
+.toolbar-zone {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.toolbar-zone--end {
+  justify-self: end;
+}
+
+.toolbar .control-group {
+  background: var(--surface2);
+}
+
+.toolbar .brand {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  pointer-events: none;
+  background: linear-gradient(95deg, #60a5fa, #a78bfa);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.toolbar .brand-title {
+  font: 400 1.22rem/1 'Michroma', var(--ui);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+}
+
+.toolbar .brand-sub {
+  font: 400 0.915rem/1 'Michroma', var(--ui);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  white-space: nowrap;
+}
+
+.workspace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.chart-stage {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.tab-strip {
+  height: 2rem;
+  flex: 0 0 2rem;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.125rem;
+  padding: 0 0.375rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bdr);
+  overflow-x: auto;
+}
+
+.studies-toolbar {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.375rem 0.5rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bdr);
+}
+
+.plot-area {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+}
+
+.chart-pane {
+  flex: 1;
+  position: relative;
+  background: var(--bg-base);
+  min-width: 0;
+}
+
+/* The panel is the scroll VIEWPORT, not the scroller: `.dash-body` scrolls inside it so the resize
+ * handle stays pinned to the left edge instead of scrolling away with the content. `overflow-x` is
+ * deliberately absent — the plan forbids a horizontal scrollbar here, so the table fits by
+ * construction (fixed column widths) rather than by scrolling. */
+.dashboard-panel {
+  position: relative;
+  width: var(--right-w, 26rem);
+  flex: 0 0 var(--right-w, 26rem);
+  min-width: 20rem;
+  max-width: 50vw;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-left: 1px solid var(--bdr);
+}
+
+.dash-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.panel-resize {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 0.3125rem;
+  cursor: col-resize;
+  z-index: 5;
+}
+
+.panel-resize:hover {
+  background: var(--accent-muted);
+}
+
+/* Mirrored anchoring with the DOM untouched: `order` reverses the two flex children of
+ * `.workspace`, and the border and the resize handle swap to the panel's other side. */
+.dashboard-panel[data-dock='left'] {
+  order: -1;
+  border-left: none;
+  border-right: 1px solid var(--bdr);
+}
+
+.dashboard-panel[data-dock='left'] .panel-resize {
+  left: auto;
+  right: 0;
+}
+
+/* Detached from the flex row into `.overlay-layer` and laid over the chart. `max-width` is dropped
+ * because that 50vw cap exists to stop an ANCHORED panel from eating the chart's width, which a
+ * floating one never does. No `overflow: hidden`: it would clip the click area of `.float-handle`. */
+.dashboard-panel[data-dock='float'] {
+  position: absolute;
+  flex: none;
+  max-width: none;
+  background: var(--surface);
+  border: 1px solid var(--bdr);
+  border-radius: var(--radius);
+  box-shadow: var(--pop);
+  z-index: 21; /* above .global-summary (20) */
+}
+
+/* Full radius, not just the bottom corners: here the panel header lives INSIDE the scroller, so its
+ * opaque band would poke past the panel's rounded top corners. `overflow-y: auto` does the clipping. */
+.dashboard-panel[data-dock='float'] .dash-body {
+  border-radius: var(--radius);
+}
+
+.dashboard-panel[data-dock='float'] .panel-resize {
+  display: none;
+}
+
+.dashboard-panel[data-dock='float'] .dash-header--panel {
+  cursor: move;
+  user-select: none;
+}
+
+/* Placed OUTSIDE the border, not inside: an inner `e` handle would sit on top of `.dash-body`'s
+ * scrollbar and become unreachable at the panel's minimum width. */
+.float-handle {
+  position: absolute;
+  z-index: 6;
+}
+
+.dashboard-panel:not([data-dock='float']) .float-handle {
+  display: none;
+}
+
+.float-handle--n {
+  top: -6px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: n-resize;
+}
+
+.float-handle--s {
+  bottom: -6px;
+  left: 0;
+  right: 0;
+  height: 6px;
+  cursor: s-resize;
+}
+
+.float-handle--w {
+  left: -6px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: w-resize;
+}
+
+.float-handle--e {
+  right: -6px;
+  top: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: e-resize;
+}
+
+.float-handle--nw,
+.float-handle--ne,
+.float-handle--sw,
+.float-handle--se {
+  width: 12px;
+  height: 12px;
+  z-index: 7; /* above the edge handles they overlap */
+}
+
+.float-handle--nw {
+  top: -6px;
+  left: -6px;
+  cursor: nw-resize;
+}
+
+.float-handle--ne {
+  top: -6px;
+  right: -6px;
+  cursor: ne-resize;
+}
+
+.float-handle--sw {
+  bottom: -6px;
+  left: -6px;
+  cursor: sw-resize;
+}
+
+.float-handle--se {
+  bottom: -6px;
+  right: -6px;
+  cursor: se-resize;
+}
+
+.overlay-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+}
+
+.overlay-layer > * {
+  pointer-events: auto;
+}
+
+/* Sized to cover the chart pane exactly (see chartStage.ts's positionNavControls) so its two
+ * buttons can sit in opposite bottom corners via flex, without the transparent middle intercepting
+ * clicks meant for the chart underneath. Right/bottom padding are overridden inline by
+ * positionNavControls() to clear the library's own right price scale and time axis — the base
+ * `--sp-2` here only covers the left/top corner, which has no chart chrome to avoid. */
+.chart-nav-controls {
+  position: absolute;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  padding: var(--sp-2);
+  pointer-events: none;
+}
+
+.chart-nav-controls > .icon-btn {
+  pointer-events: auto;
+}
+
+/* Sits above the toolbar, outside the workspace grid, so showing it pushes the app down rather
+ * than overlaying chart chrome. Only two conditions raise it, and both mean edits are not
+ * reaching disk: another browser tab holds the workspace, or its folder is not writable. */
+.workspace-banner {
+  padding: var(--sp-2) var(--sp-3);
+  background: var(--bear);
+  color: var(--danger-text);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.workspace-status {
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.workspace-status--error {
+  color: var(--bear);
+}

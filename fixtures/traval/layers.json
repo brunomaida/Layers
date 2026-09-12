@@ -1,0 +1,111 @@
+{
+  "name": "Traval",
+  "viewport": {
+    "width": 1280,
+    "height": 760
+  },
+  "mock": "layers/mock.html",
+  "styles": [
+    "src/styles/tokens.css",
+    "src/styles/layout.css",
+    "src/styles/components.css",
+    "src/styles/dashboard.css"
+  ],
+  "root": {
+    "name": ".shell",
+    "src": "src/ui/shell.ts|.shell|3"
+  },
+  "interactions": [
+    {
+      "sep": "Superfícies"
+    },
+    {
+      "key": "gs",
+      "label": "Resumo Global",
+      "show": ".global-summary",
+      "desc": "Painel flutuante sobre o gráfico (arrastável pelo título).",
+      "groups": [
+        {
+          "label": "Corpo",
+          "items": [
+            {
+              "label": "Corpo",
+              "toggle": ".gs-body"
+            }
+          ]
+        },
+        {
+          "label": "Equity",
+          "items": [
+            {
+              "label": "Gráfico",
+              "toggle": ".gs-chart-chip svg"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "sep": "Layout principal"
+    },
+    {
+      "key": "tabs",
+      "label": "Barra de abas",
+      "desc": "Uma aba por CSV carregado.",
+      "groups": [
+        {
+          "label": "Aba",
+          "items": [
+            {
+              "label": "WINFUT",
+              "class": {
+                "selector": ".tab",
+                "name": "active"
+              },
+              "hint": "alterna a classe active"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "panel",
+      "label": "Painel ESTUDOS",
+      "desc": "Painel lateral; seções recolhíveis.",
+      "groups": [
+        {
+          "label": "Seções",
+          "items": [
+            {
+              "label": "Resumo da aba",
+              "toggle": ".equity-sparkline--tab-summary, .tile-row"
+            },
+            {
+              "label": "Info ativo",
+              "toggle": ".instrument-block"
+            },
+            {
+              "label": "Lista de ordens",
+              "toggle": ".position-table"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "key": "ind",
+      "label": "Pane do indicador",
+      "groups": [
+        {
+          "label": "Pane",
+          "items": [
+            {
+              "label": "Canvas RSI",
+              "toggle": "[data-name=\"canvas (lightweight-charts) pane 1\"]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

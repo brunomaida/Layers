@@ -1,0 +1,23 @@
+{
+  "name": "MarketView",
+  "viewport": {
+    "width": 1440,
+    "height": 900
+  },
+  "mock": "index.html",
+  "interactions": [
+    {
+      "sep": "Painéis"
+    },
+    {
+      "key": "left",
+      "label": "Painel esquerdo",
+      "show": "#left"
+    },
+    {
+      "key": "right",
+      "label": "Painel direito",
+      "show": "#right"
+    }
+  ]
+}
