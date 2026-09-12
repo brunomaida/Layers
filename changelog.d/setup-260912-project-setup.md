@@ -39,6 +39,7 @@ três handshakes TLS externos (`fonts.googleapis.com`, `fonts.gstatic.com`,
 ### Notes
 
 - O hook `pre-push` inicial não rodava: `core.hooksPath` está definido globalmente para `~/.git-hooks`, então `.git/hooks/` nunca é consultado. Corrigido com `core.hooksPath` por repositório apontando para `.githooks/` versionado, que delega ao global antes de rodar as guardas locais. O check de `support.js` também dava falso-positivo em arquivo adicionado (`--diff-filter=M` agora).
+- Guardas verificadas rodando o hook: bloqueia com `HEAD` em `develop` e em `master`, bloqueia com CDN reintroduzido no `index.html`, e libera nesta branch (push real confirmou que o git invoca `.githooks/pre-push`). Ressalva: por ser versionado, o hook só roda em branches que já contêm `.githooks/` — a guarda de `develop`/`master` só vale após o merge.
 
 - Branch protection no GitHub retornou 403: exige GitHub Pro em repositório privado. Compensado pelo hook `pre-push` local.
 - `npm install` puro falha com `Cannot read properties of null (reading 'edgesOut')` — bug do npm 10.9.2 em `arborist#loadPeerSet` no grafo de peers do Vitest 4.x. As quatro dependências declaradas resolvem normalmente. Contorno: `--legacy-peer-deps`. Correção definitiva (`npm i -g npm@latest`) é mudança global da máquina e ficou fora do escopo.

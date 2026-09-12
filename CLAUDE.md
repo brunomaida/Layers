@@ -41,6 +41,7 @@ Ao comparar render, limpe `traval-layer-editor-cfg` antes de concluir que regred
 - Branch protection no GitHub está **inativa** (exige GitHub Pro em repo privado). A regra "nunca commitar em develop/master" é local: `.githooks/pre-push` bloqueia.
 - **Ao clonar, rode `bash scripts/install-hooks.sh`.** Ele aponta `core.hooksPath` para `.githooks/`. Sem isso o hook não roda — este ambiente tem `core.hooksPath` global (`~/.git-hooks`), que vence o `.git/hooks/` do repositório.
 - `.githooks/pre-push` delega ao hook global antes das guardas locais, então o gate de `changelog.d` continua valendo.
+- Ressalva: o hook é versionado, então só roda em branches que já têm `.githooks/`. A guarda de `develop`/`master` só passa a valer depois que esta branch de setup for mergeada. Em branch sem `.githooks/`, o git não roda hook nenhum — nem o global.
 
 ## Changelog Fragment Format
 
