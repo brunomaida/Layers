@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 10 concluídos, 2 parciais, 33 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 11 concluídos, 1 parcial, 33 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -67,7 +67,7 @@ Fixtures em `test/fixtures/`: Traval (Vite + TS), React/Vite, Vue, HTML/CSS puro
 - [~] Sem chamadas de rede em runtime: fontes e React locais, verificado 12/12 em `localhost:5180`. Falta o header CSP `default-src 'self'`.
 - [ ] `localStorage` só com preferências de UI; nunca conteúdo de arquivos ou handles.
 - [ ] Log de gravações (`layers-export.log`) com caminho, hash antes/depois e timestamp.
-- [~] Dependências de dev fixadas: `package-lock.json` gerado e commitado. Falta `npm audit` (bloqueado pelo bug de peer-deps do npm 10.9.2 — ver `docs/LOCAL-SETUP.md`).
+- [x] Dependências de dev fixadas (`package-lock.json`, lockfileVersion 3) e auditadas: `npm audit` reporta 0 vulnerabilidades. Requer npm 11+.
 
 ## G. Documentação de release
 

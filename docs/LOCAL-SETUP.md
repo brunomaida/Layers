@@ -14,13 +14,13 @@ tinha quando era servido pelo host. Ver também
 ## Rodar
 
 ```
-npm install --legacy-peer-deps
+npm install
 npm run dev          # http://localhost:5180
 ```
 
 Não abrir via `file://`. A File System Access API e `document.fonts` exigem origem HTTP.
 
-> `--legacy-peer-deps` é necessário no npm 10.9.2 — ver [Problemas conhecidos](#problemas-conhecidos).
+> Requer **npm 11+** — ver [Problemas conhecidos](#problemas-conhecidos).
 
 ## O que garante o visual idêntico
 
@@ -147,11 +147,14 @@ Fora isso, o render é o mesmo.
 
 **`npm install` falha com `Cannot read properties of null (reading 'edgesOut')`**
 
-Bug do npm 10.9.2 (o que acompanha o Node 22.14.0), no `arborist#loadPeerSet`, ao
-resolver o grafo de peers do Vitest 4.x. Não é problema das versões declaradas — as
-quatro resolvem normalmente.
+Você está no npm 10.9.2 (o que acompanha o Node 22.14.0). O bug está no
+`arborist#loadPeerSet`, ao resolver o grafo de peers do Vitest 4.x — não nas versões
+declaradas, que resolvem normalmente.
 
-Contorno em uso: `npm install --legacy-peer-deps`.
+Correção: `npm install -g npm@11`.
 
-Correção definitiva: `npm install -g npm@latest` e voltar a usar `npm install` puro.
-Como é mudança global da máquina, ficou fora do escopo do setup.
+Não use `npm@latest`: o npm 12 exige Node `^22.22.2 || ^24.15.0 || >=26.0.0` e recusa
+instalar no Node 22.14.0. O npm 11 aceita `^20.17.0 || >=22.9.0`.
+
+Resolvido nesta máquina em 2026-09-12 (npm 11.19.1): `npm install` limpo passa e
+`npm audit` reporta 0 vulnerabilidades. Se voltar a aparecer, é npm antigo no PATH.
