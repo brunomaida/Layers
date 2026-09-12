@@ -1,0 +1,38 @@
+{
+  "name": "Axaí",
+  "viewport": {
+    "width": 1280,
+    "height": 1600
+  },
+  "mock": "wwwroot/index.html",
+  "interactions": [
+    {
+      "sep": "Superfícies"
+    },
+    {
+      "key": "float",
+      "label": "Barra flutuante de seleção",
+      "show": "#floatbar",
+      "desc": "Aparece com itens selecionados."
+    },
+    {
+      "key": "actions",
+      "label": "Ações em resultados",
+      "show": "#results-actionbar"
+    },
+    {
+      "sep": "Diálogos"
+    },
+    {
+      "key": "search",
+      "label": "Buscar",
+      "show": "#search-dialog",
+      "desc": "<dialog> — visível só quando aberto."
+    },
+    {
+      "key": "bulk",
+      "label": "Faixa de preço em lote",
+      "show": "#bulk-dialog"
+    }
+  ]
+}

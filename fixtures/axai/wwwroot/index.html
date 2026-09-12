@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Axaí · Encontre o que procura</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500;1,6..72,600&family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap">
+  <link rel="stylesheet" href="painel.css">
+</head>
+<body>
+
+<main class="panel">
+  <header class="masthead">
+    <h1>Axaí <span class="sep">·</span> <em>Encontre o que procura</em></h1>
+  </header>
+
+  <aside class="summary-strip" aria-label="Resumo">
+    <div class="sum-stat"><span class="n ink" id="sum-products">0</span><span class="l">Produtos</span></div>
+    <div class="sum-stat"><span class="n ink-70" id="sum-responses">0</span><span class="l">Respostas</span></div>
+    <div class="sum-divider"></div>
+    <div class="sum-stat"><span class="n big ok" id="sum-ok">0</span><span class="l">No preço</span></div>
+    <div class="sum-stat"><span class="n warn" id="sum-out">0</span><span class="l">Fora do preço</span></div>
+    <div class="sum-stat"><span class="n muted" id="sum-partial">0</span><span class="l">Match parcial</span></div>
+    <div class="sum-stat"><span class="n muted" id="sum-unavailable">0</span><span class="l">Indisponível</span></div>
+    <div class="spacer"></div>
+    <div class="sum-meta">Varredura há 2h</div>
+  </aside>
+
+  <section class="section" aria-labelledby="products-h">
+    <header class="section-head">
+      <label class="select-all" title="Selecionar todos">
+        <input type="checkbox" id="select-all">
+      </label>
+      <h2 id="products-h" class="section-title">
+        <span class="section-count" id="products-count">0</span> produtos
+      </h2>
+      <button class="btn-solid-sm" id="new-product">＋ Nova entrada</button>
+      <button class="btn-ghost-sm" id="search-all-btn">Buscar todas ↗</button>
+      <div class="section-controls">
+        <div class="control-group">
+          <span class="control-label">Ordenar</span>
+          <select id="sort-by">
+            <option value="order">por entrada</option>
+            <option value="name-asc">nome · A → Z</option>
+            <option value="name-desc">nome · Z → A</option>
+          </select>
+        </div>
+        <div class="control-group">
+          <span class="control-label">Agrupar</span>
+          <select id="group-by">
+            <option value="none">sem agrupar</option>
+            <option value="categoria">por categoria</option>
+          </select>
+        </div>
+      </div>
+    </header>
+
+    <div class="product-list" id="product-list"></div>
+  </section>
+
+  <section class="section" aria-labelledby="results-h">
+    <header class="section-head">
+      <h2 id="results-h" class="section-title">
+        Resultados <span class="section-count" id="results-count">0</span>
+      </h2>
+      <div class="section-meta">Agrupados por categoria de match · subdivididos por produto</div>
+      <div id="results-actionbar" hidden style="margin-top:8px;display:flex;align-items:center;gap:12px;font-size:13px">
+        <span><strong id="results-selected-count">0</strong> resultado(s) selecionado(s)</span>
+        <button id="delete-results-btn" class="float-danger" style="padding:4px 12px;font-size:12px">Excluir selecionados</button>
+        <button id="clear-results-selection-btn" class="float-close" style="padding:4px 8px;font-size:12px">✕</button>
+      </div>
+    </header>
+    <div class="results-list" id="results-list"></div>
+  </section>
+</main>
+
+<div id="floatbar" class="floatbar" hidden>
+  <span class="float-label"><strong id="float-count">0</strong>&nbsp;selecionada(s)</span>
+  <span class="float-div"></span>
+  <button class="float-pri" id="search-selected">Buscar selecionadas</button>
+  <button class="float-btn" id="bulk-edit">Editar faixa</button>
+  <button class="float-danger" id="delete-selected">Excluir</button>
+  <button class="float-close" id="float-close" aria-label="Cancelar seleção">✕</button>
+</div>
+
+<dialog id="search-dialog" class="modal">
+  <form method="dialog">
+    <h3 id="search-title">Buscar</h3>
+    <ul id="search-scope-list"></ul>
+    <p class="modal-p">Vou validar cada palavra-chave em ≥4 lojas brasileiras e classificar por faixa de preço.</p>
+    <div class="modal-actions">
+      <button value="cancel" class="btn-ghost">Cancelar</button>
+      <button value="default" class="btn-solid">Iniciar agora</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="bulk-dialog" class="modal">
+  <form method="dialog" id="bulk-form">
+    <h3>Faixa de preço em lote</h3>
+    <p class="modal-p">Aplicar a <span id="bulk-count">0</span> selecionada(s).</p>
+    <div class="bulk-slider-wrap">
+      <div class="dual-range" data-id="bulk">
+        <span class="curr">R$</span>
+        <input type="number" class="num-min" min="0" max="300" value="25">
+        <div class="track-wrap">
+          <div class="track"></div>
+          <div class="track-fill"></div>
+          <input type="range" class="thumb thumb-min" min="0" max="300" value="25">
+          <input type="range" class="thumb thumb-max" min="0" max="300" value="40">
+        </div>
+        <span class="curr">R$</span>
+        <input type="number" class="num-max" min="0" max="300" value="40">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button value="cancel" class="btn-ghost">Cancelar</button>
+      <button value="default" class="btn-solid">Aplicar</button>
+    </div>
+  </form>
+</dialog>
+
+<!-- ───── Templates ───── -->
+
+<template id="product-template">
+  <article class="product-card">
+    <label class="check-wrap"><input type="checkbox" class="product-cb"></label>
+    <span class="status-dot"></span>
+    <span class="num"></span>
+    <div class="card-main">
+      <div class="card-line-top">
+        <span class="card-title" contenteditable="true" data-field="nome"></span>
+        <span class="cats" contenteditable="true" data-field="categorias"></span>
+        <span class="status-badge"></span>
+      </div>
+      <div class="card-line-mid">
+        <span class="details-line" contenteditable="true" data-field="detalhes"></span>
+      </div>
+    </div>
+    <div class="slider-col">
+      <div class="slider-label">FAIXA IDEAL</div>
+      <div class="dual-range">
+        <span class="curr">R$</span>
+        <input type="number" class="num-min" min="0" max="300">
+        <div class="track-wrap">
+          <div class="track"></div>
+          <div class="track-fill"></div>
+          <input type="range" class="thumb thumb-min" min="0" max="300">
+          <input type="range" class="thumb thumb-max" min="0" max="300">
+        </div>
+        <span class="curr">R$</span>
+        <input type="number" class="num-max" min="0" max="300">
+      </div>
+    </div>
+    <div class="freq-col">
+      <div class="slider-label">FREQUÊNCIA</div>
+      <select class="freq-select bottom-border" data-field="frequencia">
+        <option value="none">nenhuma</option>
+        <option value="1h">a cada 1h</option>
+        <option value="3h">a cada 3h</option>
+        <option value="6h">a cada 6h</option>
+        <option value="12h">a cada 12h</option>
+        <option value="24h">diariamente</option>
+        <option value="72h">a cada 3 dias</option>
+        <option value="168h">semanalmente</option>
+        <option value="336h">a cada 2 semanas</option>
+        <option value="720h">mensalmente</option>
+      </select>
+    </div>
+    <div class="stats-col">
+      <div class="mini-stat ok"><span class="n">0</span><span class="l">match</span></div>
+      <div class="mini-stat warn"><span class="n">0</span><span class="l">fora</span></div>
+      <div class="mini-stat muted"><span class="n">0</span><span class="l">parcial</span></div>
+    </div>
+    <div class="card-actions">
+      <button class="icon-btn search-one" title="Buscar agora">🔍</button>
+      <button class="icon-btn clear-results-one" title="Limpar resultados">⊘</button>
+      <button class="icon-btn delete-one" title="Excluir">×</button>
+    </div>
+  </article>
+</template>
+
+<!-- ───── New-product dialog ───── -->
+<dialog id="new-dialog" class="modal">
+  <form method="dialog" id="new-form">
+    <h3>Nova entrada</h3>
+    <p class="modal-p">Defina o que monitorar. Tudo pode ser editado depois inline no card.</p>
+    <div style="display:grid;gap:10px;margin:12px 0">
+      <label style="font-size:12px;color:#6b6b6b">Nome
+        <input name="nome" required style="display:block;width:100%;padding:8px;font:inherit;border:1px solid #d8d4cc;border-radius:6px">
+      </label>
+      <label style="font-size:12px;color:#6b6b6b">Palavras-chave (vírgulas)
+        <input name="palavrasChave" placeholder="ex.: pegasus 41, masculino" style="display:block;width:100%;padding:8px;font:inherit;border:1px solid #d8d4cc;border-radius:6px">
+      </label>
+      <label style="font-size:12px;color:#6b6b6b">Categorias (vírgulas)
+        <input name="categorias" placeholder="ex.: tenis, corrida" style="display:block;width:100%;padding:8px;font:inherit;border:1px solid #d8d4cc;border-radius:6px">
+      </label>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <label style="font-size:12px;color:#6b6b6b">Preço mín (R$)
+          <input name="precoMin" type="number" min="0" max="300" value="0" style="display:block;width:100%;padding:8px;font:inherit;border:1px solid #d8d4cc;border-radius:6px">
+        </label>
+        <label style="font-size:12px;color:#6b6b6b">Preço máx (R$)
+          <input name="precoMax" type="number" min="0" max="300" value="100" style="display:block;width:100%;padding:8px;font:inherit;border:1px solid #d8d4cc;border-radius:6px">
+        </label>
+      </div>
+      <label style="font-size:12px;color:#6b6b6b">Frequência
+        <select name="frequencia" style="display:block;width:100%;padding:8px;font:inherit;border:1px solid #d8d4cc;border-radius:6px">
+          <option value="none">nenhuma</option>
+          <option value="6h">a cada 6h</option>
+          <option value="12h">a cada 12h</option>
+          <option value="24h" selected>diariamente</option>
+          <option value="72h">a cada 3 dias</option>
+          <option value="168h">semanalmente</option>
+          <option value="336h">a cada 2 semanas</option>
+          <option value="720h">mensalmente</option>
+        </select>
+      </label>
+    </div>
+    <div class="modal-actions">
+      <button value="cancel" class="btn-ghost">Cancelar</button>
+      <button value="create" class="btn-solid">Criar</button>
+    </div>
+  </form>
+</dialog>
+
+<script src="api.js"></script>
+<script src="painel.js" defer></script>
+</body>
+</html>

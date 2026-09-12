@@ -1,0 +1,864 @@
+.dash-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: 0.5rem 0.625rem;
+  border-bottom: 1px solid var(--bdr);
+  font: 700 var(--fs-title)/1 var(--mono);
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+
+/* Chrome bands (titles/headers) sit on --surface2; data/inputs sit on --surface. The divider rule
+ * moves above the section header (border-top), not below — a header groups with the content it
+ * introduces, not the content before it. Height/padding match `.tab-strip` (layout.css) so the
+ * ESTUDOS panel header lines up with the chart's tab-strip band across all 3 dock modes. */
+.dash-header--panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  height: 2rem;
+  box-sizing: border-box;
+  padding: 0 var(--sp-3);
+  background: var(--surface2);
+  border-bottom: 1px solid var(--bdr);
+  font: 700 var(--fs-panel)/1 var(--mono);
+  letter-spacing: 1px;
+  color: var(--txt);
+}
+
+.dash-header--panel > .dash-header-actions:first-child {
+  justify-self: start;
+}
+
+.dash-header--panel > .dash-header-actions:last-child {
+  justify-self: end;
+}
+
+/* Global Panel's header actions (chevron) sit in grid column 3 and right-aligned, scoped to the
+ * Global Panel header class (.gs-header) to avoid affecting other panel headers. */
+.gs-header .dash-header-actions {
+  grid-column: 3;
+  justify-self: end;
+}
+
+/* Sticky within `.dash-body`'s scroll (layout.css) so the ESTUDOS title stays visible while the
+ * panel's content scrolls beneath it. Scoped to `.dashboard-panel` — `.dash-header--panel` also
+ * styles the unrelated "Resumo Global" title (globalSummary.ts), which this must not affect. */
+.dashboard-panel .dash-header--panel {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.dash-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dash-header--section {
+  padding: var(--sp-15) var(--sp-2);
+  background: var(--surface2);
+  border-top: 1px solid var(--bdr);
+  border-bottom: none;
+  font: 700 var(--fs-sm)/1 var(--mono);
+  letter-spacing: 0.12em;
+  color: var(--txt-muted);
+}
+
+/* Nested one level under `.dash-header--section` (e.g. PARÂMETROS DE ORDENS under INFO ATIVO) —
+ * smaller title, deeper left padding, left border to read as a subsection rather than a sibling. */
+.dash-header--subsection {
+  padding: var(--sp-15) var(--sp-2) var(--sp-15) calc(var(--sp-2) * 2);
+  background: var(--surface2);
+  border-top: 1px solid var(--bdr);
+  border-bottom: none;
+  border-left: 2px solid var(--bdr);
+  font: 700 var(--fs-xs)/1 var(--mono);
+  letter-spacing: 0.12em;
+  color: var(--txt-muted);
+}
+
+.dash-header--popover {
+  padding: 0 0 var(--sp-15);
+  background: transparent;
+  border-bottom: 1px solid var(--bdr);
+  font: 700 var(--fs-title)/1 var(--mono);
+  letter-spacing: 0.7px;
+  color: var(--txt-muted);
+}
+
+.dashboard-panel .panel-tabs + .dash-header,
+.dashboard-panel .sweep-tab > .dash-header:first-child {
+  border-top: none;
+}
+
+.indicator-pane-header {
+  background: transparent;
+  pointer-events: none; /* let chart interactions (crosshair, drag) reach through the empty band */
+}
+.indicator-pane-header > * {
+  pointer-events: auto; /* ...except the header's own interactive children */
+}
+.indicator-pane-swatches {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.dash-empty {
+  padding: 1.25rem 0.625rem;
+  text-align: center;
+  font: 500 var(--fs-sm)/1.4 var(--ui);
+  color: var(--txt-muted);
+}
+
+/* `minmax(0, 1fr)`, not a bare `1fr` — same reasoning as `.instrument-block` below: a tile's
+ * min-content would otherwise become the column's automatic minimum and can overflow the panel
+ * at the dashboard panel's 320px minimum width (`MIN_PANEL_PX` in dashboardPanel.ts). One row of 6
+ * instead of `.tile-grid`'s old 3x2 — lives inside the "RESUMO DA ABA" `.dash-header` now, so it no
+ * longer needs its own top border. */
+.tile-row {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+}
+
+/* RESUMO DA ABA's row — same 9-chip set as `.tile-row--global`, but equal-width columns since the
+ * sidebar panel can shrink to `MIN_PANEL_PX` (320px) and has no room to spare for weighted fr's. */
+.tile-row--9 {
+  grid-template-columns: repeat(9, minmax(0, 1fr));
+}
+
+/* Global summary's chip row (was `.gs-chip-row`'s own grid-template-columns) — 9 columns:
+ * Long, Short, PnL, WR, PF, R, Trend, R², σ. */
+.tile-row--global {
+  grid-template-columns: 0.9fr 0.9fr 1.7fr 0.85fr 0.85fr 0.8fr 0.9fr 0.7fr 0.7fr;
+}
+
+/* Density used inside the floating Resumo Global panel (was `.gs-chip`'s tighter padding/font). */
+.tile-row--compact .tile {
+  padding: 0.3125rem var(--sp-15);
+}
+
+.tile {
+  min-width: 0;
+  background: var(--surface2);
+  border: 1px solid var(--bdr);
+  border-radius: var(--radius);
+  padding: 0.4rem 0.5rem;
+}
+
+.tile .label {
+  font: 500 var(--fs-xs)/1 var(--mono);
+  color: var(--txt-muted);
+  text-transform: uppercase;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile .value {
+  font: 700 var(--fs-value)/1.4 var(--mono);
+  color: var(--txt);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tile .value.bull {
+  color: var(--bull);
+}
+
+.tile .value.bear {
+  color: var(--bear);
+}
+
+/* Must come after `.tile .label`/`.tile .value` above — equal specificity (two classes each),
+ * so source order alone decides the winner; these need to win to actually shrink the compact chips. */
+.tile-row--compact .label {
+  font-size: var(--fs-2xs);
+}
+
+.tile-row--compact .value {
+  font: 700 var(--fs-sm)/1.3 var(--mono);
+}
+
+/* `minmax(0, 1fr)`, not `1fr`: a number input's intrinsic width becomes the column's automatic
+ * minimum under a bare `1fr`, which pushes the columns to ~190px each and overflows the panel
+ * horizontally — the one thing this panel must never do. */
+.instrument-block {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+}
+
+/* Generic section body — column flow, same rhythm as `.tile-row`/`.instrument-block`. Replaces
+ * one-off `cssText` blocks in dashboardPanel.ts/paramSweepTab.ts. */
+.section-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+}
+
+.section-body .row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-2);
+}
+
+/* Same shrink shape as `.instrument-block .field input` below — a narrow docked panel shrinks these
+ * fields instead of letting them overflow. `.field` itself already stacks label/control vertically
+ * (components.css), so only the horizontal sizing needs adding here. */
+.section-body .row .field {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+/* Direct-child combinator, not a descendant selector: TP/BE's `.field` also nests a bare checkbox
+ * `<input>` inside its label row (a `checkboxField`), which must keep its native size rather than
+ * stretch to the field's full width. */
+.section-body .row .field > input,
+.section-body .row .field > select {
+  width: 100%;
+}
+
+/* Same overflow treatment as `.instrument-block .field label` below — a shrunk field clips its
+ * label to an ellipsis instead of wrapping to a second line and pushing that field's box out of
+ * alignment with its row's `align-items: flex-end` neighbors. */
+.section-body .row .field label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* TP/BE's enable-checkbox is a descendant of `.field` for the first time in this file (every other
+ * `checkboxField(...)` call site here is a flat `row()` sibling, never `.field`-wrapped), so it now
+ * also matches components.css's unscoped `.field input` box styling (border/background/fixed
+ * height) meant for text/number/select controls. Reset it back to its native, unboxed appearance —
+ * same as the other checkboxes in this panel (e.g. "Entrada — pavio conta"). */
+.section-body .row .field input[type='checkbox'] {
+  width: auto;
+  height: auto;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+/* Borderless identity label for a `.section-body` sub-group (e.g. "Ordens", "Pavio conta como
+ * toque") — `.settings-group-label` (components.css) is scoped to the settings popover per D25, so
+ * this file keeps its own copy instead of reaching across that boundary. */
+.section-body-label {
+  font: 500 var(--fs-xs)/1 var(--ui);
+  color: var(--txt-dim);
+}
+
+/* Inline (single-row, no column stack) variant — checkbox rows like "Agrupar por dia/tipo". */
+.section-body--inline {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-4);
+  padding: var(--sp-15) var(--sp-2);
+}
+
+/* Left edge matches `.position-table .col-select`'s `padding-left` so the "Agrupar por:" row aligns
+ * with the table's own "select all" checkbox below it, instead of the deeper subsection indent. */
+.section-body--inline-indented {
+  padding-left: 0.375rem;
+}
+
+/* Right-anchored selection count in the Orders Table controls row (D1), expanded-state only — see
+ * `.bulk-bar` below for the collapsed-state equivalent. */
+.selection-count {
+  margin-left: auto;
+  font: 500 var(--fs-sm)/1 var(--ui);
+  color: var(--txt-muted);
+}
+
+.instrument-block .field input {
+  min-width: 0;
+  width: 100%;
+}
+
+.instrument-block .field label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* `table-layout: fixed` is what makes the "no horizontal scrollbar, ever" rule structural rather
+ * than a hope: column widths come from the header row's percentages, so the table can never exceed
+ * the panel no matter how long a price string gets. Overflowing cells ellipsise and expose the full
+ * value through their `title` tooltip. */
+.position-table {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font: 400 var(--fs-xs)/1.05 var(--ui);
+}
+
+/* Both th and td clip: an overflowing HEADER still widens the table's scroll width, so leaving the
+ * header visible would reintroduce the horizontal scrollbar the fixed layout just removed. */
+.position-table th,
+.position-table td {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.position-table .col-select {
+  width: 6%;
+  padding-left: 0.375rem;
+  padding-right: 0;
+}
+
+.position-table .col-eye {
+  width: 5%;
+  padding-left: 0;
+  padding-right: 0;
+  text-align: center;
+}
+
+.position-table .col-datetime {
+  width: 14%;
+  text-align: left;
+}
+
+/* Fixed (not %) so the column never grows past what `L/S` plus a sort arrow needs, and never
+ * shrinks below it either — a percentage here would let the header clip at the panel's minimum
+ * width (`MIN_PANEL_PX`, dashboardPanel.ts) since 5% of that floor is narrower than the label. */
+.position-table .col-side {
+  width: 2.75rem;
+  text-align: center;
+}
+
+.position-table .col-price {
+  width: 8%;
+  text-align: right;
+}
+
+.position-table .col-status {
+  width: 7%;
+  text-align: center;
+}
+
+.position-table .col-r {
+  width: 6%;
+  text-align: right;
+}
+
+.position-table .col-brl {
+  width: 12%;
+  text-align: right;
+}
+
+.position-table .col-qty {
+  width: 6%;
+  text-align: right;
+}
+
+/* Fixed (not %): holds the single 0.5rem `.btn-select-delete` icon-btn, centered to match the row
+ * cell's `text-align: center` below. `col-brl` keeps its full 12%: BRL strings ("-1.234,56")
+ * already need that width and fall back to the `title` tooltip `cell()` always sets only past it. */
+.position-table .col-actions {
+  width: 1.375rem;
+  text-align: center;
+}
+
+.position-table .col-actions-header {
+  display: flex;
+  justify-content: center;
+  gap: 0.125rem;
+}
+
+.position-table .col-actions-header .btn-select-delete {
+  width: 0.5rem;
+  height: 0.5rem;
+  flex-shrink: 0;
+}
+
+.position-table .col-actions-header .icon-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.position-table .col-select input {
+  margin: 0;
+}
+
+/* Collapsed-state-only selection affordance for "LISTA DE ORDENS" (dashboardPanel.ts) — the D1
+ * controls row's count and the header's delete-selected icon both live inside the collapsible
+ * section body, so this renders instead while the section is collapsed and a selection exists. */
+.bulk-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--surface2);
+  border-top: 1px solid var(--bdr);
+  font: 500 var(--fs-sm)/1 var(--ui);
+  color: var(--txt-muted);
+}
+
+.position-table th {
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  text-align: left;
+  /* middle, not the default baseline — a lone checkbox/eye glyph in col-select/col-eye sits
+   * visibly off-baseline against the text headers without it. */
+  vertical-align: middle;
+  padding: 0.1875rem;
+  /* --fs-sm (11px), not the old --fs-2xs (9px) — was rendering SMALLER than the --fs-xs (10px) td
+   * font, inverting the intended header/body hierarchy despite already being font-weight 700.
+   * --txt (not --txt-muted) for the same reason: weight alone didn't read as more prominent. */
+  font: 700 var(--fs-sm)/1 var(--mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--txt);
+  box-shadow: inset 0 -1px 0 var(--bdr);
+  border-bottom: none;
+}
+
+/* `.position-table th` (above) is also sticky at `top: 0` against the same `.dash-body` scroller —
+ * fine standalone, but inside the ESTUDOS panel that now collides with the sticky title (2rem) +
+ * tabstrip (2rem) sitting above it. Push the table's own sticky row below both, scoped to
+ * `.dashboard-panel` only: `.position-table` is shared with `.global-summary` (globalSummary.ts),
+ * whose title/tabstrip are NOT sticky, so its `th` must keep `top: 0`. Also covers `.sweep-table`
+ * (paramSweepTab.ts), which sits under the same title+tabstrip band. */
+.dashboard-panel .position-table th {
+  top: 4rem;
+}
+
+.position-table td {
+  padding: 0.0625rem 0.1875rem;
+  border-bottom: 1px solid var(--bdr-soft);
+}
+
+.position-table tr:hover {
+  background: var(--surface2);
+}
+
+/* Group header row (Agrupar por dia/tipo) — spans every column via colspan, so its own background
+ * is what sets it apart from the data rows it introduces rather than relying on cell borders. */
+.position-table .group-header td {
+  background: var(--surface2);
+  font: 700 calc(var(--fs-2xs) * 1.5 * 0.75)/1.4 var(--mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--txt);
+  white-space: normal;
+  box-shadow: inset 0 1px 0 var(--bdr);
+  padding: 0.25rem 0.1875rem;
+}
+
+.position-table .group-header input[type='checkbox'] {
+  vertical-align: middle;
+  margin: 0;
+}
+
+/* `.group-header td` (above) is more specific than `.col-select` (extra `td` element beats the
+ * class-only selector once class counts tie), so it silently overrode `.col-select`'s
+ * padding-left/right on the group row's checkbox cell — 3px instead of the data row's 6px,
+ * misaligning the two checkboxes on the x-axis. Restore the data-row padding here. */
+.position-table .group-header .col-select {
+  padding-left: 0.375rem;
+  padding-right: 0;
+}
+
+.position-table .group-header .col-group-stats {
+  white-space: pre;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.position-table .status-active {
+  color: var(--accent);
+  font-style: italic;
+}
+
+.position-table .status-win {
+  color: var(--bull);
+}
+
+.position-table .status-loss {
+  color: var(--bear);
+}
+
+.position-table .status-never-filled {
+  color: var(--txt-muted);
+  font-style: italic;
+}
+
+/* The column width now comes from `.col-actions`; this only strips the horizontal padding and
+ * narrows the button so the delete glyph is never the cell that clips at the minimum panel width. */
+.position-table .row-delete {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.position-table .row-delete .icon-btn {
+  width: 0.625rem;
+}
+
+.panel-tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--bdr);
+}
+
+/* Sticky right below the title band (only in the ESTUDOS sidebar — `.panel-tabs` is reused
+ * unscoped by `.settings-popover`, which must not become sticky). `top`/`height` match
+ * `.dash-header--panel`'s own fixed `height` (2rem) so the two stack flush with no gap or overlap
+ * while `.dash-body` scrolls beneath both; `height` is set explicitly (instead of left to content)
+ * so this offset is a known, non-drifting value for `.position-table th` below to build on. */
+.dashboard-panel .panel-tabs {
+  position: sticky;
+  top: 2rem;
+  height: 2rem;
+  box-sizing: border-box;
+  z-index: 2;
+}
+
+.panel-tab {
+  flex: 1;
+  padding: 0.5rem 0.625rem;
+  border: none;
+  background: transparent;
+  color: var(--txt-dim);
+  font: 600 var(--fs-title)/1 var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.panel-tab:hover {
+  color: var(--txt-muted);
+}
+
+.panel-tab--active {
+  color: var(--txt);
+  font-weight: 700;
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* `minmax(0, 1fr)`, same reasoning as `.instrument-block` above — a number input's intrinsic width
+ * must not become the column's automatic minimum. */
+.sweep-grid {
+  display: grid;
+  grid-template-columns: max-content repeat(3, minmax(0, 1fr)) max-content;
+  align-items: center;
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+}
+
+/* `input[type="number"]`, not `input`: the TP/BE checkboxes live in this grid too (inside their
+ * label wrappers) and a stretched checkbox squeezes its own label text out of the row. */
+.sweep-grid input[type='number'] {
+  min-width: 0;
+  width: 100%;
+}
+
+.sweep-grid span,
+.sweep-grid label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font: 500 var(--fs-xs)/1 var(--mono);
+  color: var(--txt-dim);
+}
+
+.sweep-run {
+  background: var(--surface2);
+  border-top: 1px solid var(--bdr);
+}
+
+.sweep-warn {
+  font: 500 var(--fs-xs)/1.3 var(--ui);
+  color: var(--warning);
+}
+
+.sweep-status {
+  font: 500 var(--fs-xs)/1.3 var(--ui);
+  color: var(--txt-muted);
+}
+
+.sweep-table th,
+.sweep-table td {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.equity-sparkline {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  width: 100%;
+  height: 8.75rem;
+  --eq-gutter-left: 3rem;
+  --eq-gutter-bottom: 1rem;
+}
+
+.equity-sparkline--global {
+  height: 10rem;
+}
+
+.equity-sparkline--tab-summary {
+  height: 6.25rem;
+}
+
+/* Reserves the axis-label gutters (left: price labels, bottom: time labels) around the actual
+ * plotted area — kept separate from the SVG's own internal `pad` (breathing room only) so the
+ * curve/gridlines never sit under label text regardless of viewBox scaling. */
+.eq-plot {
+  position: absolute;
+  top: var(--sp-1);
+  right: var(--sp-2);
+  bottom: var(--eq-gutter-bottom);
+  left: var(--eq-gutter-left);
+}
+
+.eq-label {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font: 500 var(--fs-2xs)/1 var(--mono);
+  color: var(--txt-muted);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* Same trap as `.icon-btn[hidden]` (components.css): `.equity-sparkline`'s own `display: block`
+ * is normal-author-origin and always beats the UA `[hidden] { display: none }`, so the chip's collapse
+ * toggle needs an explicit override to actually hide the chart. */
+.equity-sparkline--global[hidden] {
+  display: none;
+}
+
+.gs-chart-chip {
+  background: var(--surface);
+  border-radius: var(--radius);
+  margin-bottom: var(--sp-2);
+}
+
+.gs-chart-chip-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--sp-1) var(--sp-2) 0;
+  font: 500 var(--fs-xs)/1.3 var(--ui);
+  color: var(--txt-muted);
+}
+
+.gs-chart-chip-header .icon-btn {
+  font-size: var(--fs-chevron);
+}
+
+/* Base = per-asset row (least emphasis). `--tab-summary` and `--global` step up stroke-width/opacity
+ * below — same ancestor-class pattern as `.eq-line--bear`'s color swap, no new hex anywhere. */
+.eq-line {
+  stroke: var(--accent);
+  fill: none;
+  stroke-width: 1.25;
+  opacity: 0.85;
+  vector-effect: non-scaling-stroke;
+}
+
+.equity-sparkline--tab-summary .eq-line {
+  stroke-width: 1.5;
+  opacity: 0.9;
+}
+
+.equity-sparkline--global .eq-line {
+  stroke-width: 2;
+  opacity: 1;
+}
+
+.eq-line--bear {
+  stroke: var(--bear);
+}
+
+.eq-trend {
+  stroke: var(--txt-dim);
+  fill: none;
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+  vector-effect: non-scaling-stroke;
+}
+
+.equity-sparkline--global .eq-trend {
+  stroke-width: 1.25;
+}
+
+.eq-zero {
+  stroke: var(--bdr);
+  stroke-width: 1;
+  vector-effect: non-scaling-stroke;
+}
+
+.eq-ytick {
+  stroke: var(--bdr);
+  stroke-width: 1;
+  opacity: 0.35;
+  vector-effect: non-scaling-stroke;
+}
+
+/* Vertical break gridlines (day/week/month), dashed to read as secondary to the solid `.eq-ytick`
+ * rows. */
+.eq-xtick {
+  stroke: var(--bdr);
+  stroke-width: 1;
+  stroke-dasharray: 2 2;
+  opacity: 0.45;
+  vector-effect: non-scaling-stroke;
+}
+
+.eq-ytick-label {
+  position: absolute;
+  left: calc(-1 * var(--eq-gutter-left));
+  width: calc(var(--eq-gutter-left) - var(--sp-1));
+  text-align: right;
+  transform: translateY(-50%);
+  font: 500 var(--fs-2xs)/1 var(--mono);
+  color: var(--txt-dim);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.eq-xtick-label {
+  position: absolute;
+  top: 100%;
+  font: 500 var(--fs-2xs)/1 var(--mono);
+  color: var(--txt-dim);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.eq-xtick-label--start {
+  left: 0;
+}
+
+.eq-xtick-label--end {
+  right: 0;
+}
+
+.eq-xtick-label--break {
+  transform: translateX(-50%);
+}
+
+.eq-tooltip {
+  position: absolute;
+  top: 0;
+  background: var(--surface);
+  border: 1px solid var(--bdr);
+  border-radius: var(--radius);
+  padding: 0 var(--sp-1);
+  font: 500 var(--fs-2xs)/1.6 var(--mono);
+  color: var(--txt);
+  pointer-events: none;
+  white-space: nowrap;
+  z-index: 1;
+}
+
+.dash-header--collapsible {
+  cursor: pointer;
+}
+
+.dash-header--collapsible:hover {
+  filter: brightness(1.15);
+}
+
+.dash-header-chevron {
+  font-size: var(--fs-chevron);
+  color: var(--txt-muted);
+}
+
+.studies-toolbar-group {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+}
+
+.studies-toolbar-label {
+  font: 500 var(--fs-xs)/1 var(--mono);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--txt-dim);
+}
+
+.studies-toolbar-divider {
+  width: 1px;
+  align-self: stretch;
+  background: var(--bdr);
+}
+
+.studies-toolbar-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-wrap: wrap;
+}
+
+.studies-toolbar-chip {
+  gap: 0.375rem;
+  padding: 0 0.375rem;
+}
+
+.studies-toolbar-chip-label {
+  font: 500 var(--fs-xs)/1 var(--ui);
+  color: var(--txt-muted);
+  white-space: nowrap;
+}
+
+.studies-toolbar-chip-icon {
+  width: 1rem;
+  height: 1rem;
+  display: inline-flex;
+}
+
+.studies-toolbar-chip-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+.studies-toolbar-chip-swatch {
+  width: 0.625rem;
+  height: 0.625rem;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.studies-toolbar-chip-eye,
+.studies-toolbar-chip-remove {
+  width: 1.125rem;
+  height: 1.125rem;
+  background: transparent;
+}
+
+.studies-toolbar-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.375rem;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--txt);
+  font: 500 var(--fs-btn)/1 var(--ui);
+  cursor: pointer;
+  text-align: left;
+}
+
+.studies-toolbar-type-btn:hover {
+  background: var(--ctl-bg);
+}
+
+.studies-toolbar-type-btn svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex: 0 0 auto;
+}

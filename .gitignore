@@ -6,3 +6,6 @@ test-results
 
 # Vendored runtime assets (vendor/, fonts/*.woff2) ARE committed on purpose:
 # they are what makes the local render identical offline. Do not ignore them.
+
+# Exports do editor (artefato, nao fonte)
+export/
