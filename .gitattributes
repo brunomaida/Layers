@@ -1,0 +1,17 @@
+* text=auto eol=lf
+
+# Byte-exact on purpose. vendor/*.js is validated against the SRI hashes declared
+# in support.js, and support.js is generated upstream — line-ending conversion
+# would change their bytes and invalidate that guarantee on a fresh clone.
+vendor/** -text
+support.js -text
+
+# Binary assets.
+*.woff2 binary
+*.woff  binary
+*.png   binary
+*.jpg   binary
+
+# Generated; keep diffs quiet.
+package-lock.json -diff
+fonts/fonts.css   -diff
