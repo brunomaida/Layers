@@ -3,9 +3,6 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<!-- React UMD vendored locally: support.js loadReactUmd() short-circuits on
-     window.React && window.ReactDOM, so no network fetch to unpkg happens.
-     Files verified byte-identical to the SRI hashes declared in support.js. -->
 <script src="./vendor/react.production.min.js"></script>
 <script src="./vendor/react-dom.production.min.js"></script>
 <script src="./support.js"></script>
@@ -13,7 +10,7 @@
 <body>
 <x-dc>
 <helmet>
-<link rel="stylesheet" href="./fonts/fonts.css">
+<link href="./fonts/fonts.css" rel="stylesheet">
 <style>
 :root{--bg0:#0e1116;--bg1:#161b22;--bg2:#1c2230;--line0:#212936;--line1:#2a3340;--line2:#3a4452;--fg3:#5a636e;--fg2:#8b949e;--fg1:#c9d1d9;--fg0:#e6edf3;--acc:#60a5fa;--accHover:#7db8ff;--onAcc:#06101f;--pri:#60a5fa;--onPri:#06101f;--ok:#26c281;--warn:#f5a623;--err:#ef5350;--violet:#a78bfa;--stageA:#151a22;--faint:rgba(255,255,255,.03);--shadow:rgba(0,0,0,.5);--shadow2:rgba(0,0,0,.6);--hlFg:#ffffff;--accRgb:96,165,250;--bg0Rgb:14,17,22;--bg1Rgb:22,27,34;--okRgb:38,194,129;--warnRgb:245,166,35;--errRgb:239,83,80;--violetRgb:167,139,250;--sel:#60a5fa;--onSel:#06101f;--selLight:#a8cdfc;--selDark:#3e6ba2;--selHover:#7db8ff;--selRgb:96,165,250;--oD:#26c281;--oH:#f5a623;--oE:#60a5fa;--oDRgb:38,194,129;--oHRgb:245,166,35;--oERgb:96,165,250;--sliderS:.85;--fs:1;--scheme:dark}
 input[type=range][data-ed]{-webkit-appearance:none;appearance:none;background:transparent;height:calc(16px*var(--sliderS));cursor:pointer}
@@ -32,10 +29,46 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
 
 <div style="position:relative;display:grid;grid-template-rows:36px 1fr;grid-template-columns:minmax(0,1fr) auto;width:100vw;height:100vh;background:var(--bg0);color:var(--fg0)">
 
-  <div style="grid-column:1 / -1;position:relative;z-index:30;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;height:36px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--line1);white-space:nowrap">
-    <div style="display:flex;align-items:center;gap:10px;min-width:0;overflow:hidden">
-      <button onClick="{{ connectDir }}" title="{{ dirTitle }}" style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:0;border-radius:4px;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="display:flex;color:{{ dirColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"/></svg></span>{{ dirPath }}</button>
-      <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ layerCount }} camadas · {{ nodeCount }} elementos</span>
+  <div style="grid-column:1 / -1;position:relative;z-index:{{ hdrZ }};display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;height:36px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--line1);white-space:nowrap">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <div ref="{{ histRef }}" style="position:relative;display:flex;align-items:center;flex:0 0 auto">
+      <button onClick="{{ histToggle }}" title="{{ dirTitle }}" style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:1px solid {{ histBdr }};border-radius:4px;background:{{ histBg }};color:var(--fg2);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;max-width:260px" style-hover="background:var(--faint);color:var(--fg0);border-color:rgba(var(--selRgb),.55)"><span style="display:flex;color:{{ dirColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"/></svg></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ dirPath }}</span><span style="color:var(--fg3);font-size:9px">▾</span></button>
+      <sc-if value="{{ histOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:fixed;left:12px;top:31px;z-index:80;width:340px;max-width:calc(100vw - 24px);max-height:min(460px,calc(100vh - 60px));overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px;background:var(--bg1);border:1px solid rgba(var(--selRgb),.6);border-radius:4px;box-shadow:0 10px 26px var(--shadow2)">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 5px"><span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Projetos recentes</span><span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ histCountLabel }}</span></div>
+          <sc-if value="{{ histEmpty }}" hint-placeholder-val="{{ false }}"><span style="padding:6px 8px 10px;font:400 calc(10.5px*var(--fs))/1.45 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty">Nenhum projeto ainda. Conecte uma pasta ou registre um repositório abaixo.</span></sc-if>
+          <sc-for list="{{ histItems }}" as="h" hint-placeholder-count="3">
+            <div onClick="{{ h.open }}" title="{{ h.title }}" style="display:grid;grid-template-columns:16px minmax(0,1fr) auto auto;align-items:center;gap:8px;height:34px;padding:0 4px 0 8px;border-radius:3px;background:{{ h.bg }};cursor:pointer" style-hover="background:rgba(var(--selRgb),.16)">
+              <span style="display:flex;color:{{ h.iconColor }}">
+                <sc-if value="{{ h.isFolder }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"/></svg></sc-if>
+                <sc-if value="{{ h.isRepo }}" hint-placeholder-val="{{ false }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="4" cy="3.5" r="1.5"/><circle cx="4" cy="12.5" r="1.5"/><circle cx="12" cy="5.5" r="1.5"/><path d="M4 5v6M12 7c0 2.5-3.5 2-6 3.5"/></svg></sc-if>
+              </span>
+              <span style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:{{ h.color }};white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.name }}</span>
+                <span style="font:400 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ h.origin }}</span>
+              </span>
+              <span title="{{ h.lastFull }}" style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:nowrap">{{ h.last }}</span>
+              <span style="display:flex;gap:1px">
+                <button onClick="{{ h.pin }}" title="{{ h.pinTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:3px;color:{{ h.pinColor }}" style-hover="background:var(--faint);color:var(--fg0)"><svg viewBox="0 0 16 16" width="11" height="11" fill="{{ h.pinFill }}" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h4l-.5 4 2.5 2.5v1H4v-1L6.5 6z"/><path d="M8 9.5V14"/></svg></button>
+                <button onClick="{{ h.remove }}" title="Remover do histórico" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font-size:11px" style-hover="background:var(--faint);color:var(--err)">×</button>
+              </span>
+            </div>
+          </sc-for>
+          <span style="height:1px;background:var(--line1);margin:4px 2px"></span>
+          <sc-if value="{{ histAdding }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:4px;padding:2px 4px">
+              <input value="{{ histRepoQ }}" onChange="{{ histRepoInput }}" onKeyDown="{{ histRepoKey }}" placeholder="github.com/usuario/repo" autoFocus="{{ true }}" style="flex:1;min-width:0;height:24px;padding:0 7px;border:1px solid {{ histRepoBdr }};border-radius:4px;background:var(--bg0);color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'JetBrains Mono',monospace">
+              <button onClick="{{ histRepoAdd }}" style="height:24px;padding:0 9px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:600 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--sel);color:var(--onSel)">Registrar</button>
+              <button onClick="{{ histRepoCancel }}" style="height:24px;width:24px;border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">×</button>
+            </div>
+          </sc-if>
+          <div onClick="{{ connectDir }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
+          <div onClick="{{ histRepoStart }}" title="Só registro por enquanto — o carregamento de repositório chega com o loader" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Registrar repositório GitHub…</div>
+          <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
+        </div>
+      </sc-if>
+      </div>
+      <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">{{ layerCount }} camadas · {{ nodeCount }} elementos</span>
     </div>
     <span style="font:400 calc(15.6px*var(--fs))/1 'Michroma',sans-serif;background:linear-gradient(95deg,var(--selLight),var(--sel),var(--selDark));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;justify-self:center">LAYERS</span>
     <div style="display:flex;align-items:center;justify-self:end;gap:6px;flex:0 0 auto;white-space:nowrap;height:36px">
@@ -757,7 +790,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     </sc-if></div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Gray · 1 Grafite&quot;,&quot;options&quot;:[&quot;Dark&quot;,&quot;Gray · 1 Grafite&quot;,&quot;Gray · 2 Ardósia&quot;,&quot;Gray · 3 Cinza quente&quot;,&quot;Bright · 1 Papel&quot;,&quot;Bright · 2 Névoa&quot;,&quot;Bright · 3 Linho&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;5 · Cinza médio&quot;,&quot;options&quot;:[&quot;Padrão do tema&quot;,&quot;1 · Aço&quot;,&quot;2 · Lavanda&quot;,&quot;3 · Sálvia&quot;,&quot;4 · Cinza claro&quot;,&quot;5 · Cinza médio&quot;,&quot;6 · Cinza escuro&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;selectColor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Coral&quot;,&quot;options&quot;:[&quot;Padrão do tema&quot;,&quot;Azul&quot;,&quot;Teal&quot;,&quot;Coral&quot;,&quot;Âmbar&quot;,&quot;Violeta&quot;,&quot;Verde&quot;,&quot;Branco&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;originColors&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Mono · cor de seleção&quot;,&quot;options&quot;:[&quot;Semântica · verde / âmbar / acento&quot;,&quot;Mono · cor de seleção&quot;,&quot;Mono · acento&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;sliderScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:85,&quot;min&quot;:50,&quot;max&quot;:150,&quot;step&quot;:5,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Controles&quot;},&quot;panelHeader&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;B · Faixas rotuladas&quot;,&quot;options&quot;:[&quot;A · Cartão&quot;,&quot;B · Faixas rotuladas&quot;,&quot;C · Compacto&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Layout · painel direito&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;theme&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Gray · 1 Grafite&quot;,&quot;options&quot;:[&quot;Dark&quot;,&quot;Gray · 1 Grafite&quot;,&quot;Gray · 2 Ardósia&quot;,&quot;Gray · 3 Cinza quente&quot;,&quot;Bright · 1 Papel&quot;,&quot;Bright · 2 Névoa&quot;,&quot;Bright · 3 Linho&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;accent&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;5 · Cinza médio&quot;,&quot;options&quot;:[&quot;Padrão do tema&quot;,&quot;1 · Aço&quot;,&quot;2 · Lavanda&quot;,&quot;3 · Sálvia&quot;,&quot;4 · Cinza claro&quot;,&quot;5 · Cinza médio&quot;,&quot;6 · Cinza escuro&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;selectColor&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Coral&quot;,&quot;options&quot;:[&quot;Padrão do tema&quot;,&quot;Azul&quot;,&quot;Teal&quot;,&quot;Coral&quot;,&quot;Âmbar&quot;,&quot;Violeta&quot;,&quot;Verde&quot;,&quot;Branco&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;originColors&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;Mono · cor de seleção&quot;,&quot;options&quot;:[&quot;Semântica · verde / âmbar / acento&quot;,&quot;Mono · cor de seleção&quot;,&quot;Mono · acento&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Tema&quot;},&quot;sliderScale&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:85,&quot;min&quot;:50,&quot;max&quot;:150,&quot;step&quot;:5,&quot;unit&quot;:&quot;%&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Controles&quot;},&quot;panelHeader&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;B · Faixas rotuladas&quot;,&quot;options&quot;:[&quot;A · Cartão&quot;,&quot;B · Faixas rotuladas&quot;,&quot;C · Compacto&quot;],&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Layout · painel direito&quot;},&quot;histMax&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:10,&quot;min&quot;:3,&quot;max&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Projetos&quot;}}">
 const ENUMS = {
   display: ['block','flex','grid','inline-flex','inline-block','inline','none','contents','table','table-cell'],
   flexDirection: ['row','row-reverse','column','column-reverse'], flexWrap: ['nowrap','wrap','wrap-reverse'],
@@ -888,10 +921,18 @@ const randGrad = base => { const k = 2 + Math.floor(Math.random() * 2); const co
 const CFG_LS = 'traval-layer-editor-cfg';
 const loadCfg = () => { try { const o = JSON.parse(localStorage.getItem(CFG_LS) || '{}'); const out = {}; CFG_KEYS.forEach(k => { if (o[k] !== undefined) out[k] = o[k]; }); return out; } catch (e) { return {}; } };
 const MENUS = [];
+const HIST_LS = 'traval-layer-editor-hist', HIST_DB = 'layers-hist';
+const loadHist = () => { try { const a = JSON.parse(localStorage.getItem(HIST_LS) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+const idb = () => new Promise((res, rej) => { if (!window.indexedDB) return rej(new Error('no idb')); const r = indexedDB.open(HIST_DB, 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
+const idbPut = async (k, v) => { try { const d = await idb(); const t = d.transaction('h', 'readwrite'); t.objectStore('h').put(v, k); await new Promise(r => { t.oncomplete = r; t.onerror = r; }); } catch (e) {} };
+const idbGet = async k => { try { const d = await idb(); return await new Promise((res, rej) => { const q = d.transaction('h').objectStore('h').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); } catch (e) { return null; } };
+const idbDel = async k => { try { const d = await idb(); d.transaction('h', 'readwrite').objectStore('h').delete(k); } catch (e) {} };
+const relTime = t => { const d = Date.now() - t; if (d < 60e3) return 'agora'; if (d < 3600e3) return Math.floor(d / 60e3) + ' min'; if (d < 86400e3) return Math.floor(d / 3600e3) + ' h'; if (d < 7 * 86400e3) return Math.floor(d / 86400e3) + ' d'; const x = new Date(t); return String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0'); };
+const parseRepo = q => { const m = String(q).trim().replace(/\.git$/, '').match(/(?:github\.com[/:])?([\w.-]+)\/([\w.-]+)\/?$/); return m ? { owner: m[1], repo: m[2] } : null; };
 const INTER_LS = 'traval-layer-editor-inter-size';
 const loadInterSize = () => { try { const o = JSON.parse(localStorage.getItem(INTER_LS) || 'null'); return o && o.w ? { split: 210, ...o } : { w: 580, h: 0, split: 210 }; } catch (e) { return { w: 580, h: 0, split: 210 }; } };
 class Component extends DCLogic {
-  state = { cfg: loadCfg(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
+  state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
     showGS: true, showSettings: false, showPop: false, settingsTab: 'gerais', dashTab: 'posicoes', secOpen: { resumo: true, info: true, lista: true, gs: true }, checks: { dia: false, tipo: false }, mockTab: 'WINFUT', vis: { magnet: true, cursor: 'crosshair', orders: true }, indPane: true, dock: 'right', gsEq: true, popKind: 'menu', interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, menuOpen: false, diff: null,
@@ -905,6 +946,34 @@ class Component extends DCLogic {
   interSplitDown = e => this.interDrag(e, (st, dx) => ({ ...st, split: Math.max(140, Math.min(st.w - 200, st.split + dx)) }));
   interDdDown = () => {};
   cbToggle = k => () => this.setState(st => ({ cbOpen: st.cbOpen === k ? null : k }));
+  histRef = React.createRef();
+  histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
+  saveHist(h) { this.setState({ hist: h }); try { localStorage.setItem(HIST_LS, JSON.stringify(h)); } catch (e) {} }
+  touchHist(entry) {
+    const cur = this.state.hist || []; const prev = cur.find(x => x.id === entry.id);
+    const h = [{ pinned: false, ...(prev || {}), ...entry, last: Date.now() }, ...cur.filter(x => x.id !== entry.id)];
+    const pinned = h.filter(x => x.pinned), keep = h.filter(x => !x.pinned).slice(0, Math.max(0, this.histMax() - pinned.length));
+    h.filter(x => !x.pinned && !keep.includes(x)).forEach(x => idbDel(x.id));
+    this.saveHist(h.filter(x => x.pinned || keep.includes(x)));
+  }
+  useDir(dir) {
+    this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => { this.loadRule(this.state.byId[this.state.selId]); this.loadFile(ruleOf(this.state.byId[this.state.selId])[0]); });
+    const id = 'folder:' + dir.name; idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
+  }
+  async pickDir() {
+    if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; }
+    try { const dir = await window.showDirectoryPicker({ mode: 'readwrite' }); this.useDir(dir); } catch (e) {}
+  }
+  async openHist(e) {
+    if (e.kind === 'repo') { this.touchHist(e); this.setState({ cbOpen: null }); this.toast('Repositório registrado — o carregamento remoto chega com o loader (checklist B).'); return; }
+    const h = await idbGet(e.id);
+    if (h && h.requestPermission) { try { const p = await h.requestPermission({ mode: 'readwrite' }); if (p === 'granted') { this.useDir(h); return; } } catch (err) {} }
+    this.toast(h ? 'Permissão não concedida — selecione a pasta novamente.' : 'Handle da pasta não encontrado — selecione a pasta novamente.'); this.pickDir();
+  }
+  addRepo() {
+    const r = parseRepo(this.state.histRepoQ || ''); if (!r) { this.toast('URL inválida — use github.com/usuario/repo.'); return; }
+    const name = r.owner + '/' + r.repo; this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name }); this.setState({ histAdding: false, histRepoQ: '' }); this.toast('Repositório ' + name + ' registrado.', 'ok');
+  }
   cbBlur = () => { this.cbBlurT = setTimeout(() => this.setState({ cbOpen: null }), 120); };
   preventBlur = e => e.preventDefault();
   interTrigRef = React.createRef();
@@ -964,11 +1033,13 @@ class Component extends DCLogic {
       const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
     };
     window.addEventListener('keydown', this.onKey);
+    this.onDocDown = e => { if (this.state.cbOpen === 'hist' && this.histRef.current && !this.histRef.current.contains(e.target)) this.setState({ cbOpen: null, histAdding: false }); };
+    document.addEventListener('mousedown', this.onDocDown);
     document.fonts && document.fonts.ready.then(() => this.scanSoon());
     // o mock offscreen (~190 KB) pode montar depois deste mount: repete até haver nós, e re-escaneia quando o mock muda de tamanho
     let tries = 0; this.boot = setInterval(() => { tries++; const root = this.pageRef.current; if (root && !this.mo) { this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.observe(root); } if (root) this.scan(); if ((root && this.state.nodes.length > 0) || tries > 40) clearInterval(this.boot); }, 120);
   }
-  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
+  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
     e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = this.state.rightPx;
@@ -1554,7 +1625,18 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: async () => { if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; } try { const dir = await window.showDirectoryPicker({ mode: 'readwrite' }); this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {} }, () => { this.loadRule(this.state.byId[this.state.selId]); this.loadFile(ruleOf(this.state.byId[this.state.selId])[0]); }); } catch (e) {} },
+      connectDir: () => this.pickDir(),
+      ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
+        const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
+        return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: this.cbToggle('hist'), histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
+          histEmpty: !hist.length, histHasItems: hist.length > 0, histCountLabel: hist.length + ' / ' + this.histMax(),
+          histItems: sorted.map(h => { const cur = h.id === curId; return { name: h.name, isFolder: h.kind !== 'repo', isRepo: h.kind === 'repo', origin: h.kind === 'repo' ? h.path : 'Pasta local · ' + h.path, last: relTime(h.last), lastFull: 'Último uso: ' + new Date(h.last).toLocaleString('pt-BR'),
+            title: h.kind === 'repo' ? h.path : 'Reconectar ' + h.name, bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : (h.kind === 'repo' ? 'var(--violet)' : 'var(--fg3)'),
+            open: () => this.openHist(h), pin: e => { e.stopPropagation(); this.saveHist(hist.map(x => x.id === h.id ? { ...x, pinned: !x.pinned } : x)); }, pinTitle: h.pinned ? 'Desafixar' : 'Fixar no topo', pinColor: h.pinned ? 'var(--sel)' : 'var(--fg3)', pinFill: h.pinned ? 'currentColor' : 'none',
+            remove: e => { e.stopPropagation(); idbDel(h.id); this.saveHist(hist.filter(x => x.id !== h.id)); } }; }),
+          histClear: () => { hist.filter(x => !x.pinned).forEach(x => idbDel(x.id)); this.saveHist(hist.filter(x => x.pinned)); },
+          histAdding: !!s.histAdding, histRepoQ: s.histRepoQ || '', histRepoBdr: 'rgba(var(--selRgb),.6)', histRepoStart: () => this.setState({ histAdding: true }), histRepoCancel: () => this.setState({ histAdding: false, histRepoQ: '' }),
+          histRepoInput: e => this.setState({ histRepoQ: e.target.value }), histRepoKey: e => { e.stopPropagation(); if (e.key === 'Enter') this.addRepo(); if (e.key === 'Escape') this.setState({ histAdding: false, histRepoQ: '' }); }, histRepoAdd: () => this.addRepo() }; })(),
       cancelAll: () => { s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
       openSave: () => { if (!s.changes.length) return; this.setState({ menuOpen: false, modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
       modalOpen: !!m, modalTitle: m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos', isApply: !!m && m.stage !== 'export',
