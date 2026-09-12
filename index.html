@@ -3,6 +3,12 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Guarda de REDE, nao de injecao. 'unsafe-inline' E 'unsafe-eval' sao inevitaveis: o runtime
+     dc compila <script type="text/x-dc"> com new Function() (support.js evalDcLogic) e sem
+     'unsafe-eval' a classe de logica nao avalia e a tela sobe so com os props. O que esta CSP
+     garante e que nada do projeto carregado va buscar recurso externo.
+     connect-src ja abre a allowlist do loader de repositorio publico. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; font-src 'self' blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="./vendor/react.production.min.js"></script>
 <script src="./vendor/react-dom.production.min.js"></script>
 <script src="./support.js"></script>
@@ -867,8 +873,23 @@ const idbDel = async k => { try { const d = await idb(); d.transaction('h', 'rea
 const relTime = t => { const d = Date.now() - t; if (d < 60e3) return 'agora'; if (d < 3600e3) return Math.floor(d / 60e3) + ' min'; if (d < 86400e3) return Math.floor(d / 3600e3) + ' h'; if (d < 7 * 86400e3) return Math.floor(d / 86400e3) + ' d'; const x = new Date(t); return String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0'); };
 const parseRepo = q => { const m = String(q).trim().replace(/\.git$/, '').match(/(?:github\.com[/:])?([\w.-]+)\/([\w.-]+)\/?$/); return m ? { owner: m[1], repo: m[2] } : null; };
 const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = []; parts.forEach(x => { if (x === '..') out.pop(); else if (x && x !== '.') out.push(x); }); return out.join('/'); };
-const addFontLink = href => { if ([...document.querySelectorAll('link[data-layers-font]')].some(l => l.href === href)) return; const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; l.dataset.layersFont = '1'; document.head.appendChild(l); };
+// Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
+// webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
+// gerado por scripts/vendor-assets.py — que é a fonte de verdade desta lista.
+const PROJECT_FACES = ['Geist', 'JetBrains Mono', 'Newsreader'];
+const familiesOf = href => { try { return new URL(href, location.href).searchParams.getAll('family').map(f => String(f).split(':')[0].trim()).filter(Boolean); } catch (e) { return []; } };
+const useLocalFaces = (href, warn) => {
+  const fams = familiesOf(href); if (!fams.length) { warn.push('css externo ignorado: ' + href); return; }
+  const have = fams.filter(f => PROJECT_FACES.includes(f));
+  if (have.length && !document.querySelector('link[data-layers-faces]')) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = './fonts/projects.css'; l.dataset.layersFaces = '1'; document.head.appendChild(l); }
+  fams.filter(f => !have.includes(f)).forEach(f => warn.push('fonte não versionada, usando fallback: ' + f + ' (acrescente em scripts/vendor-assets.py)'));
+};
+// @font-face não carrega dentro de shadow root: as regras saem da folha escopada e vão para o
+// documento, com cada url() relativa lida da pasta e trocada por blob. url() remota é descartada.
+const FACE_RE = /@font-face\s*\{[^}]*\}/gi;
+const takeFaces = text => { const faces = []; const rest = text.replace(FACE_RE, m => { faces.push(m); return ''; }); return { faces, rest }; };
 // CSS do projeto dentro do shadow root: :root → :host, html/body → raiz sintética; @font-face não funciona em shadow (documentado)
+const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*(['"]?)((?:[a-z][a-z0-9+.-]*:)?\/\/[^'")]+)\1\s*\)/gi, (m, q, u) => { warn.push('url() remota neutralizada no CSS: ' + u.slice(0, 60)); return 'url(about:blank)'; });
 const scopeCss = css => css.replace(/:root\b/g, ':host').replace(/(^|[\s,}>+~])html\s*,\s*body(?=[\s,{.:#\[>])/g, '$1.__layers-root').replace(/(^|[\s,}>+~])(html|body)(?=[\s,{.:#\[>])/g, '$1.__layers-root').replace(/(^|[\s,}])\*\s*\{/g, '$1.__layers-root, .__layers-root * {');
 // índice seletor de classe → arquivo|seletor|linha (primeira regra top-level que começa com .classe)
 const cssIndex = files => { const idx = {}; files.forEach(({ file, text }) => { const clean = text.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')); let depth = 0, buf = '', line = 1, startLine = 1;
@@ -912,13 +933,28 @@ class Component extends DCLogic {
     let html; try { html = await this.readText(mockPath); } catch (e) { this.unloadProject(); this.toast('layers.json aponta para "' + mockPath + '", mas o arquivo não foi encontrado.'); return; }
     const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
     // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
-    doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { if (/^https:\/\/fonts\.googleapis\.com\//.test(href)) addFontLink(href); else warn.push('css externo ignorado: ' + href); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
+    doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
     (Array.isArray(man.styles) ? man.styles : []).forEach(f => { const p = P(f); if (!cssFiles.includes(p)) cssFiles.push(p); });
-    (Array.isArray(man.fonts) ? man.fonts : []).forEach(u => { if (/^https:\/\/fonts\.googleapis\.com\//.test(u)) addFontLink(u); else warn.push('fonte ignorada (só fonts.googleapis.com): ' + u); });
+    (Array.isArray(man.fonts) ? man.fonts : []).forEach(u => useLocalFaces(u, warn));
     const css = []; for (const f of cssFiles) { try { css.push({ file: f, text: await this.readText(f) }); } catch (e) { warn.push('css não encontrado: ' + f); } }
     doc.querySelectorAll('script, link, iframe, object, embed, base, meta, noscript, template').forEach(e => e.remove());
-    doc.querySelectorAll('*').forEach(e => { [...e.attributes].forEach(a => { if (/^on/i.test(a.name) || (/^(href|src|xlink:href|formaction|action)$/i.test(a.name) && /^\s*javascript:/i.test(a.value))) e.removeAttribute(a.name); }); });
+    // Nenhuma requisicao sai do editor: alem de on* e javascript:, todo atributo que carrega
+    // URL remota e removido. data: e blob: ficam (nao vao a rede); <use href> so aceita fragmento.
+    const REMOTE = /^\s*(?:[a-z][a-z0-9+.-]*:)?\/\//i;
+    doc.querySelectorAll('*').forEach(e => { [...e.attributes].forEach(a => {
+      if (/^on/i.test(a.name)) { e.removeAttribute(a.name); return; }
+      if (/^(href|src|xlink:href|formaction|action|data|poster|srcset|imagesrcset)$/i.test(a.name)) {
+        if (/^\s*javascript:/i.test(a.value)) { e.removeAttribute(a.name); return; }
+        if (REMOTE.test(a.value)) { warn.push('URL remota removida: ' + a.name + '="' + a.value.slice(0, 60) + '"'); e.removeAttribute(a.name); return; }
+        if (e.tagName.toLowerCase() === 'use' && /^(href|xlink:href)$/i.test(a.name) && !a.value.startsWith('#')) e.removeAttribute(a.name);
+      }
+    }); });
     const inlineCss = [...doc.querySelectorAll('style')].map(s => s.textContent); doc.querySelectorAll('style').forEach(s => s.remove());
+    // @font-face sai do texto que vai para o shadow root e sobe para o documento (ver hoistFaces)
+    const faces = []; const scoped = [];
+    css.forEach(c => { const t = takeFaces(c.text); scoped.push({ file: c.file, text: t.rest }); t.faces.forEach(rule => faces.push({ dir: c.file.replace(/[^/]*$/, ''), rule })); });
+    const inlineScoped = inlineCss.map(t => { const r = takeFaces(t); r.faces.forEach(rule => faces.push({ dir: mockDir, rule })); return r.rest; });
+    await this.hoistFaces(faces, warn);
     const kids = [...doc.body.children]; if (!kids.length) { this.unloadProject(); this.toast('O mock em ' + mockPath + ' não tem elementos em <body>.'); return; }
     // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
     let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
@@ -928,13 +964,13 @@ class Component extends DCLogic {
     rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
     Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
     const host = this.pageRef.current; if (!host) return; const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + css.map(c => '/* ' + c.file + ' */\n' + scopeCss(c.text)).concat(inlineCss.map(scopeCss)).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
+    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + scopeCss(dropRemoteUrls(c.text, warn))).concat(inlineScoped.map(t => scopeCss(dropRemoteUrls(t, warn)))).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
     this.setState({ project: { name, man, warn }, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
-  unloadProject() { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.setState({ project: null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject() { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.setState({ project: null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   async pickDir() {
     if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; }
     try { const dir = await window.showDirectoryPicker({ mode: 'readwrite' }); this.useDir(dir); } catch (e) {}
@@ -1202,6 +1238,29 @@ class Component extends DCLogic {
   get fixtureBase() { const p = this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
   async fileHandle(path, create) { let d = this.state.dir; const parts = path.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
   async readText(path) { if (this.state.dir) { const h = await this.fileHandle(path, false); return (await h.getFile()).text(); } if (this.fixtureBase) { const r = await fetch(this.fixtureBase + path.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + path); return r.text(); } throw new Error('sem pasta conectada'); }
+  async readBlob(path, type) { if (this.state.dir) { const h = await this.fileHandle(path, false); return new Blob([await (await h.getFile()).arrayBuffer()], { type }); } if (this.fixtureBase) { const r = await fetch(this.fixtureBase + path.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + path); return new Blob([await r.arrayBuffer()], { type }); } throw new Error('sem pasta conectada'); }
+  // @font-face do projeto vai para o documento (em shadow root nao carrega), com cada url()
+  // relativa trocada por blob local. url() remota e descartada: nenhuma requisicao externa.
+  async hoistFaces(faces, warn) {
+    this.dropFaces(); if (!faces.length) return;
+    const MIME = { woff2: 'font/woff2', woff: 'font/woff', ttf: 'font/ttf', otf: 'font/otf', eot: 'application/vnd.ms-fontobject' };
+    const out = [];
+    for (const { dir, rule } of faces) {
+      let text = rule, ok = true;
+      const urls = [...rule.matchAll(/url\(\s*['"]?([^'")]+?)['"]?\s*\)/gi)];
+      for (const m of urls) {
+        const raw = m[1].trim();
+        if (/^(data|blob):/i.test(raw)) continue;
+        if (/^(https?:)?\/\//i.test(raw)) { warn.push('@font-face remoto descartado: ' + raw); ok = false; break; }
+        try { const path = joinPath(dir, raw.split(/[?#]/)[0]); const url = URL.createObjectURL(await this.readBlob(path, MIME[path.split('.').pop().toLowerCase()] || 'font/woff2')); this.faceUrls.push(url); text = text.replace(m[0], 'url(' + url + ')'); }
+        catch (e) { warn.push('fonte do projeto nao encontrada: ' + raw); ok = false; break; }
+      }
+      if (ok) out.push(text);
+    }
+    if (!out.length) return;
+    const st = document.createElement('style'); st.dataset.layersFace = '1'; st.textContent = out.join('\n'); document.head.appendChild(st);
+  }
+  dropFaces() { document.querySelectorAll('style[data-layers-face]').forEach(e => e.remove()); (this.faceUrls || []).forEach(u => URL.revokeObjectURL(u)); this.faceUrls = []; }
   async writeText(path, text) { const h = await this.fileHandle(path, true); const w = await h.createWritable(); await w.write(text); await w.close(); }
   async dirOf(path) { let d = this.state.dir; const parts = path.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); return d; }
   log(line) { this.setState(s => ({ modal: s.modal ? { ...s.modal, log: [...s.modal.log, line] } : null })); }
