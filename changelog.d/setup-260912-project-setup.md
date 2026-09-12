@@ -7,8 +7,11 @@ Branch `setup/260912-project-setup`.
 - `vendor/react.production.min.js` e `vendor/react-dom.production.min.js` — React 18.3.1 UMD versionado. Validado contra os hashes `REACT_SRI` / `REACT_DOM_SRI` que o próprio `support.js` declara, provando que a cópia local é byte-idêntica ao que vinha do unpkg.
 - `fonts/` — 15 `.woff2` espelhados do `fonts.gstatic.com`, subsetados por `unicode-range`.
 - `scripts/vendor-assets.py` — regenera `fonts/` e `vendor/`, aborta se o CDN mudar os bytes do React.
-- `scripts/pre-push` + `scripts/install-hooks.sh` — bloqueia push direto em `develop`/`master`, exige fragmento de changelog em branches de trabalho, e barra reintrodução de CDN no `index.html` ou edição do `support.js`.
+- `.githooks/pre-push` + `scripts/install-hooks.sh` — bloqueia push direto em `develop`/`master`, barra reintrodução de CDN no `index.html` e edição do `support.js`. Delega ao hook global (`~/.git-hooks/pre-push`), que já cobre o gate de `changelog.d`.
 - `docs/LOCAL-SETUP.md` — como rodar local com visual idêntico, defaults reais, verificação e problemas conhecidos.
+- `docs/TOPOLOGY.md` e `docs/architecture-decisions.md` — exigidos pelo manifesto do archetype `app` (`docs-doctor.py`). Topologia é o grafo de arquivos e a ordem de carga do `<head>`; decisões registram o vendoring sem editar `support.js` e a precedência dos defaults visuais.
+- `.gitattributes` — `vendor/**` e `support.js` como `-text`, para o clone receber os mesmos bytes que validaram o SRI.
+- `.claude/settings.json` — routing de modelo (`sonnet` / advisor `fable`).
 - `package-lock.json`, `changelog.d/`, `test/fixtures/`.
 
 ### Changed
@@ -34,6 +37,8 @@ três handshakes TLS externos (`fonts.googleapis.com`, `fonts.gstatic.com`,
 `unpkg.com`) e passa a servir tudo da mesma origem.
 
 ### Notes
+
+- O hook `pre-push` inicial não rodava: `core.hooksPath` está definido globalmente para `~/.git-hooks`, então `.git/hooks/` nunca é consultado. Corrigido com `core.hooksPath` por repositório apontando para `.githooks/` versionado, que delega ao global antes de rodar as guardas locais. O check de `support.js` também dava falso-positivo em arquivo adicionado (`--diff-filter=M` agora).
 
 - Branch protection no GitHub retornou 403: exige GitHub Pro em repositório privado. Compensado pelo hook `pre-push` local.
 - `npm install` puro falha com `Cannot read properties of null (reading 'edgesOut')` — bug do npm 10.9.2 em `arborist#loadPeerSet` no grafo de peers do Vitest 4.x. As quatro dependências declaradas resolvem normalmente. Contorno: `--legacy-peer-deps`. Correção definitiva (`npm i -g npm@latest`) é mudança global da máquina e ficou fora do escopo.
