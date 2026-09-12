@@ -1,3 +1,9 @@
+---
+type: architecture
+status: active
+solution: Layers
+---
+
 # LAYERS — Arquitetura
 
 Editor visual de camadas para projetos web: lê o DOM renderizado de um app, mostra cada elemento como um plano em profundidade (vista explodida) e permite ajustar propriedades CSS com gravação de volta nos arquivos fonte.
@@ -8,9 +14,9 @@ Versão de referência: `Traval Layer Editor v2.22.dc.html`.
 
 | Camada | Tecnologia | Observação |
 |---|---|---|
-| UI | HTML5 + CSS inline + JavaScript | Classe React de componente (`class Component extends DCLogic`) hospedada pelo runtime `support.js`. Sem TS, sem bundler. |
+| UI | HTML5 + CSS inline + JavaScript | Classe React de componente (`class Component extends DCLogic`) hospedada pelo runtime `support.js`. Sem TS, sem bundler. React 18.3.1 UMD versionado em `vendor/`. |
 | 3D | CSS 3D transforms | `perspective` no palco, `rotateX/rotateY/scale` no "mundo", `translateZ` por plano. Sem WebGL/canvas. |
-| Fontes | Inter, JetBrains Mono, Michroma | Hoje via Google Fonts; localmente devem virar `@font-face` com `.woff2` no repositório. |
+| Fontes | Inter, JetBrains Mono, Michroma | 15 `.woff2` versionados em `fonts/`, subsetados por `unicode-range`, via `fonts/fonts.css` gerado. Sem Google Fonts. |
 | Disco | File System Access API | `showDirectoryPicker` (leitura da pasta do projeto e gravação de patches). Chrome/Edge apenas. |
 | Persistência | `localStorage` | `traval-layer-editor-cfg` (aparência) e `traval-layer-editor-inter-size` (menu INTERAGIR). |
 
@@ -62,6 +68,11 @@ Regras:
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`.
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
 - Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
+
+## Rede
+
+Nenhuma. Fontes e React são servidos do próprio repositório — verificado com 12
+requisições, todas em `localhost:5180`. Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 
 ## Limites conhecidos
 

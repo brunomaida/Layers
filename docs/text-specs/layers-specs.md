@@ -1,3 +1,9 @@
+---
+type: spec
+status: superseded
+solution: Layers
+---
+
 # Projeto de Edição Visual das estruturas visuais de uma Página Web
 - Frameworks: typescript, javascript, html, html5, css
 - Objetivo: Criar um ambiente 3D, em perspectiva, para expandir/explodir, quando solicitado, os componentes de painéis, frames, chips. Ao lado, de forma 2D, um painel com as principais propriedades de design (padding, border, margin, corner, archors, aligments, colors, transparency, visibility, position, size,...) para serem ajustadas.

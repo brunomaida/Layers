@@ -1,3 +1,9 @@
+---
+type: checklist
+status: active
+solution: Layers
+---
+
 # LAYERS — Checklist de release v1
 
 Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 10 concluídos, 2 parciais, 33 abertos.

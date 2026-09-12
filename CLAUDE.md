@@ -38,7 +38,9 @@ Ao comparar render, limpe `traval-layer-editor-cfg` antes de concluir que regred
 ## Git Workflow
 
 - Commit gate: testes unitários passando.
-- Branch protection no GitHub está **inativa** (exige GitHub Pro em repo privado). A regra "nunca commitar em develop/master" é local: o hook `.git/hooks/pre-push` bloqueia, mas hooks não são versionados — reinstale com `bash scripts/install-hooks.sh` ao clonar.
+- Branch protection no GitHub está **inativa** (exige GitHub Pro em repo privado). A regra "nunca commitar em develop/master" é local: `.githooks/pre-push` bloqueia.
+- **Ao clonar, rode `bash scripts/install-hooks.sh`.** Ele aponta `core.hooksPath` para `.githooks/`. Sem isso o hook não roda — este ambiente tem `core.hooksPath` global (`~/.git-hooks`), que vence o `.git/hooks/` do repositório.
+- `.githooks/pre-push` delega ao hook global antes das guardas locais, então o gate de `changelog.d` continua valendo.
 
 ## Changelog Fragment Format
 
