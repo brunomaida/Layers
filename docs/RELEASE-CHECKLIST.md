@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 14 concluídos, 2 parciais, 29 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 15 concluídos, 2 parciais, 28 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -22,7 +22,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 14 concluídos
 
 - [~] Loader de projeto: `layers.json` → mock sanitizado + folhas `.css` reais em shadow root offscreen → `walk()`. Entregue na v2.24 (`loadProject`, `docs/layers-json.md`). Falta ingestão de `.zip` e de repositório GitHub público.
 - [~] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice atual é por varredura de chaves e ignora `@media`, `@layer` e nesting — trocar por `css-tree` (AST).
-- [ ] Estados vazios/erro: pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, folhas de `styles` ausentes, mock que rende 1 nó (shell de app → snapshot), navegador sem FS Access (modo somente leitura).
+- [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
 - [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir).
 - [ ] Patch em `.css` com round-trip validado; TS/JS marcado explicitamente como "manual".

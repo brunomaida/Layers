@@ -40,3 +40,11 @@ entram no shadow root.
   arquivo e linha reais.
 - MarketView: 46 elementos · 6 camadas.
 - Rede: 18 requisições ao carregar o Traval, 18 em `localhost:5180`, zero externas.
+
+### Adicionado (estados vazios)
+
+- O painel do palco vazio passa a dizer por que está vazio, em vez de repetir "Nenhum projeto
+  carregado" para qualquer falha: pasta sem `layers.json`, `mock` apontado mas inexistente,
+  `<body>` do mock sem elementos, mock que rende só a raiz (shell de app — aponta
+  `tools/layers-snapshot.js`) e navegador sem File System Access. O motivo fica na tela; antes
+  vivia só num toast que sumia em 4,2 s.
