@@ -20,7 +20,12 @@ npm run dev          # http://localhost:5180
 
 Não abrir via `file://`. A File System Access API e `document.fonts` exigem origem HTTP.
 
-> Requer **npm 11+** — ver [Problemas conhecidos](#problemas-conhecidos).
+**Toolchain:** Node 22.22.2+ ou 24.15.0+ com npm 12+. Verificado em **Node 24.19.0 LTS
+(Krypton) + npm 12.0.2**: install limpo, `npm audit` com 0 vulnerabilidades, e o app
+renderizando sem erro de console.
+
+O piso vem do npm 12, que exige `^22.22.2 || ^24.15.0 || >=26.0.0`. O Vitest 4 também
+não suporta a linha 23 (`^20.0.0 || ^22.0.0 || >=24.0.0`).
 
 ## O que garante o visual idêntico
 
@@ -147,14 +152,16 @@ Fora isso, o render é o mesmo.
 
 **`npm install` falha com `Cannot read properties of null (reading 'edgesOut')`**
 
-Você está no npm 10.9.2 (o que acompanha o Node 22.14.0). O bug está no
-`arborist#loadPeerSet`, ao resolver o grafo de peers do Vitest 4.x — não nas versões
-declaradas, que resolvem normalmente.
+Sintoma de npm antigo — o 10.9.2 quebra em `arborist#loadPeerSet` ao resolver o grafo
+de peers do Vitest 4.x. Não é problema das versões declaradas, que resolvem normalmente.
 
-Correção: `npm install -g npm@11`.
+Cheque `node -v` e `npm -v` antes de qualquer outra coisa. Se estiver abaixo do piso
+acima, atualize em vez de contornar com `--legacy-peer-deps`, que só mascara:
 
-Não use `npm@latest`: o npm 12 exige Node `^22.22.2 || ^24.15.0 || >=26.0.0` e recusa
-instalar no Node 22.14.0. O npm 11 aceita `^20.17.0 || >=22.9.0`.
+```
+winget install OpenJS.NodeJS.LTS   # Node 24 LTS; pede UAC
+npm i -g npm@latest
+```
 
-Resolvido nesta máquina em 2026-09-12 (npm 11.19.1): `npm install` limpo passa e
-`npm audit` reporta 0 vulnerabilidades. Se voltar a aparecer, é npm antigo no PATH.
+Resolvido nesta máquina em 2026-09-12 (Node 22.14.0 + npm 10.9.2 → Node 24.19.0 +
+npm 12.0.2).

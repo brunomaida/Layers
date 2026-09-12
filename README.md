@@ -4,7 +4,7 @@ Editor visual de camadas para projetos web. Mostra o DOM de um app como planos e
 
 ## Requisitos
 - Chrome ou Edge (File System Access API). Firefox/Safari: somente leitura.
-- Node 20+ (só para servir e testar).
+- Node 22.22.2+ ou 24.15.0+ e npm 12+ (só para servir e testar). Verificado em Node 24.19.0 LTS + npm 12.0.2.
 
 ## Rodar
 ```
@@ -12,7 +12,6 @@ npm install
 npm run dev        # http://localhost:5180
 ```
 Não abrir via file:// — FS Access e fontes exigem origem HTTP.
-Requer npm 11+ (o 10.9.2 quebra ao resolver os peers do Vitest 4).
 
 ## Estrutura
 - index.html — o editor (v2.22)

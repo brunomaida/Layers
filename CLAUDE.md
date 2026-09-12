@@ -16,7 +16,7 @@ Regras:
 - Vite **apenas como dev server e para testes** (`npm run dev`). O app não é buildado.
 - React 18.3.1 UMD — globais `window.React` / `window.ReactDOM`, servidos de `vendor/`.
 - Vitest (unit), Playwright (E2E), css-tree (parser CSS, para o loader do checklist B).
-- npm 11+ obrigatório: o 10.9.2 quebra ao resolver o grafo de peers do Vitest 4.
+- Node 22.22.2+ ou 24.15.0+ com npm 12+. O piso vem do npm 12 (`^22.22.2 || ^24.15.0 || >=26.0.0`); o Vitest 4 além disso não suporta a linha 23. Verificado em Node 24.19.0 LTS + npm 12.0.2.
 
 ## Recursos sem rede (hard)
 
