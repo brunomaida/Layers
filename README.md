@@ -7,10 +7,14 @@ Editor visual de camadas para projetos web. Mostra o DOM de um app como planos e
 - Node 22.22.2+ ou 24.15.0+ e npm 12+ (só para servir e testar). Verificado em Node 24.19.0 LTS + npm 12.0.2.
 
 ## Rodar
+Duplo clique em `run.bat`, ou:
 ```
 npm install
 npm run dev        # http://localhost:5180
 ```
+`run.bat` instala as dependências se faltarem, avisa se a 5180 já estiver ocupada e
+deixa a janela aberta em caso de erro.
+
 Não abrir via file:// — FS Access e fontes exigem origem HTTP.
 
 ## Estrutura
@@ -18,6 +22,7 @@ Não abrir via file:// — FS Access e fontes exigem origem HTTP.
 - support.js — runtime gerado (não editar)
 - vendor/ — React + ReactDOM UMD versionados (sem CDN)
 - fonts/ — 15 .woff2 + fonts.css gerado (ver fonts/README.md)
+- run.bat — sobe o dev server (duplo clique)
 - scripts/vendor-assets.py — regenera fonts/ e vendor/
 - docs/LOCAL-SETUP.md — rodar local com visual idêntico
 - docs/ARCHITECTURE.md — arquitetura e fluxo de dados
