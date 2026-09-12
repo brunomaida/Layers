@@ -1,0 +1,8 @@
+node_modules
+dist
+playwright-report
+test-results
+*.log
+
+# Vendored runtime assets (vendor/, fonts/*.woff2) ARE committed on purpose:
+# they are what makes the local render identical offline. Do not ignore them.
