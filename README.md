@@ -8,11 +8,11 @@ Editor visual de camadas para projetos web. Mostra o DOM de um app como planos e
 
 ## Rodar
 ```
-npm install --legacy-peer-deps
+npm install
 npm run dev        # http://localhost:5180
 ```
 Não abrir via file:// — FS Access e fontes exigem origem HTTP.
-`--legacy-peer-deps` contorna um bug do npm 10.9.2; ver docs/LOCAL-SETUP.md.
+Requer npm 11+ (o 10.9.2 quebra ao resolver os peers do Vitest 4).
 
 ## Estrutura
 - index.html — o editor (v2.22)

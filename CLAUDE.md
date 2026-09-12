@@ -16,7 +16,7 @@ Regras:
 - Vite **apenas como dev server e para testes** (`npm run dev`). O app não é buildado.
 - React 18.3.1 UMD — globais `window.React` / `window.ReactDOM`, servidos de `vendor/`.
 - Vitest (unit), Playwright (E2E), css-tree (parser CSS, para o loader do checklist B).
-- `npm install --legacy-peer-deps` — bug do npm 10.9.2; ver docs/LOCAL-SETUP.md.
+- npm 11+ obrigatório: o 10.9.2 quebra ao resolver o grafo de peers do Vitest 4.
 
 ## Recursos sem rede (hard)
 
