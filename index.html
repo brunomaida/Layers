@@ -257,7 +257,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ treeCollapseAll }}" disabled="{{ treeAllClosed }}" title="{{ treeCollapseTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ treeCollapseColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ treeCollapseCursor }};flex:0 0 auto">{{ treeCollapseGlyph }}</button>
         </div>
         <div ref="{{ treeScrollRef }}" style="overflow-y:auto;min-height:0;padding:4px 0">
-          <sc-if value="{{ noProject }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">Nenhum projeto carregado.</span><span>Abra <b style="color:var(--fg2);font-weight:600">Projetos recentes</b> (canto superior esquerdo) e conecte uma pasta que tenha <span style="font-family:'JetBrains Mono',monospace;color:var(--fg2)">layers.json</span> na raiz.</span></div></sc-if>
+          <sc-if value="{{ noProject }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span>{{ emptyBody }}</span></div></sc-if>
           <sc-if value="{{ treeHier }}" hint-placeholder-val="{{ true }}">
           <sc-for list="{{ treeRows }}" as="t" hint-placeholder-count="8">
             <sc-if value="{{ t.isNode }}" hint-placeholder-val="{{ true }}">
@@ -901,7 +901,7 @@ class Component extends DCLogic {
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, menuOpen: false, diff: null,
-    toast: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null };
+    toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null };
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
   treeScrollRef = React.createRef(); colRef = React.createRef(); topBarRef = React.createRef(); gearRef = React.createRef();
   interDdRef = React.createRef();
@@ -927,10 +927,10 @@ class Component extends DCLogic {
   }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
-    let man; try { man = JSON.parse(await this.readText('layers.json')); } catch (e) { this.unloadProject(); this.toast('Pasta conectada, mas sem layers.json legível na raiz — o palco fica vazio (contrato em docs/layers-json.md).'); return; }
+    let man; try { man = JSON.parse(await this.readText('layers.json')); } catch (e) { this.unloadProject({ title: 'Pasta sem layers.json legível na raiz.', body: 'O loader precisa de um layers.json na raiz da pasta conectada. O contrato está em docs/layers-json.md; se a interface mora numa subpasta, use o campo "base".' }); return; }
     const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
     const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); const mockPath = P(man.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
-    let html; try { html = await this.readText(mockPath); } catch (e) { this.unloadProject(); this.toast('layers.json aponta para "' + mockPath + '", mas o arquivo não foi encontrado.'); return; }
+    let html; try { html = await this.readText(mockPath); } catch (e) { this.unloadProject({ title: 'Mock não encontrado.', body: 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija o campo "mock" ou gere o arquivo.' }); return; }
     const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
     // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
     doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
@@ -955,7 +955,7 @@ class Component extends DCLogic {
     css.forEach(c => { const t = takeFaces(c.text); scoped.push({ file: c.file, text: t.rest }); t.faces.forEach(rule => faces.push({ dir: c.file.replace(/[^/]*$/, ''), rule })); });
     const inlineScoped = inlineCss.map(t => { const r = takeFaces(t); r.faces.forEach(rule => faces.push({ dir: mockDir, rule })); return r.rest; });
     await this.hoistFaces(faces, warn);
-    const kids = [...doc.body.children]; if (!kids.length) { this.unloadProject(); this.toast('O mock em ' + mockPath + ' não tem elementos em <body>.'); return; }
+    const kids = [...doc.body.children]; if (!kids.length) { this.unloadProject({ title: 'O mock está vazio.', body: 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
     // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
     let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
     if (man.root && man.root.name) rootEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body'; if (man.root && man.root.src) rootEl.dataset.src = man.root.src;
@@ -967,10 +967,11 @@ class Component extends DCLogic {
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + scopeCss(dropRemoteUrls(c.text, warn))).concat(inlineScoped.map(t => scopeCss(dropRemoteUrls(t, warn)))).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
-    this.setState({ project: { name, man, warn }, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ project: { name, man, warn }, loadError: null, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
-  unloadProject() { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.setState({ project: null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   async pickDir() {
     if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; }
     try { const dir = await window.showDirectoryPicker({ mode: 'readwrite' }); this.useDir(dir); } catch (e) {}
@@ -1541,6 +1542,8 @@ class Component extends DCLogic {
       cfgDirty: Object.keys(s.cfg).length > 0, resetCfg: () => this.resetCfg(), logoGrad: s.cfg.logoGrad || DEFAULT_GRAD,
       fontScale: +this.cfg('fontScale') || 1, fontScalePct: Math.round((+this.cfg('fontScale') || 1) * 100) + '%', setFontScale: e => this.setCfg('fontScale', +e.target.value) };
     return {
+      emptyTitle: s.loadError ? s.loadError.title : 'Nenhum projeto carregado.',
+      emptyBody: s.loadError ? s.loadError.body : (window.showDirectoryPicker ? 'Abra Projetos recentes (canto superior esquerdo) e conecte uma pasta que tenha layers.json na raiz.' : 'Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta. O modo fixture (#layers=) continua funcionando aqui.'),
       hasProject: !!s.project, noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
       hdrA: hs === 'A', hdrB: hs === 'B', hdrC: hs === 'C', ...gear, ...topMenus, ...interModel, ...cfgVals, cbBlur: this.cbBlur, preventBlur: this.preventBlur, phA: ph === 'A', phB: ph === 'B', phC: ph === 'C',
       rightOpen: s.rightOpen, rightClosed: !s.rightOpen, rightW: s.rightOpen ? s.rightPx + 'px' : '30px', ...(() => { const rw = s.rightOpen ? s.rightPx : 30; const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const band = vw - 2 * (rw + 12); return band >= 420 ? { dockLeft: '50vw', dockMaxW: band + 'px' } : { dockLeft: 'calc((100vw - ' + rw + 'px) / 2)', dockMaxW: Math.max(360, vw - rw - 24) + 'px' }; })(),  toggleRight: () => this.setState(st => ({ rightOpen: !st.rightOpen })),
