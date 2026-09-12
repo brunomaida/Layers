@@ -11,7 +11,7 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
   "viewport": { "width": 1280, "height": 760 },
   "mock": "layers/mock.html",
   "styles": ["src/styles/tokens.css", "src/styles/layout.css"],
-  "fonts": ["https://fonts.googleapis.com/css2?family=Inter&display=swap"],
+  "fonts": ["Newsreader", "Geist"],
   "root": { "name": ".shell", "src": "src/ui/shell.ts|.shell|3" },
   "rules": { ".toolbar": "src/styles/layout.css|.toolbar|8" },
   "interactions": [ … ]
@@ -25,15 +25,17 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 | `viewport` | 1280×760 | tamanho da página do mock em px; define a geometria do palco. Páginas longas: use a altura real (`scrollHeight`) |
 | `mock` | `layers/mock.html` | HTML do mock. Pode ser o próprio `index.html` do app quando o DOM é estático |
 | `styles` | `[]` | folhas `.css` reais, lidas da pasta e aplicadas dentro do shadow root (não vazam para o editor). `<link rel="stylesheet" href="relativo">` dentro do mock também é resolvido e lido |
-| `fonts` | `[]` | URLs `https://fonts.googleapis.com/…` injetadas no documento (única origem externa aceita; `@font-face` não funciona dentro de shadow root) |
+| `fonts` | `[]` | Famílias de fonte que o projeto usa. **Nada é buscado na rede**: cada família é resolvida contra `fonts/projects.css`, versionado no repositório do LAYERS. Por compatibilidade, uma URL de serviço de fontes com parâmetro `family=` também é aceita — só as famílias são lidas dela, a URL nunca é requisitada. Família ausente do sheet local vira aviso e cai no fallback |
 | `root` | — | `data-name` / `data-src` do elemento raiz (L0) |
 | `rules` | `{}` | seletor CSS → `arquivo|regra|linha`; sobrescreve `data-src` (e `data-name`) dos elementos que casam |
 | `interactions` | `[]` | itens do menu ⚡ Interagir (abaixo) |
 
 ## O que o loader faz com o mock
 
-1. `DOMParser` → remove `script`, `link`, `iframe`, `object`, `embed`, `base`, `meta`, `noscript`, `template`, atributos `on*` e URLs `javascript:`. O mock é **estático**; interação vem de `interactions`.
+1. `DOMParser` → remove `script`, `link`, `iframe`, `object`, `embed`, `base`, `meta`, `noscript`, `template`, atributos `on*`, URLs `javascript:` e **todo atributo com URL remota** (`src`, `srcset`, `poster`, `data`, `href`, `xlink:href`; `data:` e `blob:` passam). O mock é **estático**; interação vem de `interactions`.
 2. `<style>` inline e as folhas de `styles` entram escopadas no shadow root com reescrita: `:root` → `:host`, `html`/`body` → raiz sintética, `* {` → descendentes da raiz.
+   - `@font-face` é **retirado** da folha escopada e reinjetado no documento (dentro de shadow root ele não carrega), com cada `url()` relativa lida da pasta e trocada por `blob:`. `url()` remota é descartada.
+   - Qualquer `url(http…)` no restante do CSS vira `url(about:blank)` com aviso.
 3. Raiz (L0): se `<body>` tem um único filho, ele é a raiz; se tem vários (`<main>`, `<dialog>`, barras flutuantes…), um wrapper `body` é criado. `position:fixed` no mock fica contido no host (não escapa para o editor).
 4. `data-src` ausente: heurística — para cada elemento, a primeira classe que abre uma regra top-level numa folha carregada vira `arquivo|seletor|linha` (e o nome, se não há `data-name`). `rules` sobrescreve. Sem folha carregada, o código mostrado é a síntese do `style` inline.
 5. `data-name` ausente: primeira classe (`.toolbar`), depois `#id`, depois a tag.
@@ -41,7 +43,9 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 
 ## Modo fixture (dev)
 
-Sem pasta conectada, `LAYERS vX.Y.dc.html#layers=<pasta-servida>/` (ou tweak `fixture`) lê `layers.json` por HTTP — usado nos testes de `fixtures/`.
+Sem pasta conectada, `index.html#layers=<pasta-servida>/` (ou tweak `fixture`) lê `layers.json` por HTTP — usado nos testes de `fixtures/`.
+
+`vite.config.js` serve `/fixtures/**` sem transformação e devolve 404 para arquivo ausente. Sem isso o Vite responderia os `.css` como módulo JS de HMR (o loader leria JavaScript em vez de CSS) e o fallback de SPA devolveria o próprio `index.html` do editor no lugar de um `mock` inexistente.
 
 ## interactions
 

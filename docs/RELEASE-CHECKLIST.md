@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 12 concluídos, 3 parciais, 30 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 14 concluídos, 2 parciais, 29 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -14,7 +14,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 12 concluídos
 - [x] Fontes locais: 15 `.woff2` variáveis subsetados por `unicode-range` em `fonts/` + `fonts/fonts.css` gerado (48 blocos `@font-face`), referenciado por `<link>` no `<helmet>`; `<link>` do Google Fonts removido. Espelhos byte-a-byte do `fonts.gstatic.com` — **não** são 8 estáticas por peso, como este item supunha.
 - [x] Servir por HTTP (`npm run dev` na 5180) — FS Access e `document.fonts` exigem origem segura.
 - [x] Defaults documentados (corrigidos — valem os `data-props`, não o `:root`): tema `Gray · 1 Grafite`, acento `5 · Cinza médio`, seleção `Coral`, `originColors Mono`, `panelHeader B`, `sliderScale 85`, `fontScale 1`.
-- [ ] Chaves de `localStorage` documentadas e versionadas (prefixo `layers/v1/`).
+- [ ] Chaves de `localStorage` documentadas e versionadas (prefixo `layers/v1/`). Hoje são 3 soltas: `layers-cfg`, `layers-hist`, `layers-inter-size`.
 - [x] `docs/ARCHITECTURE.md` e este checklist na raiz de `docs/`.
 - [x] React + ReactDOM UMD versionados em `vendor/`, validados contra o SRI declarado no `support.js`; zero requisições externas verificadas no Chrome (12/12 em `localhost:5180`). Ver `docs/LOCAL-SETUP.md`.
 
@@ -62,9 +62,9 @@ Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval 
 - [ ] Nunca gravar fora da pasta conectada; rejeitar caminhos com `..` ou absolutos em `writeInto`.
 - [ ] Gravação atômica: escrever `arquivo.tmp` → renomear; manter `.bak` da primeira versão da sessão.
 - [ ] Confirmar antes de sobrescrever arquivo modificado fora do LAYERS (comparar `lastModified` lido × atual).
-- [~] Sanitizar o mock do projeto: `script`/`link`/`iframe`/`object`/`embed`/`base`/`meta`/`noscript`/`template`, atributos `on*` e URLs `javascript:` já saem na v2.24. Falta remover URLs `http(s)` remotas em `src`/`srcset`/`poster`/`xlink:href` e `url(http…)` no CSS escopado.
+- [x] Sanitizar o mock do projeto: `script`/`link`/`iframe`/`object`/`embed`/`base`/`meta`/`noscript`/`template`, atributos `on*`, URLs `javascript:` e todo atributo com URL remota (`src`/`srcset`/`poster`/`data`/`href`/`xlink:href`; `data:` e `blob:` passam); `url(http…)` no CSS vira `url(about:blank)` com aviso. `<use href>` só aceita fragmento.
 - [x] Não aplicável desde a v2.24: não há iframe. O mock vive num shadow root do próprio documento e nenhum script do projeto é executado — o isolamento vem da sanitização (item acima), não de `sandbox=`.
-- [ ] Sem chamadas de rede em runtime. **Regrediu na v2.24**: `addFontLink` injeta `<link>` de `fonts.googleapis.com` a partir do manifesto do projeto, o que viola a regra dura do `CLAUDE.md` e reprova em `.githooks/pre-push`. Fechar com fontes locais (`fonts/projects.css`), hoisting de `@font-face` por blob URL e meta CSP.
+- [x] Sem chamadas de rede em runtime, incluindo as fontes que o projeto carregado pede: `fonts/projects.css` versiona Newsreader e Geist, `@font-face` do projeto sobe para o documento com `blob:`, e a meta CSP (`default-src 'self'`, `connect-src` só com a allowlist do GitHub) é a guarda. Medido com os 4 projetos: 18/18 requisições em `localhost:5180`, zero externas.
 - [ ] `localStorage` só com preferências de UI; nunca conteúdo de arquivos ou handles.
 - [ ] Log de gravações (`layers-export.log`) com caminho, hash antes/depois e timestamp.
 - [x] Dependências de dev fixadas (`package-lock.json`, lockfileVersion 3) e auditadas: `npm audit` reporta 0 vulnerabilidades. Requer npm 11+.
