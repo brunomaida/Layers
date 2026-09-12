@@ -12,6 +12,7 @@ Branch `setup/260912-project-setup`.
 - `docs/TOPOLOGY.md` e `docs/architecture-decisions.md` — exigidos pelo manifesto do archetype `app` (`docs-doctor.py`). Topologia é o grafo de arquivos e a ordem de carga do `<head>`; decisões registram o vendoring sem editar `support.js` e a precedência dos defaults visuais.
 - `.gitattributes` — `vendor/**` e `support.js` como `-text`, para o clone receber os mesmos bytes que validaram o SRI.
 - `.claude/settings.json` — routing de modelo (`sonnet` / advisor `fable`).
+- `run.bat` — sobe o dev server por duplo clique. Faz `cd` para a pasta do script, instala as dependências se faltarem, recusa subir se a 5180 já estiver ocupada, e dá `pause` em caso de erro (senão a janela fecha antes da mensagem ser lida). Usa `call npm`, sem o qual o `.bat` encerraria na primeira chamada — `npm` é um `.cmd`.
 - `package-lock.json`, `changelog.d/`, `test/fixtures/`.
 
 ### Changed

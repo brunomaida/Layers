@@ -52,6 +52,7 @@ Deve conter bloco `### Perf`: measured | estimated | N/A, ≥1 bullet de ≥20 c
 ## Project Layout
 
 ```
+run.bat                       sobe o dev server (duplo clique)
 index.html                    o editor inteiro (v2.22, ~414 KB)
 support.js                    runtime dc gerado — NÃO EDITAR
 vendor/                       React + ReactDOM UMD (commitados)

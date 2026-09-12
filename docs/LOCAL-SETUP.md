@@ -13,10 +13,16 @@ tinha quando era servido pelo host. Ver também
 
 ## Rodar
 
+Duplo clique em `run.bat`, ou na mão:
+
 ```
 npm install
 npm run dev          # http://localhost:5180
 ```
+
+`run.bat` faz `cd` para a pasta do próprio script, instala as dependências se
+faltarem, recusa subir se a 5180 já estiver ocupada e dá `pause` em caso de erro —
+senão a janela fecha antes de você ler a mensagem.
 
 Não abrir via `file://`. A File System Access API e `document.fonts` exigem origem HTTP.
 

@@ -6,6 +6,12 @@
 vendor/** -text
 support.js -text
 
+# Windows shells mis-parse LF-only scripts, especially around goto labels and
+# parenthesized blocks. Keep them CRLF regardless of the eol=lf default above.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
 # Binary assets.
 *.woff2 binary
 *.woff  binary
