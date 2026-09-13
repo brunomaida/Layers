@@ -73,6 +73,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div onClick="{{ connectDir }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
           <div onClick="{{ openZip }}" title="Abrir um projeto compactado — somente leitura" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:14px;text-align:center;color:var(--fg3)">▤</span>Abrir arquivo .zip…</div>
           <div onClick="{{ histRepoStart }}" title="Registrar um repositório público do GitHub; clique no item do histórico para carregar" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Registrar repositório GitHub…</div>
+          <span style="height:1px;background:var(--line1);margin:4px 2px"></span>
+          <div onClick="{{ exportCfg }}" title="Salvar tema, painéis e histórico num arquivo layers-config.json" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↑</span>Exportar configuração…</div>
+          <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
       </sc-if>
@@ -850,15 +853,34 @@ const THEMES = {
 const ACCENTS = { '1 · Aço': ['#7d9bc1', '#4e6f96'], '2 · Lavanda': ['#9b97c2', '#6b6799'], '3 · Sálvia': ['#7fa79b', '#4f7d70'], '4 · Cinza claro': ['#b8c0ca', '#6d7580'], '5 · Cinza médio': ['#8b96a3', '#59626d'], '6 · Cinza escuro': ['#66707c', '#3f4750'] };
 // cor de seleção / hover / foco de camada na cena (o mock é sempre escuro, então tons claros funcionam em todos os temas)
 const SELECTS = { 'Azul': '#60a5fa', 'Teal': '#5ec9bc', 'Coral': '#f08c6c', 'Âmbar': '#f5a623', 'Violeta': '#a78bfa', 'Verde': '#26c281', 'Branco': '#f2f4f7' };
-const CFG_KEYS = ['theme', 'selectColor', 'originColors', 'panelHeader', 'fontScale', 'logoGrad'];
+const CFG_KEYS = LayersCore.CFG_KEYS;
 const DEFAULT_GRAD = 'linear-gradient(95deg,var(--pri),var(--violet))';
 // degradê aleatório com a cor de seleção como base + 2-3 cores extras (matiz/ângulo sorteados)
 const randGrad = base => { const k = 2 + Math.floor(Math.random() * 2); const cols = [base]; for (let i = 0; i < k; i++) cols.push('hsl(' + Math.floor(Math.random() * 360) + ' ' + (55 + Math.floor(Math.random() * 35)) + '% ' + (55 + Math.floor(Math.random() * 20)) + '%)'); if (Math.random() < .5) cols.reverse(); return 'linear-gradient(' + Math.floor(Math.random() * 360) + 'deg,' + cols.join(',') + ')'; };
-const migrateLS = (o, n) => { try { if (localStorage.getItem(n) === null && localStorage.getItem(o) !== null) localStorage.setItem(n, localStorage.getItem(o)); } catch (e) {} };
-const CFG_LS = 'layers-cfg'; migrateLS('traval-layer-editor-cfg', CFG_LS);
-const loadCfg = () => { try { const o = JSON.parse(localStorage.getItem(CFG_LS) || '{}'); const out = {}; CFG_KEYS.forEach(k => { if (o[k] !== undefined) out[k] = o[k]; }); return out; } catch (e) { return {}; } };
-const HIST_LS = 'layers-hist', HIST_DB = 'layers-hist'; migrateLS('traval-layer-editor-hist', HIST_LS);
-const loadHist = () => { try { const a = JSON.parse(localStorage.getItem(HIST_LS) || '[]'); return Array.isArray(a) ? a : []; } catch (e) { return []; } };
+// ---- PERSISTENCIA (docs/ARCHITECTURE.md § Persistência) ----------------------------------
+// Quatro chaves com prefixo de versão em vez das três soltas da v2.24. A migração mora em
+// LayersCore para ter teste sem DOM; as antigas ficam onde estão até a v2.26. localStorage
+// pode lançar (aba privada, cookies bloqueados) — nesse caso a sessão roda em memória e nada
+// persiste, que é o comportamento certo para um editor que não pode perder a interface.
+const memStore = () => { const m = new Map(); return { getItem: k => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: k => { m.delete(k); } }; };
+const LS_STORE = (() => { try { localStorage.setItem('layers/v1/probe', '1'); localStorage.removeItem('layers/v1/probe'); return localStorage; } catch (e) { return memStore(); } })();
+const SS_STORE = (() => { try { sessionStorage.setItem('layers/v1/probe', '1'); sessionStorage.removeItem('layers/v1/probe'); return sessionStorage; } catch (e) { return memStore(); } })();
+const TAB_LS = 'layers/v1/tab';
+const HIST_DB = 'layers-hist';
+// Chaves de estado de interface que voltam num reload. Nenhuma guarda conteúdo de arquivo
+// nem handle de pasta (F:68) — handle mora no IndexedDB, conteúdo não sai do disco.
+const UI_KEYS = ['interSize', 'rightPx', 'splitPct', 'colScale', 'treeOpen', 'ajOpen', 'colOpen', 'navMin', 'navR', 'navB',
+  'wire', 'wireAlpha', 'layerFocus', 'focusStr', 'othersOp', 'spacing', 'treeTab', 'treeMode', 'propMode', 'scope', 'remember'];
+// A escada de chaves tem dois degraus: 'traval-layer-editor-*' -> 'layers-*' (v2.24) e
+// 'layers-*' -> 'layers/v1/*' (aqui). O primeiro continua valendo para quem nunca abriu a v2.24.
+const migrateLS = (o, n) => { try { if (LS_STORE.getItem(n) === null && LS_STORE.getItem(o) !== null) LS_STORE.setItem(n, LS_STORE.getItem(o)); } catch (e) {} };
+migrateLS('traval-layer-editor-cfg', 'layers-cfg');
+migrateLS('traval-layer-editor-hist', 'layers-hist');
+migrateLS('traval-layer-editor-inter-size', 'layers-inter-size');
+const CONF = LayersCore.migrateConfig(LS_STORE);
+const loadCfg = () => { const out = {}; CFG_KEYS.forEach(k => { if (CONF.ui[k] !== undefined) out[k] = CONF.ui[k]; }); return out; };
+const loadHist = () => CONF.projects;
+const loadUi = () => { const out = {}; UI_KEYS.forEach(k => { if (k !== 'interSize' && CONF.ui[k] !== undefined) out[k] = CONF.ui[k]; }); return out; };
 const idb = () => new Promise((res, rej) => { if (!window.indexedDB) return rej(new Error('no idb')); const r = indexedDB.open(HIST_DB, 1); r.onupgradeneeded = () => r.result.createObjectStore('h'); r.onsuccess = () => res(r.result); r.onerror = () => rej(r.error); });
 const idbPut = async (k, v) => { try { const d = await idb(); const t = d.transaction('h', 'readwrite'); t.objectStore('h').put(v, k); await new Promise(r => { t.oncomplete = r; t.onerror = r; }); } catch (e) {} };
 const idbGet = async k => { try { const d = await idb(); return await new Promise((res, rej) => { const q = d.transaction('h').objectStore('h').get(k); q.onsuccess = () => res(q.result); q.onerror = () => rej(q.error); }); } catch (e) { return null; } };
@@ -882,18 +904,21 @@ const useLocalFaces = (href, warn) => {
 };
 // @font-face não carrega dentro de shadow root: as regras saem da folha escopada e vão para o
 // documento, com cada url() relativa lida da pasta e trocada por blob. url() remota é descartada.
-const INTER_LS = 'layers-inter-size'; migrateLS('traval-layer-editor-inter-size', INTER_LS);
-const loadInterSize = () => { try { const o = JSON.parse(localStorage.getItem(INTER_LS) || 'null'); return o && o.w ? { split: 210, ...o } : { w: 580, h: 0, split: 210 }; } catch (e) { return { w: 580, h: 0, split: 210 }; } };
+const loadInterSize = () => { const o = CONF.ui.interSize; return o && o.w ? { split: 210, ...o } : { w: 580, h: 0, split: 210 }; };
 class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, menuOpen: false, diff: null,
-    toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null };
+    toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
+    ...loadUi() };
+  // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
+  // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
+  projectId = CONF.session.lastProjectId || null;
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
   treeScrollRef = React.createRef(); colRef = React.createRef(); topBarRef = React.createRef(); gearRef = React.createRef();
   interDdRef = React.createRef();
-  saveInter = sz => { this.setState({ interSize: sz }); try { localStorage.setItem(INTER_LS, JSON.stringify(sz)); } catch (e) {} };
+  saveInter = sz => { this.setState({ interSize: sz }); };
   interDrag = (e, onMove) => { e.preventDefault(); e.stopPropagation(); clearTimeout(this.menuT); const x0 = e.clientX, y0 = e.clientY, el = this.interDdRef.current, start = { ...this.state.interSize, h: this.state.interSize.h || (el ? el.offsetHeight : 300) }; this.setState({ interResizing: true, menuPin: true }); const mv = ev => this.setState({ interSize: onMove(start, ev.clientX - x0, ev.clientY - y0) }); const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); this.setState({ interResizing: false }); this.saveInter(this.state.interSize); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); };
   interCornerDown = e => this.interDrag(e, (st, dx, dy) => ({ ...st, w: Math.max(420, Math.min(window.innerWidth - 24, st.w + dx)), h: Math.max(160, Math.min(window.innerHeight - 120, st.h + dy)) }));
   interSplitDown = e => this.interDrag(e, (st, dx) => ({ ...st, split: Math.max(140, Math.min(st.w - 200, st.split + dx)) }));
@@ -901,7 +926,40 @@ class Component extends DCLogic {
   cbToggle = k => () => this.setState(st => ({ cbOpen: st.cbOpen === k ? null : k }));
   histRef = React.createRef();
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
-  saveHist(h) { this.setState({ hist: h }); try { localStorage.setItem(HIST_LS, JSON.stringify(h)); } catch (e) {} }
+  saveHist(h) { this.setState({ hist: h }); }
+  // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
+  // do state, que ja e a fonte de verdade — nao existe copia paralela para dessincronizar.
+  uiSnapshot() { const s = this.state; const ui = { ...s.cfg }; UI_KEYS.forEach(k => { ui[k] = s[k]; }); return ui; }
+  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat } }; }
+  // Uma escrita por rajada, não uma por evento: orbitar a câmera dispara ~60 setState por
+  // segundo e todos caem no mesmo trailing de 400 ms.
+  persistSoon() { clearTimeout(this.persistT); this.persistT = setTimeout(() => this.writeConfig(), 400); }
+  writeConfig() { clearTimeout(this.persistT); LayersCore.writeConfig(LS_STORE, { ui: this.uiSnapshot(), projects: this.state.hist || [], session: this.sessionSnapshot() }); }
+  // sessionStorage vence o session ao restaurar: N abas, N projetos.
+  markTab() { try { SS_STORE.setItem(TAB_LS, JSON.stringify({ projectId: this.projectId || null })); } catch (e) {} }
+  // Sem ativação do usuário, requestPermission() recusa — por isso aqui é query: pasta já
+  // autorizada volta sozinha, pasta sem permissão vira convite a reconectar pelo dropdown.
+  async restoreSession() {
+    const sess = CONF.session || {};
+    let tab = null; try { tab = JSON.parse(SS_STORE.getItem(TAB_LS) || 'null'); } catch (e) {}
+    const id = tab && 'projectId' in tab ? tab.projectId : sess.lastProjectId;
+    this.projectId = id || null;
+    // Camera e selecao moram na chave compartilhada: valem para a aba que as gravou, nao para
+    // outra aba que esta em outro projeto. Em modo fixture nem entram — loadProject zera a vista.
+    const own = !!id && sess.lastProjectId === id;
+    const cam = own ? sess.camera : null;
+    if (cam && !this.fixtureBase) this.setState({ yaw: +cam.yaw || 0, tilt: +cam.tilt || 0, zoom: +cam.zoom || 1, panX: +cam.panX || 0, panY: +cam.panY || 0, flat: !!cam.flat });
+    if (this.fixtureBase || !id) return; // #layers= manda no projeto
+    const entry = (this.state.hist || []).find(x => x.id === id); if (!entry) return;
+    this.markTab();
+    if (own) this.pendingSel = { id: entry.id, selId: sess.selId || '0', isoId: sess.isoId || null };
+    const hint = { title: 'Último projeto: ' + entry.name + '.', body: 'Abra Projetos ▾ e clique em ' + entry.name + ' para reconectar — o navegador só concede acesso à pasta a partir de um clique seu.' };
+    if (entry.kind !== 'folder') { this.setState({ loadError: { title: 'Último projeto: ' + entry.name + '.', body: entry.kind === 'zip' ? 'Origem .zip vive em memória: reabra o arquivo em Projetos ▾ › Abrir arquivo .zip…' : 'Repositório do GitHub pede confirmação explícita a cada carga: abra Projetos ▾ e clique em ' + entry.name + '.' } }); return; }
+    const h = await idbGet(entry.id);
+    if (!h || !h.queryPermission) { this.setState({ loadError: hint }); return; }
+    try { if (await h.queryPermission({ mode: 'read' }) === 'granted') { this.useDir(h); return; } } catch (e) {}
+    this.setState({ loadError: hint });
+  }
   touchHist(entry) {
     const cur = this.state.hist || []; const prev = cur.find(x => x.id === entry.id);
     const h = [{ pinned: false, ...(prev || {}), ...entry, last: Date.now() }, ...cur.filter(x => x.id !== entry.id)];
@@ -909,10 +967,61 @@ class Component extends DCLogic {
     h.filter(x => !x.pinned && !keep.includes(x)).forEach(x => idbDel(x.id));
     this.saveHist(h.filter(x => x.pinned || keep.includes(x)));
   }
+  // Configuracao em arquivo. Grava por showSaveFilePicker — alvo escolhido no clique, como a
+  // exportacao de versoes ja faz; writeInto/writeText continuam exclusivos da pasta do projeto.
+  // Um layers-config.json pode vir corrompido ou hostil, e o que entra aqui e persistido em
+  // seguida: 'theme' fora de THEMES quebra applyTheme na montagem, e fontScale: 50 deixa a
+  // interface inutilizavel sem console. So passa o que casa com o tipo do estado atual.
+  sanitizeUi(raw) {
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+    const out = {};
+    CFG_KEYS.forEach(k => {
+      const v = raw[k]; if (v === undefined) return;
+      if (k === 'fontScale') { const n = +v; if (n >= .7 && n <= 1.6) out[k] = n; return; }
+      if (typeof v !== 'string') return;
+      if (k === 'theme' && !has(THEMES, v)) return;
+      if (k === 'selectColor' && v !== 'Padrão do tema' && !has(SELECTS, v)) return;
+      out[k] = v;
+    });
+    UI_KEYS.forEach(k => {
+      const v = raw[k]; if (v === undefined) return;
+      if (k === 'interSize') { if (v && +v.w) out[k] = { w: +v.w, h: +v.h || 0, split: +v.split || 210 }; return; }
+      if (typeof v !== typeof this.state[k]) return;
+      if (typeof v === 'number' && !(isFinite(v) && v >= 0 && v <= 2000)) return;
+      out[k] = v;
+    });
+    return out;
+  }
+  async exportCfg() {
+    this.setState({ cbOpen: null });
+    if (!window.showSaveFilePicker) { this.toast('Exportar configuração usa a File System Access API — abra no Chrome ou Edge.'); return; }
+    const data = LayersCore.exportConfig({ ui: this.uiSnapshot(), projects: this.state.hist || [], session: this.sessionSnapshot() });
+    let h; try { h = await window.showSaveFilePicker({ suggestedName: 'layers-config.json', types: [{ description: 'Configuração do LAYERS', accept: { 'application/json': ['.json'] } }] }); } catch (e) { return; }
+    try { const w = await h.createWritable(); await w.write(JSON.stringify(data, null, 2)); await w.close(); this.toast('Configuração exportada para ' + h.name + '.', 'ok'); }
+    catch (e) { this.toast('Não deu para gravar ' + h.name + ': ' + e.message); }
+  }
+  async importCfg() {
+    this.setState({ cbOpen: null });
+    if (!window.showOpenFilePicker) { this.toast('Importar configuração usa a File System Access API — abra no Chrome ou Edge.'); return; }
+    let text;
+    try { const [h] = await window.showOpenFilePicker({ types: [{ description: 'Configuração do LAYERS', accept: { 'application/json': ['.json'] } }] }); text = await (await h.getFile()).text(); }
+    catch (e) { return; }
+    let next;
+    try { next = LayersCore.importConfig(JSON.parse(text), { ui: this.uiSnapshot(), projects: this.state.hist || [], session: this.sessionSnapshot() }); }
+    catch (e) { this.toast('Configuração não importada: ' + e.message); return; }
+    const clean = this.sanitizeUi(next.ui || {});
+    const cfg = {}; CFG_KEYS.forEach(k => { if (clean[k] !== undefined) cfg[k] = clean[k]; });
+    const ui = {}; UI_KEYS.forEach(k => { if (clean[k] !== undefined) ui[k] = clean[k]; });
+    const ok = (next.projects || []).filter(x => x && typeof x.id === 'string' && typeof x.name === 'string');
+    const pin = ok.filter(x => x.pinned), rest = ok.filter(x => !x.pinned).slice(0, Math.max(0, this.histMax() - pin.length));
+    this.setState({ cfg, hist: [...pin, ...rest], ...ui }, () => { this.applyTheme(); this.writeConfig(); });
+    this.toast('Configuração importada — pastas locais precisam ser reconectadas (handles não são exportáveis).', 'warn');
+  }
   useDir(dir) {
     this.zip = null; this.repo = null;
+    const id = 'folder:' + dir.name; this.projectId = id; this.markTab();
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
-    const id = 'folder:' + dir.name; idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
+    idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
@@ -970,7 +1079,11 @@ class Component extends DCLogic {
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
-    this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    // Projeto novo abre na vista padrao; reabrir o ultimo projeto mantem camera e selecao.
+    // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
+    // restauracao para no meio (sem permissao, .zip, repositorio), o pendingSel nao casa.
+    const keep = this.pendingSel && this.pendingSel.id === this.projectId ? this.pendingSel : null; this.pendingSel = null;
+    this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
@@ -998,7 +1111,7 @@ class Component extends DCLogic {
     catch (e) { this.toast('Não deu para ler o .zip: ' + e.message); return; }
     const root = LayersCore.zipRoot(z.files);
     this.zip = { files: z.files, root }; this.repo = null;
-    const id = 'zip:' + file.name;
+    const id = 'zip:' + file.name; this.projectId = id; this.markTab();
     this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     this.touchHist({ id, kind: 'zip', name: file.name, path: file.name });
     if (z.skipped.length) this.toast(z.skipped.length + ' entrada(s) do .zip recusada(s) por caminho inseguro: ' + z.skipped[0], 'warn');
@@ -1023,6 +1136,7 @@ class Component extends DCLogic {
       ref = (await meta.json()).default_branch || 'HEAD';
     } catch (e) { this.toast('Sem resposta do GitHub: ' + e.message); return; }
     this.repo = { owner: r.owner, repo: r.repo, ref }; this.zip = null;
+    this.projectId = 'repo:' + name; this.markTab();
     this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name, label: ref });
   }
@@ -1061,8 +1175,8 @@ class Component extends DCLogic {
 
   // configuração em app (Aparência) tem prioridade sobre o tweak; um tweak alterado depois limpa a configuração daquela chave ("último que mudou")
   cfg(k) { const c = this.state.cfg; return c[k] !== undefined ? c[k] : this.props[k]; }
-  setCfg(k, v) { this.setState(st => { const cfg = { ...st.cfg, [k]: v }; try { localStorage.setItem(CFG_LS, JSON.stringify(cfg)); } catch (e) {} return { cfg }; }, () => this.applyTheme()); }
-  resetCfg() { try { localStorage.removeItem(CFG_LS); } catch (e) {} this.setState({ cfg: {} }, () => this.applyTheme()); }
+  setCfg(k, v) { this.setState(st => ({ cfg: { ...st.cfg, [k]: v } }), () => this.applyTheme()); }
+  resetCfg() { this.setState({ cfg: {} }, () => { this.applyTheme(); this.writeConfig(); }); }
   applyTheme() {
     const t = THEMES[this.cfg('theme')] || THEMES.Dark; const a = ACCENTS[this.props.accent]; const light = t.scheme === 'light';
     const acc = a ? a[light ? 1 : 0] : t.acc; const sel = SELECTS[this.cfg('selectColor')] || t.acc;
@@ -1080,15 +1194,19 @@ class Component extends DCLogic {
   componentDidUpdate(pp) {
     this.observeTopBar();
     const changed = CFG_KEYS.filter(k => pp[k] !== this.props[k]);
-    if (changed.length && changed.some(k => this.state.cfg[k] !== undefined)) { const cfg = { ...this.state.cfg }; changed.forEach(k => { delete cfg[k]; }); try { localStorage.setItem(CFG_LS, JSON.stringify(cfg)); } catch (e) {} this.setState({ cfg }, () => this.applyTheme()); return; }
+    if (changed.length && changed.some(k => this.state.cfg[k] !== undefined)) { const cfg = { ...this.state.cfg }; changed.forEach(k => { delete cfg[k]; }); this.setState({ cfg }, () => this.applyTheme()); return; }
     if (changed.length || pp.accent !== this.props.accent || pp.sliderScale !== this.props.sliderScale) this.applyTheme();
     if (pp.fixture !== this.props.fixture && this.fixtureBase && !this.state.dir) this.setState({ dirName: this.fixtureBase.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject());
+    // Um ponto de gravação em vez de um por editor: a assinatura do que é persistido decide.
+    const sig = JSON.stringify([this.uiSnapshot(), this.state.hist, this.sessionSnapshot()]);
+    if (sig !== this.persistSig) { this.persistSig = sig; this.persistSoon(); }
   }
   componentDidMount() {
     this.applyTheme();
     this.ro = new ResizeObserver(() => { const s = this.stageRef.current; const tb = this.topBarRef.current; const topBarH = tb ? tb.offsetHeight : this.state.topBarH; if (s) this.setState({ stageW: s.clientWidth, stageH: s.clientHeight, topBarH }); });
     this.observeTopBar();
     if (this.stageRef.current) this.ro.observe(this.stageRef.current);
+    this.restoreSession();
     if (this.fixtureBase && !this.state.dir) { const base = this.fixtureBase; this.setState({ dirName: base.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject()); }
     this.onKey = e => {
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
@@ -1099,10 +1217,13 @@ class Component extends DCLogic {
       const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
     };
     window.addEventListener('keydown', this.onKey);
+    // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
+    // 400 ms morre com a pagina
+    this.onHide = () => this.writeConfig(); window.addEventListener('pagehide', this.onHide);
     this.onDocDown = e => { if (this.state.cbOpen === 'hist' && this.histRef.current && !this.histRef.current.contains(e.target)) this.setState({ cbOpen: null, histAdding: false }); };
     document.addEventListener('mousedown', this.onDocDown);
   }
-  componentWillUnmount() { window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
+  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
     e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = this.state.rightPx;
@@ -1721,7 +1842,7 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(), openZip: () => this.pickZip(),
+      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(),
       ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
         return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: this.cbToggle('hist'), histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',

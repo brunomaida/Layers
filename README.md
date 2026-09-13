@@ -31,8 +31,14 @@ Não abrir via file:// — FS Access e fontes exigem origem HTTP.
 - CLAUDE.md — instruções para o Claude Code
 
 ## Preferências persistidas (localStorage)
-- traval-layer-editor-cfg — tema, cor de seleção, cores de origem, cabeçalho, escala de fonte
-- traval-layer-editor-inter-size — tamanho do menu INTERAGIR
+- layers/v1/ui — tema, cor de seleção, cores de origem, cabeçalho, escala de fonte, painéis, navegação, árvore, escopo
+- layers/v1/projects — histórico de projetos (pasta, .zip, repositório)
+- layers/v1/session — último projeto, seleção e câmera; `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
+- layers/v1/meta — schema e data da última gravação
+
+Nada de conteúdo de arquivo aqui: o handle da pasta conectada mora no IndexedDB
+`layers-hist`. Exportar/importar essas preferências em `layers-config.json` está no
+dropdown de projetos.
 
 ## Defaults visuais
 Sem localStorage valem os `data-props` do index.html (os literais do `:root` são

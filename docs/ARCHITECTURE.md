@@ -18,7 +18,7 @@ Versão de referência: `Traval Layer Editor v2.22.dc.html`.
 | 3D | CSS 3D transforms | `perspective` no palco, `rotateX/rotateY/scale` no "mundo", `translateZ` por plano. Sem WebGL/canvas. |
 | Fontes | Inter, JetBrains Mono, Michroma | 15 `.woff2` versionados em `fonts/`, subsetados por `unicode-range`, via `fonts/fonts.css` gerado. Sem Google Fonts. |
 | Disco | File System Access API | `showDirectoryPicker` (leitura da pasta do projeto e gravação de patches). Chrome/Edge apenas. |
-| Persistência | `localStorage` | `traval-layer-editor-cfg` (aparência) e `traval-layer-editor-inter-size` (menu INTERAGIR). |
+| Persistência | `localStorage` + `sessionStorage` + IndexedDB | Quatro chaves `layers/v1/*` (meta, ui, projects, session), `layers/v1/tab` por aba e o handle da pasta no IndexedDB `layers-hist`. Ver § Persistência. |
 
 ## Fluxo de dados
 
@@ -68,6 +68,41 @@ Regras:
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`.
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
 - Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
+- Persistido: `cfg` + `UI_KEYS` em `layers/v1/ui`, histórico em `layers/v1/projects`, câmera/seleção/último projeto em `layers/v1/session`.
+
+## Persistência
+
+| Onde | Chave | Conteúdo |
+|---|---|---|
+| `localStorage` | `layers/v1/meta` | `{schema:1, savedAt, migratedFrom}` — `migratedFrom` só existe em navegador que veio das chaves antigas. |
+| `localStorage` | `layers/v1/ui` | Preferência de interface: `cfg` (tema, seleção, cores de origem, cabeçalho, escala de fonte, degradê) + `UI_KEYS` (painéis, navegação, árvore, escopo, `interSize`). |
+| `localStorage` | `layers/v1/projects` | Histórico de projetos: `{id,kind,name,path,label,last,pinned}`. |
+| `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera}`. `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. |
+| `sessionStorage` | `layers/v1/tab` | `{projectId}` da aba. Vence o `session` ao restaurar: cada aba reabre o **seu** projeto. Câmera e seleção não: moram no `session` compartilhado e só são restauradas quando `lastProjectId` é o projeto daquela aba. |
+| IndexedDB `layers-hist` | store `h`, chave = `id` do histórico | `FileSystemDirectoryHandle` da pasta conectada. É o único lugar onde handle é guardado. |
+
+Nenhuma dessas chaves guarda conteúdo de arquivo, e handle nenhum entra no `localStorage` (F:68).
+Escrita: `persistSoon()` com trailing de 400 ms, disparado de `componentDidUpdate` quando a
+assinatura de `ui` + `projects` + `session` muda — uma gravação por rajada, não uma por evento.
+Recarregar não desmonta o componente, então o `pagehide` drena o trailing pendente; sem isso a
+preferência mudada nos últimos 400 ms morreria com a página.
+Migração (`LayersCore.migrateConfig`) converte `layers-cfg`, `layers-hist` e
+`layers-inter-size` e **não** as apaga; a remoção fica para a v2.26.
+
+Reabrir: pasta já autorizada volta sozinha por `queryPermission()` (`requestPermission()`
+exigiria clique); `.zip` e repositório GitHub não reabrem sozinhos — o painel do palco diz o
+que fazer. Reabrir o último projeto preserva câmera e seleção; abrir um projeto diferente
+volta à vista padrão.
+
+Export/import: `layers-config.json` (`{schema:1, exportedAt, ui, projects}` — sessão fica
+fora, é da aba) pelas duas linhas no dropdown de projetos. No import, `ui` substitui as
+chaves que o arquivo traz e `projects` faz merge por `id` preservando `pinned`; pastas locais
+precisam ser reconectadas. Arquivo é dado de fora: `sanitizeUi` só aceita valor que casa com
+o tipo do estado, `theme`/`selectColor` dentro das paletas, `fontScale` entre 0,7 e 1,6, e o
+histórico importado passa pela mesma poda de `histMax` do `touchHist`.
+
+Escrita entre abas é "último que grava vence" para `ui` e `projects` — não há listener de
+`storage`. Vale para preferência e histórico; o ponteiro de projeto é por aba e não sofre.
 
 ## Rede
 
