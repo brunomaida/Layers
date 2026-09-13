@@ -1,0 +1,5 @@
+/* A folha existe e carrega; o DOM que ela estiliza so nasce em runtime. */
+:root { --bg: #101216; }
+body { margin: 0; background: var(--bg); }
+#app { min-height: 100vh; }
+.board { display: grid; gap: 12px; padding: 24px; }

@@ -48,3 +48,6 @@ entram no shadow root.
   `<body>` do mock sem elementos, mock que rende só a raiz (shell de app — aponta
   `tools/layers-snapshot.js`) e navegador sem File System Access. O motivo fica na tela; antes
   vivia só num toast que sumia em 4,2 s.
+- `fixtures/app-shell/`: projeto cujo `<body>` traz só `<div id="app"></div>`, com folha e script
+  reais. Exercita o aviso de shell de app — o loader carrega, rende 1 elemento e a árvore mostra
+  L0 `#app` com o aviso ao lado.
