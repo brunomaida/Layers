@@ -41,6 +41,23 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 5. `data-name` ausente: primeira classe (`.toolbar`), depois `#id`, depois a tag.
 6. Elementos com área zero (`display:none`, `hidden`, `<dialog>` fechado) não viram camadas; passam a existir quando uma ação de `interactions` os exibe.
 
+## Origens
+
+O loader lê de quatro origens, todas pela mesma porta (`readText`/`readBytes`), nesta ordem:
+
+| origem | como | grava? |
+|---|---|---|
+| pasta local | File System Access, conectada em `mode: 'read'` | sim, após `ensureWrite()` escalar para `readwrite` |
+| `.zip` | `showOpenFilePicker` + diretório central + `DecompressionStream('deflate-raw')` | não |
+| repositório GitHub público | `api.github.com` para o branch padrão, `raw.githubusercontent.com` para os arquivos | não |
+| fixture HTTP | `#layers=<pasta>/`, usado nos testes | não |
+
+Todo caminho passa por `safePath` antes de virar arquivo: vazio, `/` inicial, `C:`, esquema de URL e segmento `.`/`..` são recusados. Num `.zip` isso não é teoria — é o único caminho por onde uma entrada `../../evil.css` chegaria ao loader.
+
+O repositório remoto pede confirmação explícita, uma por repositório, dizendo quais hosts serão chamados. Nenhum token é pedido nem guardado, então repositório privado simplesmente não carrega. Sem token o limite da API é 60 requisições por hora.
+
+Origem somente leitura recusa a gravação nomeando a origem, em vez de deixar a escrita estourar sem contexto.
+
 ## Modo fixture (dev)
 
 Sem pasta conectada, `index.html#layers=<pasta-servida>/` (ou tweak `fixture`) lê `layers.json` por HTTP — usado nos testes de `fixtures/`.

@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 17 concluídos, 2 parciais, 26 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 22 concluídos, 2 parciais, 21 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -20,7 +20,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 17 concluídos
 
 ## B. Funcional (bloqueia release)
 
-- [~] Loader de projeto: `layers.json` → mock sanitizado + folhas `.css` reais em shadow root offscreen → `walk()`. Entregue na v2.24 (`loadProject`, `docs/layers-json.md`). Falta ingestão de `.zip` e de repositório GitHub público.
+- [x] Loader de projeto: `layers.json` → mock sanitizado + folhas `.css` reais em shadow root offscreen → `walk()`. Quatro origens numa porta só (`readText`/`readBytes`): pasta local, `.zip`, repositório GitHub público e fixture HTTP.
 - [x] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice por AST (`css-tree`), cobrindo `@media`, `@layer`, nesting e `<style>` embutido no HTML (linha absoluta do arquivo).
 - [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
@@ -58,15 +58,15 @@ Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval 
 
 ## F. Segurança
 
-- [ ] FS Access: pedir `mode: 'read'` ao conectar; escalar para `readwrite` só no momento de aplicar/exportar.
-- [ ] Nunca gravar fora da pasta conectada; rejeitar caminhos com `..` ou absolutos em `writeInto`.
-- [ ] Gravação atômica: escrever `arquivo.tmp` → renomear; manter `.bak` da primeira versão da sessão.
-- [ ] Confirmar antes de sobrescrever arquivo modificado fora do LAYERS (comparar `lastModified` lido × atual).
+- [x] FS Access: `pickDir` e `openHist` pedem `mode: 'read'`; `ensureWrite()` escala para `readwrite` no topo de `writeText`, sempre como consequência de um clique.
+- [x] `LayersCore.safePath` recusa vazio, `/` inicial, `C:`, esquema de URL e segmento `.`/`..`; aplicado em `writeInto`, `fileHandle`, `dirOf`, em `readBytes` e em cada entrada de `.zip` — o vetor real de travessia.
+- [x] Gravação atômica: `.tmp` + `handle.move()` (presente no Chrome 152), com escrita direta como fallback; `.bak` da primeira versão da sessão.
+- [x] `lastModified` é registrado na leitura e conferido antes de gravar; divergência recusa a escrita nomeando o arquivo.
 - [x] Sanitizar o mock do projeto: `script`/`link`/`iframe`/`object`/`embed`/`base`/`meta`/`noscript`/`template`, atributos `on*`, URLs `javascript:` e todo atributo com URL remota (`src`/`srcset`/`poster`/`data`/`href`/`xlink:href`; `data:` e `blob:` passam); `url(http…)` no CSS vira `url(about:blank)` com aviso. `<use href>` só aceita fragmento.
 - [x] Não aplicável desde a v2.24: não há iframe. O mock vive num shadow root do próprio documento e nenhum script do projeto é executado — o isolamento vem da sanitização (item acima), não de `sandbox=`.
 - [x] Sem chamadas de rede em runtime, incluindo as fontes que o projeto carregado pede: `fonts/projects.css` versiona Newsreader e Geist, `@font-face` do projeto sobe para o documento com `blob:`, e a meta CSP (`default-src 'self'`, `connect-src` só com a allowlist do GitHub) é a guarda. Medido com os 4 projetos: 18/18 requisições em `localhost:5180`, zero externas.
 - [ ] `localStorage` só com preferências de UI; nunca conteúdo de arquivos ou handles.
-- [ ] Log de gravações (`layers-export.log`) com caminho, hash antes/depois e timestamp.
+- [~] Log de gravações: `layers-export.log` sai na exportação com caminho, timestamp, tamanho antes/depois e se houve `.bak`. Falta o hash.
 - [x] Dependências de dev fixadas (`package-lock.json`, lockfileVersion 3) e auditadas: `npm audit` reporta 0 vulnerabilidades. Requer npm 11+.
 
 ## G. Documentação de release
