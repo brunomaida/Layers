@@ -268,3 +268,51 @@ describe('IsUtilitySheet', () => {
     expect(core.isUtilitySheet(fixture('plain-css/style.css'))).toBe(false);
   });
 });
+
+describe('OpenZip', () => {
+  const evil = () => {
+    const b = fs.readFileSync(new URL('../fixtures/zip/evil.zip', import.meta.url));
+    return b.buffer.slice(b.byteOffset, b.byteOffset + b.byteLength);
+  };
+
+  it('EntradaComTravessia_Rejeita', async () => {
+    const { files, skipped } = await core.openZip(evil());
+    // o vetor real: um .zip que o usuario baixou pode trazer caminhos que saem da pasta
+    expect(skipped).toContain('../../evil.css');
+    expect(skipped).toContain('/abs.css');
+    expect(skipped).toContain('C:\\win.css');
+    expect([...files.keys()]).not.toContain('../../evil.css');
+  });
+
+  it('DeflateRaw_Descomprime', async () => {
+    const { files } = await core.openZip(evil());
+    expect([...files.keys()].sort()).toEqual(['index.html', 'layers.json', 'ok/nested.css', 'style.css']);
+    expect(new TextDecoder().decode(files.get('style.css'))).toContain('.box { padding: 20px;');
+    expect(JSON.parse(new TextDecoder().decode(files.get('layers.json'))).name).toBe('Zip de teste');
+  });
+
+  it('NaoEhZip_Erro', async () => {
+    await expect(core.openZip(new TextEncoder().encode('isto nao e um zip').buffer)).rejects.toThrow(/nao parece um \.zip/);
+  });
+});
+
+describe('ZipRoot', () => {
+  it('ManifestoNaRaiz_SemPrefixo', () => {
+    expect(core.zipRoot(new Map([['layers.json', 1], ['index.html', 1]]))).toBe('');
+  });
+
+  it('PastaUnicaNoTopo_ViraRaiz', () => {
+    // baixar um repositorio do GitHub embrulha tudo em '<repo>-<ref>/'
+    const m = new Map([['Layers-develop/layers.json', 1], ['Layers-develop/index.html', 1]]);
+    expect(core.zipRoot(m)).toBe('Layers-develop/');
+  });
+
+  it('VariasPastasNoTopo_SemPrefixo', () => {
+    const m = new Map([['a/layers.json', 1], ['b/x.css', 1]]);
+    expect(core.zipRoot(m)).toBe('');
+  });
+
+  it('PastaUnicaSemManifesto_SemPrefixo', () => {
+    expect(core.zipRoot(new Map([['so-css/x.css', 1]]))).toBe('');
+  });
+});
