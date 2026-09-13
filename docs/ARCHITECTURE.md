@@ -78,7 +78,7 @@ Regras:
 | `localStorage` | `layers/v1/ui` | Preferência de interface: `cfg` (tema, seleção, cores de origem, cabeçalho, escala de fonte, degradê) + `UI_KEYS` (painéis, navegação, árvore, escopo, `interSize`). |
 | `localStorage` | `layers/v1/projects` | Histórico de projetos: `{id,kind,name,path,label,last,pinned}`. |
 | `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera}`. `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. |
-| `sessionStorage` | `layers/v1/tab` | `{projectId}` da aba. Vence o `session` ao restaurar: N abas, N projetos. |
+| `sessionStorage` | `layers/v1/tab` | `{projectId}` da aba. Vence o `session` ao restaurar: cada aba reabre o **seu** projeto. Câmera e seleção não: moram no `session` compartilhado e só são restauradas quando `lastProjectId` é o projeto daquela aba. |
 | IndexedDB `layers-hist` | store `h`, chave = `id` do histórico | `FileSystemDirectoryHandle` da pasta conectada. É o único lugar onde handle é guardado. |
 
 Nenhuma dessas chaves guarda conteúdo de arquivo, e handle nenhum entra no `localStorage` (F:68).
@@ -94,9 +94,15 @@ exigiria clique); `.zip` e repositório GitHub não reabrem sozinhos — o paine
 que fazer. Reabrir o último projeto preserva câmera e seleção; abrir um projeto diferente
 volta à vista padrão.
 
-Export/import: `layers-config.json` (`{schema:1, exportedAt, ui, projects, session}`) pelas
-duas linhas no dropdown de projetos. No import, `ui` substitui e `projects` faz merge por
-`id` preservando `pinned`; pastas locais precisam ser reconectadas.
+Export/import: `layers-config.json` (`{schema:1, exportedAt, ui, projects}` — sessão fica
+fora, é da aba) pelas duas linhas no dropdown de projetos. No import, `ui` substitui as
+chaves que o arquivo traz e `projects` faz merge por `id` preservando `pinned`; pastas locais
+precisam ser reconectadas. Arquivo é dado de fora: `sanitizeUi` só aceita valor que casa com
+o tipo do estado, `theme`/`selectColor` dentro das paletas, `fontScale` entre 0,7 e 1,6, e o
+histórico importado passa pela mesma poda de `histMax` do `touchHist`.
+
+Escrita entre abas é "último que grava vence" para `ui` e `projects` — não há listener de
+`storage`. Vale para preferência e histórico; o ponteiro de projeto é por aba e não sofre.
 
 ## Rede
 
