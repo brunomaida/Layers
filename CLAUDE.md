@@ -64,6 +64,8 @@ docs/                         ARCHITECTURE, RELEASE-CHECKLIST, LOCAL-SETUP, laye
                               layers-requisitos, _index
 docs/text-specs/              histórico de requisitos
 tools/layers-snapshot.js      snapshot do DOM renderizado de um app JS -> layers/mock.html
+tools/layers-suggest.js       spike da fatia 5: sugere interactions a partir do mock (console)
+tools/layers-derive.js        spike da fatia 5: deriva base/mock/styles de uma pasta (node)
 fixtures/                     projetos-alvo do loader, servidos por HTTP (#layers=<pasta>/)
 changelog.d/                  fragmentos por branch
 ```

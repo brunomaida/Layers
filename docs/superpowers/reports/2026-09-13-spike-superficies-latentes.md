@@ -24,16 +24,19 @@ conjunto de elementos, ou para um subconjunto dele.
 
 | Fixture | Nós no mock | Autorais | Resolvem no mock | Sugeridas | Cobertas | Extras |
 |---|---:|---:|---:|---:|---:|---:|
-| Traval | 428 | 8 | **0** | 0 | 0 | 0 |
+| Traval | 428 | 8 | **1** | 0 | 0 | 0 |
 | Axai | 124 | 4 | 4 | 5 | **4 (100%)** | 1 |
 | MarketView | 80 | 2 | 2 | 6 | 0 | 6 |
-| Results | 671 | 0 | 0 | 0 | 0 | 0 |
-| **Pool** | — | **14** | **6** | **11** | **4** | **7** |
+| **Pool** | — | **14** | **7** | **11** | **4** | **7** |
+
+A fixture `results` ficou fora: não tem `layers/mock.html` (só o README), e o que mediu 671 nós
+foi o **próprio `index.html` do editor**, servido pelo fallback do Vite no lugar de um 404.
+Ver §9 — é um bug do harness, não um dado.
 
 Duas contas, porque o denominador muda a resposta:
 
-- sobre as entradas que **resolvem** no mock: `4 / 6` = **67%** — passa o corte de 60%.
-- sobre **todas** as entradas autorais: `4 / 14` = **29%** — não passa.
+- sobre as entradas que **resolvem** no mock: `4 / 7` = **57%** — abaixo do corte de 60%.
+- sobre **todas** as entradas autorais: `4 / 14` = **29%**.
 - falso-positivo por entrada aceita: `7 / 4` = **1,75** — acima do limite de 1.
 
 ## 2. Por sinal
@@ -58,7 +61,7 @@ O portão os chama de falso-positivo. A leitura diz outra coisa:
 | Extra | Onde | O que é |
 |---|---|---|
 | `#new-dialog` | Axai | `<dialog>` real de criação, que o manifesto não declara |
-| `#viewPill`, `#c3d`, `#hud3d`, `#depthbar`, `#presexit`, `#legend3d` | MarketView | seis painéis com `display:none` — HUD 3D, legenda, barra de profundidade, saída de apresentação |
+| `#viewPill`, `#c3d`, `#hud3d`, `#depthbar`, `#presexit`, `#legend3d` | MarketView | seis painéis com `display:none` — pelos ids, HUD 3D, legenda, barra de profundidade e saída de apresentação (rótulos inferidos do id, não inspecionados) |
 
 Nenhum é ruído: **7 de 7 apontam superfície latente de verdade**. São lacunas do manifesto, não
 erro do scanner. A precisão prática dos sinais precisos é 100%; o que o número do portão mede
@@ -70,17 +73,24 @@ erro do scanner. A precisão prática dos sinais precisos é 100%; o que o núme
 *esconder*; o scanner só enxerga o que está escondido. Recall contra o manifesto autoral é
 estruturalmente limitado por isso: autor e scanner falam de conjuntos diferentes.
 
-## 5. Achado fora da pergunta: as 8 entradas do Traval estão mortas
+## 5. Achado fora da pergunta: 7 das 8 entradas do Traval estão mortas
 
-`C:\Development\Traval\layers.json` declara `.global-summary`, `.gs-body`, `.gs-chart-chip svg`,
-`.tab` (+classe `active`), `.equity-sparkline--tab-summary, .tile-row`, `.instrument-block`,
-`.position-table` e um `[data-name="canvas …"]`. No mock que o projeto carrega
-(`layers/mock.html`, 77.932 bytes, idêntico ao da fixture) **nenhum** resolve: o arquivo é um
-snapshot com 384 estilos inline e duas classes no total (`__layers-root`, `eq-zero`).
+`C:\Development\Traval\layers.json` declara oito folhas. Sete são seletores de classe —
+`.global-summary`, `.gs-body`, `.gs-chart-chip svg`, `.tab` (+classe `active`),
+`.equity-sparkline--tab-summary, .tile-row`, `.instrument-block`, `.position-table` — e
+**nenhuma resolve** no mock que o projeto carrega. A oitava,
+`[data-name="canvas (lightweight-charts) pane 1"]`, resolve: é a única escrita no vocabulário
+que o mock realmente usa.
 
-O menu ⚡ Interagir lista as 8 ações, todas com estado `null`, e clicar não faz nada. Mesmo
-motivo no Results: snapshot apaga marcador de estado. Isto é mais grave que o resultado do
-spike e não depende dele — entra como item do checklist.
+O motivo não é snapshot. O arquivo se identifica no cabeçalho como
+`Mock estático do Traval para o LAYERS (derivado da recriação v2.19–v2.23)`: é o **mock
+autoral**, com 384 estilos inline, `data-name`/`data-src` em cada nó e duas classes no total
+(`__layers-root`, `eq-zero`). As sete entradas foram escritas contra as classes do **app real**,
+que o mock não reproduz — manifesto e mock descrevem o mesmo projeto em vocabulários
+diferentes.
+
+O menu ⚡ Interagir lista as 8 ações, sete delas com estado `null` e sem efeito ao clicar. Isto
+é mais grave que o resultado do spike e não depende dele — entra como item do checklist.
 
 ## 6. Manifesto derivado da pasta
 
@@ -115,11 +125,12 @@ runtime.
 | MarketView | 80 | 0,1 ms |
 | Axai | 124 | 0,2 ms |
 | Traval | 428 | 1,1 ms |
-| Results | 671 | 1,3 ms |
 
-Média de 5 passagens por medição, Chrome 152. Linear em nós: ~2,5 µs/nó → **~3,8 ms para
-1.500 nós**, contra o orçamento de `< 300 ms` de D:45. A travessia não é o problema; **scan
-incremental não se justifica por este número**.
+Média de 5 passagens por medição, Chrome 152. É um **piso, com cache de estilo quente**: o
+`scan()` real vem depois de uma mutação no DOM e paga o recálculo de estilo antes de ler. Linear
+em nós: ~2,6 µs/nó → **~3,9 ms para 1.500 nós**, contra o orçamento de `< 300 ms` de D:45. Há
+80× de folga; **scan incremental não se justifica por este número** nem com um recálculo
+completo no caminho.
 
 Não medido: o render do React que vem depois do `scan()`. Tentei via `requestAnimationFrame` e
 atraso de event loop, e as duas leituras são inúteis na aba automatizada —
@@ -131,9 +142,9 @@ runbook manual, com a aba em foco.
 **Não passa** — e por um motivo que o portão não previa.
 
 ```
-cobertura  4/6 entradas que resolvem = 67%   >= 60%   OK
+cobertura  4/7 entradas que resolvem = 57%   <  60%   falha
            4/14 entradas autorais    = 29%   <  60%   falha
-precisão   7 extras / 4 aceitas      = 1,75  >  1     falha pela letra
+precisao   7 extras / 4 aceitas      = 1,75  >  1     falha pela letra
            7 de 7 extras sao superficie real = 0 ruido   passa pela leitura
 ```
 
@@ -155,3 +166,33 @@ O que sobrevive do spike, na ordem:
 
 Esforço segue para o **checklist D** (culling, cache de `getComputedStyle`, árvore
 virtualizada), como o portão manda.
+
+## 9. Terceiro achado: o middleware de fixtures não roda no Vite 8.2.2
+
+Medido com `curl` no dev server desta sessão:
+
+| Pedido | Esperado pelo `vite.config.js` | Obtido |
+|---|---|---|
+| `/fixtures/traval/src/styles/layout.css` | 200 `text/css`, 6.610 bytes | 200 **`text/javascript`**, wrapper de HMR (`import { createHotContext } …`) |
+| `/fixtures/traval/nao-existe.css` | 404 | 200 `text/html` |
+| `/fixtures/results/layers/mock.html` | 404 | 200 `text/html`, 271.349 bytes — o `index.html` do editor |
+
+O plugin `layers-fixtures-raw` existe exatamente para isto e o comentário dele descreve os dois
+sintomas. Sob Vite 8.2.2 o `server.middlewares.use()` registrado dentro de `configureServer`
+deixou de rodar antes do pipeline interno, então o transform de CSS e o fallback de SPA vencem.
+
+Consequências, em ordem de gravidade:
+
+1. **O modo fixture entrega CSS embrulhado em JavaScript.** O índice por AST parseia o wrapper,
+   não a folha: resolução de origem (`data-src`) a partir de fixture está quebrada agora. As
+   contagens de elemento e camada não passam por CSS, e por isso as verificações das fatias
+   anteriores (414 elementos · 11 camadas) continuam de pé — mas qualquer número de **regras**
+   medido em fixture desde a subida do Vite 8 é suspeito.
+2. **Arquivo ausente devolve o editor.** O estado vazio "mock não encontrado" (B:25) não
+   aparece em modo fixture: o loader recebe 200 e renderiza o LAYERS dentro do LAYERS. Foi
+   assim que a fixture `results`, que não tem mock, mediu 671 nós nesta sessão.
+3. A fixture `results` segue **sem** `layers/mock.html` — pendência de snapshot já conhecida,
+   agora com o efeito acima escondendo-a.
+
+Não corrigido aqui: está fora do escopo da fatia 5 e a correção é de harness, não de spike.
+Entra no checklist E como item próprio.

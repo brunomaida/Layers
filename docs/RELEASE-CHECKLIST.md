@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 3 parciais, 19 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 3 parciais, 20 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -49,6 +49,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos
 
 Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval (mock autoral + 4 `.css` reais), Axai (HTML estático), MarketView (arquivo único com `<style>` inline), Results (pendente de snapshot), `app-shell` (`<div id="app">` vazio), `plain-css` (shorthand, `!important`, `@media`, `[data-x="body"]`, `:root` dentro de string), `nested-oklch` (nesting + `oklch` + `color-mix`), `tailwind` (falha explícita esperada).
 
+- [ ] `vite.config.js`: o middleware `layers-fixtures-raw` não roda no Vite 8.2.2 — CSS de fixture volta como `text/javascript` e arquivo ausente volta como o `index.html` do editor em vez de 404. Quebra resolução de origem em modo fixture e esconde o estado vazio "mock não encontrado". Medido em `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §9.
 - [ ] Snapshot da árvore de nós por fixture (contagem, profundidade, bbox, `src`).
 - [ ] Origem: para 30 nós amostrados por fixture, `src` aponta para arquivo/linha que contém o seletor.
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
