@@ -151,7 +151,7 @@ precisao   7 extras / 4 aceitas      = 1,75  >  1     falha pela letra
 Decisão: **não virar produto agora**. O scanner encontra superfície latente com precisão de
 100% nos sinais precisos, mas descobrir latência não é o mesmo que reproduzir o manifesto
 autoral — metade das entradas autorais é superfície visível que o autor quer poder esconder, e
-dois dos quatro mocks são snapshots que apagam todo marcador de estado. Autoria manual do
+no Traval o manifesto fala de classes que o mock autoral não tem (§5). Autoria manual do
 `interactions` continua o caminho declarado, como o plano previa.
 
 O que sobrevive do spike, na ordem:
