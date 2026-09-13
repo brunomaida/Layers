@@ -107,9 +107,15 @@ Se o seu render estiver diferente, o motivo mais provável é preferência salva
 browser. Limpe e recarregue:
 
 ```js
-localStorage.removeItem('traval-layer-editor-cfg');
-localStorage.removeItem('traval-layer-editor-inter-size');
+['meta', 'ui', 'projects', 'session'].forEach(k => localStorage.removeItem('layers/v1/' + k));
+sessionStorage.removeItem('layers/v1/tab');
 ```
+
+As chaves antigas (`layers-cfg`, `layers-hist`, `layers-inter-size`, e as
+`traval-layer-editor-*` anteriores a elas) continuam no navegador até a v2.26, mas só são
+lidas uma vez, na migração para `layers/v1/*` — apagar as de `layers/v1` já devolve os
+defaults. O mapa completo das chaves está em [ARCHITECTURE.md](ARCHITECTURE.md)
+§ Persistência.
 
 ## Verificar que está tudo local
 

@@ -67,8 +67,34 @@ rodar — nunca são o estado final. O `README` estava simplesmente errado.
 **Consequências.**
 
 - Precedência documentada: `localStorage` › `data-props` › literais do `:root`.
-- Ao comparar render, limpar `traval-layer-editor-cfg` antes de concluir que regrediu.
+- Ao comparar render, limpar as chaves `layers/v1/*` antes de concluir que regrediu.
 - Mudar default visual = editar `data-props`, não o `:root`.
+
+## 2026-09-13 · Reusar o IndexedDB `layers-hist` e gravar configuração por picker
+
+**Contexto.** A fatia 4 do plano do loader previa um IndexedDB novo (`layers-store` v1, store
+`handles`) e o export da configuração em arquivo. Duas colisões com o que já existe: o
+`layers-hist` v1 (store `h`) já guarda exatamente `id do histórico -> handle` e tem projetos
+reais conectados; e o `CLAUDE.md` diz que toda gravação passa por `writeInto`/`writeText`, que
+são escopados à pasta do projeto — configuração não tem pasta de projeto.
+
+**Decisão.** O banco continua `layers-hist`/`h`, sem renomear. `layers-config.json` é gravado
+por `showSaveFilePicker`, com o alvo escolhido no clique, do mesmo jeito que o `exportFull` já
+usa `showDirectoryPicker`.
+
+**Alternativas descartadas.**
+
+| Opção | Por que não |
+|---|---|
+| Criar `layers-store` e copiar os handles na primeira abertura | Código de migração para ganhar um nome melhor; quem não reabrir o editor perde o handle |
+| Criar `layers-store` sem copiar | Orfana os projetos já conectados |
+| Gravar a configuração por `writeInto`, na pasta do projeto | Preferência de interface não é artefato do projeto, e sem projeto conectado não haveria onde gravar |
+| Download por `<a download>` | Não é File System Access, não diz onde gravou e não dá erro legível |
+
+**Consequências.** O nome do banco (`layers-hist`) ficou mais estreito que o conteúdo (handle
+de pasta de qualquer origem) — custo aceito, registrado aqui para não parecer esquecimento.
+`writeInto`/`writeText` seguem exclusivos da pasta conectada; a única gravação fora dela é a
+configuração, e sempre no arquivo que o usuário escolheu.
 
 ---
 
