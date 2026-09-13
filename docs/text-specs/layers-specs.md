@@ -403,3 +403,16 @@ Menu Configuração:
 Chips de Camadas - Central Inferior:
 - Trazer de volta o número de Elementos após o nome da Camada (como era na v2.19)
 
+#-------------------------------------------------------------------------------------------------------------
+
+# Ajustes v2.23:
+- O que tiver dúvidas e precisar esclarecer, me pergunte.
+- Apenas assuma e defina o que tiver certeza.
+- Crie nova página, assim como fez na v2.22 para isolar as versões.
+
+Painel superior:
+- Incluir um dropdown com o histórico dos últimos N projetos/repos editados em LAYERS
+  - Use templates/modelos já usados na aplicação (cores, controles, highlight).
+
+# Dúvida:
+- Como faço para conectar meus layouts daqui (sempre a última versão), com o projeto local de layers que estou desenvolvendo para implementar o carregamento de projetos? Atualmente, tenho um repositório GH privado de LAYERS com todo fonte replicado.

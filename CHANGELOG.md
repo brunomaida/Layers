@@ -11,6 +11,23 @@
 - docs/LOCAL-SETUP.md, scripts/vendor-assets.py e hook pre-push.
 - layers-specs.md movido para docs/text-specs/; layers-start-kit-desktop.zip removido.
 
+## 0.24.0 — 2026-09-12
+- LAYERS baseline: editor sem projeto embutido. Mock do Traval removido; palco, árvore e
+  Propriedades com estados vazios até conectar uma pasta.
+- Loader `layers.json` (mock HTML + CSS reais em shadow root, sanitizado; `viewport`, `rules`,
+  `interactions`). Menu ⚡ Interagir passa a vir do manifesto do projeto.
+- `data-src` automático a partir das folhas carregadas; modo fixture `#layers=` para testes;
+  fixtures de Traval / Axai / MarketView / Results; `tools/layers-snapshot.js` para apps JS.
+- localStorage migrado para `layers-*`. Docs: `docs/layers-json.md`, `docs/layers-requisitos.md`.
+
+## 0.23.0 — 2026-09-12
+- Painel superior: dropdown "Projetos recentes" no lugar do botão de pasta. Pastas locais
+  reconectam pelo handle guardado no IndexedDB (pede permissão do navegador); repositórios
+  GitHub entram só como registro por URL, até o loader (checklist B).
+- Itens com origem, último uso, fixar (não expira) e remover; rodapé com conectar pasta,
+  registrar repo e limpar histórico (mantém fixados). Limite via tweak histMax (padrão 10).
+- Cabeçalho sobe de z-index enquanto um menu seu está aberto, para não ficar sob o dock.
+
 ## 0.22.0 — 2026-09-12
 - alert() substituído por toast; emojis removidos das strings de UI.
 - Planos com contain:layout paint; will-change só durante o drag.

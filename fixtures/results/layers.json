@@ -1,0 +1,8 @@
+{
+  "name": "Results · Painel CCRC",
+  "viewport": {
+    "width": 1280,
+    "height": 2200
+  },
+  "mock": "layers/mock.html"
+}
