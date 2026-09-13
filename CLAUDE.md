@@ -33,7 +33,7 @@ Sem localStorage valem os `data-props` do index.html, **não** os literais do `:
 (esses são placeholders pré-`applyTheme()`). Tema Gray · 1 Grafite, acento 5 · Cinza
 médio, seleção Coral, originColors Mono, panelHeader B, sliderScale 85, fontScale 1.
 
-Ao comparar render, limpe `traval-layer-editor-cfg` antes de concluir que regrediu.
+Ao comparar render, limpe as chaves `layers/v1/*` antes de concluir que regrediu.
 
 ## Git Workflow
 

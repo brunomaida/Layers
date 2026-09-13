@@ -316,3 +316,132 @@ describe('ZipRoot', () => {
     expect(core.zipRoot(new Map([['so-css/x.css', 1]]))).toBe('');
   });
 });
+
+// Storage de mentira: os mesmos 4 metodos que o localStorage expoe, o suficiente para
+// migrateConfig/readConfig/writeConfig rodarem sem DOM.
+const fakeStorage = (seed) => {
+  const m = new Map(Object.entries(seed || {}));
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => { m.set(k, String(v)); },
+    removeItem: (k) => { m.delete(k); },
+    keys: () => [...m.keys()],
+    raw: m,
+  };
+};
+
+describe('MigrateConfig', () => {
+  it('TresChavesAtuais_ProduzLayersV1', () => {
+    const s = fakeStorage({
+      'layers-cfg': JSON.stringify({ theme: 'Bright · 1 Papel', fontScale: 1.2, lixo: 1 }),
+      'layers-hist': JSON.stringify([{ id: 'folder:Traval', kind: 'folder', name: 'Traval', pinned: true }]),
+      'layers-inter-size': JSON.stringify({ w: 620, h: 300, split: 240 }),
+    });
+    const cfg = core.migrateConfig(s);
+
+    expect(cfg.ui.theme).toBe('Bright · 1 Papel');
+    expect(cfg.ui.fontScale).toBe(1.2);
+    expect(cfg.ui.lixo).toBeUndefined();
+    expect(cfg.ui.interSize).toEqual({ w: 620, h: 300, split: 240 });
+    expect(cfg.projects).toHaveLength(1);
+    expect(cfg.projects[0].id).toBe('folder:Traval');
+    expect(cfg.session.lastProjectId).toBeNull();
+
+    expect(JSON.parse(s.getItem('layers/v1/meta')).schema).toBe(1);
+    expect(JSON.parse(s.getItem('layers/v1/ui')).theme).toBe('Bright · 1 Papel');
+    expect(JSON.parse(s.getItem('layers/v1/projects'))).toHaveLength(1);
+  });
+
+  it('ChavesAntigas_NaoSaoApagadas', () => {
+    // removidas na v2.26 com uma linha no CHANGELOG, nao aqui: um downgrade do index.html
+    // ainda precisa encontrar o que era dele.
+    const s = fakeStorage({ 'layers-cfg': JSON.stringify({ theme: 'Dark' }) });
+    core.migrateConfig(s);
+    expect(s.getItem('layers-cfg')).toBe(JSON.stringify({ theme: 'Dark' }));
+    expect(JSON.parse(s.getItem('layers/v1/meta')).migratedFrom).toContain('layers-cfg');
+  });
+
+  it('JaMigrado_NaoRefaz', () => {
+    const s = fakeStorage({
+      'layers/v1/meta': JSON.stringify({ schema: 1, savedAt: 1 }),
+      'layers/v1/ui': JSON.stringify({ theme: 'Dark' }),
+      'layers-cfg': JSON.stringify({ theme: 'Bright · 1 Papel' }),
+    });
+    const cfg = core.migrateConfig(s);
+    expect(cfg.ui.theme).toBe('Dark');
+    expect(JSON.parse(s.getItem('layers/v1/meta')).savedAt).toBe(1);
+  });
+
+  it('StorageVazio_ProduzConfigVazia', () => {
+    const s = fakeStorage();
+    const cfg = core.migrateConfig(s);
+    expect(cfg.ui).toEqual({});
+    expect(cfg.projects).toEqual([]);
+    expect(cfg.session.lastProjectId).toBeNull();
+  });
+
+  it('StorageQueLanca_NaoQuebra', () => {
+    const s = { getItem: () => { throw new Error('bloqueado'); }, setItem: () => { throw new Error('bloqueado'); } };
+    expect(() => core.migrateConfig(s)).not.toThrow();
+    expect(core.migrateConfig(s).projects).toEqual([]);
+  });
+});
+
+describe('WriteConfig', () => {
+  it('LastProjectIdNull_Persiste', () => {
+    // null e valor legitimo: significa 'nenhum projeto', e reabrir vazio e o esperado.
+    const s = fakeStorage();
+    core.writeConfig(s, { ui: { theme: 'Dark' }, projects: [], session: { lastProjectId: null, selId: '3', isoId: null } });
+    const back = core.readConfig(s);
+    expect(back.session.lastProjectId).toBeNull();
+    expect('lastProjectId' in back.session).toBe(true);
+    expect(back.session.selId).toBe('3');
+  });
+
+  it('RoundTrip_PreservaUiProjectsSession', () => {
+    const s = fakeStorage();
+    const cfg = {
+      ui: { theme: 'Gray · 1 Grafite', wireAlpha: 35, interSize: { w: 580, h: 0, split: 210 } },
+      projects: [{ id: 'zip:x.zip', kind: 'zip', name: 'x.zip', pinned: false }],
+      session: { lastProjectId: 'zip:x.zip', selId: '0', isoId: null, camera: { yaw: 12, tilt: -4, zoom: 1.5, panX: 3, panY: 0, flat: true } },
+    };
+    core.writeConfig(s, cfg);
+    expect(core.readConfig(s)).toEqual(cfg);
+  });
+
+  it('JsonCorrompido_CaiParaVazio', () => {
+    const s = fakeStorage({ 'layers/v1/ui': '{nao é json', 'layers/v1/projects': 'null' });
+    const back = core.readConfig(s);
+    expect(back.ui).toEqual({});
+    expect(back.projects).toEqual([]);
+  });
+});
+
+describe('ExportConfig', () => {
+  it('SchemaEData_NoArquivo', () => {
+    const blob = core.exportConfig({ ui: { theme: 'Dark' }, projects: [], session: { lastProjectId: null } });
+    expect(blob.schema).toBe(1);
+    expect(typeof blob.exportedAt).toBe('string');
+    expect(blob.ui.theme).toBe('Dark');
+  });
+
+  it('SchemaErrado_Recusa', () => {
+    expect(() => core.importConfig({ schema: 2 }, { ui: {}, projects: [] })).toThrow();
+    expect(() => core.importConfig(null, { ui: {}, projects: [] })).toThrow();
+  });
+
+  it('MergePorId_PreservaPinned', () => {
+    const atual = { ui: { theme: 'Dark' }, projects: [{ id: 'folder:Traval', kind: 'folder', name: 'Traval', pinned: true, last: 9 }], session: {} };
+    const arquivo = { schema: 1, ui: { theme: 'Bright · 1 Papel' }, projects: [{ id: 'folder:Traval', kind: 'folder', name: 'Traval', pinned: false, last: 1 }, { id: 'zip:novo.zip', kind: 'zip', name: 'novo.zip' }] };
+    const out = core.importConfig(arquivo, atual);
+    expect(out.ui.theme).toBe('Bright · 1 Papel');
+    expect(out.projects.find(p => p.id === 'folder:Traval').pinned).toBe(true);
+    expect(out.projects.find(p => p.id === 'zip:novo.zip')).toBeTruthy();
+  });
+
+  it('SemProjects_MantemOsAtuais', () => {
+    const atual = { ui: {}, projects: [{ id: 'folder:A', name: 'A' }], session: {} };
+    const out = core.importConfig({ schema: 1, ui: { theme: 'Dark' } }, atual);
+    expect(out.projects).toHaveLength(1);
+  });
+});
