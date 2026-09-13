@@ -11,6 +11,8 @@
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data: blob:; font-src 'self' blob:; media-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; connect-src 'self' https://api.github.com https://raw.githubusercontent.com; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none'">
 <script src="./vendor/react.production.min.js"></script>
 <script src="./vendor/react-dom.production.min.js"></script>
+<script src="./vendor/csstree.js"></script>
+<script src="./lib/layers-core.js"></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -784,24 +786,8 @@ const SHORT = { paddingTop: ['padding'], paddingRight: ['padding'], paddingBotto
   textDecorationLine: ['text-decoration'], gridTemplateColumns: ['grid-template', 'grid'], gridTemplateRows: ['grid-template', 'grid'], gridTemplateAreas: ['grid-template', 'grid'], gridColumn: ['grid-area'], gridRow: ['grid-area'], top: ['inset'], left: ['inset'], right: ['inset'], bottom: ['inset'], alignItems: ['place-items'], justifyContent: ['place-content'], alignContent: ['place-content'], alignSelf: ['place-self'], justifySelf: ['place-self'] };
 const INHERITABLE = new Set(['color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'lineHeight', 'textTransform', 'textAlign', 'whiteSpace', 'wordBreak', 'visibility', 'pointerEvents']);
 // props declaradas dentro de um bloco CSS (nomes kebab)
-function declaredInCss(text, selector) {
-  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp('(^|\\n|\\})\\s*' + esc + '\\s*\\{([^}]*)\\}');
-  const m = re.exec(text); if (!m) return null;
-  const set = new Set(); m[2].replace(/\/\*[\s\S]*?\*\//g, '').split(';').forEach(d => { const i = d.indexOf(':'); if (i > 0) set.add(d.slice(0, i).trim().toLowerCase()); }); return set;
-}
-const compound = sel => (sel || '').trim().split(/\s*>\s*|\s+/).pop();
+
 const sliderBounds = (unit, x) => unit === 'px' ? [x.min, x.max, x.step] : unit === '%' ? [0, 200, 1] : unit === '' ? [0, 4, .05] : [+(x.min / 16).toFixed(3), +(x.max / 16).toFixed(3), .05];
-function patchCss(text, selector, prop, value) {
-  const esc = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const re = new RegExp('(^|\\n)(' + esc + ')\\s*\\{([^}]*)\\}');
-  const m = re.exec(text);
-  if (!m) return text.trimEnd() + '\n\n' + selector + ' {\n  ' + prop + ': ' + value + ';\n}\n';
-  let body = m[3];
-  const pre = new RegExp('(\\n\\s*)' + prop.replace(/-/g, '\\-') + '\\s*:[^;]*;');
-  body = pre.test(body) ? body.replace(pre, '$1' + prop + ': ' + value + ';') : body.replace(/\s*$/, '\n  ' + prop + ': ' + value + ';\n');
-  return text.slice(0, m.index) + m[1] + m[2] + ' {' + body + '}' + text.slice(m.index + m[0].length);
-}
 function lineDiff(a, b) {
   const A = a.split('\n'), B = b.split('\n'); let p = 0; while (p < A.length && p < B.length && A[p] === B[p]) p++;
   let q = 0; while (q < A.length - p && q < B.length - p && A[A.length - 1 - q] === B[B.length - 1 - q]) q++;
@@ -872,6 +858,9 @@ const idbGet = async k => { try { const d = await idb(); return await new Promis
 const idbDel = async k => { try { const d = await idb(); d.transaction('h', 'readwrite').objectStore('h').delete(k); } catch (e) {} };
 const relTime = t => { const d = Date.now() - t; if (d < 60e3) return 'agora'; if (d < 3600e3) return Math.floor(d / 60e3) + ' min'; if (d < 86400e3) return Math.floor(d / 3600e3) + ' h'; if (d < 7 * 86400e3) return Math.floor(d / 86400e3) + ' d'; const x = new Date(t); return String(x.getDate()).padStart(2, '0') + '/' + String(x.getMonth() + 1).padStart(2, '0'); };
 const parseRepo = q => { const m = String(q).trim().replace(/\.git$/, '').match(/(?:github\.com[/:])?([\w.-]+)\/([\w.-]+)\/?$/); return m ? { owner: m[1], repo: m[2] } : null; };
+// url() remota no CSS do projeto: neutralizada antes de escopar, para o shadow root nunca
+// disparar requisicao. O escopo em si e por AST (LayersCore.scopeAst).
+const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*['"]?((?:[a-z][a-z0-9+.-]*:)?\/\/[^'")]+?)['"]?\s*\)/gi, (m, u) => { warn.push('url() remota neutralizada no CSS: ' + u.slice(0, 60)); return 'url(about:blank)'; });
 const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = []; parts.forEach(x => { if (x === '..') out.pop(); else if (x && x !== '.') out.push(x); }); return out.join('/'); };
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
@@ -886,14 +875,6 @@ const useLocalFaces = (href, warn) => {
 };
 // @font-face não carrega dentro de shadow root: as regras saem da folha escopada e vão para o
 // documento, com cada url() relativa lida da pasta e trocada por blob. url() remota é descartada.
-const FACE_RE = /@font-face\s*\{[^}]*\}/gi;
-const takeFaces = text => { const faces = []; const rest = text.replace(FACE_RE, m => { faces.push(m); return ''; }); return { faces, rest }; };
-// CSS do projeto dentro do shadow root: :root → :host, html/body → raiz sintética; @font-face não funciona em shadow (documentado)
-const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*(['"]?)((?:[a-z][a-z0-9+.-]*:)?\/\/[^'")]+)\1\s*\)/gi, (m, q, u) => { warn.push('url() remota neutralizada no CSS: ' + u.slice(0, 60)); return 'url(about:blank)'; });
-const scopeCss = css => css.replace(/:root\b/g, ':host').replace(/(^|[\s,}>+~])html\s*,\s*body(?=[\s,{.:#\[>])/g, '$1.__layers-root').replace(/(^|[\s,}>+~])(html|body)(?=[\s,{.:#\[>])/g, '$1.__layers-root').replace(/(^|[\s,}])\*\s*\{/g, '$1.__layers-root, .__layers-root * {');
-// índice seletor de classe → arquivo|seletor|linha (primeira regra top-level que começa com .classe)
-const cssIndex = files => { const idx = {}; files.forEach(({ file, text }) => { const clean = text.replace(/\/\*[\s\S]*?\*\//g, m => m.replace(/[^\n]/g, ' ')); let depth = 0, buf = '', line = 1, startLine = 1;
-  for (let i = 0; i < clean.length; i++) { const ch = clean[i]; if (ch === '\n') line++; if (ch === '{') { if (depth === 0) { const sels = buf.trim(); if (sels && !sels.startsWith('@')) sels.split(',').forEach(s => { s = s.trim(); const m = /^\.([\w-]+)/.exec(s); if (m) { const k = '.' + m[1]; const simple = /^\.[\w-]+(:[\w-]+(\([^)]*\))?)*$/.test(s); if (!idx[k] || (simple && !idx[k].simple)) idx[k] = { file, selector: s, line: startLine, simple }; } }); } depth++; buf = ''; } else if (ch === '}') { depth = Math.max(0, depth - 1); buf = ''; startLine = line; } else if (depth === 0) { if (!buf.trim()) startLine = line; buf += ch; } } }); return idx; };
 const INTER_LS = 'layers-inter-size'; migrateLS('traval-layer-editor-inter-size', INTER_LS);
 const loadInterSize = () => { try { const o = JSON.parse(localStorage.getItem(INTER_LS) || 'null'); return o && o.w ? { split: 210, ...o } : { w: 580, h: 0, split: 210 }; } catch (e) { return { w: 580, h: 0, split: 210 }; } };
 class Component extends DCLogic {
@@ -949,22 +930,32 @@ class Component extends DCLogic {
         if (e.tagName.toLowerCase() === 'use' && /^(href|xlink:href)$/i.test(a.name) && !a.value.startsWith('#')) e.removeAttribute(a.name);
       }
     }); });
-    const inlineCss = [...doc.querySelectorAll('style')].map(s => s.textContent); doc.querySelectorAll('style').forEach(s => s.remove());
+    // o DOMParser nao guarda onde o bloco <style> estava; o offset sai do HTML cru, e e ele
+    // que faz o data-src de CSS embutido apontar a linha real do .html (caso do MarketView)
+    let seek = 0;
+    const inlineCss = [...doc.querySelectorAll('style')].map(el => {
+      const at = html.indexOf(el.textContent, seek);
+      if (at >= 0) seek = at + el.textContent.length;
+      return { file: mockPath, text: el.textContent, lineOffset: at >= 0 ? html.slice(0, at).split('\n').length - 1 : 0 };
+    });
+    doc.querySelectorAll('style').forEach(el => el.remove());
     // @font-face sai do texto que vai para o shadow root e sobe para o documento (ver hoistFaces)
     const faces = []; const scoped = [];
-    css.forEach(c => { const t = takeFaces(c.text); scoped.push({ file: c.file, text: t.rest }); t.faces.forEach(rule => faces.push({ dir: c.file.replace(/[^/]*$/, ''), rule })); });
-    const inlineScoped = inlineCss.map(t => { const r = takeFaces(t); r.faces.forEach(rule => faces.push({ dir: mockDir, rule })); return r.rest; });
+    const scopeOne = (text, dir) => { const r = LayersCore.scopeAst(dropRemoteUrls(text, warn)); r.faces.forEach(rule => faces.push({ dir, rule })); return r.css; };
+    css.forEach(c => scoped.push({ file: c.file, css: scopeOne(c.text, c.file.replace(/[^/]*$/, '')) }));
+    const inlineScoped = inlineCss.map(c => scopeOne(c.text, mockDir));
     await this.hoistFaces(faces, warn);
     const kids = [...doc.body.children]; if (!kids.length) { this.unloadProject({ title: 'O mock está vazio.', body: 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
     // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
     let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
     if (man.root && man.root.name) rootEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body'; if (man.root && man.root.src) rootEl.dataset.src = man.root.src;
     // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
-    const idx = cssIndex(css);
+    // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
+    const idx = LayersCore.buildIndex(css.concat(inlineCss)).byClass;
     rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
     Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
     const host = this.pageRef.current; if (!host) return; const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + scopeCss(dropRemoteUrls(c.text, warn))).concat(inlineScoped.map(t => scopeCss(dropRemoteUrls(t, warn)))).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
+    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
     this.setState({ project: { name, man, warn }, loadError: null, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
@@ -1126,7 +1117,7 @@ class Component extends DCLogic {
   codeFor(rule) {
     const s = this.state; const ft = s.fileText[rule.file]; const isCss = /\.css$/.test(rule.file);
     if (ft) {
-      if (isCss) { const esc = rule.selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); const m = new RegExp('(^|\\n|\\})(\\s*' + esc + '\\s*[{][^}]*[}])').exec(ft); if (m) return { text: m[2].replace(/^\s*\n/, ''), real: true }; }
+      if (isCss) { const t = LayersCore.ruleText(ft, rule.selector, rule.file); if (t) return { text: t, real: true }; }
       else { const L = ft.split('\n'); const ln = Math.max(1, +rule.line || 1); return { text: L.slice(Math.max(0, ln - 6), ln + 8).join('\n'), real: true }; }
     }
     const el = this.els[rule.ids[0]]; const lines = [];
@@ -1170,7 +1161,7 @@ class Component extends DCLogic {
   // com a pasta conectada, lê a regra real do .css e guarda o conjunto de propriedades declaradas
   async loadRule(n) {
     const [file, selector] = ruleOf(n); if (!this.state.dir || !/\.css$/.test(file) || !selector) return; const key = file + '|' + selector; if (this.state.cssRules[key] !== undefined) return;
-    let set = null; try { set = declaredInCss(await this.readText(file), selector); } catch (e) {}
+    let set = null; try { set = LayersCore.declaredIn(await this.readText(file), selector, file); } catch (e) {}
     this.setState(st => ({ cssRules: { ...st.cssRules, [key]: set ? [...set] : false } }));
   }
   // 'declared' | 'inherited' | 'default' para a propriedade do elemento selecionado
@@ -1269,7 +1260,7 @@ class Component extends DCLogic {
     const map = {}; changes.forEach(c => { const file = ruleOf(c)[0]; (map[file] = map[file] || []).push(c); });
     return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
   }
-  patched(text, list) { list.forEach(c => { text = patchCss(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
+  patched(text, list) { list.forEach(c => { text = LayersCore.patchCssAt(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
   async makeDraft() {
     const files = this.filesOf(this.state.changes); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } }));
     for (const f of files) {
