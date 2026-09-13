@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 3 parciais, 20 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 3 parciais, 19 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -23,7 +23,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos
 - [x] Loader de projeto: `layers.json` → mock sanitizado + folhas `.css` reais em shadow root offscreen → `walk()`. Quatro origens numa porta só (`readText`/`readBytes`): pasta local, `.zip`, repositório GitHub público e fixture HTTP.
 - [x] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice por AST (`css-tree`), cobrindo `@media`, `@layer`, nesting e `<style>` embutido no HTML (linha absoluta do arquivo).
 - [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
-- [ ] Avisar quando um seletor de `interactions` não resolve no mock. Medido no spike da fatia 5: as 8 entradas do Traval e as do Results apontam para classes que o snapshot não tem, e o menu ⚡ Interagir lista ação que não faz nada. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md`.
+- [ ] Avisar quando um seletor de `interactions` não resolve no mock. Medido no spike da fatia 5: 7 das 8 entradas do Traval apontam para classes que o mock autoral não tem (foram escritas contra o app real), e o menu ⚡ Interagir lista sete ações sem efeito. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §5.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
 - [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir). A fatia 4 persistiu interface, histórico e sessão (`layers/v1/*`); ajuste pendente continua só em memória, de propósito — gravar edição não aplicada precisa de decisão própria.
 - [~] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Falta marcar TS/JS explicitamente como "manual" na interface.
@@ -49,7 +49,6 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos
 
 Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval (mock autoral + 4 `.css` reais), Axai (HTML estático), MarketView (arquivo único com `<style>` inline), Results (pendente de snapshot), `app-shell` (`<div id="app">` vazio), `plain-css` (shorthand, `!important`, `@media`, `[data-x="body"]`, `:root` dentro de string), `nested-oklch` (nesting + `oklch` + `color-mix`), `tailwind` (falha explícita esperada).
 
-- [ ] `vite.config.js`: o middleware `layers-fixtures-raw` não roda no Vite 8.2.2 — CSS de fixture volta como `text/javascript` e arquivo ausente volta como o `index.html` do editor em vez de 404. Quebra resolução de origem em modo fixture e esconde o estado vazio "mock não encontrado". Medido em `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §9.
 - [ ] Snapshot da árvore de nós por fixture (contagem, profundidade, bbox, `src`).
 - [ ] Origem: para 30 nós amostrados por fixture, `src` aponta para arquivo/linha que contém o seletor.
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
