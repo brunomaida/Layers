@@ -251,11 +251,20 @@ describe('IsUtilitySheet', () => {
     expect(core.isUtilitySheet('@tailwind base;\n@tailwind utilities;')).toBe(true);
   });
 
-  it('LayerUtilities_Marca', () => {
-    expect(core.isUtilitySheet('@layer utilities { .p-1 { padding: 1px } }')).toBe(true);
+  it('FolhaDeUtilitarios_Marca', () => {
+    expect(core.isUtilitySheet(fixture('tailwind/utilities.css'))).toBe(true);
+  });
+
+  it('LayerUtilitiesAutoral_NaoMarca', () => {
+    // uma folha autoral pode declarar a camada com duas regras; marcar por causa disso
+    // desabilitaria Aplicar sem motivo
+    expect(core.isUtilitySheet('@layer utilities { .p-1 { padding: 1px } }')).toBe(false);
+    expect(core.isUtilitySheet(fixture('nested-oklch/style.css'))).toBe(false);
   });
 
   it('FolhaAutoral_NaoMarca', () => {
     expect(core.isUtilitySheet(fixture('traval/src/styles/components.css'))).toBe(false);
+    expect(core.isUtilitySheet(fixture('axai/wwwroot/painel.css'))).toBe(false);
+    expect(core.isUtilitySheet(fixture('plain-css/style.css'))).toBe(false);
   });
 });

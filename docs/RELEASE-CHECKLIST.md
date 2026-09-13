@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 15 concluídos, 2 parciais, 28 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 17 concluídos, 2 parciais, 26 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -21,11 +21,11 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 15 concluídos
 ## B. Funcional (bloqueia release)
 
 - [~] Loader de projeto: `layers.json` → mock sanitizado + folhas `.css` reais em shadow root offscreen → `walk()`. Entregue na v2.24 (`loadProject`, `docs/layers-json.md`). Falta ingestão de `.zip` e de repositório GitHub público.
-- [~] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice atual é por varredura de chaves e ignora `@media`, `@layer` e nesting — trocar por `css-tree` (AST).
+- [x] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice por AST (`css-tree`), cobrindo `@media`, `@layer`, nesting e `<style>` embutido no HTML (linha absoluta do arquivo).
 - [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
 - [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir).
-- [ ] Patch em `.css` com round-trip validado; TS/JS marcado explicitamente como "manual".
+- [~] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Falta marcar TS/JS explicitamente como "manual" na interface.
 
 ## C. Consistência de interface
 
@@ -46,11 +46,11 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 15 concluídos
 
 ## E. Testes
 
-Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval (mock autoral + 4 `.css` reais), Axai (HTML estático), MarketView (arquivo único com `<style>` inline), Results (pendente de snapshot). A criar: HTML/CSS puro, Tailwind (falha explícita esperada), nesting + `oklch`.
+Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval (mock autoral + 4 `.css` reais), Axai (HTML estático), MarketView (arquivo único com `<style>` inline), Results (pendente de snapshot), `app-shell` (`<div id="app">` vazio), `plain-css` (shorthand, `!important`, `@media`, `[data-x="body"]`, `:root` dentro de string), `nested-oklch` (nesting + `oklch` + `color-mix`), `tailwind` (falha explícita esperada).
 
 - [ ] Snapshot da árvore de nós por fixture (contagem, profundidade, bbox, `src`).
 - [ ] Origem: para 30 nós amostrados por fixture, `src` aponta para arquivo/linha que contém o seletor.
-- [ ] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
+- [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
 - [ ] Escopo "todos iguais": afeta todos os usos e nenhum outro.
 - [ ] `lineDiff`: contexto de 3 linhas, sem alterações, arquivo novo.
 - [ ] E2E (Playwright): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.
