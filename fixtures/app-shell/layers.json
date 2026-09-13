@@ -1,0 +1,6 @@
+{
+  "name": "App shell (sem snapshot)",
+  "viewport": { "width": 1280, "height": 800 },
+  "mock": "index.html",
+  "styles": ["app.css"]
+}

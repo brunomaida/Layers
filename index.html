@@ -257,7 +257,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ treeCollapseAll }}" disabled="{{ treeAllClosed }}" title="{{ treeCollapseTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ treeCollapseColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ treeCollapseCursor }};flex:0 0 auto">{{ treeCollapseGlyph }}</button>
         </div>
         <div ref="{{ treeScrollRef }}" style="overflow-y:auto;min-height:0;padding:4px 0">
-          <sc-if value="{{ noProject }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span>{{ emptyBody }}</span></div></sc-if>
+          <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span>{{ emptyBody }}</span></div></sc-if>
           <sc-if value="{{ treeHier }}" hint-placeholder-val="{{ true }}">
           <sc-for list="{{ treeRows }}" as="t" hint-placeholder-count="8">
             <sc-if value="{{ t.isNode }}" hint-placeholder-val="{{ true }}">
@@ -1544,6 +1544,7 @@ class Component extends DCLogic {
     return {
       emptyTitle: s.loadError ? s.loadError.title : 'Nenhum projeto carregado.',
       emptyBody: s.loadError ? s.loadError.body : (window.showDirectoryPicker ? 'Abra Projetos recentes (canto superior esquerdo) e conecte uma pasta que tenha layers.json na raiz.' : 'Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta. O modo fixture (#layers=) continua funcionando aqui.'),
+      showHint: !s.project || !!s.loadError,
       hasProject: !!s.project, noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
       hdrA: hs === 'A', hdrB: hs === 'B', hdrC: hs === 'C', ...gear, ...topMenus, ...interModel, ...cfgVals, cbBlur: this.cbBlur, preventBlur: this.preventBlur, phA: ph === 'A', phB: ph === 'B', phC: ph === 'C',
       rightOpen: s.rightOpen, rightClosed: !s.rightOpen, rightW: s.rightOpen ? s.rightPx + 'px' : '30px', ...(() => { const rw = s.rightOpen ? s.rightPx : 30; const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const band = vw - 2 * (rw + 12); return band >= 420 ? { dockLeft: '50vw', dockMaxW: band + 'px' } : { dockLeft: 'calc((100vw - ' + rw + 'px) / 2)', dockMaxW: Math.max(360, vw - rw - 24) + 'px' }; })(),  toggleRight: () => this.setState(st => ({ rightOpen: !st.rightOpen })),
