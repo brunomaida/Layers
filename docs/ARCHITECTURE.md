@@ -84,6 +84,8 @@ Regras:
 Nenhuma dessas chaves guarda conteúdo de arquivo, e handle nenhum entra no `localStorage` (F:68).
 Escrita: `persistSoon()` com trailing de 400 ms, disparado de `componentDidUpdate` quando a
 assinatura de `ui` + `projects` + `session` muda — uma gravação por rajada, não uma por evento.
+Recarregar não desmonta o componente, então o `pagehide` drena o trailing pendente; sem isso a
+preferência mudada nos últimos 400 ms morreria com a página.
 Migração (`LayersCore.migrateConfig`) converte `layers-cfg`, `layers-hist` e
 `layers-inter-size` e **não** as apaga; a remoção fica para a v2.26.
 

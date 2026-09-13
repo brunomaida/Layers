@@ -944,7 +944,7 @@ class Component extends DCLogic {
     const id = tab && 'projectId' in tab ? tab.projectId : sess.lastProjectId;
     if (!id) return;
     const entry = (this.state.hist || []).find(x => x.id === id); if (!entry) return;
-    this.pendingSel = { selId: sess.selId || '0', isoId: sess.isoId || null };
+    this.pendingSel = { id: entry.id, selId: sess.selId || '0', isoId: sess.isoId || null };
     const hint = { title: 'Último projeto: ' + entry.name + '.', body: 'Abra Projetos ▾ e clique em ' + entry.name + ' para reconectar — o navegador só concede acesso à pasta a partir de um clique seu.' };
     if (entry.kind !== 'folder') { this.setState({ loadError: { title: 'Último projeto: ' + entry.name + '.', body: entry.kind === 'zip' ? 'Origem .zip vive em memória: reabra o arquivo em Projetos ▾ › Abrir arquivo .zip…' : 'Repositório do GitHub pede confirmação explícita a cada carga: abra Projetos ▾ e clique em ' + entry.name + '.' } }); return; }
     const h = await idbGet(entry.id);
@@ -1046,7 +1046,9 @@ class Component extends DCLogic {
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
     // Projeto novo abre na vista padrao; reabrir o ultimo projeto mantem camera e selecao.
-    const keep = this.pendingSel; this.pendingSel = null;
+    // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
+    // restauracao para no meio (sem permissao, .zip, repositorio), o pendingSel nao casa.
+    const keep = this.pendingSel && this.pendingSel.id === this.projectId ? this.pendingSel : null; this.pendingSel = null;
     this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
@@ -1180,10 +1182,13 @@ class Component extends DCLogic {
       const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
     };
     window.addEventListener('keydown', this.onKey);
+    // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
+    // 400 ms morre com a pagina
+    this.onHide = () => this.writeConfig(); window.addEventListener('pagehide', this.onHide);
     this.onDocDown = e => { if (this.state.cbOpen === 'hist' && this.histRef.current && !this.histRef.current.contains(e.target)) this.setState({ cbOpen: null, histAdding: false }); };
     document.addEventListener('mousedown', this.onDocDown);
   }
-  componentWillUnmount() { this.writeConfig(); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
+  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
     e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = this.state.rightPx;
