@@ -1,0 +1,6 @@
+{
+  "name": "CSS puro",
+  "viewport": { "width": 900, "height": 520 },
+  "mock": "index.html",
+  "styles": ["style.css"]
+}
