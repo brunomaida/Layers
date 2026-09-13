@@ -119,6 +119,28 @@ As chaves antigas continuam no navegador até a v2.26 e são lidas uma vez, na m
 roda de novo e traz o tema antigo de volta. O mapa completo das chaves está em
 [ARCHITECTURE.md](ARCHITECTURE.md) § Persistência.
 
+## Reinicie o dev server depois de mexer em `vite.config.js`
+
+O Vite carrega os plugins **uma vez, na partida**. Um server que já estava no ar quando o
+`vite.config.js` mudou (ou que subiu antes de o arquivo existir) segue sem o middleware
+`layers-fixtures-raw`, e o sintoma é silencioso:
+
+- `.css` de fixture volta como `text/javascript` (wrapper de HMR) — o parser lê o wrapper, e a
+  resolução de origem em modo fixture para de funcionar;
+- arquivo de fixture ausente volta como o `index.html` do editor, com 200, em vez de 404 — e o
+  loader renderiza o LAYERS dentro do LAYERS no lugar do estado vazio "mock não encontrado".
+
+Como conferir, com o server no ar:
+
+```bash
+curl -s -o /dev/null -w "%{http_code} %{content_type}\n" \
+  http://localhost:5180/fixtures/traval/src/styles/layout.css
+# esperado: 200 text/css   ·   se vier text/javascript, reinicie o server
+```
+
+Custou meia medição do spike da fatia 5 — ver
+[superpowers/reports/2026-09-13-spike-superficies-latentes.md](superpowers/reports/2026-09-13-spike-superficies-latentes.md) §9.
+
 ## Verificar que está tudo local
 
 Com o dev server no ar, abra o DevTools → Network e recarregue. **Nenhuma requisição

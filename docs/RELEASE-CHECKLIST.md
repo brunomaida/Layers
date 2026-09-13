@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 2 parciais, 19 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 3 parciais, 19 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -23,6 +23,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos
 - [x] Loader de projeto: `layers.json` → mock sanitizado + folhas `.css` reais em shadow root offscreen → `walk()`. Quatro origens numa porta só (`readText`/`readBytes`): pasta local, `.zip`, repositório GitHub público e fixture HTTP.
 - [x] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice por AST (`css-tree`), cobrindo `@media`, `@layer`, nesting e `<style>` embutido no HTML (linha absoluta do arquivo).
 - [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
+- [ ] Avisar quando um seletor de `interactions` não resolve no mock. Medido no spike da fatia 5: 7 das 8 entradas do Traval apontam para classes que o mock autoral não tem (foram escritas contra o app real), e o menu ⚡ Interagir lista sete ações sem efeito. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §5.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
 - [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir). A fatia 4 persistiu interface, histórico e sessão (`layers/v1/*`); ajuste pendente continua só em memória, de propósito — gravar edição não aplicada precisa de decisão própria.
 - [~] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Falta marcar TS/JS explicitamente como "manual" na interface.
@@ -42,7 +43,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos
 - [ ] Culling: pular planos fora do viewport e com opacidade < 0,05.
 - [ ] Cache de `getComputedStyle` por nó, invalidado em change.
 - [ ] Árvore virtualizada.
-- [ ] Budget: scan < 300 ms para 1.500 nós; orbit > 50 fps (medir com os `bench/` no padrão do Traval).
+- [~] Budget: scan < 300 ms para 1.500 nós; orbit > 50 fps (medir com os `bench/` no padrão do Traval). Travessia do `scan()` já medida no spike da fatia 5 — ~2,5 µs/nó, ~3,8 ms para 1.500 nós, 80× abaixo do orçamento; falta o render do React e o fps do orbit, que precisam de aba em foco.
 
 ## E. Testes
 
