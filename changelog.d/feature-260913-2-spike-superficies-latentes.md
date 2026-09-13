@@ -28,21 +28,38 @@
   384 estilos inline, `data-name`/`data-src` por nó e duas classes; as sete entradas foram
   escritas contra as classes do app real. A oitava, escrita por `data-name`, resolve. O menu
   ⚡ Interagir lista sete ações sem efeito.
-- Segundo achado: o middleware `layers-fixtures-raw` do `vite.config.js` não roda no Vite
-  8.2.2 — CSS de fixture volta como `text/javascript` (wrapper de HMR) e arquivo ausente volta
-  como o `index.html` do editor em vez de 404. Isso quebra a resolução de origem em modo
-  fixture e esconde o estado vazio "mock não encontrado" (B:25). Medido com `curl`, não
-  corrigido aqui — é harness, não spike.
+- Segundo achado, corrigido depois do review: **dev server obsoleto** entrega fixture errada
+  calado. O Vite carrega plugins uma vez na partida, então um server que subiu antes de o
+  `vite.config.js` existir serve `.css` de fixture como `text/javascript` e devolve o
+  `index.html` do editor, com 200, para arquivo ausente. Num server novo (Vite 8.3.0) os três
+  pedidos voltam certos — `text/css`, 404, e o painel dizendo `Mock não encontrado.`. Não há
+  bug de config: virou nota em `docs/LOCAL-SETUP.md` com o `curl` de conferência, e o
+  `layers-suggest.js` passou a avisar quando o manifesto não volta como JSON.
 - Veredito: portão **não passa**; autoria manual do `interactions` segue sendo o caminho e o
   esforço vai para o checklist D, como o plano previa.
+
+### Corrigido após review
+
+- Quatro defeitos de método nas ferramentas do spike, achados pelo `/code-review` e todos com
+  efeito na própria métrica: cobertura usava interseção de conjuntos em vez de subconjunto;
+  `selFor` caía em nome de tag puro (um `div` sem id resolvia para todos os divs do mock);
+  `pathOf` dava o mesmo id para a raiz e para o primeiro filho; `popovertarget` vazio lançava
+  fora de try/catch e derrubava a medição. Remedido com as correções: cobertura **idêntica**
+  (4 de 7) — nenhum deles mudou o resultado neste conjunto, mas os três primeiros aprovariam
+  projeto que não deveria passar.
+- `layers-derive.js`: `styles` agora sai relativo a `base` (contrato de `docs/layers-json.md`),
+  `href` do mock resolve na pasta do mock, `<link>`/`<style>` dentro de comentário não contam, e
+  um HTML ilegível não derruba mais a varredura das outras pastas.
 
 ### Perf
 
 - **measured** — travessia do `scan()` (`getBoundingClientRect` + `getComputedStyle` por nó),
-  média de 5 passagens no Chrome 152: 0,1 ms para 80 nós (MarketView), 0,2 ms para 124 (Axai) e
-  1,1 ms para 428 (Traval). ~2,6 µs/nó, linear → ~3,9 ms para 1.500 nós contra o orçamento
-  `< 300 ms` de D:45, com 80× de folga. Piso, com cache de estilo quente: o `scan()` real paga
-  um recálculo antes de ler. **Scan incremental não se justifica** por este número.
+  mediana de 5 passagens no Chrome 152, **invalidando o estilo antes de cada passagem** (o
+  `scan()` real vem depois de mutação no DOM): 0,9 ms para 80 nós (MarketView), 0,6 ms para 124
+  (Axai) e 1,1 ms para 428 (Traval). Com o recálculo no caminho o custo fixo domina em árvore
+  pequena; extrapolando pela pior das três (2,6 µs/nó), ~3,9 ms para 1.500 nós contra o
+  orçamento `< 300 ms` de D:45 — duas ordens de grandeza de folga. **Scan incremental não se
+  justifica** por este número.
 - **N/A** — o render do React depois do `scan()` não foi medido: na aba automatizada
   `document.visibilityState` é `hidden` e o Chrome estrangula `requestAnimationFrame` e timers,
   o que torna as duas leituras inúteis. Fica para o runbook manual com a aba em foco.

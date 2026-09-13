@@ -29,9 +29,10 @@ conjunto de elementos, ou para um subconjunto dele.
 | MarketView | 80 | 2 | 2 | 6 | 0 | 6 |
 | **Pool** | — | **14** | **7** | **11** | **4** | **7** |
 
-A fixture `results` ficou fora: não tem `layers/mock.html` (só o README), e o que mediu 671 nós
-foi o **próprio `index.html` do editor**, servido pelo fallback do Vite no lugar de um 404.
-Ver §9 — é um bug do harness, não um dado.
+A fixture `results` ficou fora porque **não tem** `layers/mock.html` — só o README. Num dev
+server recém-iniciado o loader diz exatamente isso (`Mock não encontrado.` · `0 camadas · 0
+elementos`, medido). A leitura de 671 nós que apareceu antes veio de um dev server obsoleto que
+entregava o `index.html` do editor em vez de 404; ver §9.
 
 Duas contas, porque o denominador muda a resposta:
 
@@ -100,16 +101,19 @@ autoral:
 | Projeto | HTMLs | Classificação | `base` | `mock` | `styles` |
 |---|---:|---|:--:|:--:|:--:|
 | Traval | 7 | HTML estático | ✅ | ✅ | ❌ (5 folhas vs 4 — incluiu `src/styles/base.css`) |
-| Axai | 3 | HTML estático | ❌ | ❌ | ❌ |
+| Axai | 3 | HTML único com `<style>` inline | ❌ | ❌ | ⚪ vazio == vazio |
 | MarketView | 1 | HTML único com `<style>` inline | ✅ | ✅ | ✅ |
-| Results | 74 | HTML estático | ❌ | ❌ | ❌ |
+| Results | 74 | HTML estático | ❌ | ❌ | ⚪ vazio == vazio |
 
-A heurística "o HTML com mais elementos ganha" é a culpada dos dois ❌ completos: no Axai
+Acerto: **5 de 12 campos** com conteúdo, mais dois empates triviais entre listas vazias (⚪) que
+não provam nada. Só MarketView fecha os três de verdade.
+
+A heurística "o HTML com mais elementos ganha" é a culpada dos dois projetos errados: no Axai
 escolheu um relatório em `docs/superpowers/reports/` (752 elementos) em vez de
 `src/Axai.Api/wwwroot/index.html` (175, o candidato nº 2, com o `base` autoral); no Results
-escolheu uma tabela de dados (1.243 elementos) em vez do `layers/mock.html` que o manifesto
-pede — e que a pasta real ainda não tem. Acerto: **7 de 12 campos**, e só MarketView fecha
-os três.
+escolheu uma tabela de dados (1.243 elementos) em vez do `layers/mock.html` que o manifesto pede
+— e que a pasta real ainda não tem. "Índice na raiz, ou o mais raso" resolveria os dois, e é uma
+linha de código; não foi mudado aqui porque o portão já decidiu não seguir com o produto.
 
 Classificação HTML estático × shell de app funcionou onde foi testada: o `index.html` do Traval
 aparece como `1 el · shell` na lista de candidatos, exatamente como o loader o classifica em
@@ -120,17 +124,21 @@ runtime.
 `act()` chama `forceUpdate()` + `scanSoon()`, e o `scan()` percorre a árvore chamando
 `getBoundingClientRect` e `getComputedStyle` por nó.
 
-| Mock | Nós | Travessia + `getComputedStyle` |
+| Mock | Nós | Travessia + `getComputedStyle` (mediana de 5) |
 |---|---:|---:|
-| MarketView | 80 | 0,1 ms |
-| Axai | 124 | 0,2 ms |
-| Traval | 428 | 1,1 ms |
+| MarketView | 80 | 0,9 ms |
+| Axai | 124 | 0,6 ms |
+| Traval | 428 | 1,1 ms (passagens 0,9 · 1,0 · 1,1 · 1,3 · 1,3) |
 
-Média de 5 passagens por medição, Chrome 152. É um **piso, com cache de estilo quente**: o
-`scan()` real vem depois de uma mutação no DOM e paga o recálculo de estilo antes de ler. Linear
-em nós: ~2,6 µs/nó → **~3,9 ms para 1.500 nós**, contra o orçamento de `< 300 ms` de D:45. Há
-80× de folga; **scan incremental não se justifica por este número** nem com um recálculo
-completo no caminho.
+Chrome 152. Cada passagem **invalida o estilo antes de medir** (escreve uma custom property na
+raiz do mock), porque o `scan()` real vem depois de uma mutação no DOM; a primeira versão desta
+medição lia cache quente em quatro das cinco passagens e diluía a fria na média.
+
+Com o recálculo no caminho a curva não é linear em nós — o custo fixo da invalidação domina em
+árvore pequena, e é por isso que 80 nós (0,9 ms) custam quase o mesmo que 428 (1,1 ms).
+Extrapolando pela pior das três (2,6 µs/nó do Traval): **~3,9 ms para 1.500 nós**, contra o
+orçamento de `< 300 ms` de D:45. Há duas ordens de grandeza de folga; **scan incremental não se
+justifica por este número**.
 
 Não medido: o render do React que vem depois do `scan()`. Tentei via `requestAnimationFrame` e
 atraso de event loop, e as duas leituras são inúteis na aba automatizada —
@@ -167,32 +175,53 @@ O que sobrevive do spike, na ordem:
 Esforço segue para o **checklist D** (culling, cache de `getComputedStyle`, árvore
 virtualizada), como o portão manda.
 
-## 9. Terceiro achado: o middleware de fixtures não roda no Vite 8.2.2
+## 9. Terceiro achado: dev server obsoleto entrega fixture errada, calado
 
-Medido com `curl` no dev server desta sessão:
+A primeira versão desta seção culpava o Vite 8 por uma regressão no
+`server.middlewares.use()`. **Estava errada** — o review derrubou a hipótese subindo um server
+novo com a mesma `vite.config.js`. Medido, lado a lado:
 
-| Pedido | Esperado pelo `vite.config.js` | Obtido |
+| Pedido | Server iniciado hoje (`npm run dev`) | Server da porta 5180, iniciado em 12/09 20:53 |
 |---|---|---|
-| `/fixtures/traval/src/styles/layout.css` | 200 `text/css`, 6.610 bytes | 200 **`text/javascript`**, wrapper de HMR (`import { createHotContext } …`) |
-| `/fixtures/traval/nao-existe.css` | 404 | 200 `text/html` |
-| `/fixtures/results/layers/mock.html` | 404 | 200 `text/html`, 271.349 bytes — o `index.html` do editor |
+| `/fixtures/traval/src/styles/layout.css` | 200 `text/css`, 6.610 bytes | 200 `text/javascript` (wrapper de HMR) |
+| `/fixtures/traval/nao-existe.css` | 404 `not found: …` | 200 `text/html` |
+| `/fixtures/results/layers/mock.html` | 404 → painel diz `Mock não encontrado.` | 200 `text/html`, 271.349 bytes — o `index.html` do editor |
 
-O plugin `layers-fixtures-raw` existe exatamente para isto e o comentário dele descreve os dois
-sintomas. Sob Vite 8.2.2 o `server.middlewares.use()` registrado dentro de `configureServer`
-deixou de rodar antes do pipeline interno, então o transform de CSS e o fallback de SPA vencem.
+Vite instalado: **8.3.0**. O plugin `layers-fixtures-raw` funciona e o `vite.config.js` não tem
+defeito. A causa é banal: o processo da 5180 subiu **antes** de o `vite.config.js` existir na
+árvore de trabalho daquela sessão (o arquivo entrou em `61da7e6`), e um dev server não recarrega
+a própria config — ele carrega os plugins uma vez, na partida.
 
-Consequências, em ordem de gravidade:
+O que isso invalidou, e o que não:
 
-1. **O modo fixture entrega CSS embrulhado em JavaScript.** O índice por AST parseia o wrapper,
-   não a folha: resolução de origem (`data-src`) a partir de fixture está quebrada agora. As
-   contagens de elemento e camada não passam por CSS, e por isso as verificações das fatias
-   anteriores (414 elementos · 11 camadas) continuam de pé — mas qualquer número de **regras**
-   medido em fixture desde a subida do Vite 8 é suspeito.
-2. **Arquivo ausente devolve o editor.** O estado vazio "mock não encontrado" (B:25) não
-   aparece em modo fixture: o loader recebe 200 e renderiza o LAYERS dentro do LAYERS. Foi
-   assim que a fixture `results`, que não tem mock, mediu 671 nós nesta sessão.
-3. A fixture `results` segue **sem** `layers/mock.html` — pendência de snapshot já conhecida,
-   agora com o efeito acima escondendo-a.
+- **Invalidou** a linha `results` da tabela do §1: os 671 nós eram o editor lido como mock.
+- **Não invalidou** as contagens de elemento e camada das fatias anteriores — não passam por CSS
+  — nem o resultado do portão: remedi as três fixtures num server novo e a cobertura saiu
+  idêntica (4 de 7).
+- **Não existe** bug de harness para corrigir. O que existe é uma pegadinha de operação: server
+  antigo serve fixture errada sem avisar. Virou nota em `docs/LOCAL-SETUP.md`, não item de
+  release.
 
-Não corrigido aqui: está fora do escopo da fatia 5 e a correção é de harness, não de spike.
-Entra no checklist E como item próprio.
+O `tools/layers-suggest.js` agora detecta o sintoma: se o `layers.json` não voltar como JSON,
+ele avisa `dev server obsoleto? o fallback do Vite entrega index.html` em vez de medir zero
+entradas autorais em silêncio.
+
+## 10. Correções de método vindas do review
+
+O review (`/code-review 7 high`, tier opus) achou quatro defeitos que enviesavam a própria
+métrica. Todos corrigidos, e a medição refeita com as ferramentas corrigidas:
+
+| Defeito | Efeito na métrica | Correção |
+|---|---|---|
+| cobertura usava **interseção** de conjuntos, não subconjunto como o texto dizia | uma sugestão larga tocando 1 de 40 elementos marcaria a entrada como coberta | `subset()` explícito; interseção agora só aparece como `tocadaPor`, informativo |
+| `selFor` caía em **nome de tag puro** sem id/classe/`data-name` | `sel: 'div'` resolveria para todos os divs do mock e cobriria quase tudo | caminho estrutural com `:nth-child` |
+| `pathOf` devolvia `'0'` para a raiz **e** para o primeiro filho | `sameSet`/`subset` confundiam raiz com filho — e é dessa aritmética que sai o portão |  prefixo `'0'` + índices, o mesmo esquema do `scan()` |
+| `popovertarget` vazio lançava `SyntaxError` fora de try/catch | derrubava `collect()` e a medição inteira | guarda de id vazio, como o `aria-controls` já tinha |
+
+Nenhum deles mudou o resultado **neste** conjunto de projetos — a cobertura remedida é a mesma
+4 de 7 — mas os três primeiros aprovariam projeto que não deveria passar, e é por isso que
+entram no registro. O `layers-derive.js` também foi corrigido: `styles` agora sai relativo a
+`base`, como `docs/layers-json.md` manda; `href` do mock resolve na pasta do mock; `<link>` e
+`<style>` em comentário não contam; e um HTML ilegível não derruba mais a varredura das outras
+pastas.
+

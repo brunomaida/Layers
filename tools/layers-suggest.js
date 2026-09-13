@@ -19,11 +19,12 @@
     return sh ? sh.lastElementChild : null;
   };
 
-  // identidade estável de elemento: cadeia de índices desde a raiz do mock
+  // identidade estável de elemento: '0' para a raiz e '0.i.j…' para descendentes, o mesmo
+  // esquema de id que o scan() do editor usa. Sem o prefixo, a raiz colidia com o 1º filho.
   const pathOf = (root, el) => {
     const parts = [];
     for (let e = el; e && e !== root; e = e.parentElement) parts.unshift([...e.parentElement.children].indexOf(e));
-    return parts.join('.') || '0';
+    return ['0'].concat(parts).join('.');
   };
 
   const setOf = (root, sel) => {
@@ -35,19 +36,30 @@
   };
 
   const sameSet = (a, b) => a.size === b.size && [...a].every(x => b.has(x));
+  const subset = (a, b) => a.size > 0 && [...a].every(x => b.has(x));
   const meets = (a, b) => [...a].some(x => b.has(x));
 
-  // seletor legível e específico o bastante para o `act()` do editor reencontrar o elemento
+  // Seletor específico o bastante para o `act()` do editor reencontrar **aquele** elemento.
+  // Nome de tag puro é proibido de propósito: 'div' resolveria para todos os divs do mock e
+  // a sugestão passaria a tocar qualquer entrada autoral, inflando a cobertura.
+  const nthPath = (root, el) => {
+    const parts = [];
+    for (let e = el; e && e !== root; e = e.parentElement) {
+      parts.unshift(e.tagName.toLowerCase() + ':nth-child(' + ([...e.parentElement.children].indexOf(e) + 1) + ')');
+    }
+    return parts.join(' > ');
+  };
   const selFor = (root, el) => {
     if (el.id) return '#' + CSS.escape(el.id);
     const cls = [...(el.classList || [])].filter(c => !CLASS_PAIRS.includes(c));
     if (cls.length) {
       const s = '.' + CSS.escape(cls[0]);
       if (setOf(root, s).size <= 4) return s;
-      return el.tagName.toLowerCase() + s;
+      const t = el.tagName.toLowerCase() + s;
+      if (setOf(root, t).size <= 4) return t;
     }
     if (el.dataset && el.dataset.name) return '[data-name="' + el.dataset.name.replace(/"/g, '\\"') + '"]';
-    return el.tagName.toLowerCase();
+    return nthPath(root, el) || ':scope';
   };
 
   // ---- sinais, do mais preciso para o mais ruidoso ------------------------------------
@@ -61,7 +73,8 @@
       else if (el.tagName === 'DETAILS') push('details', el, { kind: 'toggle' });
       if (el.hasAttribute && el.hasAttribute('hidden')) push('hidden-attr', el, { kind: 'toggle' });
       if (el.hasAttribute && el.hasAttribute('popovertarget')) {
-        const t = root.querySelector('#' + CSS.escape(el.getAttribute('popovertarget')));
+        const id = el.getAttribute('popovertarget');
+        const t = id && root.querySelector('#' + CSS.escape(id));
         if (t) push('popovertarget', t, { kind: 'toggle', by: selFor(root, el) });
       }
       if (el.hasAttribute && el.hasAttribute('aria-controls')) {
@@ -135,18 +148,31 @@
 
     const hash = /[#&]layers=([^&]+)/.exec(location.hash);
     const base = hash ? decodeURIComponent(hash[1]) : null;
-    let man = null;
-    if (base) { try { man = await (await fetch('/' + base.replace(/\/$/, '') + '/layers.json')).json(); } catch (e) {} }
+    let man = null, manErro = null;
+    if (!base) manErro = 'sem #layers= na URL: rode numa fixture, ou passe o manifesto à mão';
+    else {
+      const url = '/' + base.replace(/\/$/, '') + '/layers.json';
+      try {
+        const r = await fetch(url);
+        const txt = await r.text();
+        if (!r.ok) manErro = url + ' respondeu ' + r.status;
+        else if (!/^\s*[[{]/.test(txt)) manErro = url + ' não devolveu JSON (dev server obsoleto? o fallback do Vite entrega index.html)';
+        else man = JSON.parse(txt);
+      } catch (e) { manErro = url + ': ' + e.message; }
+    }
+    if (manErro) console.warn('manifesto não lido —', manErro, '· as contagens de "autorais" e "cobertas" não valem.');
 
     const sug = collect(root);
     const aut = authored(root, man && man.interactions);
 
-    // cobertura: um item autoral conta como coberto quando alguma sugestão cai no mesmo
-    // conjunto de elementos (igualdade) ou dentro dele (o autor agrupou dois seletores)
+    // Cobertura: igualdade de conjunto, ou subconjunto — o autor às vezes agrupa dois
+    // seletores numa entrada. Interseção **não** conta: uma sugestão larga que toque um
+    // elemento de uma entrada de quarenta não a cobre, e era assim que a métrica inflava.
     aut.forEach(a => {
       a.exact = sug.filter(s => sameSet(s.set, a.set)).map(s => s.sel);
-      a.partial = sug.filter(s => !sameSet(s.set, a.set) && meets(s.set, a.set)).map(s => s.sel);
-      a.hit = a.exact.length > 0 || a.partial.length > 0;
+      a.subset = sug.filter(s => !sameSet(s.set, a.set) && subset(s.set, a.set)).map(s => s.sel);
+      a.tocam = sug.filter(s => !subset(s.set, a.set) && meets(s.set, a.set)).map(s => s.sel);
+      a.hit = a.exact.length > 0 || a.subset.length > 0;
     });
     sug.forEach(s => { s.fp = !aut.some(a => meets(s.set, a.set)); });
 
@@ -156,12 +182,22 @@
       r.sugeridas++; if (s.fp) r.falsoPositivo++; else r.casaram++;
     }));
 
-    // custo do re-scan: é o que o scan() do editor faz a cada ação (walk + getComputedStyle)
+    // Custo do re-scan: o que o scan() do editor faz a cada ação (walk + getComputedStyle).
+    // Cada passagem invalida o estilo antes de medir, porque o scan() real vem depois de uma
+    // mutação no DOM: sem isso, quatro das cinco passagens leriam cache quente e a média
+    // dividiria uma passagem fria por cinco.
     const els = [root, ...root.querySelectorAll('*')];
-    const t0 = performance.now();
+    const passes = [];
     let sink = 0;
-    for (let i = 0; i < 5; i++) els.forEach(e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); sink += r.width + parseFloat(cs.opacity || 0); });
-    const scanMs = (performance.now() - t0) / 5;
+    for (let i = 0; i < 5; i++) {
+      root.style.setProperty('--layers-spike', String(i));   // força recálculo de estilo
+      const t0 = performance.now();
+      els.forEach(e => { const r = e.getBoundingClientRect(); const cs = getComputedStyle(e); sink += r.width + parseFloat(cs.opacity || 0); });
+      passes.push(performance.now() - t0);
+    }
+    root.style.removeProperty('--layers-spike');
+    passes.sort((a, b) => a - b);
+    const scanMs = passes[Math.floor(passes.length / 2)];   // mediana, não média
 
     const rep = {
       projeto: (man && man.name) || base || '(desconhecido)',
@@ -172,8 +208,11 @@
       cobertasExatas: aut.filter(a => a.exact.length).length,
       falsosPositivos: sug.filter(s => s.fp).length,
       scanMs: +scanMs.toFixed(1),
+      scanMsPassagens: passes.map(v => +v.toFixed(1)),
+      manifestoLido: !!man,
+      manifestoErro: manErro,
       porSinal: perSignal,
-      perdidas: aut.filter(a => !a.hit).map(a => ({ label: a.label, sels: a.sels, elementos: a.set.size })),
+      perdidas: aut.filter(a => !a.hit).map(a => ({ label: a.label, sels: a.sels, elementos: a.set.size, tocadaPor: a.tocam })),
       extras: sug.filter(s => s.fp).map(s => ({ sel: s.sel, kind: s.kind, name: s.name || '', sinais: s.signals.join('+'), elementos: s.set.size })),
       _sink: sink && 0
     };

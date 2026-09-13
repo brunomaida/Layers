@@ -35,14 +35,18 @@ const strip = html => html
   .replace(/<style[\s\S]*?<\/style>/gi, '');
 
 function describe(file) {
-  const raw = fs.readFileSync(file, 'utf8');
+  // um HTML ilegível (permissão, arquivo travado) não pode derrubar a varredura das outras pastas
+  let raw;
+  try { raw = fs.readFileSync(file, 'utf8'); } catch (e) { return { file, bytes: 0, elementos: 0, links: [], inlineStyle: false, shell: false, erro: e.code || String(e) }; }
+  const semComentario = raw.replace(/<!--[\s\S]*?-->/g, '');
   const bodyM = /<body[^>]*>([\s\S]*)<\/body>/i.exec(raw);
   const body = strip(bodyM ? bodyM[1] : raw);
   const tags = body.match(/<([a-z][a-z0-9-]*)\b/gi) || [];
-  const links = [...raw.matchAll(/<link[^>]+rel=["']?stylesheet["']?[^>]*>/gi)]
+  // sobre o HTML sem comentário: um <link> ou <style> comentado não é folha do projeto
+  const links = [...semComentario.matchAll(/<link[^>]+rel=["']?stylesheet["']?[^>]*>/gi)]
     .map(m => (/href=["']([^"']+)["']/i.exec(m[0]) || [])[1])
     .filter(Boolean);
-  const inlineStyle = /<style[\s\S]*?<\/style>/i.test(raw);
+  const inlineStyle = /<style[\s\S]*?<\/style>/i.test(semComentario);
   // shell de app: corpo com pouquíssimos elementos, um deles um contêiner vazio de framework
   const shell = tags.length <= 3 && /<div[^>]+id=["']?(app|root|main)["']?[^>]*>\s*<\/div>/i.test(body);
   return { file, bytes: raw.length, elementos: tags.length, links, inlineStyle, shell };
@@ -65,12 +69,24 @@ function derive(projectDir) {
     if (base === 'layers' || base === '.') base = '';
     mock = base ? rel(best.file).slice(base.length + 1) : rel(best.file);
     if (!base && path.dirname(rel(best.file)) !== '.') mock = rel(best.file);
-    const dirOf = base ? path.join(projectDir, base) : projectDir;
+    // `base` prefixa `mock` e `styles` (docs/layers-json.md), então todo caminho aqui é
+    // relativo a `base`. Os href do mock, porém, são relativos à pasta **do mock**.
+    const baseDir = base ? path.join(projectDir, base) : projectDir;
+    const relBase = p => path.relative(baseDir, p).split(path.sep).join('/');
     styles = best.links
       .filter(h => !/^(https?:)?\/\//.test(h) && !h.startsWith('data:'))
-      .map(h => h.replace(/^\.?\//, '').split('?')[0])
-      .filter(h => fs.existsSync(path.join(dirOf, h)));
-    if (!styles.length) styles = found.css.map(rel).filter(p => !p.startsWith('layers/')).slice(0, 8);
+      .map(h => h.split('?')[0])
+      .map(h => path.resolve(dir, h))
+      .filter(f => fs.existsSync(f))
+      .map(relBase)
+      .filter(h => !h.startsWith('..'));
+    if (!styles.length) {
+      styles = found.css
+        .filter(f => !path.relative(baseDir, f).startsWith('..'))
+        .map(relBase)
+        .filter(p => !p.startsWith('layers/'))
+        .slice(0, 8);
+    }
   }
 
   let authored = null;
@@ -89,6 +105,7 @@ function derive(projectDir) {
       mock: authored.mock === mock,
       styles: JSON.stringify((authored.styles || []).slice().sort()) === JSON.stringify(styles.slice().sort())
     } : null,
+    ilegiveis: found.html.map(describe).filter(c => c.erro).map(c => rel(c.file) + ' · ' + c.erro),
     candidatos: cands.slice(0, 5).map(c => rel(c.file) + ' · ' + c.elementos + ' el' + (c.shell ? ' · shell' : ''))
   };
 }
