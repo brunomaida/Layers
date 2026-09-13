@@ -6,7 +6,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 22 concluídos, 2 parciais, 21 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos, 2 parciais, 19 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -14,7 +14,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 22 concluídos
 - [x] Fontes locais: 15 `.woff2` variáveis subsetados por `unicode-range` em `fonts/` + `fonts/fonts.css` gerado (48 blocos `@font-face`), referenciado por `<link>` no `<helmet>`; `<link>` do Google Fonts removido. Espelhos byte-a-byte do `fonts.gstatic.com` — **não** são 8 estáticas por peso, como este item supunha.
 - [x] Servir por HTTP (`npm run dev` na 5180) — FS Access e `document.fonts` exigem origem segura.
 - [x] Defaults documentados (corrigidos — valem os `data-props`, não o `:root`): tema `Gray · 1 Grafite`, acento `5 · Cinza médio`, seleção `Coral`, `originColors Mono`, `panelHeader B`, `sliderScale 85`, `fontScale 1`.
-- [ ] Chaves de `localStorage` documentadas e versionadas (prefixo `layers/v1/`). Hoje são 3 soltas: `layers-cfg`, `layers-hist`, `layers-inter-size`.
+- [x] Chaves de `localStorage` documentadas e versionadas: `layers/v1/{meta,ui,projects,session}` + `layers/v1/tab` no `sessionStorage`, mapeadas em `docs/ARCHITECTURE.md` § Persistência. `LayersCore.migrateConfig` converte as 3 soltas (`layers-cfg`, `layers-hist`, `layers-inter-size`) e não as apaga — remoção na v2.26.
 - [x] `docs/ARCHITECTURE.md` e este checklist na raiz de `docs/`.
 - [x] React + ReactDOM UMD versionados em `vendor/`, validados contra o SRI declarado no `support.js`; zero requisições externas verificadas no Chrome (12/12 em `localhost:5180`). Ver `docs/LOCAL-SETUP.md`.
 
@@ -24,7 +24,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 22 concluídos
 - [x] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice por AST (`css-tree`), cobrindo `@media`, `@layer`, nesting e `<style>` embutido no HTML (linha absoluta do arquivo).
 - [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
-- [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir).
+- [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir). A fatia 4 persistiu interface, histórico e sessão (`layers/v1/*`); ajuste pendente continua só em memória, de propósito — gravar edição não aplicada precisa de decisão própria.
 - [~] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Falta marcar TS/JS explicitamente como "manual" na interface.
 
 ## C. Consistência de interface
@@ -65,7 +65,7 @@ Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval 
 - [x] Sanitizar o mock do projeto: `script`/`link`/`iframe`/`object`/`embed`/`base`/`meta`/`noscript`/`template`, atributos `on*`, URLs `javascript:` e todo atributo com URL remota (`src`/`srcset`/`poster`/`data`/`href`/`xlink:href`; `data:` e `blob:` passam); `url(http…)` no CSS vira `url(about:blank)` com aviso. `<use href>` só aceita fragmento.
 - [x] Não aplicável desde a v2.24: não há iframe. O mock vive num shadow root do próprio documento e nenhum script do projeto é executado — o isolamento vem da sanitização (item acima), não de `sandbox=`.
 - [x] Sem chamadas de rede em runtime, incluindo as fontes que o projeto carregado pede: `fonts/projects.css` versiona Newsreader e Geist, `@font-face` do projeto sobe para o documento com `blob:`, e a meta CSP (`default-src 'self'`, `connect-src` só com a allowlist do GitHub) é a guarda. Medido com os 4 projetos: 18/18 requisições em `localhost:5180`, zero externas.
-- [ ] `localStorage` só com preferências de UI; nunca conteúdo de arquivos ou handles.
+- [x] `localStorage` só com preferências de UI, histórico de projetos e ponteiros de sessão; o handle da pasta fica no IndexedDB `layers-hist` e conteúdo de arquivo não sai do disco.
 - [~] Log de gravações: `layers-export.log` sai na exportação com caminho, timestamp, tamanho antes/depois e se houve `.bak`. Falta o hash.
 - [x] Dependências de dev fixadas (`package-lock.json`, lockfileVersion 3) e auditadas: `npm audit` reporta 0 vulnerabilidades. Requer npm 11+.
 
