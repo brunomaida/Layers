@@ -71,7 +71,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
             </div>
           </sc-if>
           <div onClick="{{ connectDir }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
-          <div onClick="{{ histRepoStart }}" title="Só registro por enquanto — o carregamento de repositório chega com o loader" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Registrar repositório GitHub…</div>
+          <div onClick="{{ openZip }}" title="Abrir um projeto compactado — somente leitura" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:14px;text-align:center;color:var(--fg3)">▤</span>Abrir arquivo .zip…</div>
+          <div onClick="{{ histRepoStart }}" title="Registrar um repositório público do GitHub; clique no item do histórico para carregar" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Registrar repositório GitHub…</div>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
       </sc-if>
@@ -704,6 +705,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <div style="display:flex;align-items:center;justify-content:space-between;padding-bottom:6px;border-bottom:1px solid var(--line1);font:700 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)">
         <span>{{ modalTitle }}</span><span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">{{ stageLabel }}</span>
       </div>
+      <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;flex-direction:column;gap:8px;font:500 calc(12px*var(--fs))/1.55 'Inter',sans-serif;color:var(--fg1);text-wrap:pretty">{{ confirmText }}</div>
+      </sc-if>
       <sc-if value="{{ isApply }}" hint-placeholder-val="{{ true }}">
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
           <div style="display:flex;flex-direction:column;gap:4px"><label style="font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">Branch</label><input type="text" value="{{ branch }}" onChange="{{ setBranch }}" spellCheck="false" style="height:24px;padding:0 8px;border:1px solid var(--line1);border-radius:3px;background:var(--bg1);color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace"></div>
@@ -724,6 +728,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <button onClick="{{ closeModal }}" style="height:28px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
         <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ makeDraft }}" style="height:28px;padding:0 12px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:600 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">1 · Gerar rascunho paralelo</button>
+        </sc-if>
+        <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
+          <button onClick="{{ confirmYes }}" style="height:28px;padding:0 12px;border-radius:4px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Carregar</button>
         </sc-if>
         <sc-if value="{{ isDraft }}" hint-placeholder-val="{{ false }}">
           <button onClick="{{ discardDraft }}" style="height:28px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--err);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar rascunho</button>
@@ -800,7 +807,7 @@ function lineDiff(a, b) {
   if (!out.some(l => l.color !== 'var(--fg2)')) push('', '(sem alterações)', ' ');
   return out;
 }
-async function writeInto(dir, path, text) { let d = dir; const parts = path.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); const h = await d.getFileHandle(parts[parts.length - 1], { create: true }); const w = await h.createWritable(); await w.write(text); await w.close(); }
+async function writeInto(dir, path, text) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); const h = await d.getFileHandle(parts[parts.length - 1], { create: true }); const w = await h.createWritable(); await w.write(text); await w.close(); }
 
 // v2.7-b: culling por opacidade NÃO implementado — a cena não tem população invisível.
 // Medido: no default os planos esmaecidos ficam em 0.30, e na seleção profunda em 0.35 — ambos claramente
@@ -903,6 +910,7 @@ class Component extends DCLogic {
     this.saveHist(h.filter(x => x.pinned || keep.includes(x)));
   }
   useDir(dir) {
+    this.zip = null; this.repo = null;
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     const id = 'folder:' + dir.name; idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
@@ -969,13 +977,62 @@ class Component extends DCLogic {
   unloadProject(why) { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   async pickDir() {
     if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; }
-    try { const dir = await window.showDirectoryPicker({ mode: 'readwrite' }); this.useDir(dir); } catch (e) {}
+    // conecta em modo leitura; 'readwrite' so e pedido no momento de gravar (ver ensureWrite)
+    try { const dir = await window.showDirectoryPicker({ mode: 'read' }); this.useDir(dir); } catch (e) {}
   }
   async openHist(e) {
-    if (e.kind === 'repo') { this.touchHist(e); this.setState({ cbOpen: null }); this.toast('Repositório registrado — o carregamento remoto chega com o loader (checklist B).'); return; }
+    if (e.kind === 'repo') { this.setState({ cbOpen: null }); this.useRepo(e); return; }
     const h = await idbGet(e.id);
-    if (h && h.requestPermission) { try { const p = await h.requestPermission({ mode: 'readwrite' }); if (p === 'granted') { this.useDir(h); return; } } catch (err) {} }
+    if (h && h.requestPermission) { try { const p = await h.requestPermission({ mode: 'read' }); if (p === 'granted') { this.useDir(h); return; } } catch (err) {} }
     this.toast(h ? 'Permissão não concedida — selecione a pasta novamente.' : 'Handle da pasta não encontrado — selecione a pasta novamente.'); this.pickDir();
+  }
+  // .zip: origem somente leitura. Cada entrada passa por safePath antes de virar arquivo —
+  // um zip baixado e o unico caminho por onde '../../evil.css' chegaria ao loader.
+  async pickZip() {
+    if (!window.showOpenFilePicker) { this.toast('Abrir .zip usa a File System Access API — abra no Chrome ou Edge.'); return; }
+    let file;
+    try { const [h] = await window.showOpenFilePicker({ types: [{ description: 'Projeto compactado', accept: { 'application/zip': ['.zip'] } }] }); file = await h.getFile(); }
+    catch (e) { return; }
+    let z;
+    try { z = await LayersCore.openZip(await file.arrayBuffer()); }
+    catch (e) { this.toast('Não deu para ler o .zip: ' + e.message); return; }
+    const root = LayersCore.zipRoot(z.files);
+    this.zip = { files: z.files, root }; this.repo = null;
+    const id = 'zip:' + file.name;
+    this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
+    this.touchHist({ id, kind: 'zip', name: file.name, path: file.name });
+    if (z.skipped.length) this.toast(z.skipped.length + ' entrada(s) do .zip recusada(s) por caminho inseguro: ' + z.skipped[0], 'warn');
+  }
+  // Repositorio publico do GitHub. Somente leitura, sem token guardado, e com confirmacao
+  // explicita por repositorio: e a unica saida de rede que o app faz.
+  async useRepo(entry) {
+    const r = parseRepo(entry.path || entry.name); if (!r) { this.toast('URL inválida — use github.com/usuario/repo.'); return; }
+    const name = r.owner + '/' + r.repo;
+    this.setState({ modal: { stage: 'confirm', log: [], title: 'Carregar ' + name + ' do GitHub',
+      text: 'Isto faz requisições para api.github.com e raw.githubusercontent.com — a única saída de rede do LAYERS. Só repositórios públicos; nada é enviado e nenhum token é guardado.',
+      onYes: () => this.loadRepo(r) } });
+  }
+  async loadRepo(r) {
+    const name = r.owner + '/' + r.repo;
+    let ref = 'HEAD';
+    try {
+      const meta = await fetch('https://api.github.com/repos/' + r.owner + '/' + r.repo);
+      if (meta.status === 404) { this.toast('Repositório não encontrado ou privado: ' + name + '. O loader só lê repositórios públicos.'); return; }
+      if (meta.status === 403) { this.toast('Limite da API do GitHub atingido (60 requisições por hora sem token). Tente mais tarde ou baixe o .zip.'); return; }
+      if (!meta.ok) { this.toast('GitHub respondeu ' + meta.status + ' para ' + name + '.'); return; }
+      ref = (await meta.json()).default_branch || 'HEAD';
+    } catch (e) { this.toast('Sem resposta do GitHub: ' + e.message); return; }
+    this.repo = { owner: r.owner, repo: r.repo, ref }; this.zip = null;
+    this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
+    this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name, label: ref });
+  }
+  // Origem somente leitura (.zip, repositorio) nao tem onde gravar. Recusa nomeando a origem,
+  // em vez de deixar fileHandle estourar sem contexto.
+  readOnlyBlock() {
+    if (this.state.dir) return false;
+    const what = this.zip ? 'um .zip' : this.repo ? 'um repositório remoto' : 'o modo fixture';
+    this.toast('Projeto carregado de ' + what + ', que é somente leitura. Conecte a pasta local para gravar.', 'warn');
+    return true;
   }
   addRepo() {
     const r = parseRepo(this.state.histRepoQ || ''); if (!r) { this.toast('URL inválida — use github.com/usuario/repo.'); return; }
@@ -1232,9 +1289,34 @@ class Component extends DCLogic {
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
   get fixtureBase() { const p = this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
-  async fileHandle(path, create) { let d = this.state.dir; const parts = path.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
-  async readText(path) { if (this.state.dir) { const h = await this.fileHandle(path, false); return (await h.getFile()).text(); } if (this.fixtureBase) { const r = await fetch(this.fixtureBase + path.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + path); return r.text(); } throw new Error('sem pasta conectada'); }
-  async readBlob(path, type) { if (this.state.dir) { const h = await this.fileHandle(path, false); return new Blob([await (await h.getFile()).arrayBuffer()], { type }); } if (this.fixtureBase) { const r = await fetch(this.fixtureBase + path.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + path); return new Blob([await r.arrayBuffer()], { type }); } throw new Error('sem pasta conectada'); }
+  async fileHandle(path, create) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
+  // Ordem das origens: pasta conectada > .zip em memoria > repositorio publico > fixture HTTP.
+  // Esta e a unica porta de leitura do loader — foi por isso que .zip e GitHub couberam aqui
+  // sem tocar em loadProject.
+  async readBytes(path) {
+    const p = LayersCore.safePath(path);
+    if (!p) throw new Error('caminho recusado: ' + path);
+    if (this.state.dir) { const h = await this.fileHandle(p, false); return new Uint8Array(await (await h.getFile()).arrayBuffer()); }
+    if (this.zip) { const hit = this.zip.files.get(this.zip.root + p); if (!hit) throw new Error('404 ' + p); return hit; }
+    if (this.repo) return new Uint8Array(await this.repoFetch(p, 'arrayBuffer'));
+    if (this.fixtureBase) { const r = await fetch(this.fixtureBase + p.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + p); return new Uint8Array(await r.arrayBuffer()); }
+    throw new Error('nenhum projeto conectado');
+  }
+  async readText(path) {
+    if (this.state.dir) { const h = await this.fileHandle(path, false); const f = await h.getFile(); this.mtimes = this.mtimes || {}; this.mtimes[path] = f.lastModified; return f.text(); }
+    if (this.fixtureBase && !this.zip && !this.repo) { const r = await fetch(this.fixtureBase + path.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + path); return r.text(); }
+    return new TextDecoder().decode(await this.readBytes(path));
+  }
+  // GitHub publico: a arvore vem da API, os blobs de raw. Dois hosts, ambos com ACAO '*'
+  // (medido). Nenhum token e pedido nem guardado — repositorio privado simplesmente 404.
+  async repoFetch(path, as) {
+    const { owner, repo, ref } = this.repo;
+    const url = 'https://raw.githubusercontent.com/' + owner + '/' + repo + '/' + ref + '/' + path.split('/').map(encodeURIComponent).join('/');
+    const r = await fetch(url);
+    if (!r.ok) throw new Error(r.status + ' ' + path);
+    return as === 'arrayBuffer' ? r.arrayBuffer() : r.text();
+  }
+  async readBlob(path, type) { return new Blob([await this.readBytes(path)], { type }); }
   // @font-face do projeto vai para o documento (em shadow root nao carrega), com cada url()
   // relativa trocada por blob local. url() remota e descartada: nenhuma requisicao externa.
   async hoistFaces(faces, warn) {
@@ -1257,8 +1339,41 @@ class Component extends DCLogic {
     const st = document.createElement('style'); st.dataset.layersFace = '1'; st.textContent = out.join('\n'); document.head.appendChild(st);
   }
   dropFaces() { document.querySelectorAll('style[data-layers-face]').forEach(e => e.remove()); (this.faceUrls || []).forEach(u => URL.revokeObjectURL(u)); this.faceUrls = []; }
-  async writeText(path, text) { const h = await this.fileHandle(path, true); const w = await h.createWritable(); await w.write(text); await w.close(); }
-  async dirOf(path) { let d = this.state.dir; const parts = path.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); return d; }
+  // F:61 — a pasta e conectada em modo leitura; a escrita e pedida so aqui, no momento de
+  // gravar, que e sempre consequencia de um clique do usuario.
+  async ensureWrite() {
+    const d = this.state.dir;
+    if (!d) throw new Error('nenhuma pasta conectada');
+    if (!d.queryPermission) return true;
+    if (await d.queryPermission({ mode: 'readwrite' }) === 'granted') return true;
+    if (await d.requestPermission({ mode: 'readwrite' }) === 'granted') return true;
+    throw new Error('permissão de escrita não concedida para a pasta ' + d.name);
+  }
+  // F:63/64/70 — grava em .tmp e renomeia, guarda .bak da primeira versao da sessao, recusa
+  // se o arquivo mudou fora do LAYERS desde a leitura, e registra o que foi feito.
+  async writeText(path, text) {
+    await this.ensureWrite();
+    const h = await this.fileHandle(path, true);
+    this.mtimes = this.mtimes || {}; this.baks = this.baks || {};
+    let before = '';
+    try { const f = await h.getFile(); before = await f.text();
+      const seen = this.mtimes[path];
+      if (seen !== undefined && f.lastModified !== seen) throw new Error('o arquivo ' + path + ' mudou fora do LAYERS desde a leitura — reconecte a pasta e refaça o ajuste para não sobrescrever a alteração');
+    } catch (e) { if (/mudou fora do LAYERS/.test(e.message)) throw e; }
+    if (before && !this.baks[path]) { try { await this.rawWrite(path + '.bak', before); this.baks[path] = true; } catch (e) {} }
+    const tmp = path + '.tmp';
+    let moved = false;
+    try {
+      const th = await this.fileHandle(tmp, true);
+      const w = await th.createWritable(); await w.write(text); await w.close();
+      if (typeof th.move === 'function') { await th.move(path.split('/').pop()); moved = true; }
+      else { await this.rawWrite(path, text); const dir = await this.dirOf(tmp); await dir.removeEntry(tmp.split('/').pop()); moved = true; }
+    } catch (e) { if (!moved) await this.rawWrite(path, text); }
+    try { this.mtimes[path] = (await (await this.fileHandle(path, false)).getFile()).lastModified; } catch (e) {}
+    this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: before.length, to: text.length, bak: !!this.baks[path] });
+  }
+  async rawWrite(path, text) { const h = await this.fileHandle(path, true); const w = await h.createWritable(); await w.write(text); await w.close(); }
+  async dirOf(path) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); return d; }
   log(line) { this.setState(s => ({ modal: s.modal ? { ...s.modal, log: [...s.modal.log, line] } : null })); }
   filesOf(changes) {
     const map = {}; changes.forEach(c => { const file = ruleOf(c)[0]; (map[file] = map[file] || []).push(c); });
@@ -1274,7 +1389,7 @@ class Component extends DCLogic {
     return true;
   }
   async makeDraft() {
-    if (this.utilityBlock()) return;
+    if (this.readOnlyBlock() || this.utilityBlock()) return;
     const files = this.filesOf(this.state.changes); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } }));
     for (const f of files) {
       if (!/\.css$/.test(f.path)) { this.log('⚠ ' + f.path + ': fonte TS — ajuste registrado, mas o patch automático só cobre .css'); continue; }
@@ -1289,7 +1404,7 @@ class Component extends DCLogic {
     this.setState(s => ({ modal: { ...s.modal, stage: 'plan' } })); this.log('Rascunho descartado.');
   }
   async approve() {
-    if (this.utilityBlock()) return;
+    if (this.readOnlyBlock() || this.utilityBlock()) return;
     const files = this.filesOf(this.state.changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes: this.state.changes, files: [] };
     for (const f of files) {
       if (!/\.css$/.test(f.path)) continue;
@@ -1318,6 +1433,7 @@ class Component extends DCLogic {
     this.setState({ diff: out, menuOpen: false });
   }
   async exportFull() {
+    if (this.readOnlyBlock() || this.utilityBlock()) return;
     this.setState({ menuOpen: false }); if (!this.state.changes.length) return;
     if (!window.showDirectoryPicker) { this.toast('A exportação usa a File System Access API — abra no Chrome ou Edge.'); return; }
     if (!this.state.dir) { this.toast('Conecte primeiro a pasta do projeto para ler os arquivos originais.'); return; }
@@ -1326,6 +1442,8 @@ class Component extends DCLogic {
     for (const f of files) { if (!/\.css$/.test(f.path)) { log.push('⚠ ' + f.path + ': fonte TS — não exportado'); continue; } try { await writeInto(target, f.path, this.patched(await this.readText(f.path), f.list)); log.push('✓ ' + f.path); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } }
     const manifest = this.state.changes.map(c => ({ file: ruleOf(c)[0], selector: this.patchSel(c), line: ruleOf(c)[2], property: kebab(c.prop), from: c.from, to: c.to, elements: c.ids.length, scope: c.scope }));
     try { await writeInto(target, 'layers-changes.json', JSON.stringify(manifest, null, 2)); log.push('✓ layers-changes.json (manifesto)'); } catch (e) { log.push('✗ manifesto: ' + e.message); }
+    // F:70 — registro do que foi gravado nesta sessao: caminho, quando, tamanho antes/depois
+    if ((this.writeLog || []).length) { try { await writeInto(target, 'layers-export.log', this.writeLog.map(w => [w.at, w.path, w.from + ' -> ' + w.to + ' bytes', w.bak ? '.bak guardado' : ''].filter(Boolean).join('  ')).join('\n') + '\n'); log.push('✓ layers-export.log (' + this.writeLog.length + ' gravação(ões))'); } catch (e) { log.push('✗ layers-export.log: ' + e.message); } }
     this.setState({ modal: { stage: 'export', branch: '', msg: '', log: ['Exportado para a pasta: ' + target.name, ...log] } });
   }
 
@@ -1603,7 +1721,7 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(),
+      connectDir: () => this.pickDir(), openZip: () => this.pickZip(),
       ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
         return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: this.cbToggle('hist'), histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
@@ -1617,8 +1735,11 @@ class Component extends DCLogic {
           histRepoInput: e => this.setState({ histRepoQ: e.target.value }), histRepoKey: e => { e.stopPropagation(); if (e.key === 'Enter') this.addRepo(); if (e.key === 'Escape') this.setState({ histAdding: false, histRepoQ: '' }); }, histRepoAdd: () => this.addRepo() }; })(),
       cancelAll: () => { s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
       openSave: () => { if (!s.changes.length) return; this.setState({ menuOpen: false, modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
-      modalOpen: !!m, modalTitle: m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos', isApply: !!m && m.stage !== 'export',
-      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas' })[m.stage] : '', isPlan: !!m && m.stage === 'plan', isDraft: !!m && m.stage === 'draft',
+      modalOpen: !!m, modalTitle: m && m.stage === 'confirm' ? m.title : m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos',
+      isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
+      isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',
+      confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
+      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan', isDraft: !!m && m.stage === 'draft',
       branch: m ? m.branch : '', msg: m ? m.msg : '', setBranch: e => this.setState(st => ({ modal: { ...st.modal, branch: e.target.value } })), setMsg: e => this.setState(st => ({ modal: { ...st.modal, msg: e.target.value } })),
       modalFiles: m ? this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : s.changes) : [], modalLog: m ? m.log.join('\n') : '',
       closeModal: () => this.setState({ modal: null }), makeDraft: () => this.makeDraft(), discardDraft: () => this.discardDraft(), approve: () => this.approve(),
