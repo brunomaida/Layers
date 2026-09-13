@@ -952,13 +952,17 @@ class Component extends DCLogic {
     // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
     // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
     const idx = LayersCore.buildIndex(css.concat(inlineCss)).byClass;
+    // folha de utilitarios: editar .p-6 mudaria todo o projeto, entao a gravacao e recusada com
+    // motivo em vez de fingir que deu certo (docs/layers-requisitos.md)
+    const utility = css.filter(c => LayersCore.isUtilitySheet(c.text)).map(c => c.file);
+    utility.forEach(f => warn.push('folha de utilitarios: ' + f + ' — Aplicar desabilitado'));
     rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
     Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
     const host = this.pageRef.current; if (!host) return; const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
-    this.setState({ project: { name, man, warn }, loadError: null, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: '0', isoId: null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
@@ -1261,7 +1265,16 @@ class Component extends DCLogic {
     return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
   }
   patched(text, list) { list.forEach(c => { text = LayersCore.patchCssAt(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
+  // Uma guarda so, no caminho de escrita: gravar patch numa classe utilitaria mudaria todo o
+  // projeto de uma vez. Recusa com o nome da folha, em vez de gravar e surpreender depois.
+  utilityBlock() {
+    const u = this.state.project && this.state.project.utility;
+    if (!u || !u.length) return false;
+    this.toast('Projeto com folha de utilitarios (' + u[0] + '): editar uma classe utilitaria mudaria todo o projeto, entao gravar esta desabilitado. Ajuste a origem do utilitario no projeto.', 'warn');
+    return true;
+  }
   async makeDraft() {
+    if (this.utilityBlock()) return;
     const files = this.filesOf(this.state.changes); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } }));
     for (const f of files) {
       if (!/\.css$/.test(f.path)) { this.log('⚠ ' + f.path + ': fonte TS — ajuste registrado, mas o patch automático só cobre .css'); continue; }
@@ -1276,6 +1289,7 @@ class Component extends DCLogic {
     this.setState(s => ({ modal: { ...s.modal, stage: 'plan' } })); this.log('Rascunho descartado.');
   }
   async approve() {
+    if (this.utilityBlock()) return;
     const files = this.filesOf(this.state.changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes: this.state.changes, files: [] };
     for (const f of files) {
       if (!/\.css$/.test(f.path)) continue;

@@ -29,7 +29,7 @@ Conclusão: o loader cobre HTML estático diretamente; tudo que é renderizado p
 
 ### `.css`
 - Lido inteiro e aplicado escopado (`:root`→`:host`, `html/body`→raiz). É a **única** fonte que o editor grava (rascunho paralelo `.design-draft.css`, histórico `.design-history/`, patch por seletor).
-- Indexado por seletor de classe top-level para gerar `data-src` (`arquivo|seletor|linha`). Regras aninhadas (`@media`, `@layer`, nesting) não entram no índice — ficam só visíveis.
+- Indexado por seletor de classe para gerar `data-src` (`arquivo|seletor|linha`). O índice é por AST (`css-tree`) e cobre regra top-level, dentro de `@media` (guarda o `conditionText`), dentro de `@layer` e aninhada (marca `nested`). `<style>` embutido no HTML também entra, com a linha absoluta do arquivo.
 - `@font-face` dentro de shadow root não carrega fontes: declare via `fonts` (Google) ou copie o `@font-face` para o editor (não previsto no baseline).
 - `@import` não é seguido (listar cada arquivo em `styles`).
 
@@ -61,5 +61,5 @@ Conclusão: o loader cobre HTML estático diretamente; tudo que é renderizado p
 ## Pendências para o checklist B
 1. Snapshot do Results (rodar `tools/layers-snapshot.js` no `Painel CCRC.html` aberto) e definir `viewport`.
 2. Traval: substituir o mock derivado da v2.23 por snapshot do app real (mesmo script) mantendo `rules` para os `data-src`.
-3. MarketView: `rules` opcionais mapeando classes → `index.html|.seletor|linha` (CSS inline; o índice não cobre `<style>` do HTML).
+3. ~~MarketView: `rules` opcionais mapeando classes → `index.html|.seletor|linha`~~ — resolvido: o índice passou a cobrir `<style>` do HTML, e o MarketView resolve 17 elementos sozinho.
 4. Loader remoto (repositório GitHub) reutiliza o mesmo contrato com um leitor HTTP — já isolado em `readText`.

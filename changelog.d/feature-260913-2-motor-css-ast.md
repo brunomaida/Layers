@@ -41,3 +41,22 @@ menos que a varredura anterior por não precisar zerar comentários antes de con
   antigo e o novo, antes de trocar o call site.
 - `index.html` 246.471 → 250.712 bytes; as quatro funções por regex saíram e a fiação do AST
   entrou.
+
+### Adicionado (fixtures e falha explícita)
+
+- `fixtures/plain-css/` (shorthand, `!important`, `@media`, `[data-x="body"]`, `:root` dentro de
+  string), `fixtures/nested-oklch/` (nesting, `oklch`, `color-mix`, `@layer`) e
+  `fixtures/tailwind/` (folha de utilitários sintética, 1.263 regras).
+- Projeto com folha de utilitários é detectado na carga e a gravação é **recusada com o nome da
+  folha**, em vez de gravar um patch numa classe utilitária e mudar o projeto inteiro. A guarda
+  é única, no caminho de escrita (`makeDraft` e `approve`).
+- A heurística não marca mais por `@layer utilities` sozinho: uma folha autoral pode declarar a
+  camada com duas regras, e isso desabilitava Aplicar sem motivo. `@tailwind` continua bastando.
+
+### Verificado nas fixtures
+
+- `nested-oklch`: `.nav-link` aninhado dentro de `.nav` resolve para `style.css|.nav-link|21`,
+  `.post-title|35`, `.post-body|36` — linhas conferidas no arquivo. `oklch()` renderiza.
+- `plain-css`: `[data-x="body"]` mantém `#777` e `content: ":root html body"` fica intacto —
+  os dois casos que a reescrita por regex corrompia. `:root` vira `:host` e `--ink` chega ao host.
+- `tailwind`: 1.241 regras parseadas, aviso de folha de utilitários na carga.

@@ -1,0 +1,6 @@
+{
+  "name": "Tailwind (falha explicita esperada)",
+  "viewport": { "width": 900, "height": 420 },
+  "mock": "index.html",
+  "styles": ["utilities.css"]
+}
