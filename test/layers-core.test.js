@@ -409,6 +409,14 @@ describe('WriteConfig', () => {
     expect(core.readConfig(s)).toEqual(cfg);
   });
 
+  it('DepoisDaMigracao_PreservaMigratedFrom', () => {
+    // a primeira gravacao comum vem 400 ms depois da migracao: nao pode apagar o registro
+    const s = fakeStorage({ 'layers-cfg': JSON.stringify({ theme: 'Dark' }) });
+    const cfg = core.migrateConfig(s);
+    core.writeConfig(s, cfg);
+    expect(JSON.parse(s.getItem('layers/v1/meta')).migratedFrom).toContain('layers-cfg');
+  });
+
   it('JsonCorrompido_CaiParaVazio', () => {
     const s = fakeStorage({ 'layers/v1/ui': '{nao é json', 'layers/v1/projects': 'null' });
     const back = core.readConfig(s);
@@ -423,6 +431,23 @@ describe('ExportConfig', () => {
     expect(blob.schema).toBe(1);
     expect(typeof blob.exportedAt).toBe('string');
     expect(blob.ui.theme).toBe('Dark');
+  });
+
+  it('SessaoFicaDeFora_DoArquivo', () => {
+    // o import descarta sessao por contrato; exportar camera e ultimo projeto seria dado morto
+    const blob = core.exportConfig({ ui: {}, projects: [], session: { lastProjectId: 'folder:X' } });
+    expect('session' in blob).toBe(false);
+  });
+
+  it('SessaoDoArquivo_Ignorada', () => {
+    const atual = { ui: {}, projects: [], session: { lastProjectId: 'folder:Traval', selId: '7' } };
+    const out = core.importConfig({ schema: 1, ui: {}, session: { lastProjectId: 'folder:Outro', selId: '1' } }, atual);
+    expect(out.session).toEqual(atual.session);
+  });
+
+  it('UiNaoObjeto_MantemALocal', () => {
+    const atual = { ui: { theme: 'Dark' }, projects: [], session: {} };
+    expect(core.importConfig({ schema: 1, ui: 'nao é objeto' }, atual).ui).toEqual({ theme: 'Dark' });
   });
 
   it('SchemaErrado_Recusa', () => {

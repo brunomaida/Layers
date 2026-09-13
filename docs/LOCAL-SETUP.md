@@ -108,14 +108,16 @@ browser. Limpe e recarregue:
 
 ```js
 ['meta', 'ui', 'projects', 'session'].forEach(k => localStorage.removeItem('layers/v1/' + k));
+['layers-cfg', 'layers-hist', 'layers-inter-size',
+ 'traval-layer-editor-cfg', 'traval-layer-editor-hist', 'traval-layer-editor-inter-size']
+  .forEach(k => localStorage.removeItem(k));
 sessionStorage.removeItem('layers/v1/tab');
 ```
 
-As chaves antigas (`layers-cfg`, `layers-hist`, `layers-inter-size`, e as
-`traval-layer-editor-*` anteriores a elas) continuam no navegador até a v2.26, mas só são
-lidas uma vez, na migração para `layers/v1/*` — apagar as de `layers/v1` já devolve os
-defaults. O mapa completo das chaves está em [ARCHITECTURE.md](ARCHITECTURE.md)
-§ Persistência.
+As chaves antigas continuam no navegador até a v2.26 e são lidas uma vez, na migração para
+`layers/v1/*` — por isso apagar só as de `layers/v1` **não** devolve os defaults: a migração
+roda de novo e traz o tema antigo de volta. O mapa completo das chaves está em
+[ARCHITECTURE.md](ARCHITECTURE.md) § Persistência.
 
 ## Verificar que está tudo local
 

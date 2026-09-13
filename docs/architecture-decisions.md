@@ -67,7 +67,7 @@ rodar — nunca são o estado final. O `README` estava simplesmente errado.
 **Consequências.**
 
 - Precedência documentada: `localStorage` › `data-props` › literais do `:root`.
-- Ao comparar render, limpar as chaves `layers/v1/*` antes de concluir que regrediu.
+- Ao comparar render, limpar `layers/v1/*` e as chaves antigas que a migração ainda lê (snippet em [LOCAL-SETUP.md](LOCAL-SETUP.md)).
 - Mudar default visual = editar `data-props`, não o `:root`.
 
 ## 2026-09-13 · Reusar o IndexedDB `layers-hist` e gravar configuração por picker

@@ -853,7 +853,7 @@ const THEMES = {
 const ACCENTS = { '1 · Aço': ['#7d9bc1', '#4e6f96'], '2 · Lavanda': ['#9b97c2', '#6b6799'], '3 · Sálvia': ['#7fa79b', '#4f7d70'], '4 · Cinza claro': ['#b8c0ca', '#6d7580'], '5 · Cinza médio': ['#8b96a3', '#59626d'], '6 · Cinza escuro': ['#66707c', '#3f4750'] };
 // cor de seleção / hover / foco de camada na cena (o mock é sempre escuro, então tons claros funcionam em todos os temas)
 const SELECTS = { 'Azul': '#60a5fa', 'Teal': '#5ec9bc', 'Coral': '#f08c6c', 'Âmbar': '#f5a623', 'Violeta': '#a78bfa', 'Verde': '#26c281', 'Branco': '#f2f4f7' };
-const CFG_KEYS = ['theme', 'selectColor', 'originColors', 'panelHeader', 'fontScale', 'logoGrad'];
+const CFG_KEYS = LayersCore.CFG_KEYS;
 const DEFAULT_GRAD = 'linear-gradient(95deg,var(--pri),var(--violet))';
 // degradê aleatório com a cor de seleção como base + 2-3 cores extras (matiz/ângulo sorteados)
 const randGrad = base => { const k = 2 + Math.floor(Math.random() * 2); const cols = [base]; for (let i = 0; i < k; i++) cols.push('hsl(' + Math.floor(Math.random() * 360) + ' ' + (55 + Math.floor(Math.random() * 35)) + '% ' + (55 + Math.floor(Math.random() * 20)) + '%)'); if (Math.random() < .5) cols.reverse(); return 'linear-gradient(' + Math.floor(Math.random() * 360) + 'deg,' + cols.join(',') + ')'; };
@@ -912,6 +912,9 @@ class Component extends DCLogic {
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, menuOpen: false, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
+  // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
+  // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
+  projectId = CONF.session.lastProjectId || null;
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
   treeScrollRef = React.createRef(); colRef = React.createRef(); topBarRef = React.createRef(); gearRef = React.createRef();
   interDdRef = React.createRef();
@@ -937,14 +940,19 @@ class Component extends DCLogic {
   // Sem ativação do usuário, requestPermission() recusa — por isso aqui é query: pasta já
   // autorizada volta sozinha, pasta sem permissão vira convite a reconectar pelo dropdown.
   async restoreSession() {
-    const sess = CONF.session || {}; const cam = sess.camera;
-    if (cam) this.setState({ yaw: +cam.yaw || 0, tilt: +cam.tilt || 0, zoom: +cam.zoom || 1, panX: +cam.panX || 0, panY: +cam.panY || 0, flat: !!cam.flat });
-    if (this.fixtureBase) return; // #layers= manda no projeto; a camera acima ainda volta
+    const sess = CONF.session || {};
     let tab = null; try { tab = JSON.parse(SS_STORE.getItem(TAB_LS) || 'null'); } catch (e) {}
     const id = tab && 'projectId' in tab ? tab.projectId : sess.lastProjectId;
-    if (!id) return;
+    this.projectId = id || null;
+    // Camera e selecao moram na chave compartilhada: valem para a aba que as gravou, nao para
+    // outra aba que esta em outro projeto. Em modo fixture nem entram — loadProject zera a vista.
+    const own = !!id && sess.lastProjectId === id;
+    const cam = own ? sess.camera : null;
+    if (cam && !this.fixtureBase) this.setState({ yaw: +cam.yaw || 0, tilt: +cam.tilt || 0, zoom: +cam.zoom || 1, panX: +cam.panX || 0, panY: +cam.panY || 0, flat: !!cam.flat });
+    if (this.fixtureBase || !id) return; // #layers= manda no projeto
     const entry = (this.state.hist || []).find(x => x.id === id); if (!entry) return;
-    this.pendingSel = { id: entry.id, selId: sess.selId || '0', isoId: sess.isoId || null };
+    this.markTab();
+    if (own) this.pendingSel = { id: entry.id, selId: sess.selId || '0', isoId: sess.isoId || null };
     const hint = { title: 'Último projeto: ' + entry.name + '.', body: 'Abra Projetos ▾ e clique em ' + entry.name + ' para reconectar — o navegador só concede acesso à pasta a partir de um clique seu.' };
     if (entry.kind !== 'folder') { this.setState({ loadError: { title: 'Último projeto: ' + entry.name + '.', body: entry.kind === 'zip' ? 'Origem .zip vive em memória: reabra o arquivo em Projetos ▾ › Abrir arquivo .zip…' : 'Repositório do GitHub pede confirmação explícita a cada carga: abra Projetos ▾ e clique em ' + entry.name + '.' } }); return; }
     const h = await idbGet(entry.id);
@@ -958,10 +966,32 @@ class Component extends DCLogic {
     const pinned = h.filter(x => x.pinned), keep = h.filter(x => !x.pinned).slice(0, Math.max(0, this.histMax() - pinned.length));
     h.filter(x => !x.pinned && !keep.includes(x)).forEach(x => idbDel(x.id));
     this.saveHist(h.filter(x => x.pinned || keep.includes(x)));
-    this.projectId = entry.id; this.markTab();
   }
   // Configuracao em arquivo. Grava por showSaveFilePicker — alvo escolhido no clique, como a
   // exportacao de versoes ja faz; writeInto/writeText continuam exclusivos da pasta do projeto.
+  // Um layers-config.json pode vir corrompido ou hostil, e o que entra aqui e persistido em
+  // seguida: 'theme' fora de THEMES quebra applyTheme na montagem, e fontScale: 50 deixa a
+  // interface inutilizavel sem console. So passa o que casa com o tipo do estado atual.
+  sanitizeUi(raw) {
+    const has = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+    const out = {};
+    CFG_KEYS.forEach(k => {
+      const v = raw[k]; if (v === undefined) return;
+      if (k === 'fontScale') { const n = +v; if (n >= .7 && n <= 1.6) out[k] = n; return; }
+      if (typeof v !== 'string') return;
+      if (k === 'theme' && !has(THEMES, v)) return;
+      if (k === 'selectColor' && v !== 'Padrão do tema' && !has(SELECTS, v)) return;
+      out[k] = v;
+    });
+    UI_KEYS.forEach(k => {
+      const v = raw[k]; if (v === undefined) return;
+      if (k === 'interSize') { if (v && +v.w) out[k] = { w: +v.w, h: +v.h || 0, split: +v.split || 210 }; return; }
+      if (typeof v !== typeof this.state[k]) return;
+      if (typeof v === 'number' && !(isFinite(v) && v >= 0 && v <= 2000)) return;
+      out[k] = v;
+    });
+    return out;
+  }
   async exportCfg() {
     this.setState({ cbOpen: null });
     if (!window.showSaveFilePicker) { this.toast('Exportar configuração usa a File System Access API — abra no Chrome ou Edge.'); return; }
@@ -979,15 +1009,19 @@ class Component extends DCLogic {
     let next;
     try { next = LayersCore.importConfig(JSON.parse(text), { ui: this.uiSnapshot(), projects: this.state.hist || [], session: this.sessionSnapshot() }); }
     catch (e) { this.toast('Configuração não importada: ' + e.message); return; }
-    const cfg = {}; CFG_KEYS.forEach(k => { if (next.ui[k] !== undefined) cfg[k] = next.ui[k]; });
-    const ui = {}; UI_KEYS.forEach(k => { if (next.ui[k] !== undefined) ui[k] = next.ui[k]; });
-    this.setState({ cfg, hist: next.projects, ...ui }, () => { this.applyTheme(); this.writeConfig(); });
+    const clean = this.sanitizeUi(next.ui || {});
+    const cfg = {}; CFG_KEYS.forEach(k => { if (clean[k] !== undefined) cfg[k] = clean[k]; });
+    const ui = {}; UI_KEYS.forEach(k => { if (clean[k] !== undefined) ui[k] = clean[k]; });
+    const ok = (next.projects || []).filter(x => x && typeof x.id === 'string' && typeof x.name === 'string');
+    const pin = ok.filter(x => x.pinned), rest = ok.filter(x => !x.pinned).slice(0, Math.max(0, this.histMax() - pin.length));
+    this.setState({ cfg, hist: [...pin, ...rest], ...ui }, () => { this.applyTheme(); this.writeConfig(); });
     this.toast('Configuração importada — pastas locais precisam ser reconectadas (handles não são exportáveis).', 'warn');
   }
   useDir(dir) {
     this.zip = null; this.repo = null;
+    const id = 'folder:' + dir.name; this.projectId = id; this.markTab();
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
-    const id = 'folder:' + dir.name; idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
+    idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
@@ -1049,7 +1083,7 @@ class Component extends DCLogic {
     // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
     // restauracao para no meio (sem permissao, .zip, repositorio), o pendingSel nao casa.
     const keep = this.pendingSel && this.pendingSel.id === this.projectId ? this.pendingSel : null; this.pendingSel = null;
-    this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
@@ -1077,7 +1111,7 @@ class Component extends DCLogic {
     catch (e) { this.toast('Não deu para ler o .zip: ' + e.message); return; }
     const root = LayersCore.zipRoot(z.files);
     this.zip = { files: z.files, root }; this.repo = null;
-    const id = 'zip:' + file.name;
+    const id = 'zip:' + file.name; this.projectId = id; this.markTab();
     this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     this.touchHist({ id, kind: 'zip', name: file.name, path: file.name });
     if (z.skipped.length) this.toast(z.skipped.length + ' entrada(s) do .zip recusada(s) por caminho inseguro: ' + z.skipped[0], 'warn');
@@ -1102,6 +1136,7 @@ class Component extends DCLogic {
       ref = (await meta.json()).default_branch || 'HEAD';
     } catch (e) { this.toast('Sem resposta do GitHub: ' + e.message); return; }
     this.repo = { owner: r.owner, repo: r.repo, ref }; this.zip = null;
+    this.projectId = 'repo:' + name; this.markTab();
     this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name, label: ref });
   }
