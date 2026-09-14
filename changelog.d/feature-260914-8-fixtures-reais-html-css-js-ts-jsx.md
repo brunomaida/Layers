@@ -22,5 +22,5 @@
 
 ### Perf
 
-N/A — cold path only (nenhum arquivo tocado está em `path-tiers.json`; o projeto não tem esse
-arquivo, todos os arquivos tratados como cold).
+- **N/A** — cold path only (nenhum arquivo tocado está em `path-tiers.json`; o projeto não tem
+  esse arquivo, todos os arquivos tratados como cold).
