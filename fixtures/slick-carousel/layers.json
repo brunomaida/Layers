@@ -1,0 +1,9 @@
+{
+  "name": "Slick Carousel (Basic)",
+  "base": "",
+  "viewport": { "width": 610, "height": 400 },
+  "mock": "layers/mock.html",
+  "styles": ["slick.css", "slick-theme.css"],
+  "fonts": [],
+  "rules": {}
+}
