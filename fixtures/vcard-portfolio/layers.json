@@ -1,0 +1,8 @@
+{
+  "name": "vCard Personal Portfolio",
+  "base": "",
+  "viewport": { "width": 1280, "height": 1358 },
+  "mock": "index.html",
+  "styles": ["assets/css/style.css"],
+  "fonts": ["Poppins"]
+}
