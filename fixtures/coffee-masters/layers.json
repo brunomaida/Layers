@@ -4,8 +4,8 @@
   "viewport": { "width": 1280, "height": 900 },
   "mock": "layers/mock.html",
   "styles": ["app.css", "home.css"],
-  "fonts": ["Open Sans"],
-  "root": { "name": "app-home", "src": "src/pages/home/index.ts|Home|12" },
+  "fonts": ["Open Sans", "Material Symbols Outlined"],
+  "root": { "name": "app-home", "src": "src/pages/home/index.ts|Home|13" },
   "rules": {},
   "interactions": []
 }

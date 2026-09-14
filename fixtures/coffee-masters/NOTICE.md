@@ -2,21 +2,27 @@ Source: https://github.com/flaviodelgrosso/vanilla-typescript-spa ("Coffee Maste
 Commit: bdffb75becb16d51f813e31abd8b32d6a8b37676
 License: MIT (see LICENSE in this folder, copyright 2023 Flavio Del Grosso)
 
-`home.css` is vendored verbatim from `src/pages/home/home.css`. `app.css` is vendored from
-`src/styles/app.css` with **one rule deliberately removed**: `ul { display: none; padding: 0; }`
-— see "Why one global CSS rule had to go" below, this is not a silent edit. `src/styles/index.css`
-was NOT vendored — its only content is `@import "./app.css";`, contributing no rules of its own.
+`home.css` and `app.css` are vendored **verbatim, byte-for-byte**, from `src/pages/home/home.css`
+and `src/styles/app.css` — no edits. `src/styles/index.css` was NOT vendored — its only content is
+`@import "./app.css";`, contributing no rules of its own. See "A mock-side override, not a CSS
+edit" below for how a vendoring-only artifact of `app.css`'s `ul` rule was neutralized without
+touching the vendored file.
 
 `src/pages/home/index.ts` is vendored as read-only reference only (Layers never
 transpiles/executes `.ts`) — `layers.json`'s `root.src` points to it: `export default class Home
-extends HTMLElement` at line 12, decorated `@CustomElement({ selector: "app-home", ..., shadow:
-true })`.
+extends HTMLElement` at line 13, decorated `@CustomElement({ selector: "app-home", ..., shadow:
+true })` (lines 8-12).
 
 `data/images/*.png` and `images/logo.svg` are vendored product photos and the header logo from
 `public/data/images/` and `public/images/` — cosmetic assets; the loader doesn't specially
 resolve non-CSS asset paths against the fixture base, so these may render as broken-image icons
 depending on how the mock is loaded (harmless, not a fixture failure — same caveat noted by the
 other fixtures' briefs).
+
+Capture-state note: upstream ships `<span id="badge" hidden></span>` (empty cart). The captured
+mock has `<span id="badge">1</span>` — one item was added to the cart through the real UI before
+capturing, for a more realistic state (also exercises the `#badge` styling rules in `app.css`,
+which an empty/hidden badge wouldn't).
 
 ## Why `layers/mock.html` required piercing a Shadow DOM (important finding)
 
@@ -38,32 +44,45 @@ internal shadow boundary is a correct, lossless-enough adaptation for this fixtu
 does mean `home.css`'s and `app.css`'s bare-tag selectors (`ul`, `h3`, `button`...), which relied
 on the *source* app's Shadow DOM for scoping rather than BEM class names, now apply mock-wide
 instead of just to the home section. In one case (`app.css`'s `ul { display: none }`) this
-collision wasn't harmless — see "Why one global CSS rule had to go" below.
+collision wasn't harmless — see "A mock-side override, not a CSS edit" below.
 
 Fixing `tools/layers-snapshot.js` itself (e.g. recursively serializing open shadow roots) is out
 of scope for this vendoring task — flagged here for whoever picks up loader/tooling work next.
 
-## Why one global CSS rule had to go
+## A mock-side override, not a CSS edit
 
-`app.css` has `ul { display: none; padding: 0; }` and `section.page { display: none; }` — the
-real app's client-side router hides all page containers by default and only shows the active
-route (both rules are outside any Shadow DOM, so in the real app they only ever match the
-router's own page-wrapper elements — never `#menu`, which lives safely inside `app-home`'s
-shadow root and is never touched by them).
+`app.css` has `ul { display: none; padding: 0; }`. **This rule is vestigial in the real app, not
+a router mechanism** — checked directly against `src/router/index.ts`: routing removes the
+current page's custom element from `#app` and appends the next one (`document.createElement`);
+it creates no wrapper elements and hides nothing via CSS. There is, in fact, no `<ul>` anywhere in
+the real app's light DOM at all — every `<ul>` (`#menu` here, `#order-list` in the Order page)
+lives inside a `shadow: true` component. So this rule (like `body > header { position: fixed }`,
+which also can't match `body > app-header > header`, and `section.page { display: none }`, which
+matches no element the router ever creates) is leftover CSS from an earlier, non-shadow-DOM
+version of this app's styling and matches nothing upstream, period.
 
-Flattening `#menu` into light DOM (see above) exposes it to that same global `ul` selector for
-the first time — something that never happens in the real, running app. With the rule intact, the
-fixture loaded but rendered **empty**: `#menu` collapsed to `display:none`, which zeroed its
-parent `<section>`'s box, which zeroed `<app-home>`, which zeroed `<main>` — `walk()`
-(`index.html:1259`, `if (r.width === 0 || r.height === 0) return`) prunes a subtree the instant a
-node has no layout box, so nothing under `<main>` ever reached the layer tree (confirmed via
-`getBoundingClientRect()` on each ancestor in the live loader before and after this fix).
+Flattening `app-home`'s content into light DOM (see above) exposes every `<ul>` inside it — the
+outer `#menu` *and* each category's `<ul class="category">` — to that dormant selector for the
+first time, something that never happens in the real, running app. With the rule as-is and no
+counter-measure, the fixture loaded but rendered **near-empty**: `#menu` and every `.category`
+collapsed to `display:none`, zeroing their container boxes up through `<app-home>` to `<main>` —
+`walk()` (`index.html:1259`, `if (r.width === 0 || r.height === 0) return`) prunes a subtree the
+instant a node has no layout box, so nothing under a zeroed ancestor ever reached the layer tree
+(confirmed via `getBoundingClientRect()` on each ancestor in the live loader, before and after the
+fix below — the first attempt only neutralized `#menu` and missed the nested `.category` lists,
+caught by re-checking the rendered element/layer count after the fix).
 
-Keeping the rule would misrepresent this fixture as broken when it isn't — the breakage is purely
-an artifact of the flattening this vendoring method requires, not of the loader or of the real
-app. Removing it is the smaller, more honest edit than inventing a synthetic wrapper selector that
-never existed in the source. `section.page { display: none; }` was left untouched — nothing in
-this mock has a `.page` class, so it doesn't match anything here.
+Rather than edit the vendored `app.css` (which stays byte-identical to upstream), the counter is a
+`<style>main#app ul{display:block}</style>` block inside `layers/mock.html` itself — an ordinary
+part of the mock format (`docs/layers-json.md` documents inline `<style>` in the mock being scoped
+alongside `styles`), and `mock.html` is already this fixture's own hand-assembled artifact, not
+claimed third-party content. `main#app ul`'s specificity (one ID + two type selectors) beats the
+bare `ul` type selector regardless of sheet load order, so it neutralizes the flattening artifact —
+for every `<ul>` under the flattened subtree, not just `#menu` — without touching provenance. Only
+the `display` half of the original rule needed countering: `home.css` sets `ul { padding: 0px 12px;
+padding-bottom: 10px; }` at equal specificity, later in load order, so the original rule's
+`padding: 0` was already dead in this fixture either way. `section.page { display: none; }` needed
+no counter-measure — nothing in this mock has a `.page` class, so it never matches.
 
 Vendored for: Layers loader fixture (.ts slot) — see plan at
 C:\Users\bruno\.claude\plans\com-objetivo-de-melhorar-linear-hinton.md
