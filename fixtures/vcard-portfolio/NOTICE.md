@@ -41,20 +41,25 @@ These remote URLs are stripped by the loader's `dropRemoteUrls` function at load
 
 ## Excluded Assets (Cosmetic, Not Vendored)
 
-The original repository includes images under `assets/images/` (avatars, blog thumbnails, project previews, icon SVGs, logos). These are not vendored in this fixture:
+The original repository includes images and JavaScript files that are not vendored in this fixture:
 
+**Image files** (under `assets/images/`):
+- `logo.ico` (favicon)
 - `my-avatar.png`, `avatar-1.png` through `avatar-4.png`
 - `blog-1.jpg` through `blog-6.jpg`
 - `project-1.jpg` through `project-9.png`
 - `logo-1-color.png` through `logo-6-color.png`
 - `icon-app.svg`, `icon-dev.svg`, `icon-photo.svg`, `icon-quote.svg`
 
-**Result:** These images render as broken (HTTP 404) in the fixture, but the page structure and interactivity remain fully functional. This is cosmetically identical to batch 1's `student-dashboard` and `plain-admin` fixtures (which also exclude cosmetic assets).
+**JavaScript files:**
+- `assets/js/script.js` (sidebar toggle, testimonials modal, form handling)
+
+**Result:** Images render as broken (HTTP 404) in the fixture. JavaScript is stripped unconditionally by the Layers loader at load time (documented architectural rule: Layers never executes scripts for any fixture). The page displays its static HTML structure and CSS layout only — sidebar toggle, testimonials modal toggle, and form interactions do not function. This is consistent with batch 1 fixtures (`student-dashboard`, `plain-admin`, etc.), which also exclude interactive JavaScript.
 
 ## Verification
 
 - ✓ HTML parses and loads without network errors (Google Fonts, Ionicons, Maps URLs stripped by loader)
-- ✓ Sidebar navigation and section layout render correctly
+- ✓ Static page structure and CSS layout render correctly (sidebar, navbar, content sections, footer)
 - ✓ CSS resolves all selectors correctly to `assets/css/style.css`
-- ✓ Testimonials modal (JS class toggle) functions as intended
-- ✓ Contact form structure is intact (form submission is not expected in fixture context)
+- ✓ All inline styles and positioning display as intended
+- ✗ Sidebar toggle button, testimonials modal, and contact form interactions do not function (JavaScript stripped at load time)
