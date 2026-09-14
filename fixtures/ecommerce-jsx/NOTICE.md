@@ -39,8 +39,20 @@ is exactly `<header class="_header_17956_1" dir="ltr"><div class="_container_179
 `s.header` → `_header_17956_1` and `s.container` → `_container_17956_17` under the same hash
 suffix. `layers.json`'s `rules` maps selector `header._header_17956_1` to
 `src/Components/Header/Header/Header.jsx|Header|9` (line 9 is `const Header = () => {`).
-`rules` is used instead of `root` because the captured `<body>`/`.App` has multiple top-level
-children (promo bar, header, sidebar/hero container, flash-sales section), not one.
+`<body>` in `layers/mock.html` has exactly one top-level child (`div.App`), so the loader's
+`root`-auto-detection already resolves cleanly there — `rules` isn't standing in for a multi-child
+`<body>` here. It's needed because the *interesting* element for this fixture is the header
+specifically, several levels inside `.App` (promo bar, header, sidebar/hero container, flash-sales
+section are its own siblings under `.App`), not the auto-detected root itself — `rules` reaches
+past that root directly to `header._header_17956_1`.
+
+The live deployment's build (the one `app.css` and the DOM structure below were captured from) has
+no separate pinned commit of its own — it's `Moamal-2000/e-commerce`'s deployed `main` branch as of
+capture (2026-09-14), not necessarily built from the pinned source commit `ab4deb1d8e7ac828fff10ea8552a3de79b7c98bd`
+used for the vendored `Header.jsx`/`Header.module.scss` reference pair. The two were cross-checked
+structurally (see the `_header_17956_1`/`_container_17956_17` class match above), not by matching
+build commits — if the live site redeploys from a later commit, the reference `.jsx` file may drift
+from what's actually live without necessarily breaking that structural match.
 
 ## Snapshot scope: header + hero + flash-sales grid only, not the full storefront
 
@@ -113,7 +125,11 @@ plus one `../Fonts/Poppins/Poppins-ExtraBold.ttf`), all root-relative (`/assets/
 relative repo-style path) — no `http://`/`https://` URL appears anywhere in the file (confirmed:
 `grep -o 'url([^)]*)' app.css | grep -i http` returns nothing). None of the font files are
 vendored, so these 404 the same way the image paths above do — against `localhost` only, never
-an external host. No loader `url()` neutralization gap found.
+an external host. No loader `url()` neutralization gap found. All 16 `@font-face` rules are
+consequently dropped by `hoistFaces` after each source 404s — `layers.json`'s `fonts` is `[]`
+(correct: Poppins/Inter/Rubik aren't in this project's local `fonts/projects.css` catalog either),
+so the visible effect is the whole mock rendering in the system fallback stack, not just the
+unvendored images/fonts individually 404ing.
 
 ## Verification
 
@@ -123,4 +139,7 @@ borders/badges/pricing colors all visibly applied, not raw unstyled text), the l
 resolves `data-src` for the vendored `header` selector into `Header.jsx · Header · L9`, and the
 Network tab shows only `localhost` requests (the expected 404s for the unvendored `/assets/*`
 image and font paths noted above, no cross-origin request to `e-commerce.moamalalaa.com` or any
-other host).
+other host). Beyond the one `rules` hit, the loader's own heuristic class-index resolution also
+works against `app.css` for every other element — `buildIndex` indexes 353 classes from this sheet
+(e.g. `._card_1yufw_1`), so flash-sale cards, badges, and typography all resolve `data-src` without
+needing a `rules` entry of their own.
