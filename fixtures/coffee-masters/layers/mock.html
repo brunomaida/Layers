@@ -1,6 +1,17 @@
 <!doctype html>
 <!-- snapshot LAYERS · http://localhost:5183/ (Coffee Masters, Home page, local `npm run dev`) · manual replay of tools/layers-snapshot.js pattern, with the app-home custom element's shadow root pierced and flattened (see NOTICE.md) -->
-<html lang="en"><head><meta charset="UTF-8" /><title>Coffee Masters | Home · mock LAYERS</title></head>
+<html lang="en"><head><meta charset="UTF-8" /><title>Coffee Masters | Home · mock LAYERS</title>
+<style>
+  /* LAYERS fixture override, not upstream: app.css's `ul { display: none }` only ever matches
+     light-DOM <ul>s in the real app (there are none — every <ul> lives inside a shadow: true
+     component, see NOTICE.md), so flattening app-home's content out of its shadow root for this
+     mock exposes BOTH the outer #menu <ul> and each category's <ul class="category"> to that rule
+     for the first time. This higher-specificity override (id + descendant beats a bare type
+     selector regardless of sheet order) neutralizes that flattening artifact for every <ul> under
+     the flattened subtree, without touching the vendored app.css. */
+  main#app ul { display: block; }
+</style>
+</head>
 <body>
 <app-header><header>
   <h1><img src="images/logo.svg" width="140" alt="Coffee Masters"></h1>
