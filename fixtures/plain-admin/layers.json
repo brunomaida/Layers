@@ -1,0 +1,8 @@
+{
+  "name": "Plain Admin Dashboard",
+  "base": "",
+  "viewport": { "width": 1280, "height": 2751 },
+  "mock": "index.html",
+  "styles": [],
+  "fonts": []
+}
