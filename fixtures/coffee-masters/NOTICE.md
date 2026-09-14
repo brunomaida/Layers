@@ -9,15 +9,24 @@ edit" below for how a vendoring-only artifact of `app.css`'s `ul` rule was neutr
 touching the vendored file.
 
 `src/pages/home/index.ts` is vendored as read-only reference only (Layers never
-transpiles/executes `.ts`) — `layers.json`'s `root.src` points to it: `export default class Home
-extends HTMLElement` at line 13, decorated `@CustomElement({ selector: "app-home", ..., shadow:
-true })` (lines 8-12).
+transpiles/executes `.ts`) — `layers.json`'s `rules` maps the `app-home` tag to it: `export default
+class Home extends HTMLElement` at line 13, decorated `@CustomElement({ selector: "app-home", ...,
+shadow: true })` (lines 8-12). `rules` rather than `root` because the mock's `<body>` has two
+children (`<app-header>`, `<main id="app">`) — the loader only attributes `root.name`/`root.src`
+cleanly when `<body>` has exactly one; `rules` reaches the actual `<app-home>` element directly
+instead of mislabeling the synthetic two-child wrapper as `app-home`.
 
 `data/images/*.png` and `images/logo.svg` are vendored product photos and the header logo from
 `public/data/images/` and `public/images/` — cosmetic assets; the loader doesn't specially
 resolve non-CSS asset paths against the fixture base, so these may render as broken-image icons
 depending on how the mock is loaded (harmless, not a fixture failure — same caveat noted by the
 other fixtures' briefs).
+
+Icon-font note: `layers.json`'s `fonts` lists `"Material Symbols Outlined"` (the header's
+`local_cafe`/`shopping_cart` icons), but no icon font ships in this repo's `fonts/` catalog. Per
+contract this is a non-blocking warning + fallback, never a fetch — the visible effect is that
+those two nav links render their literal ligature text (`local_cafe`, `shopping_cart`) instead of
+icon glyphs when loaded without the real font available.
 
 Capture-state note: upstream ships `<span id="badge" hidden></span>` (empty cart). The captured
 mock has `<span id="badge">1</span>` — one item was added to the cart through the real UI before

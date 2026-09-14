@@ -11,14 +11,20 @@ packages this example imports, each under its own license:
 
 `src/app.jsx` is vendored as read-only reference only (from `examples/react/src/todo/app.jsx`,
 `export function App()` at line 10) — Layers never transpiles or executes `.jsx`; `layers.json`'s
-`root.src` points here purely so the editor can show the source snippet for the root element.
+`rules` maps `.todoapp` to it purely so the editor can show the source snippet for that element.
+`rules` rather than `root` because the mock's `<body>` has two children (see below) — the loader
+only attributes `root.name`/`root.src` cleanly when `<body>` has exactly one; `rules` reaches the
+actual `.todoapp` element directly instead of mislabeling the synthetic two-child wrapper.
 
 `layers/mock.html` is a manual replay of the `tools/layers-snapshot.js` capture pattern against
 the live demo (https://todomvc.com/examples/react/dist/): three todo items were added through the
 real UI (one marked completed) so the DOM reflects genuine rendered React output, not an empty
 app-shell. The TodoMVC site's own left "learn" sidebar (unrelated site chrome, not part of the
-vendored app) was excluded — only the `#root` (`.todoapp`) and `footer.info` the app itself
-renders were kept.
+vendored app) was excluded — only `#root` (`.todoapp`, the React-rendered subtree) and
+`footer.info` were kept. `footer.info` is static markup from the example's own `dist/index.html`
+shell, not React output (`<section id="root">` is React's only mount point) — kept because it's
+still genuinely part of what a visitor sees, but worth being precise that it isn't rendered by
+the vendored `app.jsx`.
 
 Vendored for: Layers loader fixture (.jsx slot) — see plan at
 C:\Users\bruno\.claude\plans\com-objetivo-de-melhorar-linear-hinton.md
