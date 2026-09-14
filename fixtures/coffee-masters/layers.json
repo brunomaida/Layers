@@ -5,7 +5,6 @@
   "mock": "layers/mock.html",
   "styles": ["app.css", "home.css"],
   "fonts": ["Open Sans", "Material Symbols Outlined"],
-  "root": { "name": "app-home", "src": "src/pages/home/index.ts|Home|13" },
-  "rules": {},
+  "rules": { "app-home": "src/pages/home/index.ts|Home|13" },
   "interactions": []
 }

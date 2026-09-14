@@ -5,7 +5,6 @@
   "mock": "layers/mock.html",
   "styles": ["app.css"],
   "fonts": [],
-  "root": { "name": ".todoapp", "src": "src/app.jsx|App|10" },
-  "rules": {},
+  "rules": { ".todoapp": "src/app.jsx|App|10" },
   "interactions": []
 }
