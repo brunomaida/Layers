@@ -1,0 +1,11 @@
+{
+  "name": "E-Commerce (React + CSS Modules)",
+  "base": "",
+  "viewport": { "width": 1280, "height": 900 },
+  "mock": "layers/mock.html",
+  "styles": ["app.css"],
+  "fonts": [],
+  "rules": {
+    "header._header_17956_1": "src/Components/Header/Header/Header.jsx|Header|9"
+  }
+}
