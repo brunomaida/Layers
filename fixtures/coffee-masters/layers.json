@@ -1,0 +1,10 @@
+{
+  "name": "Coffee Masters",
+  "base": "",
+  "viewport": { "width": 1280, "height": 900 },
+  "mock": "layers/mock.html",
+  "styles": ["app.css", "home.css"],
+  "fonts": ["Open Sans", "Material Symbols Outlined"],
+  "rules": { "app-home": "src/pages/home/index.ts|Home|13" },
+  "interactions": []
+}

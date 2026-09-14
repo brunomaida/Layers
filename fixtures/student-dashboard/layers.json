@@ -1,0 +1,8 @@
+{
+  "name": "Student Dashboard",
+  "base": "",
+  "viewport": { "width": 1280, "height": 900 },
+  "mock": "index.html",
+  "styles": ["style.css"],
+  "fonts": ["Material Icons Sharp", "Cairo", "Poppins"]
+}

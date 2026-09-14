@@ -1,0 +1,10 @@
+{
+  "name": "TodoMVC React",
+  "base": "",
+  "viewport": { "width": 1280, "height": 720 },
+  "mock": "layers/mock.html",
+  "styles": ["app.css"],
+  "fonts": [],
+  "rules": { ".todoapp": "src/app.jsx|App|10" },
+  "interactions": []
+}
