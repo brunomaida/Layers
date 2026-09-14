@@ -48,8 +48,15 @@ The live page's full `<body>` (`document.body.outerHTML`) is ~242 KB and include
 sections below the fold (categories, this-month picks, product poster, our-products, features).
 Per the brief's explicit scoping allowance, the capture was narrowed to one self-contained
 region: the promo top bar, the vendored `<header>`, the "Explore Our Collections" sidebar +
-hero banner carousel, and the "Flash Sales" product grid (`#todays-section`, all 8 cards) — the
-same region the brief names as the target ("header + hero + flash-sales grid").
+hero banner carousel, and the "Flash Sales" product grid (`#todays-section`) — the same region
+the brief names as the target ("header + hero + flash-sales grid").
+
+**Card count is a point-in-time snapshot, not a completeness claim.** `#todays-section` held 8
+product cards when captured (2026-09-14) and all 8 are in `layers/mock.html`. This is a mutable
+personal demo deployment — its product seed data can change between visits (a 9th card, "FHD
+Laptop", was already observed live after this capture) — so the live site's card count is **not**
+guaranteed to still be 8, or to match this mock, on a fresh visit. The mock is not re-synced to
+chase a moving target; treat the 8 cards here as what existed at capture time.
 
 **Capture method deviates from the usual clone-and-return pattern used in Tasks 3–4.** Attempting
 to return the cloned section's `outerHTML` (or even smaller ~50-char slices of it) through
