@@ -49,6 +49,8 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 24 concluídos
 
 Fixtures em `fixtures/`, servidas por HTTP (`#layers=fixtures/<nome>/`): Traval (mock autoral + 4 `.css` reais), Axai (HTML estático), MarketView (arquivo único com `<style>` inline), Results (pendente de snapshot), `app-shell` (`<div id="app">` vazio), `plain-css` (shorthand, `!important`, `@media`, `[data-x="body"]`, `:root` dentro de string), `nested-oklch` (nesting + `oklch` + `color-mix`), `tailwind` (falha explícita esperada).
 
+Cinco fixtures vendorizados de projetos públicos reais (MIT, `NOTICE.md` por pasta com repo/commit/licença — não sintéticos, cobrem `.html`/`.css`/`.js`/`.ts`/`.jsx`): `student-dashboard` (HTML estático multi-página, vendor direto, de ADi7YA26/Student-Dashboard), `plain-admin` (CSS real multi-arquivo + `@font-face` de ícone, vendor direto, de PlainAdmin/plain-free-bootstrap-admin-template), `choices-js` (widget JS interativo, snapshot com dropdown aberto/`aria-expanded`, de Choices-js/Choices), `todomvc-react` (JSX, snapshot da demo ao vivo com 3 todos reais, `root.src` referencia `src/app.jsx`, de tastejs/todomvc), `coffee-masters` (TS + Custom Elements com Shadow DOM, snapshot local com o shadow root de `<app-home>` desmontado manualmente — achado: `tools/layers-snapshot.js` não atravessa shadow roots, ver `fixtures/coffee-masters/NOTICE.md`).
+
 - [ ] Snapshot da árvore de nós por fixture (contagem, profundidade, bbox, `src`).
 - [ ] Origem: para 30 nós amostrados por fixture, `src` aponta para arquivo/linha que contém o seletor.
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
