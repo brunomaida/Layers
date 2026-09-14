@@ -1,0 +1,8 @@
+{
+  "name": "Pico CSS — Pure HTML Example",
+  "base": "",
+  "viewport": { "width": 1024, "height": 1167 },
+  "mock": "index.html",
+  "styles": ["css/pico.min.css"],
+  "fonts": []
+}
