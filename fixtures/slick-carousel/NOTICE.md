@@ -1,18 +1,23 @@
 Source: https://github.com/kenwheeler/slick ("Slick Carousel")
 Commit: 7b2b3a76def3309d235d9ad9683a8d82941896cd
-License: MIT (see LICENSE in this folder, copyright 2013 Ken Wheeler)
+License: MIT (see LICENSE in this folder; the file's own copyright line reads "(c) 2013-2024" with no named holder — Ken Wheeler is the repo author per GitHub, not asserted by the LICENSE text itself)
 
 `slick.css` and `slick-theme.css` are vendored **verbatim, byte-for-byte**, from `slick/slick.css`
 (1456 bytes) and `slick/slick-theme.css` (2800 bytes) at the pinned commit — NOT `dist/`, the
 repo's built CSS lives directly under `slick/`.
 
 `slick-theme.css` references `ajax-loader.gif` (a loading-spinner background image) and an icon
-font (`slick.woff`/`slick.ttf`/`slick.svg` via `@font-face`, used for the prev/next arrow glyphs)
-— neither is vendored here. Both are cosmetic: the loading spinner never shows on a static mock
-(no live AJAX loading state to trigger it), and the arrow glyphs fall back to the loader's
-`@font-face` `url()` neutralization + broken-image fallback the same way batch 1's
-`coffee-masters` fixture handled its own icon-font gap (see that fixture's `NOTICE.md`). The
-arrows remain clickable/visible as plain buttons; only their icon glyph is absent.
+font (`@font-face` sources `slick.eot`/`.woff2`/`.woff`/`.ttf`, used for the prev/next arrow
+glyphs) — neither is vendored here. The loading spinner never shows on a static mock (no live AJAX
+loading state to trigger it). The icon font is fetched from this fixture's own `fonts/` folder
+(`hoistFaces`) at load time, gets a localhost 404, and the face is dropped with a warning — there
+is no broken-image fallback for fonts, the browser just falls back to the next font in the stack.
+`.slick-prev:before`/`.slick-next:before` set `content: "←"`/`"→"` (literal Unicode, not a private
+icon-font codepoint) at `color: white; opacity: 0.75`, so with the "slick" face missing the arrows
+still render — as plain-font arrow glyphs, not icons — but white-on-white against this mock's
+default background, effectively invisible; the dots (`content: "•"`, different color) stay visible.
+The live demo's own page stylesheet (which styles `.slick-slide h3` and the numbered card content)
+was not vendored either — out of scope, same as any page chrome around a captured widget.
 
 ## Snapshot fixture — captured DOM, not vendored markup
 
@@ -41,6 +46,11 @@ this one element instead of the whole `<body>`), then wrap the resulting fragmen
 slides `6` and `1`), and the `.slick-dots` list with one active dot. Nothing was hand-edited beyond
 the strip/wrap steps above.
 
-`viewport` is `900×400` (wider than the demo's own layout) so all six ~560px-wide cloned+real
-slides in the `4480px`-wide track have room to lay out without the container clipping the capture's
-already-computed `translate3d` offset in an unrepresentative way.
+`viewport` is `610×400` — close to the demo's own single-item layout (~560px slide + arrow
+margins), so the current slide fills the visible `.slick-list` (which is `overflow: hidden`,
+`slick.css:16`) without a large sliver of the next slide showing, matching what the Basic example
+actually looks like live. `.slick-track`'s per-slide widths and the `translate3d` offset are fixed
+inline from the capture and unaffected by viewport width either way. The `.slick-prev`/`.slick-next`
+arrows (`left: -25px`/`right: -25px` relative to `.slick-list`, `slick-theme.css:61-62,75-76`) sit
+partially outside the visible viewport at any width — an effect of the fixed negative offset
+relative to the mock's default body margin, not something a wider or narrower viewport fixes.
