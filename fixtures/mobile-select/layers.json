@@ -1,0 +1,9 @@
+{
+  "name": "Mobile Select (wheel picker)",
+  "base": "",
+  "viewport": { "width": 375, "height": 500 },
+  "mock": "layers/mock.html",
+  "styles": ["mobile-select.css"],
+  "fonts": [],
+  "root": { "name": ".ms-mobile-select", "src": "src/ms-core.ts|MobileSelect|10" }
+}
