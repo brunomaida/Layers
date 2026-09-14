@@ -1,0 +1,10 @@
+{
+  "name": "Choices.js Single Select",
+  "base": "",
+  "viewport": { "width": 640, "height": 420 },
+  "mock": "layers/mock.html",
+  "styles": ["choices.min.css"],
+  "fonts": [],
+  "rules": {},
+  "interactions": []
+}

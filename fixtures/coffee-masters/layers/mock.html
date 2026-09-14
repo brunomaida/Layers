@@ -1,0 +1,195 @@
+<!doctype html>
+<!-- snapshot LAYERS · http://localhost:5183/ (Coffee Masters, Home page, local `npm run dev`) · manual replay of tools/layers-snapshot.js pattern, with the app-home custom element's shadow root pierced and flattened (see NOTICE.md) -->
+<html lang="en"><head><meta charset="UTF-8" /><title>Coffee Masters | Home · mock LAYERS</title>
+<style>
+  /* LAYERS fixture override, not upstream: app.css's `ul { display: none }` only ever matches
+     light-DOM <ul>s in the real app (there are none — every <ul> lives inside a shadow: true
+     component, see NOTICE.md), so flattening app-home's content out of its shadow root for this
+     mock exposes BOTH the outer #menu <ul> and each category's <ul class="category"> to that rule
+     for the first time. This higher-specificity override (id + descendant beats a bare type
+     selector regardless of sheet order) neutralizes that flattening artifact for every <ul> under
+     the flattened subtree, without touching the vendored app.css. */
+  main#app ul { display: block; }
+</style>
+</head>
+<body>
+<app-header><header>
+  <h1><img src="images/logo.svg" width="140" alt="Coffee Masters"></h1>
+  <nav>
+    <a class="navlink material-symbols-outlined" id="linkHome" href="/"> local_cafe </a>
+    <a class="navlink material-symbols-outlined" id="linkOrder" href="/order"> shopping_cart </a>
+    <span id="badge">1</span>
+  </nav>
+</header>
+</app-header>
+<main id="app"><app-home><section>
+  <ul id="menu"><li>
+                <h3>HOT COFFEE</h3>
+                <ul class="category">
+                <product-item><article>
+  <a href="#">
+    <img src="data/images/blackamericano.png">
+    <section>
+      <div>
+        <h4>Black Americano</h4>
+        <p class="price">$1.50</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/cappuccino.png">
+    <section>
+      <div>
+        <h4>Cappuccino</h4>
+        <p class="price">$3.75</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/macchiato.png">
+    <section>
+      <div>
+        <h4>Macchiato</h4>
+        <p class="price">$3.25</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/flatwhite.png">
+    <section>
+      <div>
+        <h4>Flat White</h4>
+        <p class="price">$3.25</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item></ul></li><li>
+                <h3>ICED COFFEE</h3>
+                <ul class="category">
+                <product-item><article>
+  <a href="#">
+    <img src="data/images/frappuccino.png">
+    <section>
+      <div>
+        <h4>Frappuccino</h4>
+        <p class="price">$3.75</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/icedcoffee.png">
+    <section>
+      <div>
+        <h4>Iced Coffee</h4>
+        <p class="price">$3.15</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/coldbrew.png">
+    <section>
+      <div>
+        <h4>Cold Brew</h4>
+        <p class="price">$1.85</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item></ul></li><li>
+                <h3>TEA</h3>
+                <ul class="category">
+                <product-item><article>
+  <a href="#">
+    <img src="data/images/greentea.png">
+    <section>
+      <div>
+        <h4>Green Tea</h4>
+        <p class="price">$1.75</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/blacktea.png">
+    <section>
+      <div>
+        <h4>Black Tea</h4>
+        <p class="price">$1.75</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item></ul></li><li>
+                <h3>SNACKS</h3>
+                <ul class="category">
+                <product-item><article>
+  <a href="#">
+    <img src="data/images/croissant.png">
+    <section>
+      <div>
+        <h4>Croissant</h4>
+        <p class="price">$2.80</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item><product-item><article>
+  <a href="#">
+    <img src="data/images/muffin.png">
+    <section>
+      <div>
+        <h4>Chocolate Chip Muffin</h4>
+        <p class="price">$1.75</p>
+        <p></p>
+      </div>
+
+      <button>Add</button>
+    </section>
+  </a>
+</article>
+</product-item></ul></li></ul>
+</section>
+</app-home></main>
+</body></html>
