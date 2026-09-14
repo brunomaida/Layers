@@ -37,3 +37,7 @@ This has been rewritten to a local vendor path:
 **Rationale:** Enforce zero-network-request policy (see project CLAUDE.md § Recursos sem rede). The rewrite uses byte-identical CSS from the same upstream version, so no visual or functional change is introduced — only the delivery mechanism (local vendor vs. CDN).
 
 **Scope:** This is the only direct edit made to vendored mock content. External JS files (`js/minimal-theme-switcher.js`, `js/modal.js`) remain referenced but are stripped by the Layers loader during shadow-DOM injection, so no action is needed there.
+
+## Known Cosmetic Gap
+
+`index.html` references one asset that was NOT vendored and is a known broken-image in this fixture: `img/aleksandar-jason-a562ZEFKW8I-unsplash-2000x1000.jpg` (an Unsplash photo in the "Medias" section, cosmetic only, unrelated to Pico CSS framework styling behavior being tested). This image is excluded from vendoring per the same pattern as other fixture gaps (`plain-admin`'s logo-icon, `student-dashboard`'s decorative images) — the 404 is expected and does not impact the fixture's utility for testing CSS layout, colors, typography, form elements, table styling, modals, accordions, and other Pico framework features.
