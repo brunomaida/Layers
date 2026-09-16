@@ -70,12 +70,18 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <button onClick="{{ histRepoCancel }}" style="height:24px;width:24px;border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">×</button>
             </div>
           </sc-if>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 6px 3px;border-top:1px solid var(--line0);margin-top:2px"><span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Exemplos</span></div>
+          <sc-for list="{{ demoItems }}" as="dm" hint-placeholder-count="1">
+            <div onClick="{{ dm.open }}" title="{{ dm.title }}" style="display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:3px;background:{{ dm.bg }};color:{{ dm.color }};cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="display:flex;color:{{ dm.iconColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M2 6.5h12M5.5 6.5V13"></path></svg></span><span style="min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dm.name }}</span><span style="font:400 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dm.origin }}</span></span><span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ dm.badge }}</span></div>
+          </sc-for>
+          <div style="height:1px;background:var(--line0);margin:3px 0"></div>
           <div onClick="{{ connectDir }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
           <div onClick="{{ openZip }}" title="Abrir um projeto compactado — somente leitura" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:14px;text-align:center;color:var(--fg3)">▤</span>Abrir arquivo .zip…</div>
           <div onClick="{{ histRepoStart }}" title="Registrar um repositório público do GitHub; clique no item do histórico para carregar" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Registrar repositório GitHub…</div>
           <span style="height:1px;background:var(--line1);margin:4px 2px"></span>
           <div onClick="{{ exportCfg }}" title="Salvar tema, painéis e histórico num arquivo layers-config.json" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↑</span>Exportar configuração…</div>
           <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
+          <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histReset }}" title="Descarrega o projeto e volta à interface limpa (mantém tema e histórico)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div></sc-if>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
       </sc-if>
@@ -109,6 +115,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     <div onMouseDown="{{ stop }}" onWheel="{{ stop }}" onDoubleClick="{{ stop }}" ref="{{ topBarRef }}" style="position:absolute;left:{{ dockLeft }};transform:translateX(-50%);top:36px;z-index:35;width:max-content;max-width:{{ dockMaxW }};display:flex;justify-content:center;pointer-events:none"><div style="min-width:0;pointer-events:auto;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px;max-width:{{ dockMaxW }};padding:0 10px;background:transparent;white-space:nowrap">
      
       <button onClick="{{ toggleFlat }}" title="{{ explTitle }}" style="height:24px;padding:0 10px;border:1px solid {{ explBdr }};border-radius:4px;background:{{ explBg }};color:{{ explColor }};font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;flex:0 0 auto;transition:border-color .15s,color .15s" style-hover="border-color:var(--sel);color:var(--sel)">{{ explGlyph }} {{ explLabel }}</button>
+      <button onClick="{{ toggleMeasure }}" title="{{ measTitle }}" style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid {{ measBdr }};border-radius:4px;background:transparent;color:{{ measColor }};font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;flex:0 0 auto;transition:border-color .15s,color .15s" style-hover="border-color:var(--sel);color:var(--sel)"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 8h12M2 5v6M14 5v6M5.5 6.5L4 8l1.5 1.5M10.5 6.5L12 8l-1.5 1.5"/></svg>Medir</button>
       <label onMouseEnter="{{ wireIn }}" onMouseLeave="{{ wireOut }}" title="Intensidade dos frames" style="display:flex;align-items:center;gap:6px;height:36px;padding:0 4px">
         <span title="Intensidade dos frames" style="display:flex;align-items:center;color:var(--fg3)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="12" height="12" rx="1.5"/><rect x="5.5" y="5.5" width="5" height="5" rx=".5" fill="currentColor" stroke="none" opacity=".6"/></svg></span>
         <span style="position:relative;display:flex;align-items:center;width:59px;height:36px">
@@ -580,6 +587,43 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <button onClick="{{ toggleAllGroups }}" title="{{ allGroupsTitle }}" style="width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:4px;background:transparent;color:var(--fg2);font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;flex:0 0 auto">{{ allGroupsGlyph }}</button>
     </div>
     </sc-if>
+    <div style="display:flex;flex-direction:column;gap:8px;padding:8px 12px 10px;background:var(--bg2);border-bottom:1px solid var(--line1)">
+      <button onClick="{{ toggleBmOpen }}" title="Box model e tokens da seleção" style="all:unset;display:flex;align-items:center;gap:6px;height:16px;cursor:pointer;font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2)"><span style="width:10px;color:var(--acc)">{{ bmChev }}</span><span>Caixa</span><span style="font-weight:500;letter-spacing:0;color:var(--fg3);text-transform:none;overflow:hidden;text-overflow:ellipsis">{{ bmSummary }}</span></button>
+      <sc-if value="{{ bmOpen }}" hint-placeholder-val="{{ true }}">
+      <div onMouseLeave="{{ bmOut }}" title="Box model (px) — passe o mouse numa faixa para destacá-la no palco · box-sizing: {{ bmBoxSizing }}" style="margin-top:0;user-select:none;font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace">
+        <div onMouseMove="{{ bmmarginIn }}" style="position:relative;display:grid;grid-template-columns:26px 1fr 26px;grid-template-rows:14px 1fr 14px;border:1px dashed {{ bmmarginBdr }};border-radius:4px;background:{{ bmmarginBg }};padding:1px 2px 2px">
+          <span style="position:absolute;left:5px;top:2px;font:600 calc(7px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:{{ bmmarginLabC }}">{{ bmmarginLab }}</span>
+          <span style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:{{ bmMTc }}">{{ bmMT }}</span>
+          <span style="display:flex;align-items:center;justify-content:center;color:{{ bmMLc }}">{{ bmML }}</span>
+          <div onMouseMove="{{ bmborderIn }}" style="position:relative;display:grid;grid-template-columns:26px 1fr 26px;grid-template-rows:14px 1fr 14px;border:1px solid {{ bmborderBdr }};border-radius:3px;background:{{ bmborderBg }};padding:1px 2px 2px">
+            <span style="position:absolute;left:5px;top:2px;font:600 calc(7px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:{{ bmborderLabC }}">{{ bmborderLab }}</span>
+            <span style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:{{ bmBTc }}">{{ bmBT }}</span>
+            <span style="display:flex;align-items:center;justify-content:center;color:{{ bmBLc }}">{{ bmBL }}</span>
+            <div onMouseMove="{{ bmpaddingIn }}" style="position:relative;display:grid;grid-template-columns:26px 1fr 26px;grid-template-rows:14px 1fr 14px;border:1px dashed {{ bmpaddingBdr }};border-radius:3px;background:{{ bmpaddingBg }};padding:1px 2px 2px">
+              <span style="position:absolute;left:5px;top:2px;font:600 calc(7px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:{{ bmpaddingLabC }}">{{ bmpaddingLab }}</span>
+              <span style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:{{ bmPTc }}">{{ bmPT }}</span>
+              <span style="display:flex;align-items:center;justify-content:center;color:{{ bmPLc }}">{{ bmPL }}</span>
+              <div onMouseMove="{{ bmcontentIn }}" style="display:flex;align-items:center;justify-content:center;gap:3px;min-height:24px;padding:0 6px;border:1px solid {{ bmcontentBdr }};border-radius:3px;background:{{ bmcontentBg }};color:var(--fg0);font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;white-space:nowrap">{{ bmCW }}<span style="color:var(--fg3)">×</span>{{ bmCH }}</div>
+              <span style="display:flex;align-items:center;justify-content:center;color:{{ bmPRc }}">{{ bmPR }}</span>
+              <span style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:{{ bmPBc }}">{{ bmPB }}</span>
+            </div>
+            <span style="display:flex;align-items:center;justify-content:center;color:{{ bmBRc }}">{{ bmBR }}</span>
+            <span style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:{{ bmBBc }}">{{ bmBB }}</span>
+          </div>
+          <span style="display:flex;align-items:center;justify-content:center;color:{{ bmMRc }}">{{ bmMR }}</span>
+          <span style="grid-column:1/-1;display:flex;align-items:center;justify-content:center;color:{{ bmMBc }}">{{ bmMB }}</span>
+        </div>
+      </div>
+      <sc-if value="{{ hasTokens }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;margin-top:0">
+        <span title="Custom properties usadas pela regra desta seleção — clique num token para filtrar as propriedades que o usam" style="font:600 calc(8px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);margin-right:2px">Tokens {{ tokCount }}</span>
+        <sc-for list="{{ selTokens }}" as="tk" hint-placeholder-count="2">
+          <button onClick="{{ tk.tokPick }}" title="{{ tk.tokTitle }}" style="display:inline-flex;align-items:center;gap:5px;height:20px;max-width:100%;min-width:0;padding:0 8px 0 6px;border-radius:999px;border:1px solid {{ tk.tokBdr }};background:{{ tk.tokBg }};color:var(--fg1);font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap" style-hover="border-color:var(--sel);color:var(--fg0)"><span style="width:8px;height:8px;border-radius:50%;background:{{ tk.tokSwatch }};box-shadow:inset 0 0 0 1px var(--line2);flex:0 0 auto"></span><span style="color:{{ tk.tokNameC }};overflow:hidden;text-overflow:ellipsis">{{ tk.tokName }}</span><span style="color:var(--fg3);overflow:hidden;text-overflow:ellipsis">{{ tk.tokVal }}</span></button>
+        </sc-for>
+      </div>
+      </sc-if>
+      </sc-if>
+    </div>
     <div style="flex:1;min-height:0;overflow-y:auto">
       <sc-for list="{{ propGroups }}" as="g" hint-placeholder-count="5">
         <div style="padding:0 0 4px">
@@ -789,6 +833,20 @@ const toHex = c => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); i
 const stamp = () => new Date().toISOString().slice(0, 16).replace(/[-:T]/g, '').replace(/^(\d{8})(\d{4})$/, '$1-$2');
 const parseLen = v => { const m = /^(-?\d*\.?\d+)(px|rem|em|%)?$/.exec(String(v || '').trim()); return m ? { num: parseFloat(m[1]), unit: m[2] || '' } : null; };
 const ruleOf = n => ((n && n.src) || '||').split('|');
+const VAR_RE = /var\(\s*(--[\w-]+)/g;
+const isColorVal = v => /^(#|rgb|hsl|oklch|oklab|color\()/i.test(String(v).trim()) || /^(transparent|white|black)$/i.test(String(v).trim());
+// distâncias entre duas caixas (coordenadas da página): contenção → 4 lados; separadas → vão por eixo; sobrepostas → delta das bordas
+const measureBoxes = (A, B) => { const segs = []; const inside = (i, o) => i.x >= o.x - .5 && i.y >= o.y - .5 && i.x + i.w <= o.x + o.w + .5 && i.y + i.h <= o.y + o.h + .5;
+  const push = (x, y, len, horiz) => { if (len > .5) segs.push({ x, y, len, horiz, val: Math.round(len) }); };
+  if (inside(A, B) || inside(B, A)) { const I = inside(A, B) ? A : B, O = I === A ? B : A; const cx = I.x + I.w / 2, cy = I.y + I.h / 2;
+    push(cx, O.y, I.y - O.y, false); push(cx, I.y + I.h, O.y + O.h - I.y - I.h, false); push(O.x, cy, I.x - O.x, true); push(I.x + I.w, cy, O.x + O.w - I.x - I.w, true); return segs; }
+  const oy0 = Math.max(A.y, B.y), oy1 = Math.min(A.y + A.h, B.y + B.h), ox0 = Math.max(A.x, B.x), ox1 = Math.min(A.x + A.w, B.x + B.w);
+  const yMid = oy1 > oy0 ? (oy0 + oy1) / 2 : A.y + A.h / 2, xMid = ox1 > ox0 ? (ox0 + ox1) / 2 : A.x + A.w / 2;
+  if (A.x + A.w <= B.x) push(A.x + A.w, yMid, B.x - A.x - A.w, true); else if (B.x + B.w <= A.x) push(B.x + B.w, yMid, A.x - B.x - B.w, true); else push(Math.min(A.x, B.x), yMid, Math.abs(A.x - B.x), true);
+  if (A.y + A.h <= B.y) push(xMid, A.y + A.h, B.y - A.y - A.h, false); else if (B.y + B.h <= A.y) push(xMid, B.y + B.h, A.y - B.y - B.h, false); else push(xMid, Math.min(A.y, B.y), Math.abs(A.y - B.y), false);
+  return segs; };
+// box model: 4 passos de uma rampa da cor de seleção (margin = mais claro/frio → conteúdo = cor cheia); definidos em applyTheme como --bm0..--bm3
+const BM = { margin: ['var(--bm0)', 'Margin', 'bm0Rgb'], border: ['var(--bm1)', 'Border', 'bm1Rgb'], padding: ['var(--bm2)', 'Padding', 'bm2Rgb'], content: ['var(--bm3)', 'Conteúdo', 'bm3Rgb'] };
 // propriedades que também ficam "declaradas" quando a shorthand aparece na regra
 const SHORT = { paddingTop: ['padding'], paddingRight: ['padding'], paddingBottom: ['padding'], paddingLeft: ['padding'], marginTop: ['margin'], marginRight: ['margin'], marginBottom: ['margin'], marginLeft: ['margin'],
   borderWidth: ['border'], borderStyle: ['border'], borderColor: ['border'], borderRadius: [], rowGap: ['gap'], columnGap: ['gap'], flexGrow: ['flex'], flexShrink: ['flex'], flexBasis: ['flex'], flexDirection: ['flex-flow'], flexWrap: ['flex-flow'],
@@ -891,6 +949,7 @@ const parseRepo = q => { const m = String(q).trim().replace(/\.git$/, '').match(
 // disparar requisicao. O escopo em si e por AST (LayersCore.scopeAst).
 const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*['"]?((?:[a-z][a-z0-9+.-]*:)?\/\/[^'")]+?)['"]?\s*\)/gi, (m, u) => { warn.push('url() remota neutralizada no CSS: ' + u.slice(0, 60)); return 'url(about:blank)'; });
 const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = []; parts.forEach(x => { if (x === '..') out.pop(); else if (x && x !== '.') out.push(x); }); return out.join('/'); };
+const DEMOS = [{ name: 'Traval', base: 'fixtures/traval/', origin: 'exemplo · fixtures/traval', badge: '1280×760' }];
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
 // gerado por scripts/vendor-assets.py — que é a fonte de verdade desta lista.
@@ -908,7 +967,7 @@ const loadInterSize = () => { const o = CONF.ui.interSize; return o && o.w ? { s
 class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
-    project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null,
+    project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null, demoBase: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, menuOpen: false, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
@@ -1023,6 +1082,8 @@ class Component extends DCLogic {
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
+  openDemo(d) { this.setState({ dir: null, demoBase: d.base, dirName: d.name + ' (exemplo)', cbOpen: null, cssRules: {}, fileText: {} }, () => this.loadProject()); }
+  resetUI() { this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
     let man; try { man = JSON.parse(await this.readText('layers.json')); } catch (e) { this.unloadProject({ title: 'Pasta sem layers.json legível na raiz.', body: 'O loader precisa de um layers.json na raiz da pasta conectada. O contrato está em docs/layers-json.md; se a interface mora numa subpasta, use o campo "base".' }); return; }
@@ -1069,6 +1130,7 @@ class Component extends DCLogic {
     // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
     // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
     const idx = LayersCore.buildIndex(css.concat(inlineCss)).byClass;
+    this.varIdx = LayersCore.varIndex(css.concat(inlineCss));
     // folha de utilitarios: editar .p-6 mudaria todo o projeto, entao a gravacao e recusada com
     // motivo em vez de fingir que deu certo (docs/layers-requisitos.md)
     const utility = css.filter(c => LayersCore.isUtilitySheet(c.text)).map(c => c.file);
@@ -1087,7 +1149,7 @@ class Component extends DCLogic {
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
-  unloadProject(why) { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   async pickDir() {
     if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; }
     // conecta em modo leitura; 'readwrite' so e pedido no momento de gravar (ver ensureWrite)
@@ -1183,7 +1245,8 @@ class Component extends DCLogic {
     const oc = this.cfg('originColors') || ''; const base = /seleção/.test(oc) ? sel : acc; let oD = t.ok, oH = t.warn, oE = acc;
     if (/Mono/.test(oc)) { oD = base; oH = mixHex(base, t.fg3, .6); oE = light ? mixHex(base, '#000000', .35) : mixHex(base, '#ffffff', .4); }
     const sliderS = ((+this.props.sliderScale || 85) / 100).toFixed(2); const fs = String(+this.cfg('fontScale') || 1);
-    const v = { ...t, pri: sel, onPri: '#06101f', selLight: mixHex(sel, '#ffffff', .45), selDark: mixHex(sel, '#000000', .35), acc, accHover: a ? acc : t.accHover, accRgb: hexRgb(acc), sel, onSel: '#06101f', selHover: sel, selRgb: hexRgb(sel), oD, oH, oE, oDRgb: hexRgb(oD), oHRgb: hexRgb(oH), oERgb: hexRgb(oE), sliderS, fs, bg0Rgb: hexRgb(t.bg0), bg1Rgb: hexRgb(t.bg1), okRgb: hexRgb(t.ok), warnRgb: hexRgb(t.warn), errRgb: hexRgb(t.err), violetRgb: hexRgb(t.violet) };
+    const v = { ...t, pri: sel, onPri: '#06101f', selLight: mixHex(sel, '#ffffff', .45), selDark: mixHex(sel, '#000000', .35), acc, accHover: a ? acc : t.accHover, accRgb: hexRgb(acc), sel, onSel: '#06101f', selHover: sel, selRgb: hexRgb(sel), oD, oH, oE, oDRgb: hexRgb(oD), oHRgb: hexRgb(oH), oERgb: hexRgb(oE), sliderS, fs, bg0Rgb: hexRgb(t.bg0), bg1Rgb: hexRgb(t.bg1), okRgb: hexRgb(t.ok), warnRgb: hexRgb(t.warn), errRgb: hexRgb(t.err), violetRgb: hexRgb(t.violet), bm0: mixHex(sel, light ? '#1f252b' : '#ffffff', .55), bm1: mixHex(sel, light ? '#1f252b' : '#ffffff', .3), bm2: mixHex(sel, light ? '#1f252b' : '#ffffff', .12), bm3: sel };
+    ['bm0', 'bm1', 'bm2', 'bm3'].forEach(k => { v[k + 'Rgb'] = hexRgb(v[k]); });
     const st = document.documentElement.style; Object.keys(v).forEach(k => st.setProperty('--' + k, v[k]));
   }
   observeTopBar() {
@@ -1213,7 +1276,7 @@ class Component extends DCLogic {
       const mode = e.shiftKey ? 'plane' : 'screen'; const st = 40;
       const map = { ArrowLeft: () => this.pan(-st, 0, mode), ArrowRight: () => this.pan(st, 0, mode), ArrowUp: () => this.pan(0, -st, mode), ArrowDown: () => this.pan(0, st, mode),
         PageUp: () => this.stepActive(1), PageDown: () => this.stepActive(-1), q: () => this.orbit(-10, 0), e: () => this.orbit(10, 0), w: () => this.orbit(0, 10), s: () => this.orbit(0, -10),
-        '+': () => this.zoomBy(1.2), '=': () => this.zoomBy(1.2), '-': () => this.zoomBy(1 / 1.2), f: () => this.frame(this.state.selId), c: () => this.frame(this.state.selId, true), '0': () => this.resetView(), '?': () => this.setState(st => ({ shortcuts: !st.shortcuts })), p: () => this.setState(st => ({ rightOpen: !st.rightOpen })), Escape: () => this.escape() };
+        '+': () => this.zoomBy(1.2), '=': () => this.zoomBy(1.2), '-': () => this.zoomBy(1 / 1.2), m: () => this.setState(st => ({ measure: !st.measure })), f: () => this.frame(this.state.selId), c: () => this.frame(this.state.selId, true), '0': () => this.resetView(), '?': () => this.setState(st => ({ shortcuts: !st.shortcuts })), p: () => this.setState(st => ({ rightOpen: !st.rightOpen })), Escape: () => this.escape() };
       const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
     };
     window.addEventListener('keydown', this.onKey);
@@ -1409,7 +1472,7 @@ class Component extends DCLogic {
   revert(c) { c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }); this.setState(s => ({ changes: s.changes.filter(x => x.key !== c.key) })); this.scanSoon(); }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
-  get fixtureBase() { const p = this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
+  get fixtureBase() { const p = this.state.demoBase || this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
   async fileHandle(path, create) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
   // Ordem das origens: pasta conectada > .zip em memoria > repositorio publico > fixture HTTP.
   // Esta e a unica porta de leitura do loader — foi por isso que .zip e GitHub couberam aqui
@@ -1577,7 +1640,7 @@ class Component extends DCLogic {
     const onPath = id => selId === id || selId.startsWith(id + '.'); const inBranch = id => id === selId || id.startsWith(selId + '.');
     const activeZ = active * spacing; const tr = dragging ? 'none' : 'transform .35s ease, opacity .3s ease';
     const prev = this._prev || {}; const nextPrev = {};
-    const planes = []; let label = null;
+    const planes = []; let label = null; const zOf = {};
     nodes.forEach(n => {
       if (isoId && !(n.id === isoId || n.id.startsWith(isoId + '.'))) return;
       let z, dim = false;
@@ -1589,7 +1652,7 @@ class Component extends DCLogic {
       const onLayer = hL != null && layerSet.has(n.id); const showWire = wire && wa > 0 && !n.hasBg && !n.hasBorder && !n.text && !n.svg && !dim && spacing > 0 && !soloOff;
       const pv = prev[n.id]; const dz = !pv || pv.z !== z; const dop = !pv || pv.op !== op; nextPrev[n.id] = { z: z, op: op };
       const ptr = (dragging || (!dz && !dop)) ? 'none' : (dz && dop) ? tr : dz ? 'transform .35s ease' : 'opacity .3s ease';
-      planes.push(React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H }));
+      zOf[n.id] = z; planes.push(React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H }));
       if (sel) label = React.createElement('div', { key: 'lbl', style: { position: 'absolute', left: n.x, top: n.y - 24, transform: 'translateZ(' + (z + 2) + 'px)', padding: '3px 7px', background: 'var(--sel)', color: 'var(--onSel)', font: '700 11px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', transition: dragging ? 'none' : 'transform .35s ease' } }, n.name + '  ·  L' + n.depth);
     });
     this._prev = nextPrev;
@@ -1601,6 +1664,25 @@ class Component extends DCLogic {
         planes.push(React.createElement('div', { key: 'llbl', style: { position: 'absolute', left: x0 - pd, top: y0 - pd - 24, transform: 'translateZ(' + (fz + 2) + 'px)', padding: '3px 7px', background: 'rgba(var(--selRgb),' + ((0.55 + fs * 0.45) * 0.8).toFixed(2) + ')', color: 'var(--onSel)', font: '700 10px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', transition: tr } }, 'L' + hL + '  ·  ' + cnt + ' elemento(s)'));
       }
     }
+    // ---- medidas (redlines): seleção ↔ hover, ou seleção ↔ pai ----
+    const S = fit * zoom, inv = 1 / Math.max(S, 0.05); const selN = byId[selId];
+    if (s.measure && !dragging && selN && selId !== '0') {
+      const other = hoverId && hoverId !== selId ? byId[hoverId] : (selN.parent ? byId[selN.parent] : null); const toParent = !(hoverId && hoverId !== selId);
+      if (other && zOf[selId] !== undefined && zOf[other.id] !== undefined) { const z = Math.max(zOf[selId], zOf[other.id]) + 3; const col = 'var(--hlFg)'; const al = toParent ? 0.6 : 1; const segs = measureBoxes(selN, other);
+        segs.forEach((g, i) => { const cap = 5 * inv;
+          planes.push(React.createElement('div', { key: 'ms' + i, style: { position: 'absolute', left: g.x, top: g.y, width: g.horiz ? g.len : 0, height: g.horiz ? 0 : g.len, transform: 'translateZ(' + z + 'px)', borderTop: g.horiz ? '1px dashed ' + col : 'none', borderLeft: g.horiz ? 'none' : '1px dashed ' + col, opacity: al, pointerEvents: 'none' } }));
+          [0, 1].forEach(k => planes.push(React.createElement('div', { key: 'mc' + i + k, style: { position: 'absolute', left: g.horiz ? g.x + k * g.len : g.x - cap, top: g.horiz ? g.y - cap : g.y + k * g.len, width: g.horiz ? 0 : cap * 2, height: g.horiz ? cap * 2 : 0, transform: 'translateZ(' + z + 'px)', borderLeft: g.horiz ? '1px solid ' + col : 'none', borderTop: g.horiz ? 'none' : '1px solid ' + col, opacity: al, pointerEvents: 'none' } })));
+          planes.push(React.createElement('div', { key: 'ml' + i, style: { position: 'absolute', left: g.horiz ? g.x + g.len / 2 : g.x, top: g.horiz ? g.y : g.y + g.len / 2, transform: 'translate(-50%,-50%) translateZ(' + (z + 1) + 'px) scale(' + inv + ')', padding: '2px 5px', borderRadius: 3, background: col, color: '#14110a', font: '700 10px/1 "JetBrains Mono", monospace', whiteSpace: 'nowrap', pointerEvents: 'none', opacity: al, boxShadow: '0 1px 4px rgba(0,0,0,.35)' } }, g.val)); });
+        if (!toParent) planes.push(React.createElement('div', { key: 'mlbl', style: { position: 'absolute', left: other.x, top: other.y - 24, transform: 'translateZ(' + (zOf[other.id] + 2) + 'px)', padding: '3px 7px', background: col, color: '#14110a', font: '700 11px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, other.name + '  ·  L' + other.depth)); }
+    }
+    // ---- box model do selecionado (hover no diagrama do painel) ----
+    if (s.bmHover && selN && this.els[selId] && zOf[selId] !== undefined) { const el = this.els[selId]; const c = getComputedStyle(el); const f = k => parseFloat(c[k]) || 0; const z = zOf[selId] + 2; const colr = 'var(--' + BM[s.bmHover][2] + ')'; const n = selN;
+      const m = ['marginTop', 'marginRight', 'marginBottom', 'marginLeft'].map(f), b = ['borderTopWidth', 'borderRightWidth', 'borderBottomWidth', 'borderLeftWidth'].map(f), p = ['paddingTop', 'paddingRight', 'paddingBottom', 'paddingLeft'].map(f);
+      const ring = (x, y, w, h, bw, fill) => React.createElement('div', { key: 'bm', style: { position: 'absolute', left: x, top: y, width: w, height: h, boxSizing: 'border-box', transform: 'translateZ(' + z + 'px)', borderStyle: 'solid', borderColor: 'rgba(' + colr + ',' + (0.18 + 0.5 * wa).toFixed(3) + ')', borderWidth: bw.map(v => Math.max(v, 0)).map(v => v + 'px').join(' '), background: fill ? 'rgba(' + colr + ',' + (0.1 + 0.3 * wa).toFixed(3) + ')' : 'transparent', pointerEvents: 'none', boxShadow: '0 0 0 1px rgba(' + colr + ',' + (0.15 + 0.35 * wa).toFixed(3) + ')', transition: 'background .15s, border-color .15s' } });
+      if (s.bmHover === 'margin') planes.push(ring(n.x - m[3], n.y - m[0], n.w + m[1] + m[3], n.h + m[0] + m[2], m));
+      else if (s.bmHover === 'border') planes.push(ring(n.x, n.y, n.w, n.h, b));
+      else if (s.bmHover === 'padding') planes.push(ring(n.x + b[3], n.y + b[0], n.w - b[1] - b[3], n.h - b[0] - b[2], p));
+      else planes.push(ring(n.x + b[3] + p[3], n.y + b[0] + p[0], n.w - b[1] - b[3] - p[1] - p[3], n.h - b[0] - b[2] - p[0] - p[2], [0, 0, 0, 0], true)); }
     if (label) planes.push(label);
     const page = React.createElement('div', { style: { position: 'absolute', left: -s.pageW / 2, top: -s.pageH / 2, width: s.pageW, height: s.pageH, transformStyle: 'preserve-3d' } }, planes);
     const world = React.createElement('div', { style: { position: 'absolute', left: '50%', top: '50%', width: 0, height: 0, transformStyle: 'preserve-3d', willChange: dragging ? 'transform' : 'auto', transition: dragging ? 'none' : 'transform .35s ease',
@@ -1785,7 +1867,21 @@ class Component extends DCLogic {
       ...cb, themeOpts: opts(Object.keys(THEMES), 'theme'), selectOpts: opts(['Padrão do tema', ...Object.keys(SELECTS)], 'selectColor', v => SELECTS[v] ? (light && v === 'Branco' ? '#6d7580' : SELECTS[v]) : null), originOpts: opts(['Semântica · verde / âmbar / acento', 'Mono · cor de seleção', 'Mono · acento'], 'originColors'), panelHeaderOpts: opts(['A · Cartão', 'B · Faixas rotuladas', 'C · Compacto'], 'panelHeader'),
       cfgDirty: Object.keys(s.cfg).length > 0, resetCfg: () => this.resetCfg(), logoGrad: s.cfg.logoGrad || DEFAULT_GRAD,
       fontScale: +this.cfg('fontScale') || 1, fontScalePct: Math.round((+this.cfg('fontScale') || 1) * 100) + '%', setFontScale: e => this.setCfg('fontScale', +e.target.value) };
+    // declaração autoral da propriedade na regra própria (arquivo real ou síntese) → token var(--x) resolvido
+    const ownText = el && s.project ? this.codeFor({ file: selFile, selector: selSelector, line: selLine, ids: [s.selId] }).text : '';
+    const declIn = k => { const re = new RegExp('(^|[;{\\s])' + k.replace(/[-]/g, '\\-') + '\\s*:\\s*([^;}]+)', 'm'); const m = re.exec(ownText); return m ? m[2].trim() : null; };
+    const varIdx = this.varIdx || {}; const tokCache = {};
+    const tokOf = prop => { if (tokCache[prop] !== undefined) return tokCache[prop]; let d = declIn(kebab(prop)); if (d === null) for (const sh of (SHORT[prop] || [])) { d = declIn(sh); if (d !== null) break; } const m = d ? /var\(\s*(--[\w-]+)/.exec(d) : null; return (tokCache[prop] = m ? m[1] : null); };
+    const tokInfo = name => { const e = varIdx[name]; const live = cs ? cs.getPropertyValue(name).trim() : ''; const val = live || (e ? e.value : ''); return { tokName: name, tokVal: val, tokSwatch: isColorVal(val) ? val : 'transparent', tokHasSwatch: isColorVal(val), tokSrc: e ? e.file.split('/').pop() + ' L' + e.line : 'definição fora das folhas carregadas', tokTitle: name + ' = ' + val + (e ? '\n' + e.selector + ' · ' + e.file + ' L' + e.line + '\nclique: filtrar propriedades que usam este token' : '\n(não definido nas folhas do projeto — herdado do editor ou inline)'), tokPick: () => this.setState(st => ({ propQ: st.propQ === name ? '' : name, propMode: 'filter' })), tokBdr: s.propQ === name ? 'var(--sel)' : 'var(--line1)', tokBg: s.propQ === name ? 'rgba(var(--selRgb),.12)' : 'var(--faint)', tokNameC: s.propQ === name ? 'var(--sel)' : 'var(--fg0)' }; };
+    const seen = new Set(); const selTokens = []; if (ownText) { let m; VAR_RE.lastIndex = 0; while ((m = VAR_RE.exec(ownText))) if (!seen.has(m[1])) { seen.add(m[1]); selTokens.push(tokInfo(m[1])); } }
+    const bmF = k => cs ? Math.round((parseFloat(cs[k]) || 0) * 10) / 10 : 0; const bmCell = v => ({ v: v === 0 ? '0' : String(v), c: v === 0 ? 'var(--fg3)' : 'var(--fg0)' });
+    const bmV = {}; [['M', 'margin', ''], ['B', 'border', 'Width'], ['P', 'padding', '']].forEach(([K, base, suf]) => ['Top', 'Right', 'Bottom', 'Left'].forEach(side => { const c = bmCell(bmF(base + side + suf)); bmV['bm' + K + side[0]] = c.v; bmV['bm' + K + side[0] + 'c'] = c.c; }));
+    const bmCW = el ? Math.round(el.clientWidth - bmF('paddingLeft') - bmF('paddingRight')) : 0, bmCH = el ? Math.round(el.clientHeight - bmF('paddingTop') - bmF('paddingBottom')) : 0;
+    const bmA = Math.max(0, Math.min(100, +(this.props.bmAlpha ?? 15))) / 100;
+    const bmRing = k => { const [col, lab, rgb] = BM[k]; const on = s.bmHover === k; const a = al => 'rgba(var(--' + rgb + '),' + (al * bmA).toFixed(3) + ')'; return { ['bm' + k + 'Bdr']: on ? a(1.6) : a(.9), ['bm' + k + 'Bg']: on ? a(.45) : a(.14), ['bm' + k + 'Lab']: lab, ['bm' + k + 'LabC']: on ? col : 'var(--fg3)', ['bm' + k + 'In']: e => { e.stopPropagation(); if (s.bmHover !== k) this.setState({ bmHover: k }); } }; };
     return {
+      ...bmV, bmCW, bmCH, ...bmRing('margin'), ...bmRing('border'), ...bmRing('padding'), ...bmRing('content'), bmOut: () => { if (s.bmHover) this.setState({ bmHover: null }); }, bmBoxSizing: cs ? cs.boxSizing : '',
+      selTokens, hasTokens: selTokens.length > 0, tokCount: selTokens.length, bmOpen: s.bmOpen, bmChev: s.bmOpen ? '▾' : '▸', toggleBmOpen: () => this.setState(st => ({ bmOpen: !st.bmOpen })), bmSummary: el ? bmCW + '×' + bmCH + ' conteúdo · ' + (cs.boxSizing === 'border-box' ? 'border-box' : 'content-box') + (selTokens.length ? ' · ' + selTokens.length + ' token(s)' : '') : '',
       emptyTitle: s.loadError ? s.loadError.title : 'Nenhum projeto carregado.',
       emptyBody: s.loadError ? s.loadError.body : (window.showDirectoryPicker ? 'Abra Projetos recentes (canto superior esquerdo) e conecte uma pasta que tenha layers.json na raiz.' : 'Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta. O modo fixture (#layers=) continua funcionando aqui.'),
       showHint: !s.project || !!s.loadError,
@@ -1798,6 +1894,7 @@ class Component extends DCLogic {
       ...sl('wire', s.wireAlpha, 0, 100), ...sl('dist', s.spacing, 30, 200), ...sl('persp', s.persp, 600, 3000), ...sl('fstr', s.focusStr, 0, 100), ...sl('oth', s.othersOp, 0, 100),
       explBg: 'transparent', explColor: s.flat ? 'var(--fg2)' : 'var(--sel)', explBdr: s.flat ? 'var(--line1)' : 'var(--sel)', focusBdr2: s.layerFocus ? 'var(--sel)' : 'var(--line1)', focusColor2: s.layerFocus ? 'var(--sel)' : 'var(--fg2)', explLabel: 'Explodido', explGlyph: s.flat ? '▤' : '▧',
       explTitle: s.flat ? 'Vista plana (camadas no mesmo plano) — clique para explodir' : 'Vista explodida (camadas separadas em profundidade) — clique para achatar', toggleFlat: () => this.setState(st => ({ flat: !st.flat })),
+      measOn: s.measure, toggleMeasure: () => this.setState(st => ({ measure: !st.measure })), measBdr: s.measure ? 'var(--sel)' : 'var(--line1)', measColor: s.measure ? 'var(--sel)' : 'var(--fg2)', measTitle: s.measure ? 'Medidas ligadas (M) — distâncias entre a seleção e o elemento sob o cursor; sem hover, até o pai' : 'Medidas desligadas (M) — clique para mostrar distâncias no palco',
       scene: this.scene(), stageRef: this.stageRef, pageRef: this.pageRef,
       treeQ: s.treeQ, setTreeQ: e => this.setState({ treeQ: e.target.value }), clearTreeQ: () => this.setState({ treeQ: '' }), treeQOn: !!tq, treeQKey: e => { if (e.key === 'Escape') { this.setState({ treeQ: '' }); e.target.blur(); } e.stopPropagation(); },
       treeQHits: tq ? (s.treeTab === 'hier' ? treeHits + ' de ' + s.nodes.length : elemHits + ' de ' + ruleCount) : '', treeQPlaceholder: s.treeTab === 'hier' ? 'Buscar camada…' : 'Buscar arquivo, regra ou uso…',
@@ -1842,7 +1939,8 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(),
+      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(),
+      demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: () => this.openDemo(d) }; }),
       ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
         return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: this.cbToggle('hist'), histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
