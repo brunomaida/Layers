@@ -1,0 +1,16 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>dc-template fixture</title></head>
+<body>
+<x-dc>
+<helmet><style>.card{color:#222}</style></helmet>
+<div class="card" style="display:flex;gap:8px;padding:12px">
+  <h1 style="font-size:20px;margin:0">Title</h1>
+  <p style="margin:4px 0 0">{{ text }}</p>
+  <sc-if condition="{{ ok }}"><button style="padding:{{ pad }}px">Go</button></sc-if>
+  <span>no inline style</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic { get text() { return 'hello'; } get ok() { return true; } get pad() { return 6; } }
+</script>
+</body></html>
