@@ -106,10 +106,11 @@ Scope: the editor write path. No new process, no CSP change.
 
 | Check | Result |
 |---|---|
-| `npm test` | 116/116 (79 existing + 37 new) |
+| `npm test` | 122/122 (79 existing + 43 new) |
 | Mapper vs the running editor (`__dcAnnotatedTemplate`) | 728/728 elements, 0 tag mismatches, 0 `style` presence mismatches |
 | Loader on `fixtures/dc-template` | 5/5 elements stamped `index.html\|tpl:N\|line` with correct lines; tree renders, no error |
 | Seam extraction | Identical fingerprint before/after on 4 fixtures (traval 429 nodes, plain-css 7, todomvc-react 41, dc-template 6): `data-src`, `data-name`, scoped CSS and computed styles hashes equal |
+| Opus adversarial review | 1 blocker fixed: content of a nested `<template>` is not stamped by the runtime, so the tokenizer shifted every later `tplId` while the tag-only guard passed. Fixed in the tokenizer plus a second guard comparing literal `style=""` values against the render (0 false positives on 129 real editor elements; a one-index shift is caught on 95/97). Also fixed: `approve` recomputes the patch and refuses on mismatch, silent skip of an undrafted dc file, non-`tpl:` changes in the dc file, `dc.text` refresh after approve, `dcSource` must be `.html`, `Object.prototype` tag names. Not fixed, noted: warning order of `hoistFaces` changed; `attrNames` and 3 reserved codes unused |
 | Perf | `mapDcTemplate` 0.68 ms per call on the 304 KB editor template (728 elements, Node 24); one-edit `patchDc` 2.85 ms |
 | **Not verified** | The real write (connect folder → edit → draft → approve → one-line diff in `index.html`). `showDirectoryPicker` needs a user gesture, so it is manual. No harness exists for `index.html` (E2E is checklist E) |
 
