@@ -677,6 +677,12 @@ describe('MapDcTemplate', () => {
     expect(b.styleRange).toBeNull();
   });
 
+  it('Line_ContaLinhasDoArquivoInteiro', () => {
+    const map = core.mapDcTemplate(dcSrc(['<div>', ' <span></span>', '', ' <b></b></div>'].join('\n')));
+    // dcSrc abre o bloco na linha 2: doctype na 1, <x-dc> na 2, primeiro filho na 3
+    expect(map.map((e) => e.line)).toEqual([3, 4, 6]);
+  });
+
   it('AttrNames_ListaNomesEmMinusculas', () => {
     const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" style="a:b"></div>'));
     expect(d.attrNames).toEqual(['class', 'data-x', 'style']);
@@ -766,7 +772,7 @@ describe('PatchAttrAt', () => {
   it('DcCodes_EnumCongelado', () => {
     expect(Object.isFrozen(core.DC_CODES)).toBe(true);
     for (const c of ['VALUE_HAS_BINDING', 'MAP_MISALIGNED', 'SOURCE_CHANGED', 'SOURCE_NOT_CSS', 'UTILITY_SHEET',
-      'HELMET_PLACEHOLDER', 'SNAPSHOT_STYLE', 'READONLY_ORIGIN', 'TPL_FANOUT', 'NO_INLINE_STYLE', 'VALUE_UNSAFE']) {
+      'HELMET_PLACEHOLDER', 'SNAPSHOT_STYLE', 'READONLY_ORIGIN', 'TPL_FANOUT', 'NO_INLINE_STYLE', 'PROP_NOT_INLINE', 'VALUE_UNSAFE']) {
       expect(core.DC_CODES[c]).toBe(c);
     }
   });
@@ -790,5 +796,71 @@ describe('CheckDcMap', () => {
   it('TplIdForaDoMapa_RetornaMapaDesalinhado', () => {
     const out = core.checkDcMap(map(), [{ tplId: 9, tag: 'div' }]);
     expect(out.code).toBe('MAP_MISALIGNED');
+  });
+});
+
+describe('PatchDc', () => {
+  const tpl = '<div style="padding:8px;color:red"><span style="margin:0">a</span><i style="width:{{ w }}px"></i><b></b></div>';
+  const item = (tplId, prop, to) => ({ tplId, prop, to });
+
+  it('EdicaoValida_AplicaEContaAplicadas', () => {
+    const src = dcSrc(tpl);
+    const out = core.patchDc(src, src, [item(0, 'padding', '12px')]);
+    expect(out.applied).toBe(1);
+    expect(out.refused).toEqual([]);
+    expect(out.text).toBe(src.replace('padding:8px', 'padding:12px'));
+  });
+
+  it('DuasEdicoesNoMesmoElemento_RemapeiaOffsets', () => {
+    const src = dcSrc(tpl);
+    const out = core.patchDc(src, src, [item(0, 'padding', '12px 16px'), item(0, 'color', 'blue'), item(1, 'margin', '4px')]);
+    expect(out.applied).toBe(3);
+    expect(out.text).toBe(src.replace('padding:8px;color:red', 'padding:12px 16px;color:blue').replace('margin:0', 'margin:4px'));
+  });
+
+  it('TemplateReestruturado_RecusaMapMisaligned', () => {
+    const loaded = dcSrc(tpl);
+    const fresh = dcSrc('<section>' + tpl + '</section>');
+    const out = core.patchDc(loaded, fresh, [item(0, 'padding', '12px')]);
+    expect(out.applied).toBe(0);
+    expect(out.text).toBe(fresh);
+    expect(out.refused[0].code).toBe('MAP_MISALIGNED');
+  });
+
+  it('ValorMudouDesdeOLoad_RecusaSourceChanged', () => {
+    const loaded = dcSrc(tpl);
+    const fresh = loaded.replace('padding:8px', 'padding:9px');
+    const out = core.patchDc(loaded, fresh, [item(0, 'padding', '12px')]);
+    expect(out.refused[0].code).toBe('SOURCE_CHANGED');
+    expect(out.text).toBe(fresh);
+  });
+
+  it('PropForaDoStyle_RecusaPropNotInline', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(0, 'gap', '4px')]).refused[0].code).toBe('PROP_NOT_INLINE');
+  });
+
+  it('ElementoSemStyle_RecusaNoInlineStyle', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(3, 'padding', '4px')]).refused[0].code).toBe('NO_INLINE_STYLE');
+  });
+
+  it('ValorComBinding_RecusaValueHasBinding', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(2, 'width', '10px')]).refused[0].code).toBe('VALUE_HAS_BINDING');
+  });
+
+  it('TplIdForaDoMapa_RecusaMapMisaligned', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(99, 'padding', '1px')]).refused[0].code).toBe('MAP_MISALIGNED');
+  });
+
+  it('RecusaParcial_AplicaAsOutrasEDevolveOItemRecusado', () => {
+    const src = dcSrc(tpl);
+    const out = core.patchDc(src, src, [item(2, 'width', '10px'), item(0, 'padding', '12px')]);
+    expect(out.applied).toBe(1);
+    expect(out.refused).toHaveLength(1);
+    expect(out.refused[0].item.tplId).toBe(2);
+    expect(out.text).toContain('padding:12px');
   });
 });
