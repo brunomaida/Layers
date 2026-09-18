@@ -130,7 +130,11 @@ O `data-src` de um elemento é `arquivo|seletor|linha`. O que ocupa o slot do se
 O código da recusa é o contrato; a frase mostrada no log do rascunho (`dcWhy` em `index.html`) deriva
 dele e vem com um snippet para colar à mão. Só o template dc tem mapa por índice: o runtime carimba
 `data-dc-tpl="N"` em ordem de documento, `LayersCore.mapDcTemplate` conta as start tags do arquivo
-na mesma ordem e `checkDcMap` recusa o mapa inteiro se uma tag do render não bater.
+na mesma ordem (o conteúdo de `<template>` não é carimbado, então é pulado) e o mapa só vale se
+`checkDcMap` bate as tags do render **e** `dcStyleMismatch` bate os valores literais do `style=""`
+do fonte com o style renderizado; qualquer divergência desabilita toda gravação `tpl:` do projeto.
+No `approve`, o patch é recalculado sobre o arquivo atual e só promove o rascunho se o resultado for
+idêntico a ele, então uma edição sua no arquivo entre o rascunho e a aprovação não se perde.
 
 ## Loader de projeto
 
