@@ -576,6 +576,15 @@ describe('DeriveManifest', () => {
     expect(out.styles).toEqual([]);
   });
 
+  it('HrefAbsoluto_Recusado', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="/shared.css"></head><body><div>a</div></body></html>' },
+      { path: 'shared.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.styles).toEqual([]);
+  });
+
   it('CorpoShell_Classifica', () => {
     const files = [
       { path: 'index.html', kind: 'html', text: '<html><body><div id="app"></div></body></html>' }
