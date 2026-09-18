@@ -113,14 +113,31 @@ requisições, todas em `localhost:5180`. Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 ## Limites conhecidos
 
 - DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações em v2.22: `contain`, `will-change` só durante drag, transições desligadas no drag. Próximo passo: culling por viewport/opacidade e agrupamento de folhas.
-- Patch só em `.css`. Regras vindas de TS/JS são exibidas e registradas, mas não reescritas.
 - Fonte de camadas fixa (mock). Ver `RELEASE-CHECKLIST.md` → "Loader de projeto".
+- Regras vindas de TS/JS/JSX são exibidas e registradas, mas não reescritas.
 
-## Loader de projeto (v1 — a implementar)
+### Camadas de gravação
 
-1. Usuário conecta a pasta (FS Access).
-2. LAYERS sobe o app alvo num `<iframe>` de mesma origem (dev server Vite ou `dist/` servido localmente).
-3. `walk()` roda no `iframe.contentDocument`.
-4. Origem de cada regra: CSSOM (`document.styleSheets[].cssRules`) → seletor casado com `el.matches()` → arquivo/linha localizados nos `.css` da pasta com `css-tree`.
-5. Estilos em TS/JS: TypeScript Compiler API apenas para localizar literais (`style.x = …`, template strings); sem interpretação.
-6. Sem parser próprio de HTML: o browser é a engine de layout.
+O `data-src` de um elemento é `arquivo|seletor|linha`. O que ocupa o slot do seletor decide como se grava:
+
+| Origem | `data-src` | Gravação | Recusa (`LayersCore.DC_CODES`) |
+|---|---|---|---|
+| Regra em `.css` | `arquivo.css\|.classe\|linha` | `patchCssAt` | folha de utilitários recusa por toast (`UTILITY_SHEET` reservado no enum) |
+| Template dc (`<x-dc>`) | `dcSource\|tpl:N\|linha` | `patchDc` → `patchAttrAt`, só valor literal em `style=""` | `VALUE_HAS_BINDING`, `NO_INLINE_STYLE`, `PROP_NOT_INLINE`, `VALUE_UNSAFE`, `SOURCE_CHANGED`, `MAP_MISALIGNED` |
+| Qualquer outro arquivo | `arquivo\|…` | nenhuma | `SOURCE_NOT_CSS`; `SNAPSHOT_STYLE` para o `<style>` do próprio snapshot |
+| Origem sem pasta gravável | — | nenhuma | toast que nomeia a origem (`READONLY_ORIGIN` reservado no enum) |
+
+O código da recusa é o contrato; a frase mostrada no log do rascunho (`dcWhy` em `index.html`) deriva
+dele e vem com um snippet para colar à mão. Só o template dc tem mapa por índice: o runtime carimba
+`data-dc-tpl="N"` em ordem de documento, `LayersCore.mapDcTemplate` conta as start tags do arquivo
+na mesma ordem e `checkDcMap` recusa o mapa inteiro se uma tag do render não bater.
+
+## Loader de projeto
+
+`loadProject` lê o `layers.json`, o mock e as folhas, e chama `buildProjectFromHtml` (função de
+módulo em `index.html`, só devolve dados): sanitiza, escopa as folhas, monta a raiz (L0) e atribui
+`data-src`. O chamador faz o hoist de `@font-face` e monta o resultado no shadow root fora da tela.
+A fonte de camadas é sempre um mock sanitizado; nenhum script do projeto roda na origem do editor.
+Ler um app renderizado por JS **sem** snapshot manual (Chromium headless em processo separado) está
+decidido e não implementado: ver a ADR de 2026-09-18 em `architecture-decisions.md`. Iframe de mesma
+origem foi descartado (alcançaria o handle de pasta gravável).
