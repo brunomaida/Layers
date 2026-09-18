@@ -470,3 +470,153 @@ describe('ExportConfig', () => {
     expect(out.projects).toHaveLength(1);
   });
 });
+
+describe('DeriveManifest', () => {
+  it('LinkExterno_UsaComoStyles', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="styles.css"></head><body><div>a</div><div>b</div></body></html>' },
+      { path: 'styles.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.mock).toBe('index.html');
+    expect(out.base).toBe('');
+    expect(out.styles).toEqual(['styles.css']);
+    expect(out.classification).toBe('HTML estático');
+  });
+
+  it('StyleInlineSemCssExterno_StylesVazio', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><head><style>.a{color:red}</style></head><body><div>a</div><div>b</div></body></html>' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.mock).toBe('index.html');
+    expect(out.styles).toEqual([]);
+    expect(out.classification).toBe('HTML único com <style> inline');
+  });
+
+  it('MultiplosHtml_VenceMaisElementos', () => {
+    const files = [
+      { path: 'a.html', kind: 'html', text: '<body><div>a</div></body>' },
+      { path: 'sub/b.html', kind: 'html', text: '<body><div>a</div><div>b</div><div>c</div></body>' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.mock).toBe('b.html');
+    expect(out.base).toBe('sub');
+  });
+
+  it('MultiplosHtml_EmpateDesempataPorCaminhoCurto', () => {
+    const files = [
+      { path: 'sub/longo.html', kind: 'html', text: '<body><div>a</div><div>b</div></body>' },
+      { path: 'a.html', kind: 'html', text: '<body><div>a</div><div>b</div></body>' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.mock).toBe('a.html');
+    expect(out.base).toBe('');
+  });
+
+  it('NenhumHtml_MockNulo', () => {
+    const files = [{ path: 'style.css', kind: 'css', text: 'body{}' }];
+    const out = core.deriveManifest(files);
+    expect(out.mock).toBeNull();
+    expect(out.styles).toEqual([]);
+    expect(out.classification).toBe('nenhum HTML com corpo');
+  });
+
+  it('CssReferenciadoAusente_Filtrado', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="missing.css"></head><body><div>a</div></body></html>' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.styles).toEqual([]);
+  });
+
+  it('MockEmSubpasta_DerivaBase', () => {
+    const files = [
+      { path: 'src/ui/shell.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="layout.css"></head><body><div>a</div></body></html>' },
+      { path: 'src/ui/layout.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.base).toBe('src/ui');
+    expect(out.mock).toBe('shell.html');
+    expect(out.styles).toEqual(['layout.css']);
+  });
+
+  it('PastaLayers_BaseVaziaMockCompleto', () => {
+    const files = [
+      { path: 'layers/mock.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="mock.css"></head><body><div>a</div></body></html>' },
+      { path: 'layers/mock.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.base).toBe('');
+    expect(out.mock).toBe('layers/mock.html');
+    expect(out.styles).toEqual(['layers/mock.css']);
+  });
+
+  it('HrefExternoOuDataOuQuery_Filtrado', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><head>' +
+        '<link rel="stylesheet" href="https://cdn.example/x.css">' +
+        '<link rel="stylesheet" href="//cdn.example/y.css">' +
+        '<link rel="stylesheet" href="data:text/css;base64,AAAA">' +
+        '<link rel="stylesheet" href="local.css?v=2">' +
+        '</head><body><div>a</div></body></html>' },
+      { path: 'local.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.styles).toEqual(['local.css']);
+  });
+
+  it('HrefForaDoBase_Descartado', () => {
+    const files = [
+      { path: 'src/ui/shell.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="../../shared.css"></head><body><div>a</div></body></html>' },
+      { path: 'shared.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.base).toBe('src/ui');
+    expect(out.styles).toEqual([]);
+  });
+
+  it('HrefAbsoluto_Recusado', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><head><link rel="stylesheet" href="/shared.css"></head><body><div>a</div></body></html>' },
+      { path: 'shared.css', kind: 'css', text: 'body{}' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.styles).toEqual([]);
+  });
+
+  it('CorpoShell_Classifica', () => {
+    const files = [
+      { path: 'index.html', kind: 'html', text: '<html><body><div id="app"></div></body></html>' }
+    ];
+    const out = core.deriveManifest(files);
+    expect(out.classification).toBe('shell de app (precisa de snapshot)');
+    expect(out.mock).toBe('index.html');
+  });
+});
+
+describe('ShouldAutoCreate', () => {
+  it('NotFoundComPasta_True', () => {
+    expect(core.shouldAutoCreate({ name: 'NotFoundError' }, true)).toBe(true);
+  });
+
+  it('NotFoundSemPasta_False', () => {
+    expect(core.shouldAutoCreate({ name: 'NotFoundError' }, false)).toBe(false);
+  });
+
+  it('TypeMismatch_False', () => {
+    expect(core.shouldAutoCreate({ name: 'TypeMismatchError' }, true)).toBe(false);
+  });
+
+  it('NotAllowed_False', () => {
+    expect(core.shouldAutoCreate({ name: 'NotAllowedError' }, true)).toBe(false);
+  });
+
+  it('ErroGenericoOrigemReadOnly_False', () => {
+    expect(core.shouldAutoCreate(new Error('404 layers.json'), true)).toBe(false);
+  });
+
+  it('ErroNulo_False', () => {
+    expect(core.shouldAutoCreate(null, true)).toBe(false);
+  });
+});
