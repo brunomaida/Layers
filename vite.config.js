@@ -44,4 +44,10 @@ function serveFixturesRaw() {
   };
 }
 
-export default { plugins: [serveFixturesRaw()] };
+// makeDraft grava <arquivo>.design-draft.<ext> na raiz servida e approve grava .design-history/,
+// .bak e .tmp: sem ignorar, o Vite recarrega o editor no meio da edicao (o rascunho de um alvo
+// .html cai na raiz). O plugin so e lido no start do Vite: reinicie o dev server ao mudar isto.
+export default {
+  plugins: [serveFixturesRaw()],
+  server: { watch: { ignored: ['**/.design-history/**', '**/*.bak', '**/*.tmp', '**/*.design-draft.*'] } },
+};
