@@ -664,6 +664,24 @@ describe('MapDcTemplate', () => {
     expect(tagsOf(map)).toEqual(['div', 'i']);
   });
 
+  it('TemplateAninhado_NaoContaElementosDoConteudo', () => {
+    // o runtime so carimba childNodes; o conteudo de <template> mora em .content e fica sem carimbo
+    const src = dcSrc('<div><template><span style="color:red">h</span></template><span style="color:blue">v</span></div>');
+    const map = core.mapDcTemplate(src);
+    expect(tagsOf(map)).toEqual(['div', 'template', 'span']);
+    expect(src.slice(map[2].styleRange[0], map[2].styleRange[1])).toBe('color:blue');
+  });
+
+  it('TemplatesAninhadosEntreSi_ContaSoAExterna', () => {
+    const map = core.mapDcTemplate(dcSrc('<template><template><i></i></template><b></b></template><u></u>'));
+    expect(tagsOf(map)).toEqual(['template', 'u']);
+  });
+
+  it('TagComNomeDeObjectPrototype_ContaComoElemento', () => {
+    const map = core.mapDcTemplate(dcSrc('<div><constructor></constructor><tostring></tostring></div>'));
+    expect(tagsOf(map)).toEqual(['div', 'constructor', 'tostring']);
+  });
+
   it('HtmlHeadBodyDentroDoBloco_NaoContam', () => {
     const map = core.mapDcTemplate(dcSrc('<body><div></div></body>'));
     expect(tagsOf(map)).toEqual(['div']);
@@ -686,6 +704,22 @@ describe('MapDcTemplate', () => {
   it('AttrNames_ListaNomesEmMinusculas', () => {
     const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" style="a:b"></div>'));
     expect(d.attrNames).toEqual(['class', 'data-x', 'style']);
+  });
+});
+
+describe('StyleDecls', () => {
+  it('Declaracoes_RetornaPropValorEBinding', () => {
+    const s = dcSrc('<div style="color:red; Padding : 8px ;margin:{{ m }}px"></div>');
+    const out = core.styleDecls(s, core.mapDcTemplate(s)[0].styleRange);
+    expect(out).toEqual([
+      { prop: 'color', value: 'red', binding: false },
+      { prop: 'padding', value: '8px', binding: false },
+      { prop: 'margin', value: '{{ m }}px', binding: true }
+    ]);
+  });
+
+  it('SemRange_RetornaListaVazia', () => {
+    expect(core.styleDecls('<div></div>', null)).toEqual([]);
   });
 });
 
@@ -853,6 +887,14 @@ describe('PatchDc', () => {
   it('TplIdForaDoMapa_RecusaMapMisaligned', () => {
     const src = dcSrc(tpl);
     expect(core.patchDc(src, src, [item(99, 'padding', '1px')]).refused[0].code).toBe('MAP_MISALIGNED');
+  });
+
+  it('TemplateAninhado_EditaOElementoVisivelENaoOEscondido', () => {
+    // regressao: o mapa contava o span de dentro do <template>, o runtime nao, e o patch caia no errado
+    const src = dcSrc('<div><template><span style="color:red">h</span></template><span style="color:blue">v</span></div>');
+    const out = core.patchDc(src, src, [item(2, 'color', 'green')]);
+    expect(out.applied).toBe(1);
+    expect(out.text).toBe(src.replace('color:blue', 'color:green'));
   });
 
   it('RecusaParcial_AplicaAsOutrasEDevolveOItemRecusado', () => {

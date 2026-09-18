@@ -848,6 +848,22 @@ const dcWhy = r => {
     TPL_FANOUT: 'vários nós renderizados vêm de um só elemento do template — a edição vale para todos'
   })[r.code] || r.code;
 };
+const isTplChange = c => /^tpl:\d+$/.test(ruleOf(c)[1]);
+// Tags iguais nao provam que o indice cai no mesmo elemento (um <template> aninhado deslocaria tudo).
+// Confere tambem os valores literais do style="" do fonte contra o style renderizado, aplicando o
+// cascade inteiro numa sonda para o navegador normalizar shorthand e cor; longhands de declaracao
+// com {{ }} ficam de fora porque so o render sabe o valor.
+const dcStyleMismatch = (text, range, el) => {
+  const decls = LayersCore.styleDecls(text, range); if (!decls.length) return false;
+  const probe = document.createElement('div'); const skip = new Set();
+  decls.forEach(d => {
+    if (!d.binding) { probe.style.setProperty(d.prop, d.value); return; }
+    const t = document.createElement('div'); t.style.setProperty(d.prop, 'inherit'); skip.add(d.prop);
+    for (let i = 0; i < t.style.length; i++) skip.add(t.style[i]);
+  });
+  for (let i = 0; i < probe.style.length; i++) { const n = probe.style[i]; if (!skip.has(n) && probe.style.getPropertyValue(n) !== el.style.getPropertyValue(n)) return true; }
+  return false;
+};
 const VAR_RE = /var\(\s*(--[\w-]+)/g;
 const isColorVal = v => /^(#|rgb|hsl|oklch|oklab|color\()/i.test(String(v).trim()) || /^(transparent|white|black)$/i.test(String(v).trim());
 // distâncias entre duas caixas (coordenadas da página): contenção → 4 lados; separadas → vão por eixo; sobrepostas → delta das bordas
@@ -1012,9 +1028,11 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
     if (dcText !== null) {
       const dcMap = LayersCore.mapDcTemplate(dcText); const dcEls = [rootEl, ...rootEl.querySelectorAll('[data-dc-tpl]')].filter(e => e.hasAttribute('data-dc-tpl'));
       const chk = LayersCore.checkDcMap(dcMap, dcEls.map(e => ({ tplId: +e.getAttribute('data-dc-tpl'), tag: e.localName })));
-      dc = { file: dcFile, text: dcText, trust: chk.ok };
+      const badVals = chk.ok ? dcEls.filter(e => { const m = dcMap[+e.getAttribute('data-dc-tpl')]; return m.styleRange && dcStyleMismatch(dcText, m.styleRange, e); }) : [];
+      dc = { file: dcFile, text: dcText, trust: chk.ok && !badVals.length && dcMap.length > 0 };
       if (!dcMap.length) warn.push('dcSource sem bloco <x-dc>: ' + dcFile);
       else if (!chk.ok) warn.push('mapa do template dc desalinhado (' + chk.detail.bad.length + ' elemento(s)) — gravar em ' + dcFile + ' desabilitado');
+      else if (badVals.length) warn.push('valores do style no fonte não batem com o render (' + badVals.length + ' elemento(s)) — gravar em ' + dcFile + ' desabilitado');
       else dcEls.forEach(e => { const m = dcMap[+e.getAttribute('data-dc-tpl')]; e.dataset.src = dcFile + '|tpl:' + m.tplId + '|' + m.line; });
     }
   }
@@ -1199,7 +1217,8 @@ class Component extends DCLogic {
     (Array.isArray(man.styles) ? man.styles : []).forEach(f => { const p = P(f); if (!cssFiles.includes(p)) cssFiles.push(p); });
     (Array.isArray(man.fonts) ? man.fonts : []).forEach(u => useLocalFaces(u, warn));
     const css = []; for (const f of cssFiles) { try { css.push({ file: f, text: await this.readText(f) }); } catch (e) { warn.push('css não encontrado: ' + f); } }
-    const dcFile = man.dcSource ? P(man.dcSource) : null; let dcText = null;
+    let dcFile = man.dcSource ? P(man.dcSource) : null; let dcText = null;
+    if (dcFile && !/\.html?$/i.test(dcFile)) { warn.push('dcSource deve ser um .html: ' + dcFile); dcFile = null; }
     if (dcFile) { try { dcText = await this.readText(dcFile); } catch (e) { warn.push('dcSource não lido: ' + dcFile); } }
     const built = buildProjectFromHtml({ doc, html, man, css, dcFile, dcText, mockPath, mockDir, warn });
     if (built.empty) { this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
@@ -1700,20 +1719,21 @@ class Component extends DCLogic {
   log(line) { this.setState(s => ({ modal: s.modal ? { ...s.modal, log: [...s.modal.log, line] } : null })); }
   filesOf(changes) {
     const map = {}; changes.forEach(c => { const file = ruleOf(c)[0]; (map[file] = map[file] || []).push(c); });
-    return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, dc: !!this.dc && path === this.dc.file, draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
+    return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, dc: !!this.dc && path === this.dc.file && list.some(isTplChange), draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
   }
   patched(text, list) { list.forEach(c => { text = LayersCore.patchCssAt(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
   // Template dc: o texto do load (this.dc.text) e a referencia do que o projeto viu; o atual e o que se grava.
-  patchedDc(text, list) { return LayersCore.patchDc(this.dc.text, text, list.map(c => ({ tplId: +ruleOf(c)[1].slice(4), prop: kebab(c.prop), to: c.to, c }))); }
+  patchedDc(text, list) { return LayersCore.patchDc(this.dc.text, text, list.filter(isTplChange).map(c => ({ tplId: +ruleOf(c)[1].slice(4), prop: kebab(c.prop), to: c.to, c }))); }
   notCssCode(path) { const p = this.state.project; return p && p.snapMock && path === p.mockPath ? 'SNAPSHOT_STYLE' : 'SOURCE_NOT_CSS'; }
   async draftDc(f) {
     try {
       const r = this.patchedDc(await this.readText(f.path), f.list);
       f.list.forEach(c => { if (c.ids.length > 1 || this.sharedIds(c.id).length > 1) this.log('⚠ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — TPL_FANOUT: ' + dcWhy({ code: 'TPL_FANOUT' })); });
+      f.list.filter(c => !isTplChange(c)).forEach(c => this.log('✗ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — SOURCE_NOT_CSS: ' + dcWhy({ code: 'SOURCE_NOT_CSS' })));
       r.refused.forEach(x => this.log('✗ ' + f.path + ':' + (ruleOf(x.item.c)[2] || '?') + ' ' + x.item.prop + ' — ' + x.code + ': ' + dcWhy(x) + '\n    snippet: ' + x.item.prop + ': ' + x.item.to));
       if (!r.applied) { this.log('· ' + f.path + ': nenhuma edição gravável — sem rascunho'); return; }
       await this.writeText(f.draft, r.text); this.draftedPaths.add(f.path);
-      this.log('✓ rascunho gravado: ' + f.draft + ' (' + r.applied + ' de ' + f.list.length + ' edição(ões))');
+      this.log('✓ rascunho gravado: ' + f.draft + ' (' + r.applied + ' de ' + f.list.filter(isTplChange).length + ' edição(ões))');
     } catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
   }
   // Uma guarda so, no caminho de escrita: gravar patch numa classe utilitaria mudaria todo o
@@ -1744,9 +1764,10 @@ class Component extends DCLogic {
     if (this.readOnlyBlock() || this.utilityBlock()) return;
     const files = this.filesOf(this.state.changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes: this.state.changes, files: [] };
     for (const f of files) {
-      if (f.dc ? !(this.draftedPaths && this.draftedPaths.has(f.path)) : !/\.css$/.test(f.path)) continue;
+      if (f.dc && !(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho — nada foi gravado neste arquivo'); continue; }
+      if (!f.dc && !/\.css$/.test(f.path)) continue;
       if (!this.state.dir) { this.log('· ' + f.path + ' → ' + f.hist + ' (histórico) · rascunho promovido (simulado)'); entry.files.push(f); continue; }
-      try { const orig = await this.readText(f.path); await this.writeText(f.hist, orig); const draft = await this.readText(f.draft); await this.writeText(f.path, draft); const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); entry.files.push(f); }
+      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); if (f.dc) this.dc.text = draft; const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); entry.files.push(f); }
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
@@ -1766,7 +1787,7 @@ class Component extends DCLogic {
       else if (orig !== null) out.push({ path: f.path, note: '', lines: lineDiff(orig, this.patched(orig, f.list)) });
       else { const lines = []; f.list.forEach(c => { const ln = ruleOf(c)[2]; const g = { color: 'var(--fg2)', bg: 'transparent' };
           lines.push({ no: ln ? 'L' + ln : '', text: this.patchSel(c) + ' {', ...g }); lines.push({ no: '−', text: '  ' + kebab(c.prop) + ': ' + c.from + ';', color: 'var(--err)', bg: 'rgba(var(--errRgb),.08)' }); lines.push({ no: '+', text: '  ' + kebab(c.prop) + ': ' + c.to + ';', color: 'var(--ok)', bg: 'rgba(var(--okRgb),.08)' }); lines.push({ no: '', text: '}', ...g }); });
-        out.push({ path: f.path, note: isCss ? '(simulado — conecte a pasta para o diff real)' : '(fonte TS — só registro, patch manual)', lines }); }
+        out.push({ path: f.path, note: isCss || f.dc ? '(simulado — conecte a pasta para o diff real)' : '(fonte TS — só registro, patch manual)', lines }); }
     }
     this.setState({ diff: out, menuOpen: false });
   }
