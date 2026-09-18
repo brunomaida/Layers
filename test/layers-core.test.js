@@ -620,3 +620,289 @@ describe('ShouldAutoCreate', () => {
     expect(core.shouldAutoCreate(null, true)).toBe(false);
   });
 });
+
+// Template dc: o runtime carimba data-dc-tpl="N" em cada elemento em ordem de documento.
+// O mapper tem de contar igual, so olhando o texto, para achar o style="" de cada elemento.
+const dcSrc = (body) => '<!doctype html><html><head></head>\n<x-dc>\n' + body + '\n</x-dc>\n<script>var a = "<b>" < 1;</script>';
+const tagsOf = (map) => map.map((e) => e.tag);
+
+describe('MapDcTemplate', () => {
+  it('TemplateSimples_IndicesETagsEmOrdem', () => {
+    const map = core.mapDcTemplate(dcSrc('<div class="a" style="padding:8px">\n <span>oi</span>\n <input type="text">\n</div>'));
+    expect(tagsOf(map)).toEqual(['div', 'span', 'input']);
+    expect(map.map((e) => e.tplId)).toEqual([0, 1, 2]);
+  });
+
+  it('SemBlocoDc_RetornaVazio', () => {
+    expect(core.mapDcTemplate('<html><body><div style="a:b"></div></body></html>')).toEqual([]);
+  });
+
+  it('ScriptDepoisDoBloco_NaoEntraNoMapa', () => {
+    const map = core.mapDcTemplate(dcSrc('<div></div>'));
+    expect(tagsOf(map)).toEqual(['div']);
+  });
+
+  it('AtributoComGtEmAspas_NaoQuebraTokenizacao', () => {
+    const map = core.mapDcTemplate(dcSrc('<div title="a > b" style="margin:1px"><p style="{{ x > y }}">t</p></div>'));
+    expect(tagsOf(map)).toEqual(['div', 'p']);
+  });
+
+  it('ComentarioStyleETextarea_NaoContamContagem', () => {
+    const map = core.mapDcTemplate(dcSrc(
+      '<!-- <div> --><helmet><style>.a > b { color: red }\n<i>x</i></style></helmet>' +
+      '<textarea value="{{ v }}"><b>cru</b></textarea><section></section>'));
+    expect(tagsOf(map)).toEqual(['helmet', 'style', 'textarea', 'section']);
+  });
+
+  it('SvgAutoFechado_ContaComoElemento', () => {
+    const map = core.mapDcTemplate(dcSrc('<svg viewBox="0 0 1 1"><path d="M0 0"/><circle r="1"/></svg><b></b>'));
+    expect(tagsOf(map)).toEqual(['svg', 'path', 'circle', 'b']);
+  });
+
+  it('AtributoNaoQuotado_NaoQuebraTokenizacao', () => {
+    const map = core.mapDcTemplate(dcSrc('<div id=a class=b style="x:1"><i></i></div>'));
+    expect(tagsOf(map)).toEqual(['div', 'i']);
+  });
+
+  it('TemplateAninhado_NaoContaElementosDoConteudo', () => {
+    // o runtime so carimba childNodes; o conteudo de <template> mora em .content e fica sem carimbo
+    const src = dcSrc('<div><template><span style="color:red">h</span></template><span style="color:blue">v</span></div>');
+    const map = core.mapDcTemplate(src);
+    expect(tagsOf(map)).toEqual(['div', 'template', 'span']);
+    expect(src.slice(map[2].styleRange[0], map[2].styleRange[1])).toBe('color:blue');
+  });
+
+  it('TemplatesAninhadosEntreSi_ContaSoAExterna', () => {
+    const map = core.mapDcTemplate(dcSrc('<template><template><i></i></template><b></b></template><u></u>'));
+    expect(tagsOf(map)).toEqual(['template', 'u']);
+  });
+
+  it('TagComNomeDeObjectPrototype_ContaComoElemento', () => {
+    const map = core.mapDcTemplate(dcSrc('<div><constructor></constructor><tostring></tostring></div>'));
+    expect(tagsOf(map)).toEqual(['div', 'constructor', 'tostring']);
+  });
+
+  it('HtmlHeadBodyDentroDoBloco_NaoContam', () => {
+    const map = core.mapDcTemplate(dcSrc('<body><div></div></body>'));
+    expect(tagsOf(map)).toEqual(['div']);
+  });
+
+  it('StyleRange_ApontaParaOValorEntreAspas', () => {
+    const src = dcSrc('<div style="padding:8px;color:red"></div><p style=\'margin:0\'></p><b></b>');
+    const [d, p, b] = core.mapDcTemplate(src);
+    expect(src.slice(d.styleRange[0], d.styleRange[1])).toBe('padding:8px;color:red');
+    expect(src.slice(p.styleRange[0], p.styleRange[1])).toBe('margin:0');
+    expect(b.styleRange).toBeNull();
+  });
+
+  it('Line_ContaLinhasDoArquivoInteiro', () => {
+    const map = core.mapDcTemplate(dcSrc(['<div>', ' <span></span>', '', ' <b></b></div>'].join('\n')));
+    // dcSrc abre o bloco na linha 2: doctype na 1, <x-dc> na 2, primeiro filho na 3
+    expect(map.map((e) => e.line)).toEqual([3, 4, 6]);
+  });
+
+  it('AttrNames_ListaNomesEmMinusculas', () => {
+    const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" style="a:b"></div>'));
+    expect(d.attrNames).toEqual(['class', 'data-x', 'style']);
+  });
+});
+
+describe('StyleDecls', () => {
+  it('Declaracoes_RetornaPropValorEBinding', () => {
+    const s = dcSrc('<div style="color:red; Padding : 8px ;margin:{{ m }}px"></div>');
+    const out = core.styleDecls(s, core.mapDcTemplate(s)[0].styleRange);
+    expect(out).toEqual([
+      { prop: 'color', value: 'red', binding: false },
+      { prop: 'padding', value: '8px', binding: false },
+      { prop: 'margin', value: '{{ m }}px', binding: true }
+    ]);
+  });
+
+  it('SemRange_RetornaListaVazia', () => {
+    expect(core.styleDecls('<div></div>', null)).toEqual([]);
+  });
+});
+
+describe('StyleDeclAt', () => {
+  const at = (attr) => { const s = dcSrc('<div style="' + attr + '"></div>'); return [s, core.mapDcTemplate(s)[0].styleRange]; };
+
+  it('PropExistente_RetornaValorSemEspacos', () => {
+    const [s, r] = at('color:red; padding : 8px ;margin:0');
+    expect(core.styleDeclAt(s, r, 'padding')).toEqual({ value: '8px', binding: false });
+  });
+
+  it('PropAusente_RetornaNulo', () => {
+    const [s, r] = at('color:red');
+    expect(core.styleDeclAt(s, r, 'padding')).toBeNull();
+  });
+
+  it('PropComBinding_MarcaBinding', () => {
+    const [s, r] = at('padding:{{ p }}px;color:red');
+    expect(core.styleDeclAt(s, r, 'padding').binding).toBe(true);
+  });
+
+  it('PontoEVirgulaDentroDeUrl_NaoDivideDeclaracao', () => {
+    const [s, r] = at('background:url(data:image/png;base64,AAA);color:red');
+    expect(core.styleDeclAt(s, r, 'color').value).toBe('red');
+  });
+});
+
+describe('PatchAttrAt', () => {
+  const at = (attr, q) => { const s = dcSrc('<div style=' + (q || '"') + attr + (q || '"') + '></div>'); return [s, core.mapDcTemplate(s)[0].styleRange]; };
+
+  it('StyleExistente_PreservaOrdemEEspacos', () => {
+    const [s, r] = at('color:red; padding : 8px ;margin:0');
+    const out = core.patchAttrAt(s, r, 'padding', '8px', '12px');
+    expect(out.ok).toBe(true);
+    expect(out.text).toBe(s.replace('padding : 8px ;', 'padding : 12px ;'));
+  });
+
+  it('ValorDivergente_RecusaSemAlterarTexto', () => {
+    const [s, r] = at('padding:8px');
+    const out = core.patchAttrAt(s, r, 'padding', '9px', '12px');
+    expect(out.ok).toBe(false);
+    expect(out.code).toBe('SOURCE_CHANGED');
+    expect(out.text).toBeUndefined();
+  });
+
+  it('PropAusente_RecusaSourceChanged', () => {
+    const [s, r] = at('color:red');
+    expect(core.patchAttrAt(s, r, 'padding', '8px', '12px').code).toBe('SOURCE_CHANGED');
+  });
+
+  it('ValorComBinding_RecusaValueHasBinding', () => {
+    const [s, r] = at('padding:{{ p }}px');
+    const out = core.patchAttrAt(s, r, 'padding', '{{ p }}px', '12px');
+    expect(out.ok).toBe(false);
+    expect(out.code).toBe('VALUE_HAS_BINDING');
+  });
+
+  it('SemStyleAttr_RecusaNoInlineStyle', () => {
+    const out = core.patchAttrAt('<div></div>', null, 'padding', '8px', '12px');
+    expect(out.code).toBe('NO_INLINE_STYLE');
+  });
+
+  it('ImportantPreservado', () => {
+    const [s, r] = at('padding:8px !important');
+    expect(core.patchAttrAt(s, r, 'padding', '8px', '12px').text).toContain('padding:12px !important');
+  });
+
+  it('NovoValorComAspasDoAtributo_RecusaValueUnsafe', () => {
+    const [s, r] = at('font-family:Geist');
+    expect(core.patchAttrAt(s, r, 'font-family', 'Geist', '"Geist Mono"').code).toBe('VALUE_UNSAFE');
+  });
+
+  it('NovoValorComPontoEVirgulaOuBinding_RecusaValueUnsafe', () => {
+    const [s, r] = at('padding:8px');
+    expect(core.patchAttrAt(s, r, 'padding', '8px', '1px;color:red').code).toBe('VALUE_UNSAFE');
+    expect(core.patchAttrAt(s, r, 'padding', '8px', '{{ x }}').code).toBe('VALUE_UNSAFE');
+  });
+
+  it('AspasSimples_AceitaValorComAspasDuplas', () => {
+    const [s, r] = at('font-family:Geist', "'");
+    expect(core.patchAttrAt(s, r, 'font-family', 'Geist', '"Geist Mono"').text).toContain('font-family:"Geist Mono"');
+  });
+
+  it('DcCodes_EnumCongelado', () => {
+    expect(Object.isFrozen(core.DC_CODES)).toBe(true);
+    for (const c of ['VALUE_HAS_BINDING', 'MAP_MISALIGNED', 'SOURCE_CHANGED', 'SOURCE_NOT_CSS', 'UTILITY_SHEET',
+      'HELMET_PLACEHOLDER', 'SNAPSHOT_STYLE', 'READONLY_ORIGIN', 'TPL_FANOUT', 'NO_INLINE_STYLE', 'PROP_NOT_INLINE', 'VALUE_UNSAFE']) {
+      expect(core.DC_CODES[c]).toBe(c);
+    }
+  });
+});
+
+describe('CheckDcMap', () => {
+  const map = () => core.mapDcTemplate(dcSrc('<div><span></span><input></div>'));
+
+  it('TagsBatem_Ok', () => {
+    const out = core.checkDcMap(map(), [{ tplId: 0, tag: 'DIV' }, { tplId: 2, tag: 'input' }]);
+    expect(out.ok).toBe(true);
+  });
+
+  it('TagDivergente_RetornaMapaDesalinhado', () => {
+    const out = core.checkDcMap(map(), [{ tplId: 1, tag: 'div' }]);
+    expect(out.ok).toBe(false);
+    expect(out.code).toBe('MAP_MISALIGNED');
+    expect(out.detail.bad).toEqual([{ tplId: 1, expected: 'span', found: 'div' }]);
+  });
+
+  it('TplIdForaDoMapa_RetornaMapaDesalinhado', () => {
+    const out = core.checkDcMap(map(), [{ tplId: 9, tag: 'div' }]);
+    expect(out.code).toBe('MAP_MISALIGNED');
+  });
+});
+
+describe('PatchDc', () => {
+  const tpl = '<div style="padding:8px;color:red"><span style="margin:0">a</span><i style="width:{{ w }}px"></i><b></b></div>';
+  const item = (tplId, prop, to) => ({ tplId, prop, to });
+
+  it('EdicaoValida_AplicaEContaAplicadas', () => {
+    const src = dcSrc(tpl);
+    const out = core.patchDc(src, src, [item(0, 'padding', '12px')]);
+    expect(out.applied).toBe(1);
+    expect(out.refused).toEqual([]);
+    expect(out.text).toBe(src.replace('padding:8px', 'padding:12px'));
+  });
+
+  it('DuasEdicoesNoMesmoElemento_RemapeiaOffsets', () => {
+    const src = dcSrc(tpl);
+    const out = core.patchDc(src, src, [item(0, 'padding', '12px 16px'), item(0, 'color', 'blue'), item(1, 'margin', '4px')]);
+    expect(out.applied).toBe(3);
+    expect(out.text).toBe(src.replace('padding:8px;color:red', 'padding:12px 16px;color:blue').replace('margin:0', 'margin:4px'));
+  });
+
+  it('TemplateReestruturado_RecusaMapMisaligned', () => {
+    const loaded = dcSrc(tpl);
+    const fresh = dcSrc('<section>' + tpl + '</section>');
+    const out = core.patchDc(loaded, fresh, [item(0, 'padding', '12px')]);
+    expect(out.applied).toBe(0);
+    expect(out.text).toBe(fresh);
+    expect(out.refused[0].code).toBe('MAP_MISALIGNED');
+  });
+
+  it('ValorMudouDesdeOLoad_RecusaSourceChanged', () => {
+    const loaded = dcSrc(tpl);
+    const fresh = loaded.replace('padding:8px', 'padding:9px');
+    const out = core.patchDc(loaded, fresh, [item(0, 'padding', '12px')]);
+    expect(out.refused[0].code).toBe('SOURCE_CHANGED');
+    expect(out.text).toBe(fresh);
+  });
+
+  it('PropForaDoStyle_RecusaPropNotInline', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(0, 'gap', '4px')]).refused[0].code).toBe('PROP_NOT_INLINE');
+  });
+
+  it('ElementoSemStyle_RecusaNoInlineStyle', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(3, 'padding', '4px')]).refused[0].code).toBe('NO_INLINE_STYLE');
+  });
+
+  it('ValorComBinding_RecusaValueHasBinding', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(2, 'width', '10px')]).refused[0].code).toBe('VALUE_HAS_BINDING');
+  });
+
+  it('TplIdForaDoMapa_RecusaMapMisaligned', () => {
+    const src = dcSrc(tpl);
+    expect(core.patchDc(src, src, [item(99, 'padding', '1px')]).refused[0].code).toBe('MAP_MISALIGNED');
+  });
+
+  it('TemplateAninhado_EditaOElementoVisivelENaoOEscondido', () => {
+    // regressao: o mapa contava o span de dentro do <template>, o runtime nao, e o patch caia no errado
+    const src = dcSrc('<div><template><span style="color:red">h</span></template><span style="color:blue">v</span></div>');
+    const out = core.patchDc(src, src, [item(2, 'color', 'green')]);
+    expect(out.applied).toBe(1);
+    expect(out.text).toBe(src.replace('color:blue', 'color:green'));
+  });
+
+  it('RecusaParcial_AplicaAsOutrasEDevolveOItemRecusado', () => {
+    const src = dcSrc(tpl);
+    const out = core.patchDc(src, src, [item(2, 'width', '10px'), item(0, 'padding', '12px')]);
+    expect(out.applied).toBe(1);
+    expect(out.refused).toHaveLength(1);
+    expect(out.refused[0].item.tplId).toBe(2);
+    expect(out.text).toContain('padding:12px');
+  });
+});

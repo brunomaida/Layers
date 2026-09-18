@@ -36,6 +36,7 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 | `fonts` | `[]` | Famílias de fonte que o projeto usa. **Nada é buscado na rede**: cada família é resolvida contra `fonts/projects.css`, versionado no repositório do LAYERS. Por compatibilidade, uma URL de serviço de fontes com parâmetro `family=` também é aceita — só as famílias são lidas dela, a URL nunca é requisitada. Família ausente do sheet local vira aviso e cai no fallback |
 | `root` | — | `data-name` / `data-src` do elemento raiz (L0) |
 | `rules` | `{}` | seletor CSS → `arquivo|regra|linha`; sobrescreve `data-src` (e `data-name`) dos elementos que casam |
+| `dcSource` | — | arquivo (relativo a `base`) com o bloco `<x-dc>` do app dc que gerou o `mock`. Elementos do mock com `data-dc-tpl` ganham `data-src` `arquivo\|tpl:N\|linha` e passam a poder gravar valor literal de `style=""` no template. Só vale se as tags do arquivo batem com as do mock; senão avisa e nenhuma gravação `tpl:` é feita. Inerte fora de pasta local (a origem precisa ser gravável) |
 | `interactions` | `[]` | itens do menu ⚡ Interagir (abaixo) |
 
 ## O que o loader faz com o mock

@@ -1,0 +1,6 @@
+{
+  "name": "dc-template",
+  "viewport": { "width": 400, "height": 200 },
+  "mock": "layers/mock.html",
+  "dcSource": "index.html"
+}

@@ -11,6 +11,55 @@ Registrar o que foi **descartado** e por quê — é o que evita refazer a anál
 
 ---
 
+## 2026-09-18 · Ler apps renderizados por JS em processo separado; nunca iframe, nunca mesma origem
+
+**Contexto.** O editor é ele próprio um app dc (`<x-dc>` + `support.js`): o DOM só existe depois do
+runtime rodar, então um parser estático não vê as camadas. `docs/ARCHITECTURE.md` e
+`docs/TOPOLOGY.md` prometiam um `<iframe>` de mesma origem com `walk()` em `contentDocument`, mas o
+que foi entregue na v2.24 é um mock sanitizado num shadow root, sem executar script do projeto.
+A pergunta era como ler e editar apps assim sem perder essa garantia.
+
+**Decisão.** (1) Nenhum código do projeto-alvo roda na origem do editor. (2) O caminho para apps
+renderizados por JS é um **snapshot headless**: um endpoint Node em `/__layers/*` no `:5180`
+dirige um Chromium separado contra o dev server do alvo (loopback) e devolve HTML + trace, que
+entra no sanitizer existente. Fica para um plano próprio. (3) Já entregue e independente disso: o
+runtime dc carimba `data-dc-tpl="N"` em cada elemento, então `LayersCore.mapDcTemplate` mapeia o
+elemento renderizado ao `style=""` do template fonte, e `patchDc` grava. Toda recusa devolve um
+código estável (`LayersCore.DC_CODES`); a frase de UI deriva do código. O **CSP não muda**.
+
+**Alternativas descartadas.**
+
+| Opção | Por que não |
+|---|---|
+| Proxy same-origin em `:5180` + iframe com `contentDocument` | O código do alvo rodaria na origem do editor e alcançaria o handle de pasta gravável guardado em IndexedDB (`layers-hist`) e a permissão `readwrite` já concedida (`ensureWrite`). Não há `sandbox` que recupere isso: o ponto da opção é ser same-origin |
+| Iframe cross-origin + script sonda injetado | Custo do pipeline ≈ o do snapshot (serializar DOM e CSS, postMessage, remontar) mais `frame-src` e uma injeção que só funciona em alvo proxiado |
+| Spawnar o dev server do alvo a partir de um comando do `layers.json` | RCE quando o `layers.json` vem de `.zip` ou GitHub. Allowlist de comando é teatro (`npm run dev` roda scripts arbitrários do `package.json`). v1 só aceita URL loopback que o usuário já subiu |
+| `layers/overrides.css` para propriedade não gravável | O alvo não importa o arquivo, muda a cascata em silêncio e uma gravação sem efeito é pior que uma recusa. Recusa com motivo e snippet |
+
+**Regras para o endpoint headless (slice futura).** Escreve nada e não recebe caminho: devolve
+HTML + trace no corpo e o editor persiste sob clique (R1). `Origin` exato (`http://localhost:5180`
+ou `127.0.0.1:5180`) + `Sec-Fetch-Site` + checagem de `Host`, com o middleware registrado depois
+dos internos do Vite (o padrão de `server.cors` aceita qualquer `localhost:*`, inclusive o alvo).
+Entry só loopback, `http:`, porta ≠ 5180, inerte para `.zip`/GitHub e confirmado por clique.
+`import('playwright')` dinâmico, 501 quando ausente: `npm run dev` nunca depende dele. R1 vale
+só para o snapshot; qualquer tool que grava precisa de regra própria.
+
+**Política de escrita como contrato.** Qualquer escritor futuro (Node, MCP) tem de reproduzir o
+comportamento de `writeText` (`index.html`): guarda de `lastModified`, `.bak` da primeira versão,
+`.tmp` + `move()` com fallback, `writeLog`, escopo por `safePath` e raiz fixada fora dos
+argumentos. Um servidor MCP não consegue forçar confirmação; com a tool auto-aprovada ele fica
+mais fraco que o gate por clique de hoje, e só as defesas mecânicas sobrevivem.
+
+**Consequências.** O `data-src` ganha a camada `arquivo|tpl:N|linha` (o slot do seletor guarda o
+índice do template). Só se grava valor **literal** em `style=""` do template; cor via `var(--x)`,
+`{{ }}`, `:root` do `<helmet>` e `<style>` de snapshot (CSS serializado) recusam. Se as tags do
+mapa não batem com o render, nenhuma gravação `tpl:` é feita. O rascunho de um alvo `.html`
+(`index.design-draft.html`) cai na raiz servida, por isso o `vite.config.js` passou a ignorar
+rascunho, histórico, `.bak` e `.tmp`. Playwright/Chromium (~170 MB, baixado da CDN na instalação)
+fica restrito ao endpoint opcional.
+
+---
+
 ## 2026-09-12 · Vendorizar React e fontes sem tocar no `support.js`
 
 **Contexto.** O app buscava três recursos em runtime: React e ReactDOM do `unpkg.com`
