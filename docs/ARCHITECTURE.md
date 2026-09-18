@@ -58,6 +58,7 @@ Regras:
 | `codeFor()`, `patchCss()`, `lineDiff()` | Leitura do código da regra, patch preservando formatação, diff para revisão. |
 | `setProp()`, `applyCode()`, `revert()` | Mutação de estilo, registro de `changes`, escopo. |
 | `connectDir`, `readText`, `writeText`, `exportFull` | I/O de arquivos. |
+| `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
 | Menus (engrenagem, INTERAGIR, Ações), dropdowns customizados, toast | Chrome da interface. |
 | Mock offscreen (`pageRef`, `left:-20000px`) | Fonte de camadas atual: recriação do Traval anotada com `data-src`. Deve ser substituído pelo loader de projeto. |
 

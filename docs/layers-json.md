@@ -1,3 +1,11 @@
+---
+title: "layers.json — contrato de carregamento de projetos (LAYERS v2.24+)"
+type: report
+solution: Layers
+status: draft
+created: 2026-09-12
+---
+
 # layers.json — contrato de carregamento de projetos (LAYERS v2.24+)
 
 O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes › Conectar pasta local…), o loader lê `layers.json` na raiz, monta o mock num **shadow root fora da tela** e o motor lê o DOM + `data-name` / `data-src`.
@@ -57,6 +65,12 @@ Todo caminho passa por `safePath` antes de virar arquivo: vazio, `/` inicial, `C
 O repositório remoto pede confirmação explícita, uma por repositório, dizendo quais hosts serão chamados. Nenhum token é pedido nem guardado, então repositório privado simplesmente não carrega. Sem token o limite da API é 60 requisições por hora.
 
 Origem somente leitura recusa a gravação nomeando a origem, em vez de deixar a escrita estourar sem contexto.
+
+## Pasta local sem layers.json (auto-criação)
+
+Se a pasta local conectada não tem `layers.json` e a conexão veio de um clique ("Conectar pasta local…" ou reabrir um item de "Projetos recentes"), o loader varre a pasta (`.html`/`.css`, os mesmos diretórios ignorados de `tools/layers-derive.js` mais `test-results`/`playwright-report`), escolhe o melhor candidato a `mock` pela mesma heurística (mais elementos no `<body>`, `<link rel="stylesheet">` resolvido contra os `.css` encontrados) e grava um manifesto mínimo — mesmo contrato acima, sem os campos que ficam vazios (`base`, `styles`). A varredura tem teto de entradas visitadas, tamanho por arquivo e total lido; se algum for atingido, o manifesto é gravado mesmo assim (a partir de uma visão parcial da pasta) e o aviso registra a truncagem.
+
+Reconexão automática sem clique (reload de uma pasta já autorizada) **nunca** tenta criar o arquivo — o painel de erro mostra um botão "Criar layers.json" para o mesmo processo sob um clique explícito. Um `layers.json` existente nunca é sobrescrito, mesmo se o JSON dentro dele for inválido (esse caso vira um estado de erro à parte, "layers.json inválido"). O manifesto gerado é um ponto de partida: revise `mock`/`base`/`styles` à mão se a heurística escolher o arquivo errado (comum em pastas com relatórios de teste ou builds cacheados fora da lista acima ignorada).
 
 ## Modo fixture (dev)
 
