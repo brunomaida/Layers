@@ -270,7 +270,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ treeCollapseAll }}" disabled="{{ treeAllClosed }}" title="{{ treeCollapseTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ treeCollapseColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ treeCollapseCursor }};flex:0 0 auto">{{ treeCollapseGlyph }}</button>
         </div>
         <div ref="{{ treeScrollRef }}" style="overflow-y:auto;min-height:0;padding:4px 0">
-          <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span>{{ emptyBody }}</span></div></sc-if>
+          <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span style="white-space:pre-wrap">{{ emptyBody }}</span><sc-if value="{{ emptyShowCreateBtn }}"><button onClick="{{ emptyCreateAction }}" style="align-self:flex-start;margin-top:4px;height:24px;padding:0 10px;border:1px solid var(--line1);border-radius:4px;background:transparent;color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="border-color:rgba(var(--selRgb),.55);color:var(--sel)">Criar layers.json</button></sc-if></div></sc-if>
           <sc-if value="{{ treeHier }}" hint-placeholder-val="{{ true }}">
           <sc-for list="{{ treeRows }}" as="t" hint-placeholder-count="8">
             <sc-if value="{{ t.isNode }}" hint-placeholder-val="{{ true }}">
@@ -1076,7 +1076,11 @@ class Component extends DCLogic {
     this.setState({ cfg, hist: [...pin, ...rest], ...ui }, () => { this.applyTheme(); this.writeConfig(); });
     this.toast('Configuração importada — pastas locais precisam ser reconectadas (handles não são exportáveis).', 'warn');
   }
-  useDir(dir) {
+  useDir(dir, viaClick) {
+    // F:66 — this.dirViaClick so e true quando useDir vem de um clique real (pickDir e o
+    // retry de permissao); restoreSession() chama sem o 2o argumento, entao autoCreateLayersJson
+    // nunca roda sem gesto — so o botao do painel de erro, que e sempre um clique fresco.
+    this.dirViaClick = !!viaClick;
     this.zip = null; this.repo = null;
     const id = 'folder:' + dir.name; this.projectId = id; this.markTab();
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
@@ -1086,10 +1090,27 @@ class Component extends DCLogic {
   resetUI() { this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
-    let man; try { man = JSON.parse(await this.readText('layers.json')); } catch (e) { this.unloadProject({ title: 'Pasta sem layers.json legível na raiz.', body: 'O loader precisa de um layers.json na raiz da pasta conectada. O contrato está em docs/layers-json.md; se a interface mora numa subpasta, use o campo "base".' }); return; }
+    this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
+    const semLayersJson = { title: 'Pasta sem layers.json legível na raiz.', body: 'O loader precisa de um layers.json na raiz da pasta conectada. O contrato está em docs/layers-json.md; se a interface mora numa subpasta, use o campo "base".' };
+    let raw, autoNote = null;
+    try {
+      raw = await this.readText('layers.json');
+    } catch (e) {
+      if (!LayersCore.shouldAutoCreate(e, !!this.state.dir)) { this.unloadProject(semLayersJson); return; }
+      // F:66 — so tenta criar quando a conexao veio de um clique fresco (useDir(dir, true));
+      // restoreSession() reconecta sem gesto e cai direto no painel com o botao de retry.
+      if (!this.dirViaClick) { this.unloadProject({ ...semLayersJson, canCreate: true }); return; }
+      const r = await this.autoCreateLayersJson();
+      if (seq !== this.loadSeq) return; // outra conexao comecou enquanto a pasta era varrida
+      if (!r.ok) { this.unloadProject({ ...semLayersJson, body: semLayersJson.body + '\n\nCriação automática falhou: ' + r.reason, canCreate: true }); return; }
+      raw = JSON.stringify(r.manifest);
+      autoNote = 'layers.json criado automaticamente pela varredura da pasta — revise mock/base/styles se necessário (docs/layers-json.md).';
+      this.toast('layers.json criado automaticamente.', 'ok');
+    }
+    let man; try { man = JSON.parse(raw); } catch (e) { this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
     const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
     const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); const mockPath = P(man.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
-    let html; try { html = await this.readText(mockPath); } catch (e) { this.unloadProject({ title: 'Mock não encontrado.', body: 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija o campo "mock" ou gere o arquivo.' }); return; }
+    let html; try { html = await this.readText(mockPath); } catch (e) { this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija o campo "mock" ou gere o arquivo.' }); return; }
     const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
     // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
     doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
@@ -1123,7 +1144,7 @@ class Component extends DCLogic {
     css.forEach(c => scoped.push({ file: c.file, css: scopeOne(c.text, c.file.replace(/[^/]*$/, '')) }));
     const inlineScoped = inlineCss.map(c => scopeOne(c.text, mockDir));
     await this.hoistFaces(faces, warn);
-    const kids = [...doc.body.children]; if (!kids.length) { this.unloadProject({ title: 'O mock está vazio.', body: 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
+    const kids = [...doc.body.children]; if (!kids.length) { this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
     // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
     let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
     if (man.root && man.root.name) rootEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body'; if (man.root && man.root.src) rootEl.dataset.src = man.root.src;
@@ -1145,20 +1166,74 @@ class Component extends DCLogic {
     // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
     // restauracao para no meio (sem permissao, .zip, repositorio), o pendingSel nao casa.
     const keep = this.pendingSel && this.pendingSel.id === this.projectId ? this.pendingSel : null; this.pendingSel = null;
+    if (autoNote) warn.push(autoNote);
+    if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
     this.setState({ project: { name, man, warn, utility }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
-    setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
+    setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
   unloadProject(why) { const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
+  // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
+  // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
+  // os dois sempre consequencia direta de um clique.
+  async autoCreateLayersJson() {
+    // permissao pedida ANTES da varredura: a ativacao transiente do clique nao sobrevive a um
+    // scan de milhares de arquivos.
+    try { await this.ensureWrite(); } catch (e) { return { ok: false, reason: e.message }; }
+    const SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
+    const MAX_DEPTH = 6, MAX_ENTRIES = 5000, MAX_FILE_BYTES = 3 * 1024 * 1024, MAX_TOTAL_BYTES = 20 * 1024 * 1024;
+    let entriesVisited = 0, totalBytes = 0, capped = false;
+    const files = [];
+    const walk = async (dirHandle, prefix, depth) => {
+      if (depth > MAX_DEPTH || capped) return;
+      for await (const [name, handle] of dirHandle.entries()) {
+        if (capped) return;
+        // conta entrada VISITADA, nao arquivo casado — uma pasta com centenas de milhares de
+        // binarios nunca pode escapar do teto so porque nenhum e .html/.css
+        entriesVisited++;
+        if (entriesVisited > MAX_ENTRIES) { capped = true; return; }
+        if (name.charAt(0) === '.' && name !== '.well-known') continue;
+        if (handle.kind === 'directory') { if (!SKIP.has(name.toLowerCase())) await walk(handle, prefix + name + '/', depth + 1); continue; }
+        if (!/\.(html?|css)$/i.test(name)) continue;
+        const rel = LayersCore.safePath(prefix + name);
+        if (!rel) continue;
+        let file; try { file = await handle.getFile(); } catch (e) { continue; }
+        if (file.size > MAX_FILE_BYTES || totalBytes + file.size > MAX_TOTAL_BYTES) { capped = true; continue; }
+        let text; try { text = await file.text(); } catch (e) { continue; }
+        totalBytes += file.size;
+        files.push({ path: rel, kind: /\.css$/i.test(name) ? 'css' : 'html', text });
+      }
+    };
+    await walk(this.state.dir, '', 0);
+    const derived = LayersCore.deriveManifest(files);
+    if (!derived.mock) return { ok: false, reason: 'nenhum HTML legível na pasta' };
+    // recheca IMEDIATAMENTE antes de gravar: o guard de conflito de mtime do writeText fica
+    // inerte aqui, porque a leitura original de layers.json falhou (this.mtimes nunca setou)
+    try { await this.fileHandle('layers.json', false); return { ok: false, reason: 'layers.json apareceu na pasta enquanto era analisada — reconecte e tente de novo' }; }
+    catch (e) { if (e.name !== 'NotFoundError') return { ok: false, reason: e.message }; }
+    const manifest = { name: this.state.dirName, viewport: { width: 1280, height: 760 }, mock: derived.mock };
+    if (derived.base) manifest.base = derived.base;
+    if (derived.styles.length) manifest.styles = derived.styles;
+    try { await this.writeText('layers.json', JSON.stringify(manifest, null, 2) + '\n'); } catch (e) { return { ok: false, reason: e.message }; }
+    return { ok: true, manifest };
+  }
+  // Botao "Criar layers.json" do painel de erro — clique explicito, cobre o caso em que
+  // loadProject nao tentou (reconexao sem gesto) ou tentou e falhou.
+  async retryCreateLayersJson() {
+    const r = await this.autoCreateLayersJson();
+    if (r.ok) { this.toast('layers.json criado automaticamente.', 'ok'); this.loadProject(); return; }
+    this.unloadProject({ title: 'Pasta sem layers.json legível na raiz.', body: 'O loader precisa de um layers.json na raiz da pasta conectada. O contrato está em docs/layers-json.md; se a interface mora numa subpasta, use o campo "base".\n\nCriação automática falhou: ' + r.reason, canCreate: true });
+  }
   async pickDir() {
     if (!window.showDirectoryPicker) { this.toast('File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.'); return; }
     // conecta em modo leitura; 'readwrite' so e pedido no momento de gravar (ver ensureWrite)
-    try { const dir = await window.showDirectoryPicker({ mode: 'read' }); this.useDir(dir); } catch (e) {}
+    try { const dir = await window.showDirectoryPicker({ mode: 'read' }); this.useDir(dir, true); } catch (e) {}
   }
   async openHist(e) {
     if (e.kind === 'repo') { this.setState({ cbOpen: null }); this.useRepo(e); return; }
     const h = await idbGet(e.id);
-    if (h && h.requestPermission) { try { const p = await h.requestPermission({ mode: 'read' }); if (p === 'granted') { this.useDir(h); return; } } catch (err) {} }
+    if (h && h.requestPermission) { try { const p = await h.requestPermission({ mode: 'read' }); if (p === 'granted') { this.useDir(h, true); return; } } catch (err) {} }
     this.toast(h ? 'Permissão não concedida — selecione a pasta novamente.' : 'Handle da pasta não encontrado — selecione a pasta novamente.'); this.pickDir();
   }
   // .zip: origem somente leitura. Cada entrada passa por safePath antes de virar arquivo —
@@ -1884,6 +1959,7 @@ class Component extends DCLogic {
       selTokens, hasTokens: selTokens.length > 0, tokCount: selTokens.length, bmOpen: s.bmOpen, bmChev: s.bmOpen ? '▾' : '▸', toggleBmOpen: () => this.setState(st => ({ bmOpen: !st.bmOpen })), bmSummary: el ? bmCW + '×' + bmCH + ' conteúdo · ' + (cs.boxSizing === 'border-box' ? 'border-box' : 'content-box') + (selTokens.length ? ' · ' + selTokens.length + ' token(s)' : '') : '',
       emptyTitle: s.loadError ? s.loadError.title : 'Nenhum projeto carregado.',
       emptyBody: s.loadError ? s.loadError.body : (window.showDirectoryPicker ? 'Abra Projetos recentes (canto superior esquerdo) e conecte uma pasta que tenha layers.json na raiz.' : 'Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta. O modo fixture (#layers=) continua funcionando aqui.'),
+      emptyShowCreateBtn: !!(s.loadError && s.loadError.canCreate), emptyCreateAction: () => this.retryCreateLayersJson(),
       showHint: !s.project || !!s.loadError,
       hasProject: !!s.project, noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
       hdrA: hs === 'A', hdrB: hs === 'B', hdrC: hs === 'C', ...gear, ...topMenus, ...interModel, ...cfgVals, cbBlur: this.cbBlur, preventBlur: this.preventBlur, phA: ph === 'A', phB: ph === 'B', phC: ph === 'C',
