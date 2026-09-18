@@ -35,7 +35,7 @@ if not exist "node_modules\" (
 
 echo [run] starting Vite on http://localhost:5180/  ^(Ctrl+C to stop^)
 echo.
-call npm run dev
+call npm run dev -- --open
 if errorlevel 1 goto :fail
 
 endlocal
