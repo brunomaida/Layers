@@ -621,6 +621,53 @@ describe('ShouldAutoCreate', () => {
   });
 });
 
+describe('StaleFiles', () => {
+  it('StaleFiles_SemMudanca_RetornaVazio', () => {
+    expect(core.staleFiles({ 'a.css': 1, 'b.css': 2 }, { 'a.css': 1, 'b.css': 2 })).toEqual([]);
+  });
+
+  it('StaleFiles_MtimeDiferente_RetornaPath', () => {
+    expect(core.staleFiles({ 'a.css': 1, 'b.css': 2 }, { 'a.css': 1, 'b.css': 3 })).toEqual(['b.css']);
+  });
+
+  it('StaleFiles_Missing_RetornaPath', () => {
+    expect(core.staleFiles({ 'a.css': 1 }, { 'a.css': 'missing' })).toEqual(['a.css']);
+  });
+
+  it('StaleFiles_Indeterminado_Ignora', () => {
+    expect(core.staleFiles({ 'a.css': 1 }, {})).toEqual([]);
+  });
+
+  it('StaleFiles_CurrentComExtra_Ignora', () => {
+    expect(core.staleFiles({ 'a.css': 1 }, { 'a.css': 1, 'novo.css': 9 })).toEqual([]);
+  });
+});
+
+describe('HasUnsaved', () => {
+  it('HasUnsaved_SoCodeBuf_RetornaTrue', () => {
+    expect(core.hasUnsaved([], { 'a.css': 'x' })).toBe(true);
+  });
+
+  it('HasUnsaved_BufSemChanges_RetornaFalse', () => {
+    expect(core.hasUnsaved([], {})).toBe(false);
+  });
+
+  it('HasUnsaved_SoChanges_RetornaTrue', () => {
+    expect(core.hasUnsaved([{ id: 1 }], {})).toBe(true);
+  });
+});
+
+describe('PickWatched', () => {
+  it('PickWatched_ArtefatosDesignDraft_Excluidos', () => {
+    const mtimes = { 'a.css': 1, '.design-draft.css': 2, '.design-history/x': 3 };
+    expect(core.pickWatched(mtimes, ['a.css'])).toEqual({ 'a.css': 1 });
+  });
+
+  it('PickWatched_PathAusenteNoMapa_Ignora', () => {
+    expect(core.pickWatched({ 'a.css': 1 }, ['a.css', 'b.css', undefined, null])).toEqual({ 'a.css': 1 });
+  });
+});
+
 // Template dc: o runtime carimba data-dc-tpl="N" em cada elemento em ordem de documento.
 // O mapper tem de contar igual, so olhando o texto, para achar o style="" de cada elemento.
 const dcSrc = (body) => '<!doctype html><html><head></head>\n<x-dc>\n' + body + '\n</x-dc>\n<script>var a = "<b>" < 1;</script>';
