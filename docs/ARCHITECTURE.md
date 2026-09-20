@@ -165,10 +165,12 @@ aparece com o primeiro path e `+N`. Editar `src/**/*.ts` não dispara: não est�
 (o app alvo só entra via mock/snapshot). Escritas do próprio LAYERS (`writeText`) atualizam
 `this.watch`, então não se auto-acusam; "×" (`dismissStale`) aceita os mtimes atuais. Cargas
 concorrentes (`loadedSeq !== loadSeq`) suprimem a checagem.
+A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele). O conjunto vigiado
+lista só o que foi lido com sucesso; `dismissStale` remove do `watch` os paths ausentes.
 
 ### Guarda de conflito na gravação
 
 `readText` registra em `this.mtimes[path]` o mtime lido; `writeText` compara o mtime atual com ele e
-**recusa** a gravação se o arquivo mudou fora do LAYERS desde a leitura (erro pede para recarregar e
-refazer o ajuste). Sem leitura prévia (`mtimes[path]` indefinido) não há recusa. Antes de sobrescrever,
+**recusa** a gravação se o arquivo mudou fora do LAYERS desde a leitura (o erro pede para recarregar o projeto (`R`)
+ou reconectar a pasta e refazer o ajuste). Sem leitura prévia (`mtimes[path]` indefinido) não há recusa. Antes de sobrescrever,
 faz `.bak` uma vez por arquivo por sessão e grava via `.tmp` + `move`.

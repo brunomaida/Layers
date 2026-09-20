@@ -741,7 +741,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
 </sc-if>
 
 <sc-if value="{{ staleOpen }}" hint-placeholder-val="{{ false }}">
-  <div role="status" style="position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;max-width:min(520px,calc(100vw - 32px));padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
+  <div role="status" style="position:fixed;left:50%;top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;max-width:min(520px,calc(100vw - 32px));padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ staleMsg }}</span>
     <button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button>
     <button onClick="{{ dismissStale }}" title="Ignorar" style="all:unset;cursor:pointer;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">×</button>
@@ -785,7 +785,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ makeDraft }}" style="height:28px;padding:0 12px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:600 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">1 · Gerar rascunho paralelo</button>
         </sc-if>
         <sc-if value="{{ isConfirm }}" hint-placeholder-val="{{ false }}">
-          <button onClick="{{ confirmYes }}" style="height:28px;padding:0 12px;border-radius:4px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Carregar</button>
+          <button onClick="{{ confirmYes }}" style="height:28px;padding:0 12px;border-radius:4px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">{{ confirmLabel }}</button>
         </sc-if>
         <sc-if value="{{ isDraft }}" hint-placeholder-val="{{ false }}">
           <button onClick="{{ discardDraft }}" style="height:28px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--err);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar rascunho</button>
@@ -1232,7 +1232,7 @@ class Component extends DCLogic {
     if (built.empty) { this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
     await this.hoistFaces(built.faces, warn); this.varIdx = built.varIdx;
     const { rootEl, scoped, inlineScoped, utility, snapMock, dc } = built;
-    const host = this.pageRef.current; if (!host) return; const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
+    const host = this.pageRef.current; if (!host) { this.loadedSeq = this.loadSeq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
@@ -1243,12 +1243,12 @@ class Component extends DCLogic {
     if (autoNote) warn.unshift(autoNote); // warn[0] e o unico aviso que entra no toast final
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
     this.dc = dc && dc.trust ? dc : null;
-    this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...cssFiles, ...(dcFile ? [dcFile] : [])]); this.loadedSeq = seq;
+    this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.setState({ stale: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
-  unloadProject(why) { this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1473,13 +1473,13 @@ class Component extends DCLogic {
   }
   dismissStale() {
     const add = {}; Object.keys(this.staleCur || {}).forEach(p => { if (typeof this.staleCur[p] === 'number') add[p] = this.staleCur[p]; });
-    this.watch = { ...this.watch, ...add }; this.setState({ stale: null });
+    const w = { ...this.watch, ...add }; Object.keys(this.staleCur || {}).forEach(p => { if (this.staleCur[p] === 'missing') delete w[p]; }); this.watch = w; this.setState({ stale: null });
   }
   reloadProject() {
     const s = this.state; if (!s.dir) return;
-    if (s.modal) { this.toast('feche o painel aberto antes de recarregar'); return; }
+    if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de recarregar'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
-    if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => this.doReload() } }); return; }
+    if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', label: 'Recarregar', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => this.doReload() } }); return; }
     this.doReload();
   }
   doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
@@ -1739,7 +1739,7 @@ class Component extends DCLogic {
     let before = '';
     try { const f = await h.getFile(); before = await f.text();
       const seen = this.mtimes[path];
-      if (seen !== undefined && f.lastModified !== seen) throw new Error('o arquivo ' + path + ' mudou fora do LAYERS desde a leitura — reconecte a pasta e refaça o ajuste para não sobrescrever a alteração');
+      if (seen !== undefined && f.lastModified !== seen) throw new Error('o arquivo ' + path + ' mudou fora do LAYERS desde a leitura — recarregue o projeto (R) ou reconecte a pasta e refaça o ajuste para não sobrescrever a alteração');
     } catch (e) { if (/mudou fora do LAYERS/.test(e.message)) throw e; }
     if (before && !this.baks[path]) { try { await this.rawWrite(path + '.bak', before); this.baks[path] = true; } catch (e) {} }
     const tmp = path + '.tmp';
@@ -2154,7 +2154,7 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(), hasDir: !!s.dir, reloadItem: () => { this.setState({ cbOpen: null }); this.reloadProject(); }, staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
+      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(), hasDir: !!s.dir, reloadItem: () => { this.setState({ cbOpen: null }); this.reloadProject(); }, staleTop: (36 + s.topBarH + 12) + 'px', staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
       demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: () => this.openDemo(d) }; }),
       ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
@@ -2172,7 +2172,7 @@ class Component extends DCLogic {
       modalOpen: !!m, modalTitle: m && m.stage === 'confirm' ? m.title : m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos',
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
       isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',
-      confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
+      confirmLabel: (m && m.label) || 'Carregar', confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
       stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan', isDraft: !!m && m.stage === 'draft',
       branch: m ? m.branch : '', msg: m ? m.msg : '', setBranch: e => this.setState(st => ({ modal: { ...st.modal, branch: e.target.value } })), setMsg: e => this.setState(st => ({ modal: { ...st.modal, msg: e.target.value } })),
       modalFiles: m ? this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : s.changes) : [], modalLog: m ? m.log.join('\n') : '',
