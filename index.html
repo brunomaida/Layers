@@ -82,6 +82,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div onClick="{{ exportCfg }}" title="Salvar tema, painéis e histórico num arquivo layers-config.json" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↑</span>Exportar configuração…</div>
           <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
           <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histReset }}" title="Descarrega o projeto e volta à interface limpa (mantém tema e histórico)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div></sc-if>
+          <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="Relê do disco os arquivos do projeto (atalho R)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
       </sc-if>
@@ -739,6 +740,13 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
   </div>
 </sc-if>
 
+<sc-if value="{{ staleOpen }}" hint-placeholder-val="{{ false }}">
+  <div role="status" style="position:fixed;left:50%;top:56px;transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;max-width:min(520px,calc(100vw - 32px));padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
+    <span style="flex:1;min-width:0">{{ staleMsg }}</span>
+    <button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button>
+    <button onClick="{{ dismissStale }}" title="Ignorar" style="all:unset;cursor:pointer;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">×</button>
+  </div>
+</sc-if>
 <sc-if value="{{ toastOpen }}" hint-placeholder-val="{{ false }}">
   <div role="status" style="position:fixed;left:50%;bottom:64px;transform:translateX(-50%);z-index:110;display:flex;align-items:center;gap:10px;max-width:min(520px,calc(100vw - 32px));padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid {{ toastBdr }};border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ toastMsg }}</span>
@@ -825,7 +833,7 @@ const SHORTCUTS = [
   ['Camadas', [['PgUp / PgDn','camada ativa acima / abaixo'],['chip L0…Ln · clique','mostrar só essa camada'],['chip L0…Ln · hover','foco: frame da camada + atenuação das demais'],['Todas','voltar a mostrar todas'],['Explodido / Plano · Distância','espaçamento entre camadas'],['Frames · Intensidade','wireframe dos contêineres sem fundo/borda'],['Foco de camada · Destaque · Demais','liga o foco por hover/clique nos chips; Destaque = intensidade da camada em foco, Demais = opacidade das outras'],['chip · hover com seleção ativa','foca só os elementos da camada dentro do ramo selecionado/isolado']]],
   ['Árvore de camadas', [['hover','destaca o frame do elemento no palco'],['clique','selecionar'],['clique no palco','seleciona e rola a árvore até o elemento'],['{ } · ⊟ (barra da aba)','recolher todos os códigos abertos · recolher todas as linhas (só recolhem)'],['{ } na linha','abrir / fechar o código daquele elemento ou regra (padrão: oculto)'],['⌕ Buscar camada · Destacar / Filtrar','destaca ou mostra só as camadas cujo nome contém o texto (Esc limpa)'],['Hierarquia / Elementos','árvore do DOM · definições de estilo (arquivo › regra) sem repetição, com usos e código'],['{ } (Hierarquia)','mostra o código do elemento selecionado logo abaixo dele; Aplicar respeita "Aplicar em"'],['Elementos · regra ▾','lista os usos + textarea com o código; ctrl+Enter ou Aplicar grava em todos os usos'],['duplo clique','isolar o ramo'],['▾ / ▸','expandir / recolher o nó']]],
   ['Propriedades', [['● ● ● (cores de origem)','declarada na regra · herdada de regra acima · editada na sessão — paleta no tweak Cores de origem'],['chips declarada / herdada / editada','filtram as propriedades por origem (combináveis)'],['⌕ Buscar propriedade · Destacar / Filtrar','por nome, propriedade CSS ou título da seção'],['⊟ / ⊞','recolher / expandir todas as seções'],['P · » / «','recolher / expandir o painel de propriedades'],['Enter','aplicar o valor do campo'],['Esc (no campo)','descartar a edição'],['Aplicar em','alcance: perguntar · só este · todos iguais'],['▾ título do grupo','recolher / expandir o grupo']]],
-  ['Geral', [['?','abrir / fechar este painel'],['⚡ Interagir','superfícies e ações definidas pelo projeto em layers.json › interactions'],['Ações ▾','ver diff · aplicar nos arquivos · exportar']]],
+  ['Geral', [['?','abrir / fechar este painel'],['R','recarregar o projeto do disco (pasta local)'],['⚡ Interagir','superfícies e ações definidas pelo projeto em layers.json › interactions'],['Ações ▾','ver diff · aplicar nos arquivos · exportar']]],
 ];
 const kebab = p => p.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1235,7 +1243,8 @@ class Component extends DCLogic {
     if (autoNote) warn.unshift(autoNote); // warn[0] e o unico aviso que entra no toast final
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
     this.dc = dc && dc.trust ? dc : null;
-    this.setState({ project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...cssFiles, ...(dcFile ? [dcFile] : [])]); this.loadedSeq = seq;
+    this.setState({ stale: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
@@ -1434,7 +1443,7 @@ class Component extends DCLogic {
       const mode = e.shiftKey ? 'plane' : 'screen'; const st = 40;
       const map = { ArrowLeft: () => this.pan(-st, 0, mode), ArrowRight: () => this.pan(st, 0, mode), ArrowUp: () => this.pan(0, -st, mode), ArrowDown: () => this.pan(0, st, mode),
         PageUp: () => this.stepActive(1), PageDown: () => this.stepActive(-1), q: () => this.orbit(-10, 0), e: () => this.orbit(10, 0), w: () => this.orbit(0, 10), s: () => this.orbit(0, -10),
-        '+': () => this.zoomBy(1.2), '=': () => this.zoomBy(1.2), '-': () => this.zoomBy(1 / 1.2), m: () => this.setState(st => ({ measure: !st.measure })), f: () => this.frame(this.state.selId), c: () => this.frame(this.state.selId, true), '0': () => this.resetView(), '?': () => this.setState(st => ({ shortcuts: !st.shortcuts })), p: () => this.setState(st => ({ rightOpen: !st.rightOpen })), Escape: () => this.escape() };
+        '+': () => this.zoomBy(1.2), '=': () => this.zoomBy(1.2), '-': () => this.zoomBy(1 / 1.2), m: () => this.setState(st => ({ measure: !st.measure })), f: () => this.frame(this.state.selId), c: () => this.frame(this.state.selId, true), '0': () => this.resetView(), r: () => this.reloadProject(), '?': () => this.setState(st => ({ shortcuts: !st.shortcuts })), p: () => this.setState(st => ({ rightOpen: !st.rightOpen })), Escape: () => this.escape() };
       const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
     };
     window.addEventListener('keydown', this.onKey);
@@ -1443,8 +1452,38 @@ class Component extends DCLogic {
     this.onHide = () => this.writeConfig(); window.addEventListener('pagehide', this.onHide);
     this.onDocDown = e => { if (this.state.cbOpen === 'hist' && this.histRef.current && !this.histRef.current.contains(e.target)) this.setState({ cbOpen: null, histAdding: false }); };
     document.addEventListener('mousedown', this.onDocDown);
+    this.onFocus = () => { if (document.visibilityState === 'hidden') return; clearTimeout(this.staleT); this.staleT = setTimeout(() => this.checkStale(), 300); };
+    window.addEventListener('focus', this.onFocus); document.addEventListener('visibilitychange', this.onFocus);
   }
-  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); }
+  async checkStale() {
+    const s = this.state;
+    if (!s.dir || !s.project || s.modal || this.loadedSeq !== this.loadSeq || this.staleBusy || !this.watch) return;
+    this.staleBusy = true;
+    try {
+      if (s.dir.queryPermission && await s.dir.queryPermission({ mode: 'read' }) !== 'granted') return;
+      const seq = this.loadSeq; const current = {};
+      for (const p of Object.keys(this.watch)) {
+        try { current[p] = (await (await this.fileHandle(p, false)).getFile()).lastModified; }
+        catch (e) { if (e && e.name === 'NotFoundError') current[p] = 'missing'; }
+      }
+      if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
+      const list = LayersCore.staleFiles(this.watch, current); this.staleCur = current;
+      this.setState({ stale: list.length ? list : null });
+    } finally { this.staleBusy = false; }
+  }
+  dismissStale() {
+    const add = {}; Object.keys(this.staleCur || {}).forEach(p => { if (typeof this.staleCur[p] === 'number') add[p] = this.staleCur[p]; });
+    this.watch = { ...this.watch, ...add }; this.setState({ stale: null });
+  }
+  reloadProject() {
+    const s = this.state; if (!s.dir) return;
+    if (s.modal) { this.toast('feche o painel aberto antes de recarregar'); return; }
+    if (this.loadedSeq !== this.loadSeq) return;
+    if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => this.doReload() } }); return; }
+    this.doReload();
+  }
+  doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
+  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
     e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = this.state.rightPx;
@@ -1711,7 +1750,7 @@ class Component extends DCLogic {
       if (typeof th.move === 'function') { await th.move(path.split('/').pop()); moved = true; }
       else { await this.rawWrite(path, text); const dir = await this.dirOf(tmp); await dir.removeEntry(tmp.split('/').pop()); moved = true; }
     } catch (e) { if (!moved) await this.rawWrite(path, text); }
-    try { this.mtimes[path] = (await (await this.fileHandle(path, false)).getFile()).lastModified; } catch (e) {}
+    try { this.mtimes[path] = (await (await this.fileHandle(path, false)).getFile()).lastModified; if (this.watch && path in this.watch) this.watch[path] = this.mtimes[path]; } catch (e) {}
     this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: before.length, to: text.length, bak: !!this.baks[path] });
   }
   async rawWrite(path, text) { const h = await this.fileHandle(path, true); const w = await h.createWritable(); await w.write(text); await w.close(); }
@@ -2115,7 +2154,7 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(),
+      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(), hasDir: !!s.dir, reloadItem: () => { this.setState({ cbOpen: null }); this.reloadProject(); }, staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
       demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: () => this.openDemo(d) }; }),
       ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
