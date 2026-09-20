@@ -58,6 +58,7 @@ Regras:
 | `codeFor()`, `patchCss()`, `lineDiff()` | Leitura do código da regra, patch preservando formatação, diff para revisão. |
 | `setProp()`, `applyCode()`, `revert()` | Mutação de estilo, registro de `changes`, escopo. |
 | `connectDir`, `readText`, `writeText`, `exportFull` | I/O de arquivos. |
+| `checkStale`, `reloadProject`, `doReload`, `dismissStale`, `onFocus` | Recarregar projeto e aviso de "arquivos mudaram no disco" (ver § Loader de projeto). Helpers puros em `LayersCore`: `staleFiles`, `hasUnsaved`, `pickWatched`. |
 | `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
 | Menus (engrenagem, INTERAGIR, Ações), dropdowns customizados, toast | Chrome da interface. |
 | Mock offscreen (`pageRef`, `left:-20000px`) | Fonte de camadas atual: recriação do Traval anotada com `data-src`. Deve ser substituído pelo loader de projeto. |
@@ -68,6 +69,7 @@ Regras:
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`.
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
+- Recarga: `stale` (paths que mudaram no disco, ou `null`); `this.watch` (mtimes vigiados, fora do state) e `this.loadedSeq` (geração do `loadSeq` a que o watch pertence).
 - Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
 - Persistido: `cfg` + `UI_KEYS` em `layers/v1/ui`, histórico em `layers/v1/projects`, câmera/seleção/último projeto em `layers/v1/session`.
 
@@ -145,3 +147,30 @@ A fonte de camadas é sempre um mock sanitizado; nenhum script do projeto roda n
 Ler um app renderizado por JS **sem** snapshot manual (Chromium headless em processo separado) está
 decidido e não implementado: ver a ADR de 2026-09-18 em `architecture-decisions.md`. Iframe de mesma
 origem foi descartado (alcançaria o handle de pasta gravável).
+
+### Recarregar projeto e aviso de mudança no disco
+
+Recarregar relê do disco todos os arquivos do projeto: tecla `R` ou `Projetos ▾ › Recarregar projeto`
+(só com pasta local conectada). Com `changes` ou `codeBuf` pendentes (`LayersCore.hasUnsaved`) pede
+confirmação, porque descarta as edições; não abre com painel modal aberto. `doReload` grava
+`pendingSel` (`selId`/`isoId`) e chama `loadProject`, que restaura seleção e isolamento e preserva a
+câmera (só um projeto novo a zera).
+
+Ao fim de cada carga, `this.watch` guarda o mtime de `layers.json`, do mock, das folhas CSS e do
+`dcSource` (`LayersCore.pickWatched` sobre `this.mtimes`; rascunhos e `.design-history` ficam fora).
+Ao focar a janela (`focus`/`visibilitychange`, debounce de 300 ms), `checkStale` confere só esses
+arquivos com `getFile()`, sem ler conteúdo, e só depois de `queryPermission` retornar `granted`.
+`LayersCore.staleFiles` compara com o snapshot (mtime diferente ou arquivo ausente) e o banner
+aparece com o primeiro path e `+N`. Editar `src/**/*.ts` não dispara: não está no conjunto vigiado
+(o app alvo só entra via mock/snapshot). Escritas do próprio LAYERS (`writeText`) atualizam
+`this.watch`, então não se auto-acusam; "×" (`dismissStale`) aceita os mtimes atuais. Cargas
+concorrentes (`loadedSeq !== loadSeq`) suprimem a checagem.
+A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele). O conjunto vigiado
+lista só o que foi lido com sucesso; `dismissStale` remove do `watch` os paths ausentes.
+
+### Guarda de conflito na gravação
+
+`readText` registra em `this.mtimes[path]` o mtime lido; `writeText` compara o mtime atual com ele e
+**recusa** a gravação se o arquivo mudou fora do LAYERS desde a leitura (o erro pede para recarregar o projeto (`R`)
+ou reconectar a pasta e refazer o ajuste). Sem leitura prévia (`mtimes[path]` indefinido) não há recusa. Antes de sobrescrever,
+faz `.bak` uma vez por arquivo por sessão e grava via `.tmp` + `move`.
