@@ -1,6 +1,9 @@
 # Changelog
 
 ## Não lançado
+- Recarregar projeto (#17): tecla `R` ou `Projetos ▾ › Recarregar projeto` relê a pasta local sem perder câmera nem seleção,
+  com confirmação se houver edições não salvas. Ao focar a janela, um aviso indica quando `layers.json`, o mock, o CSS
+  ou o `dcSource` mudaram no disco. Ver `changelog.d/feature-260920-17-project-reload.md`.
 - Repositório git criado (brunomaida/Layers, privado; master + develop).
 - Recursos de runtime versionados: 15 .woff2 em fonts/ e React UMD em vendor/. O app
   não faz mais nenhuma requisição externa.
