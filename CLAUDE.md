@@ -55,7 +55,7 @@ Deve conter bloco `### Perf`: measured | estimated | N/A, ≥1 bullet de ≥20 c
 
 ```
 run.bat                       sobe o dev server (duplo clique)
-index.html                    o editor inteiro (v2.24, ~246 KB)
+index.html                    o editor inteiro (v2.24b, CHANGELOG 0.25.0, ~246 KB)
 support.js                    runtime dc gerado — NÃO EDITAR
 vendor/                       React + ReactDOM UMD (commitados)
 fonts/                        15 .woff2 + fonts.css gerado (commitados)
