@@ -1,6 +1,5 @@
 ---
-type: checklist
-status: active
+type: guide
 solution: Layers
 ---
 

@@ -1,6 +1,5 @@
 ---
-type: architecture
-status: active
+type: reference
 solution: Layers
 ---
 
