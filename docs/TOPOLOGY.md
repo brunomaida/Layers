@@ -1,6 +1,5 @@
 ---
 type: topology
-status: active
 solution: Layers
 ---
 
