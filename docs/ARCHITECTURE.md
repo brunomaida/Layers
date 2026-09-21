@@ -7,7 +7,7 @@ solution: Layers
 
 Editor visual de camadas para projetos web: lê o DOM renderizado de um app, mostra cada elemento como um plano em profundidade (vista explodida) e permite ajustar propriedades CSS com gravação de volta nos arquivos fonte.
 
-Versão de referência: `Traval Layer Editor v2.22.dc.html`.
+Versão de referência: `index.html` (v2.24b, CHANGELOG 0.25.0).
 
 ## Stack
 
