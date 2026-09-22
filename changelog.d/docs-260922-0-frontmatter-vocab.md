@@ -1,3 +1,7 @@
+---
+adr: none
+---
+
 ### docs/260922-0-frontmatter-vocab — 2026-09-22
 
 #### Changed
