@@ -1,3 +1,10 @@
+---
+title: "LAYERS"
+type: readme
+solution: layers
+created: 2026-09-12
+---
+
 # LAYERS
 
 Editor visual de camadas para projetos web. Mostra o DOM de um app como planos em profundidade e permite ajustar CSS com gravação de volta nos arquivos.
@@ -18,7 +25,7 @@ deixa a janela aberta em caso de erro.
 Não abrir via file:// — FS Access e fontes exigem origem HTTP.
 
 ## Estrutura
-- index.html — o editor (v2.24b, CHANGELOG 0.25.0)
+- index.html — o editor (CHANGELOG 0.25.0)
 - support.js — runtime gerado (não editar)
 - lib/layers-core.js — lógica pura do loader (sem DOM/React), carregada pelo index.html
 - vendor/ — React + ReactDOM UMD + csstree versionados (sem CDN)

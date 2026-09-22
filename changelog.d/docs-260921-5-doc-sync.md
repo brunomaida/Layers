@@ -5,6 +5,7 @@
 - Frontmatter: `type` e `status` no vocabulário canônico (`adr`, `reference`, `guide`); `docs/_index.md` regenerado; frontmatter adicionado a `docs/layers-requisitos.md` e `fonts/README.md`.
 - `docs/architecture-decisions.md`: entrada de 2026-09-13 reordenada (mais nova em cima).
 - Fragmentos de 0.23.0, 0.24.0 e 0.25.0 movidos para `changelog.d/archived/<versão>/`.
+- Correção de revisão: rótulo `v2.24b` (circular — só existia em nome de branch e diretório de archive desta mesma branch) removido de `CLAUDE.md`, `docs/ARCHITECTURE.md`, `README.md` e `docs/RELEASE-CHECKLIST.md`; as quatro docs agora citam só `CHANGELOG 0.25.0`. `docs/TOPOLOGY.md`: a coluna "Origem" de `vendor/csstree.js` passa a citar `scripts/vendor-assets.py (pinned by hash)` em vez do local de uso (`index.html:14`), igual às linhas irmãs de `vendor/`. `CLAUDE.md`: tamanho de `index.html` corrigido de `~246 KB` para `~305 KB` (contagem real de bytes).
 
 #### Perf
 - **N/A** — mudança somente de documentação; nenhum código de runtime ou caminho quente tocado.

@@ -55,7 +55,7 @@ Deve conter bloco `### Perf`: measured | estimated | N/A, ≥1 bullet de ≥20 c
 
 ```
 run.bat                       sobe o dev server (duplo clique)
-index.html                    o editor inteiro (v2.24b, CHANGELOG 0.25.0, ~246 KB)
+index.html                    o editor inteiro (CHANGELOG 0.25.0, ~305 KB)
 support.js                    runtime dc gerado — NÃO EDITAR
 lib/layers-core.js            lógica pura do loader (sem DOM), carregada pelo index.html
 vendor/                       React + ReactDOM UMD + csstree (commitados)

@@ -7,7 +7,7 @@ solution: Layers
 
 Editor visual de camadas para projetos web: lê o DOM renderizado de um app, mostra cada elemento como um plano em profundidade (vista explodida) e permite ajustar propriedades CSS com gravação de volta nos arquivos fonte.
 
-Versão de referência: `index.html` (v2.24b, CHANGELOG 0.25.0).
+Versão de referência: `index.html` (CHANGELOG 0.25.0).
 
 ## Stack
 
