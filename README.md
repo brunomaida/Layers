@@ -1,3 +1,10 @@
+---
+title: "LAYERS"
+type: readme
+solution: layers
+created: 2026-09-12
+---
+
 # LAYERS
 
 Editor visual de camadas para projetos web. Mostra o DOM de um app como planos em profundidade e permite ajustar CSS com gravação de volta nos arquivos.
@@ -18,11 +25,16 @@ deixa a janela aberta em caso de erro.
 Não abrir via file:// — FS Access e fontes exigem origem HTTP.
 
 ## Estrutura
-- index.html — o editor (v2.22)
+- index.html — o editor (CHANGELOG 0.25.0)
 - support.js — runtime gerado (não editar)
-- vendor/ — React + ReactDOM UMD versionados (sem CDN)
+- lib/layers-core.js — lógica pura do loader (sem DOM/React), carregada pelo index.html
+- vendor/ — React + ReactDOM UMD + csstree versionados (sem CDN)
 - fonts/ — 15 .woff2 + fonts.css gerado (ver fonts/README.md)
 - run.bat — sobe o dev server (duplo clique)
+- test/ — testes unitários (Vitest) de lib/layers-core.js: `npm test`
+- tools/ — layers-snapshot.js, layers-suggest.js, layers-derive.js (snapshot e spikes do loader)
+- fixtures/ — projetos-alvo do loader, servidos por HTTP (`#layers=<pasta>/`)
+- vite.config.js — config do dev server (serve fixtures/ sem o wrapper de HMR)
 - scripts/vendor-assets.py — regenera fonts/ e vendor/
 - docs/LOCAL-SETUP.md — rodar local com visual idêntico
 - docs/ARCHITECTURE.md — arquitetura e fluxo de dados
