@@ -2,7 +2,7 @@
 title: "Edit JS-rendered apps in Layers: dc template mapper + tiered writer"
 type: plan
 solution: Layers
-status: done
+status: implemented
 created: 2026-09-18
 ---
 

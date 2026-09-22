@@ -1,3 +1,10 @@
+---
+title: "Requisitos técnicos de mapeamento — LAYERS v2.24"
+type: reference
+solution: Layers
+created: 2026-09-12
+---
+
 # Requisitos técnicos de mapeamento — LAYERS v2.24
 
 Resultado dos testes do loader (`layers.json`) com os quatro projetos de `C:\Development` e o que cada tipo de arquivo exige.

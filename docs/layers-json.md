@@ -1,8 +1,7 @@
 ---
 title: "layers.json — contrato de carregamento de projetos (LAYERS v2.24+)"
-type: report
+type: reference
 solution: Layers
-status: draft
 created: 2026-09-12
 ---
 

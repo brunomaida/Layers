@@ -1,3 +1,10 @@
+---
+title: "Fontes locais"
+type: reference
+solution: Layers
+created: 2026-09-12
+---
+
 # Fontes locais
 
 Os `.woff2` desta pasta **já estão no repositório**. Não há nada para baixar manualmente.

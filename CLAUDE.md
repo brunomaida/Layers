@@ -55,9 +55,10 @@ Deve conter bloco `### Perf`: measured | estimated | N/A, ≥1 bullet de ≥20 c
 
 ```
 run.bat                       sobe o dev server (duplo clique)
-index.html                    o editor inteiro (v2.24, ~246 KB)
+index.html                    o editor inteiro (CHANGELOG 0.25.0, ~305 KB)
 support.js                    runtime dc gerado — NÃO EDITAR
-vendor/                       React + ReactDOM UMD (commitados)
+lib/layers-core.js            lógica pura do loader (sem DOM), carregada pelo index.html
+vendor/                       React + ReactDOM UMD + csstree (commitados)
 fonts/                        15 .woff2 + fonts.css gerado (commitados)
 scripts/vendor-assets.py      regenera fonts/ e vendor/
 docs/                         ARCHITECTURE, RELEASE-CHECKLIST, LOCAL-SETUP, layers-json,
@@ -66,6 +67,8 @@ docs/text-specs/              histórico de requisitos
 tools/layers-snapshot.js      snapshot do DOM renderizado de um app JS -> layers/mock.html
 tools/layers-suggest.js       spike da fatia 5: sugere interactions a partir do mock (console)
 tools/layers-derive.js        spike da fatia 5: deriva base/mock/styles de uma pasta (node)
+test/                         testes unitários (Vitest) do lib/layers-core.js
+vite.config.js                config do dev server (serve fixtures/ sem HMR wrapper)
 fixtures/                     projetos-alvo do loader, servidos por HTTP (#layers=<pasta>/)
 changelog.d/                  fragmentos por branch
 ```
@@ -75,10 +78,11 @@ changelog.d/                  fragmentos por branch
 - Unit: Vitest. Integração e E2E: Playwright.
 - Gates: unit = commit; integração = merge; E2E = manual até o loader existir.
 - Nomes de teste: `Metodo_Cenario_Esperado`.
-- Fixtures em `fixtures/`: Traval (mock autoral + 4 .css reais), Axai (HTML estático), MarketView
-  (HTML único com <style> inline), Results (pendente de snapshot). A criar: HTML/CSS puro, Tailwind
-  (falha explícita esperada), nesting + oklch. Ver checklist E.
-- Nenhum teste ainda escrito — checklist E está inteiro em aberto.
+- Fixtures em `fixtures/` (lista e casos cobertos: `docs/RELEASE-CHECKLIST.md` § E).
+- Unit em `test/layers-core.test.js` (`npm test`): cobre a lógica pura de `lib/layers-core.js` (`patchCssAt`, `parseSheet`,
+  `scopeAst`, `safePath`, zip, migração/export de config, `deriveManifest`, mapeamento e escrita de template dc).
+  `test/setup.js` instala a global `csstree` antes de importar o core.
+- Ainda em aberto (checklist E): snapshot de árvore por fixture, escopo "todos iguais", `lineDiff`, E2E Playwright.
 
 ## Code Style
 
