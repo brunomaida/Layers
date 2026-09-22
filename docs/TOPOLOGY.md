@@ -19,7 +19,7 @@ artefatos de topo.
 | `support.js` | Runtime dc: parse do template, binding, boot do React, `x-import` | **Não** | Gerado por `dc-runtime` (upstream) |
 | `vendor/react.production.min.js` | Global `window.React` | Não | `scripts/vendor-assets.py` |
 | `vendor/react-dom.production.min.js` | Global `window.ReactDOM` | Não | `scripts/vendor-assets.py` |
-| `vendor/csstree.js` | Global `csstree` (parser CSS); dependência declarada no cabeçalho de `lib/layers-core.js` | Não | Vendor (`index.html:14`) |
+| `vendor/csstree.js` | Global `csstree` (parser CSS); dependência declarada no cabeçalho de `lib/layers-core.js` | Não | `scripts/vendor-assets.py` (pinned by hash) |
 | `lib/layers-core.js` | `globalThis.LayersCore`: lógica pura do loader (caminhos, AST CSS, zip, config, manifesto, template dc), sem DOM/React | Sim | Mão |
 | `fonts/fonts.css` | 48 blocos `@font-face` com `unicode-range` | Não | `scripts/vendor-assets.py` |
 | `fonts/*.woff2` | 15 faces variáveis subsetadas | Não | `scripts/vendor-assets.py` |

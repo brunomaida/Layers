@@ -9,7 +9,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 25 concluídos
 
 ## A. Setup local (visual idêntico)
 
-- [x] `index.html` (v2.24, sem projeto embutido) + `support.js` no repositório.
+- [x] `index.html` (CHANGELOG 0.25.0, sem projeto embutido) + `support.js` no repositório.
 - [x] Fontes locais: 15 `.woff2` variáveis subsetados por `unicode-range` em `fonts/` + `fonts/fonts.css` gerado (48 blocos `@font-face`), referenciado por `<link>` no `<helmet>`; `<link>` do Google Fonts removido. Espelhos byte-a-byte do `fonts.gstatic.com` — **não** são 8 estáticas por peso, como este item supunha.
 - [x] Servir por HTTP (`npm run dev` na 5180) — FS Access e `document.fonts` exigem origem segura.
 - [x] Defaults documentados (corrigidos — valem os `data-props`, não o `:root`): tema `Gray · 1 Grafite`, acento `5 · Cinza médio`, seleção `Coral`, `originColors Mono`, `panelHeader B`, `sliderScale 85`, `fontScale 1`.
