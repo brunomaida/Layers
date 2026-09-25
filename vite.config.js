@@ -61,10 +61,13 @@ function serveProjectRaw() {
         if (!r) return deny(url);
         const root = path.resolve(r.dir);
         if (!fs.existsSync(path.join(root, 'layers.json'))) return deny('sem layers.json em ' + root);
-        const file = path.resolve(root, r.rel);
-        if (!file.startsWith(root + path.sep)) return deny(url);
-        let data;
-        try { data = fs.readFileSync(file); } catch { return deny(url); }
+        let file, data;
+        try { // realpath on both sides: symlinks/junctions cannot escape the folder
+          file = fs.realpathSync(path.resolve(root, r.rel));
+          const inside = path.relative(fs.realpathSync(root), file);
+          if (!inside || inside.startsWith('..') || path.isAbsolute(inside)) return deny(url);
+          data = fs.readFileSync(file);
+        } catch { return deny(url); }
         res.setHeader('Content-Type', MIME[path.extname(file).toLowerCase()] || 'application/octet-stream');
         res.setHeader('Cache-Control', 'no-cache');
         res.end(data);
