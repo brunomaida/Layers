@@ -56,7 +56,7 @@ function serveProjectRaw() {
       server.middlewares.use((req, res, next) => {
         const url = (req.url || '').split('?')[0];
         if (!url.startsWith('/@project/')) return next();
-        const deny = (why) => { res.statusCode = 404; res.end('not found: ' + why); };
+        const deny = (why) => { res.statusCode = 404; res.setHeader('Content-Type', 'text/plain; charset=utf-8'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.end('not found: ' + why); };
         const r = core.projectRequest(url);
         if (!r) return deny(url);
         const root = path.resolve(r.dir);
