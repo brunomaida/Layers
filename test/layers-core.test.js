@@ -953,3 +953,36 @@ describe('PatchDc', () => {
     expect(out.text).toContain('padding:12px');
   });
 });
+
+describe('ProjectBase', () => {
+  it('DirAbsoluto_DevolveRotaCodificada', () => {
+    expect(core.projectBase('?project=' + encodeURIComponent('C:\\Development\\Atlas'))).toBe('/@project/C%3A%5CDevelopment%5CAtlas/');
+    expect(core.projectBase('?project=%2Fhome%2Fme%2Fapp')).toBe('/@project/%2Fhome%2Fme%2Fapp/');
+  });
+
+  it('SemParametroOuRelativo_DevolveNull', () => {
+    expect(core.projectBase('')).toBeNull();
+    expect(core.projectBase('?project=relativo/pasta')).toBeNull();
+  });
+});
+
+describe('ProjectRequest', () => {
+  it('RotaValida_DevolveDirERel', () => {
+    expect(core.projectRequest('/@project/C%3A%5CDevelopment%5CAtlas/web/css/tokens%20x.css?v=1'))
+      .toEqual({ dir: 'C:\\Development\\Atlas', rel: 'web/css/tokens x.css' });
+  });
+
+  it('Traversal_Rejeita', () => {
+    expect(core.projectRequest('/@project/C%3A%5CA/../secret')).toBeNull();
+    expect(core.projectRequest('/@project/C%3A%5CA/web/%2e%2e/%2e%2e/secret')).toBeNull();
+    expect(core.projectRequest('/@project/C%3A%5CA/web/..%5C..%5Csecret')).toBeNull();
+    expect(core.projectRequest('/@project/C%3A%5CA/C%3A%2Fx')).toBeNull();
+  });
+
+  it('DirRelativoOuMalformado_Rejeita', () => {
+    expect(core.projectRequest('/@project/relativo/x.css')).toBeNull();
+    expect(core.projectRequest('/@project/%E0%A4%A/x.css')).toBeNull();
+    expect(core.projectRequest('/@project/C%3A%5CA/')).toBeNull();
+    expect(core.projectRequest('/fixtures/x.css')).toBeNull();
+  });
+});
