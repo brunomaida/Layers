@@ -985,4 +985,10 @@ describe('ProjectRequest', () => {
     expect(core.projectRequest('/@project/C%3A%5CA/')).toBeNull();
     expect(core.projectRequest('/fixtures/x.css')).toBeNull();
   });
+
+  it('DirUnc_Rejeita', () => {
+    expect(core.projectRequest('/@project/%2F%2Fh%2Fs/x')).toBeNull();
+    expect(core.projectRequest('/@project/' + encodeURIComponent('\\\\h\\s') + '/x')).toBeNull();
+    expect(core.projectBase('?project=' + encodeURIComponent('//h/s'))).toBeNull();
+  });
 });
