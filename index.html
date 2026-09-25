@@ -1669,7 +1669,7 @@ class Component extends DCLogic {
   revert(c) { c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }); this.setState(s => ({ changes: s.changes.filter(x => x.key !== c.key) })); this.scanSoon(); }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
-  get fixtureBase() { const p = this.state.demoBase || this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
+  get fixtureBase() { if (!this.state.demoBase && !this.props.fixture) { const pb = typeof location !== 'undefined' ? LayersCore.projectBase(location.search) : null; if (pb) return pb; } const p = this.state.demoBase || this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
   async fileHandle(path, create) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
   // Ordem das origens: pasta conectada > .zip em memoria > repositorio publico > fixture HTTP.
   // Esta e a unica porta de leitura do loader — foi por isso que .zip e GitHub couberam aqui

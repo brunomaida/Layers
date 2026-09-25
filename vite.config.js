@@ -44,10 +44,42 @@ function serveFixturesRaw() {
   };
 }
 
+// ?project=<pasta> (aberto pelo Atlas): serve a pasta do projeto crua, same-origin, sem cache. So pasta com
+// layers.json na raiz; caminho validado por LayersCore.projectRequest (safePath) e contido na pasta; 404 explicito
+// (o fallback de SPA devolveria o index.html do editor). Nenhuma escrita: o modo fixture ja recusa gravar.
+function serveProjectRaw() {
+  return {
+    name: 'layers-project-raw',
+    async configureServer(server) {
+      await import('./lib/layers-core.js'); // script classico: publica globalThis.LayersCore (csstree so e lido sob demanda)
+      const core = globalThis.LayersCore;
+      server.middlewares.use((req, res, next) => {
+        const url = (req.url || '').split('?')[0];
+        if (!url.startsWith('/@project/')) return next();
+        const deny = (why) => { res.statusCode = 404; res.setHeader('Content-Type', 'text/plain; charset=utf-8'); res.setHeader('X-Content-Type-Options', 'nosniff'); res.end('not found: ' + why); };
+        const r = core.projectRequest(url);
+        if (!r) return deny(url);
+        const root = path.resolve(r.dir);
+        if (!fs.existsSync(path.join(root, 'layers.json'))) return deny('sem layers.json em ' + root);
+        let file, data;
+        try { // realpath on both sides: symlinks/junctions cannot escape the folder
+          file = fs.realpathSync(path.resolve(root, r.rel));
+          const inside = path.relative(fs.realpathSync(root), file);
+          if (!inside || inside.startsWith('..') || path.isAbsolute(inside)) return deny(url);
+          data = fs.readFileSync(file);
+        } catch { return deny(url); }
+        res.setHeader('Content-Type', MIME[path.extname(file).toLowerCase()] || 'application/octet-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.end(data);
+      });
+    },
+  };
+}
+
 // makeDraft grava <arquivo>.design-draft.<ext> na raiz servida e approve grava .design-history/,
 // .bak e .tmp: sem ignorar, o Vite recarrega o editor no meio da edicao (o rascunho de um alvo
 // .html cai na raiz). O plugin so e lido no start do Vite: reinicie o dev server ao mudar isto.
 export default {
-  plugins: [serveFixturesRaw()],
+  plugins: [serveFixturesRaw(), serveProjectRaw()],
   server: { watch: { ignored: ['**/.design-history/**', '**/*.bak', '**/*.tmp', '**/*.design-draft.*'] } },
 };
