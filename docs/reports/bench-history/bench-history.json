@@ -1,96 +1,24 @@
 {
   "schema_version": 1,
-  "generated_utc": "2026-10-13T22:14:05Z",
+  "generated_utc": "2026-10-13T22:40:55Z",
   "repo": "Layers",
   "current_env": {
-    "env_key": "473384da",
+    "env_key": "9cde50ed",
     "env": {
       "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
       "cores": 20,
       "os": "win32 10.0.26200",
-      "runtime": "chromium (playwright)",
+      "runtime": "node v24.19.0",
       "gc": "V8",
-      "tool": "playwright"
+      "tool": "vitest-bench/tinybench"
     }
   },
   "open_regressions": [],
   "gate_candidates": [
     {
-      "bench_id": "load/traval/first-scan-ms",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "load/traval/wall-ms",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "load/traval/gcs-calls",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "scan/1500-tags-ms",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "scan/1500-tags-gcs-calls",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "orbit/traval/fps",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "orbit/traval/p95-frame-ms",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "orbit/traval/longtasks",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
-      "bench_id": "explode/traval/toggle-ms",
-      "suite": "layers-ui",
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "pct": null,
-      "alloc_flag": false,
-      "significant": false
-    },
-    {
       "bench_id": "parseSheet/plain-admin/materialdesignicons",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -98,7 +26,7 @@
     {
       "bench_id": "parseSheet/ecommerce-jsx/app",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -106,7 +34,7 @@
     {
       "bench_id": "parseSheet/traval/components",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -114,7 +42,7 @@
     {
       "bench_id": "parseSheet/axai/painel",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -122,7 +50,7 @@
     {
       "bench_id": "parseSheet/marketview/inline",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -130,7 +58,7 @@
     {
       "bench_id": "scopeAst/plain-admin/materialdesignicons",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -138,7 +66,7 @@
     {
       "bench_id": "scopeAst/ecommerce-jsx/app",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -146,7 +74,7 @@
     {
       "bench_id": "scopeAst/traval/components",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -154,7 +82,7 @@
     {
       "bench_id": "scopeAst/axai/painel",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -162,7 +90,7 @@
     {
       "bench_id": "scopeAst/marketview/inline",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -170,7 +98,7 @@
     {
       "bench_id": "isUtilitySheet/plain-admin/materialdesignicons",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -178,7 +106,7 @@
     {
       "bench_id": "isUtilitySheet/ecommerce-jsx/app",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -186,7 +114,7 @@
     {
       "bench_id": "isUtilitySheet/traval/components",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -194,7 +122,7 @@
     {
       "bench_id": "isUtilitySheet/axai/painel",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -202,7 +130,7 @@
     {
       "bench_id": "isUtilitySheet/marketview/inline",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -210,7 +138,7 @@
     {
       "bench_id": "buildIndex/traval/4-sheets",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -218,7 +146,7 @@
     {
       "bench_id": "varIndex/traval/4-sheets",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -226,7 +154,7 @@
     {
       "bench_id": "patchCssAt/ecommerce-jsx/app/color",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -234,7 +162,7 @@
     {
       "bench_id": "mapDcTemplate/dc-template/index",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -242,7 +170,7 @@
     {
       "bench_id": "patchDc/dc-template/one-item",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -250,7 +178,7 @@
     {
       "bench_id": "deriveManifest/plain-admin/html+css",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -258,7 +186,7 @@
     {
       "bench_id": "openZip/zip/evil",
       "suite": "layers-core",
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "pct": null,
       "alloc_flag": false,
       "significant": false
@@ -266,247 +194,7 @@
   ],
   "runs": [
     {
-      "timestamp_utc": "2026-10-13T22:13:33.335Z",
-      "suite": "layers-ui",
-      "tag": "latency",
-      "env_key": "473384da",
-      "env": {
-        "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
-        "cores": 20,
-        "os": "win32 10.0.26200",
-        "runtime": "chromium (playwright)",
-        "gc": "V8",
-        "tool": "playwright"
-      },
-      "git_sha": "8b38d8a294d69ad2f89f0407e290afbe6b6c773a",
-      "git_dirty": true,
-      "source": "ingest",
-      "confidence": "high",
-      "baseline": false,
-      "records": [
-        {
-          "bench_id": "load/traval/first-scan-ms",
-          "suite": "layers-ui",
-          "unit": "ms",
-          "mean": 113,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "load/traval/wall-ms",
-          "suite": "layers-ui",
-          "unit": "ms",
-          "mean": 1497,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "load/traval/gcs-calls",
-          "suite": "layers-ui",
-          "unit": "count",
-          "mean": 832,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "scan/1500-tags-ms",
-          "suite": "layers-ui",
-          "unit": "ms",
-          "mean": 43.200000047683716,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "scan/1500-tags-gcs-calls",
-          "suite": "layers-ui",
-          "unit": "count",
-          "mean": 1660,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "orbit/traval/fps",
-          "suite": "layers-ui",
-          "unit": "fps",
-          "mean": 16.95108944080451,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "orbit/traval/p95-frame-ms",
-          "suite": "layers-ui",
-          "unit": "ms",
-          "mean": 66.80000000000018,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "orbit/traval/longtasks",
-          "suite": "layers-ui",
-          "unit": "count",
-          "mean": 0,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        },
-        {
-          "bench_id": "explode/traval/toggle-ms",
-          "suite": "layers-ui",
-          "unit": "ms",
-          "mean": 67.79999995231628,
-          "median": null,
-          "stddev": 0,
-          "min": null,
-          "max": null,
-          "p95": null,
-          "p99": null,
-          "alloc_bytes": null,
-          "gen0": null,
-          "gen1": null,
-          "gen2": null,
-          "extra": {},
-          "delta": {
-            "verdict": "new",
-            "pct": null,
-            "prev_mean": null,
-            "alloc_flag": false,
-            "significant": false
-          }
-        }
-      ],
-      "run_id": "03a7467eb3205a7d",
-      "methodology_version": "1",
-      "date": "2026-10-13"
-    },
-    {
-      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "timestamp_utc": "2026-10-13T22:40:55.002Z",
       "suite": "layers-core",
       "tag": "micro",
       "env_key": "9cde50ed",
@@ -518,7 +206,7 @@
         "gc": "V8",
         "tool": "vitest-bench/tinybench"
       },
-      "git_sha": "6c6dbfd9bec267d42865408b5bbf87875edfdc5e",
+      "git_sha": "9d70ef1babf9c105e5d39f73adf131039e4e10a6",
       "git_dirty": true,
       "source": "ingest",
       "confidence": "high",
@@ -528,20 +216,20 @@
           "bench_id": "parseSheet/plain-admin/materialdesignicons",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 14993344.7761194,
+          "mean": 14403212.857142862,
           "median": null,
-          "stddev": 3113506.9589969274,
+          "stddev": 3027599.878792474,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 5139442,
+          "alloc_bytes": 5438016,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 66.6962585688516,
-            "allocBytesPerOp": 5139442
+            "throughputOpsSec": 69.42895379790757,
+            "allocBytesPerOp": 5438016
           },
           "delta": {
             "verdict": "new",
@@ -555,20 +243,20 @@
           "bench_id": "parseSheet/ecommerce-jsx/app",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 7720809.999999994,
+          "mean": 7808671.317829444,
           "median": null,
-          "stddev": 1129897.9827619856,
+          "stddev": 1543055.8099714064,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 2954665,
+          "alloc_bytes": 7377366,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 129.52008921343756,
-            "allocBytesPerOp": 2954665
+            "throughputOpsSec": 128.06275988550217,
+            "allocBytesPerOp": 7377366
           },
           "delta": {
             "verdict": "new",
@@ -582,20 +270,20 @@
           "bench_id": "parseSheet/traval/components",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 524836.9359916035,
+          "mean": 649700.9090909101,
           "median": null,
-          "stddev": 81942.93270513782,
+          "stddev": 296110.349229052,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 444606,
+          "alloc_bytes": 444200,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 1905.3537040236022,
-            "allocBytesPerOp": 444606
+            "throughputOpsSec": 1539.1697718250753,
+            "allocBytesPerOp": 444200
           },
           "delta": {
             "verdict": "new",
@@ -609,20 +297,20 @@
           "bench_id": "parseSheet/axai/painel",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1175463.45475912,
+          "mean": 1172439.976553339,
           "median": null,
-          "stddev": 309143.5193704412,
+          "stddev": 404824.25101501774,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 860607,
+          "alloc_bytes": 859817,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 850.7282773881927,
-            "allocBytesPerOp": 860607
+            "throughputOpsSec": 852.922128209696,
+            "allocBytesPerOp": 859817
           },
           "delta": {
             "verdict": "new",
@@ -636,20 +324,20 @@
           "bench_id": "parseSheet/marketview/inline",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1057353.065539116,
+          "mean": 1087932.7173913165,
           "median": null,
-          "stddev": 271674.86713908456,
+          "stddev": 419203.82093645644,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 908018,
+          "alloc_bytes": 912820,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 945.7578859811852,
-            "allocBytesPerOp": 908018
+            "throughputOpsSec": 919.1744893910676,
+            "allocBytesPerOp": 912820
           },
           "delta": {
             "verdict": "new",
@@ -663,20 +351,20 @@
           "bench_id": "scopeAst/plain-admin/materialdesignicons",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 19347511.53846166,
+          "mean": 17815145.614035077,
           "median": null,
-          "stddev": 2960577.854343486,
+          "stddev": 2847870.6472725514,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 6019414,
+          "alloc_bytes": 2946315,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 51.686233550607355,
-            "allocBytesPerOp": 6019414
+            "throughputOpsSec": 56.132013830534326,
+            "allocBytesPerOp": 2946315
           },
           "delta": {
             "verdict": "new",
@@ -690,20 +378,20 @@
           "bench_id": "scopeAst/ecommerce-jsx/app",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 11785012.941176297,
+          "mean": 12196541.46341471,
           "median": null,
-          "stddev": 2593954.7531478535,
+          "stddev": 2779086.710092054,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 10655434,
+          "alloc_bytes": 10661610,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 84.85353431442113,
-            "allocBytesPerOp": 10655434
+            "throughputOpsSec": 81.9904563108849,
+            "allocBytesPerOp": 10661610
           },
           "delta": {
             "verdict": "new",
@@ -717,20 +405,20 @@
           "bench_id": "scopeAst/traval/components",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 667243.6290860651,
+          "mean": 642594.1554271312,
           "median": null,
-          "stddev": 247319.86211524074,
+          "stddev": 133023.5998178412,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 498818,
+          "alloc_bytes": 496658,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 1498.7029570738905,
-            "allocBytesPerOp": 498818
+            "throughputOpsSec": 1556.192180638963,
+            "allocBytesPerOp": 496658
           },
           "delta": {
             "verdict": "new",
@@ -744,20 +432,20 @@
           "bench_id": "scopeAst/axai/painel",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1219788.4146341183,
+          "mean": 1307218.0392156749,
           "median": null,
-          "stddev": 262600.6609484973,
+          "stddev": 294911.1899574494,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 890007,
+          "alloc_bytes": 908605,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 819.8143120583377,
-            "allocBytesPerOp": 890007
+            "throughputOpsSec": 764.9833233635574,
+            "allocBytesPerOp": 908605
           },
           "delta": {
             "verdict": "new",
@@ -771,20 +459,20 @@
           "bench_id": "scopeAst/marketview/inline",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1234308.014796517,
+          "mean": 1209744.3772672198,
           "median": null,
-          "stddev": 172554.50474715818,
+          "stddev": 177912.0058276446,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 1761580,
+          "alloc_bytes": 1786399,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 810.1705473935984,
-            "allocBytesPerOp": 1761580
+            "throughputOpsSec": 826.6209116499249,
+            "allocBytesPerOp": 1786399
           },
           "delta": {
             "verdict": "new",
@@ -798,9 +486,9 @@
           "bench_id": "isUtilitySheet/plain-admin/materialdesignicons",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 15795995.312500168,
+          "mean": 16700798.333333356,
           "median": null,
-          "stddev": 4158391.480667282,
+          "stddev": 3761248.294567361,
           "min": null,
           "max": null,
           "p95": null,
@@ -810,7 +498,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 63.307185157788034
+            "throughputOpsSec": 59.8773771193971
           },
           "delta": {
             "verdict": "new",
@@ -824,9 +512,9 @@
           "bench_id": "isUtilitySheet/ecommerce-jsx/app",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 7450677.037037073,
+          "mean": 8071856.000000088,
           "median": null,
-          "stddev": 352884.2436184586,
+          "stddev": 1583591.1859625983,
           "min": null,
           "max": null,
           "p95": null,
@@ -836,7 +524,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 134.2159907118551
+            "throughputOpsSec": 123.887244767497
           },
           "delta": {
             "verdict": "new",
@@ -850,9 +538,9 @@
           "bench_id": "isUtilitySheet/traval/components",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 557516.1092530537,
+          "mean": 646513.1782945482,
           "median": null,
-          "stddev": 113745.2716286079,
+          "stddev": 190207.74790578766,
           "min": null,
           "max": null,
           "p95": null,
@@ -862,7 +550,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 1793.6701440605464
+            "throughputOpsSec": 1546.758880674208
           },
           "delta": {
             "verdict": "new",
@@ -876,9 +564,9 @@
           "bench_id": "isUtilitySheet/axai/painel",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1072412.1114684006,
+          "mean": 1064189.3730074277,
           "median": null,
-          "stddev": 191801.88201742547,
+          "stddev": 208676.02991578545,
           "min": null,
           "max": null,
           "p95": null,
@@ -888,7 +576,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 932.4773464472997
+            "throughputOpsSec": 939.682377370461
           },
           "delta": {
             "verdict": "new",
@@ -902,9 +590,9 @@
           "bench_id": "isUtilitySheet/marketview/inline",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1037467.0124481448,
+          "mean": 1158958.2175926084,
           "median": null,
-          "stddev": 234596.86924647045,
+          "stddev": 358083.7245224182,
           "min": null,
           "max": null,
           "p95": null,
@@ -914,7 +602,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 963.8860686666724
+            "throughputOpsSec": 862.8438754912175
           },
           "delta": {
             "verdict": "new",
@@ -928,20 +616,20 @@
           "bench_id": "buildIndex/traval/4-sheets",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1903438.2129276749,
+          "mean": 2404418.705036048,
           "median": null,
-          "stddev": 398552.6357587473,
+          "stddev": 480257.28870176483,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 1382094,
+          "alloc_bytes": 1383778,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 525.3650962811669,
-            "allocBytesPerOp": 1382094
+            "throughputOpsSec": 415.900940175479,
+            "allocBytesPerOp": 1383778
           },
           "delta": {
             "verdict": "new",
@@ -955,9 +643,9 @@
           "bench_id": "varIndex/traval/4-sheets",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 1636937.3158755812,
+          "mean": 1646604.9342105743,
           "median": null,
-          "stddev": 306764.2854616065,
+          "stddev": 312745.60758907045,
           "min": null,
           "max": null,
           "p95": null,
@@ -967,7 +655,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 610.8969416859496
+            "throughputOpsSec": 607.3102170554507
           },
           "delta": {
             "verdict": "new",
@@ -981,9 +669,9 @@
           "bench_id": "patchCssAt/ecommerce-jsx/app/color",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 15199496.969696846,
+          "mean": 14176047.887323951,
           "median": null,
-          "stddev": 1118311.3220001978,
+          "stddev": 836192.746724386,
           "min": null,
           "max": null,
           "p95": null,
@@ -993,7 +681,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 65.79165099961496
+            "throughputOpsSec": 70.54152242912411
           },
           "delta": {
             "verdict": "new",
@@ -1007,20 +695,20 @@
           "bench_id": "mapDcTemplate/dc-template/index",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 3621.241793382718,
+          "mean": 3357.5373189434604,
           "median": null,
-          "stddev": 7516.692464988867,
+          "stddev": 3000.8661398872755,
           "min": null,
           "max": null,
           "p95": null,
           "p99": null,
-          "alloc_bytes": 10897,
+          "alloc_bytes": 10895,
           "gen0": null,
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 276148.3648585277,
-            "allocBytesPerOp": 10897
+            "throughputOpsSec": 297837.3447579957,
+            "allocBytesPerOp": 10895
           },
           "delta": {
             "verdict": "new",
@@ -1034,9 +722,9 @@
           "bench_id": "patchDc/dc-template/one-item",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 11759.311609957836,
+          "mean": 12457.18966054251,
           "median": null,
-          "stddev": 8092.344105132456,
+          "stddev": 11450.515391809162,
           "min": null,
           "max": null,
           "p95": null,
@@ -1046,7 +734,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 85038.99149616851
+            "throughputOpsSec": 80274.92775256101
           },
           "delta": {
             "verdict": "new",
@@ -1060,9 +748,9 @@
           "bench_id": "deriveManifest/plain-admin/html+css",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": 159962.74792067712,
+          "mean": 165037.8217821769,
           "median": null,
-          "stddev": 29229.958394859583,
+          "stddev": 40176.276279022895,
           "min": null,
           "max": null,
           "p95": null,
@@ -1072,7 +760,7 @@
           "gen1": null,
           "gen2": null,
           "extra": {
-            "throughputOpsSec": 6251.455498225645
+            "throughputOpsSec": 6059.217149144379
           },
           "delta": {
             "verdict": "new",
@@ -1086,9 +774,9 @@
           "bench_id": "openZip/zip/evil",
           "suite": "layers-core",
           "unit": "ns",
-          "mean": null,
+          "mean": 416722.54166665126,
           "median": null,
-          "stddev": null,
+          "stddev": 380292.30153984943,
           "min": null,
           "max": null,
           "p95": null,
@@ -1097,7 +785,9 @@
           "gen0": null,
           "gen1": null,
           "gen2": null,
-          "extra": {},
+          "extra": {
+            "throughputOpsSec": 2399.678203153046
+          },
           "delta": {
             "verdict": "new",
             "pct": null,
@@ -1107,7 +797,7 @@
           }
         }
       ],
-      "run_id": "b1e3720ac5a87afc",
+      "run_id": "78bec62af5b8c3b9",
       "methodology_version": "1",
       "date": "2026-10-13"
     }
