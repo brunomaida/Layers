@@ -40,7 +40,7 @@ Tracker de fases e leaves do Layers. A ordem de prioridade do trabalho vem das s
 | S4 | 1 | — | Performance | Checklist D; orçamentos scan/orbit | — | — | — | — | in-progress |
 | S4.1 | 2 | S4 | contain e will-change só em drag | v2.22 | — | — | — | — | done |
 | S4.2 | 2 | S4 | Medição da travessia do scan | Spike da fatia 5 (~2,5 µs/nó) | [](superpowers/reports/2026-09-13-spike-superficies-latentes.md) | — | — | — | done |
-| S4.3 | 2 | S4 | Suite de benchmark do core | Disciplina BDN em JS | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | — | #23 | registered |
+| S4.3 | 2 | S4 | Suite de benchmark do core | Disciplina BDN em JS | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | — | #23 | in-progress |
 | S4.4 | 2 | S4 | Testes de performance de UI | Playwright: scan, orbit e explode | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | — | #23 | registered |
 | S4.5 | 2 | S4 | Culling de planos fora do viewport | checklist D L44 | — | — | — | — | registered |
 | S4.6 | 2 | S4 | Cache de getComputedStyle por nó | checklist D L45 | — | — | — | — | registered |

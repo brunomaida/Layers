@@ -629,7 +629,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 29,
+    "progress": 37,
     "docs": [],
     "children": [
       {
@@ -684,14 +684,14 @@
         "name": "Suite de benchmark do core",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "bdn",
           "scaffold",
           "tests"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
