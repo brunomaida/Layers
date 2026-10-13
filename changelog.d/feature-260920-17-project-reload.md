@@ -16,3 +16,5 @@
 #### Commits
 - `cfbaba2` — feat: add reload watch helpers to layers-core
 - `c1445c1` — feat: add project reload and disk-change banner
+- `0e5436d` — fix: close pre-merge review findings in project reload
+- `9d6f2c0` — docs: document project reload and changelog for #17
