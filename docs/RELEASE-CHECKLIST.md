@@ -43,7 +43,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 25 concluídos
 - [ ] Culling: pular planos fora do viewport e com opacidade < 0,05.
 - [ ] Cache de `getComputedStyle` por nó, invalidado em change.
 - [ ] Árvore virtualizada.
-- [~] Budget: scan < 300 ms para 1.500 nós; orbit > 50 fps (medir com os `bench/` no padrão do Traval). Travessia do `scan()` já medida no spike da fatia 5 — ~2,5 µs/nó, ~3,8 ms para 1.500 nós, 80× abaixo do orçamento; falta o render do React e o fps do orbit, que precisam de aba em foco.
+- [~] Budget: scan < 300 ms para 1.500 nós; orbit > 50 fps (core: `npm run bench`, histórico em [bench-history](reports/bench-history/bench-history.md); UI: ver S4.4 no [roadmap](roadmap.md)). Travessia do `scan()` já medida no spike da fatia 5 — ~2,5 µs/nó, ~3,8 ms para 1.500 nós, 80× abaixo do orçamento; falta o render do React e o fps do orbit, que precisam de aba em foco.
 
 ## E. Testes
 

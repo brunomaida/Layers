@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "suite": "layers-core",
+  "tag": "micro",
+  "timestampUtc": "2026-10-13T22:05:51.193Z",
+  "env": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+    "cores": 20,
+    "os": "win32 10.0.26200",
+    "runtime": "node v24.19.0",
+    "gc": "V8",
+    "tool": "vitest-bench/tinybench"
+  },
+  "git": {
+    "sha": "6c6dbfd9bec267d42865408b5bbf87875edfdc5e",
+    "dirty": true
+  },
+  "benchmarks": [
+    {
+      "benchId": "parseSheet/plain-admin/materialdesignicons",
+      "unit": "ns",
+      "value": 14993344.7761194,
+      "stddev": 3113506.9589969274,
+      "extra": {
+        "throughputOpsSec": 66.6962585688516,
+        "allocBytesPerOp": 5139442
+      }
+    },
+    {
+      "benchId": "parseSheet/ecommerce-jsx/app",
+      "unit": "ns",
+      "value": 7720809.999999994,
+      "stddev": 1129897.9827619856,
+      "extra": {
+        "throughputOpsSec": 129.52008921343756,
+        "allocBytesPerOp": 2954665
+      }
+    },
+    {
+      "benchId": "parseSheet/traval/components",
+      "unit": "ns",
+      "value": 524836.9359916035,
+      "stddev": 81942.93270513782,
+      "extra": {
+        "throughputOpsSec": 1905.3537040236022,
+        "allocBytesPerOp": 444606
+      }
+    },
+    {
+      "benchId": "parseSheet/axai/painel",
+      "unit": "ns",
+      "value": 1175463.45475912,
+      "stddev": 309143.5193704412,
+      "extra": {
+        "throughputOpsSec": 850.7282773881927,
+        "allocBytesPerOp": 860607
+      }
+    },
+    {
+      "benchId": "parseSheet/marketview/inline",
+      "unit": "ns",
+      "value": 1057353.065539116,
+      "stddev": 271674.86713908456,
+      "extra": {
+        "throughputOpsSec": 945.7578859811852,
+        "allocBytesPerOp": 908018
+      }
+    },
+    {
+      "benchId": "scopeAst/plain-admin/materialdesignicons",
+      "unit": "ns",
+      "value": 19347511.53846166,
+      "stddev": 2960577.854343486,
+      "extra": {
+        "throughputOpsSec": 51.686233550607355,
+        "allocBytesPerOp": 6019414
+      }
+    },
+    {
+      "benchId": "scopeAst/ecommerce-jsx/app",
+      "unit": "ns",
+      "value": 11785012.941176297,
+      "stddev": 2593954.7531478535,
+      "extra": {
+        "throughputOpsSec": 84.85353431442113,
+        "allocBytesPerOp": 10655434
+      }
+    },
+    {
+      "benchId": "scopeAst/traval/components",
+      "unit": "ns",
+      "value": 667243.6290860651,
+      "stddev": 247319.86211524074,
+      "extra": {
+        "throughputOpsSec": 1498.7029570738905,
+        "allocBytesPerOp": 498818
+      }
+    },
+    {
+      "benchId": "scopeAst/axai/painel",
+      "unit": "ns",
+      "value": 1219788.4146341183,
+      "stddev": 262600.6609484973,
+      "extra": {
+        "throughputOpsSec": 819.8143120583377,
+        "allocBytesPerOp": 890007
+      }
+    },
+    {
+      "benchId": "scopeAst/marketview/inline",
+      "unit": "ns",
+      "value": 1234308.014796517,
+      "stddev": 172554.50474715818,
+      "extra": {
+        "throughputOpsSec": 810.1705473935984,
+        "allocBytesPerOp": 1761580
+      }
+    },
+    {
+      "benchId": "isUtilitySheet/plain-admin/materialdesignicons",
+      "unit": "ns",
+      "value": 15795995.312500168,
+      "stddev": 4158391.480667282,
+      "extra": {
+        "throughputOpsSec": 63.307185157788034
+      }
+    },
+    {
+      "benchId": "isUtilitySheet/ecommerce-jsx/app",
+      "unit": "ns",
+      "value": 7450677.037037073,
+      "stddev": 352884.2436184586,
+      "extra": {
+        "throughputOpsSec": 134.2159907118551
+      }
+    },
+    {
+      "benchId": "isUtilitySheet/traval/components",
+      "unit": "ns",
+      "value": 557516.1092530537,
+      "stddev": 113745.2716286079,
+      "extra": {
+        "throughputOpsSec": 1793.6701440605464
+      }
+    },
+    {
+      "benchId": "isUtilitySheet/axai/painel",
+      "unit": "ns",
+      "value": 1072412.1114684006,
+      "stddev": 191801.88201742547,
+      "extra": {
+        "throughputOpsSec": 932.4773464472997
+      }
+    },
+    {
+      "benchId": "isUtilitySheet/marketview/inline",
+      "unit": "ns",
+      "value": 1037467.0124481448,
+      "stddev": 234596.86924647045,
+      "extra": {
+        "throughputOpsSec": 963.8860686666724
+      }
+    },
+    {
+      "benchId": "buildIndex/traval/4-sheets",
+      "unit": "ns",
+      "value": 1903438.2129276749,
+      "stddev": 398552.6357587473,
+      "extra": {
+        "throughputOpsSec": 525.3650962811669,
+        "allocBytesPerOp": 1382094
+      }
+    },
+    {
+      "benchId": "varIndex/traval/4-sheets",
+      "unit": "ns",
+      "value": 1636937.3158755812,
+      "stddev": 306764.2854616065,
+      "extra": {
+        "throughputOpsSec": 610.8969416859496
+      }
+    },
+    {
+      "benchId": "patchCssAt/ecommerce-jsx/app/color",
+      "unit": "ns",
+      "value": 15199496.969696846,
+      "stddev": 1118311.3220001978,
+      "extra": {
+        "throughputOpsSec": 65.79165099961496
+      }
+    },
+    {
+      "benchId": "mapDcTemplate/dc-template/index",
+      "unit": "ns",
+      "value": 3621.241793382718,
+      "stddev": 7516.692464988867,
+      "extra": {
+        "throughputOpsSec": 276148.3648585277,
+        "allocBytesPerOp": 10897
+      }
+    },
+    {
+      "benchId": "patchDc/dc-template/one-item",
+      "unit": "ns",
+      "value": 11759.311609957836,
+      "stddev": 8092.344105132456,
+      "extra": {
+        "throughputOpsSec": 85038.99149616851
+      }
+    },
+    {
+      "benchId": "deriveManifest/plain-admin/html+css",
+      "unit": "ns",
+      "value": 159962.74792067712,
+      "stddev": 29229.958394859583,
+      "extra": {
+        "throughputOpsSec": 6251.455498225645
+      }
+    },
+    {
+      "benchId": "openZip/zip/evil",
+      "unit": "ns",
+      "value": null,
+      "stddev": null,
+      "extra": {}
+    }
+  ]
+}
