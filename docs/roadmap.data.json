@@ -1017,15 +1017,16 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-20",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
+      "bug",
       "docs",
       "scaffold",
       "tests"
     ],
-    "progress": 37,
+    "progress": 43,
     "docs": [],
     "children": [
       {
@@ -1175,19 +1176,27 @@
         "id": "S7.7",
         "type": "spec",
         "name": "Hook pre-push valida o ref de destino",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
+          "bug",
           "scaffold"
         ],
-        "progress": 60,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "fix-261013-23-s7-7-pre-push-dest-ref.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261013-23-s7-7-pre-push-dest-ref.md)",
+            "title": "fix-261013-23-s7-7-pre-push-dest-ref.md)"
+          }
+        ],
         "reason": "Review S7.6: push HEAD:develop passa; delete de branch estando em develop é recusado",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]

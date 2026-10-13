@@ -120,7 +120,7 @@ roda de novo e traz o tema antigo de volta. O mapa completo das chaves está em
 
 ## Hooks do git
 
-- Branch protection no GitHub está inativa (exige GitHub Pro em repo privado); a regra "nunca publicar em develop/master" é local: `.githooks/pre-push` recusa o push enquanto `develop` ou `master` está em checkout (ele lê a branch atual, não a referência de destino, e não impede commits).
+- Branch protection no GitHub está inativa (exige GitHub Pro em repo privado); a regra "nunca publicar em develop/master" é local: `.githooks/pre-push` recusa o push cujo destino é `develop` ou `master` (lê o ref de destino que o git passa no stdin, então `git push origin HEAD:develop` também é recusado e apagar uma branch remota estando em `develop` é permitido; não impede commits).
 - Este ambiente tem `core.hooksPath` global (`~/.git-hooks`), que vence o `.git/hooks/` do repositório. `bash scripts/install-hooks.sh` aponta `core.hooksPath` para `.githooks/`.
 - `.githooks/pre-push` delega ao hook global antes das guardas locais (o gate de `changelog.d` continua valendo) e também recusa referências externas (Google Fonts/unpkg) e alteração de `support.js`.
 - O hook é versionado: em uma branch que ainda não tem `.githooks/`, o git não roda hook nenhum, nem o global.
