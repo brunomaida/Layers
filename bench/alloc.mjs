@@ -9,7 +9,8 @@ const w = loadWorkloads();
 const N = 10;
 const ROUNDS = 7;
 
-// Median of ROUNDS rounds: a single heapUsed delta swings 2x run to run (young-gen scavenges).
+// Run with a huge semi-space and no allocation-site pretenuring (see bench/run.mjs) so that no
+// scavenge happens inside a round: heapUsed then equals bytes allocated. Median of ROUNDS rounds.
 function probe(fn) {
   fn();
   const samples = [];
@@ -18,7 +19,7 @@ function probe(fn) {
     const before = process.memoryUsage().heapUsed;
     for (let i = 0; i < N; i++) fn();
     const after = process.memoryUsage().heapUsed;
-    samples.push(Math.max(0, Math.round((after - before) / N)));
+    samples.push(Math.round((after - before) / N));
   }
   samples.sort((a, b) => a - b);
   return samples[Math.floor(ROUNDS / 2)];

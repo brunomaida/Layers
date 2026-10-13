@@ -36,6 +36,11 @@ describe('toBenchJson', () => {
     expect(out.benchmarks[0].extra).toEqual({ throughputOpsSec: 400 });
   });
 
+  it('Convert_NonFiniteMean_Throws', () => {
+    const bad = { files: [{ groups: [{ fullName: 'f > g', benchmarks: [{ name: 'x', mean: undefined, sd: 0, hz: 1 }] }] }] };
+    expect(() => toBenchJson(bad, meta)).toThrow(/non-finite/);
+  });
+
   it('Convert_EmptyRaw_Throws', () => {
     expect(() => toBenchJson({ files: [] }, meta)).toThrow(/no benchmarks/);
   });

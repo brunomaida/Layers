@@ -13,7 +13,7 @@ function sh(cmd, args) {
 fs.mkdirSync('bench/results', { recursive: true });
 sh('npx', ['vitest', 'bench', '--run', '--config', 'vitest.bench.config.js', '--outputJson', 'bench/results/raw.json']);
 const raw = JSON.parse(fs.readFileSync('bench/results/raw.json', 'utf8'));
-const alloc = JSON.parse(sh(process.execPath, ['--expose-gc', 'bench/alloc.mjs']));
+const alloc = JSON.parse(sh(process.execPath, ['--expose-gc', '--max-semi-space-size=1024', '--no-allocation-site-pretenuring', 'bench/alloc.mjs']));
 
 const sha = sh('git', ['rev-parse', 'HEAD']).trim();
 const dirty = sh('git', ['status', '--porcelain']).trim().length > 0;
