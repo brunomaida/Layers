@@ -1013,7 +1013,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 17,
+    "progress": 33,
     "docs": [],
     "children": [
       {
@@ -1132,19 +1132,25 @@
         "name": "CLAUDE.md enxuto",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold",
           "tests"
         ],
-        "progress": 0,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          },
+          {
+            "name": "docs-261013-23-s7-6-claude-md-lean.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261013-23-s7-6-claude-md-lean.md)",
+            "title": "docs-261013-23-s7-6-claude-md-lean.md)"
           }
         ],
         "reason": "Revisão de duplicatas e fatos stale",
