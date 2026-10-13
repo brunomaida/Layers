@@ -27,13 +27,30 @@ branch=$(git rev-parse --abbrev-ref HEAD)
 
 # --- 1. branch protection -------------------------------------------------
 # GitHub refuses to enforce it on a private repo without Pro, so it lives here.
-# CLAUDE.md: never push develop/master directly.
-case "$branch" in
-  develop|master)
-    echo "pre-push: refusing to push directly to '$branch'. Branch first, then open a PR."
-    fail=1
-    ;;
-esac
+# CLAUDE.md: never push develop/master directly. git feeds one line per ref on stdin
+# (<local ref> <local sha> <remote ref> <remote sha>), so the destination is checked, not
+# the checked-out branch: `git push origin HEAD:develop` from a feature branch is refused and
+# deleting a feature branch while develop is checked out is allowed.
+refs=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -n "$remote_ref" ] || continue
+  refs=1
+  case "$remote_ref" in
+    refs/heads/develop|refs/heads/master)
+      echo "pre-push: refusing to push to '${remote_ref#refs/heads/}'. Branch first, then open a PR."
+      fail=1
+      ;;
+  esac
+done
+# Invoked by hand without ref lines: fall back to the checked-out branch.
+if [ "$refs" -eq 0 ]; then
+  case "$branch" in
+    develop|master)
+      echo "pre-push: refusing to push directly to '$branch'. Branch first, then open a PR."
+      fail=1
+      ;;
+  esac
+fi
 
 # --- 2. no-network guard --------------------------------------------------
 # The local render is only identical because every runtime asset is vendored;
