@@ -1017,7 +1017,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-19",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1025,7 +1025,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 33,
+    "progress": 37,
     "docs": [],
     "children": [
       {
@@ -1169,6 +1169,25 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.7",
+        "type": "spec",
+        "name": "Hook pre-push valida o ref de destino",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [],
+        "reason": "Review S7.6: push HEAD:develop passa; delete de branch estando em develop é recusado",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
         "version": "Unreleased"
       }
     ]
