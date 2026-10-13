@@ -1,21 +1,140 @@
 {
   "title": "Layers — Roadmap",
-  "source": { "type": "manifest", "path": "docs/roadmap.md" },
+  "source": {
+    "type": "manifest",
+    "path": "docs/roadmap.md"
+  },
   "tree": [
-    { "id": "S1", "name": "Baseline e setup", "members": ["S1.1", "S1.2", "S1.3"] },
-    { "id": "S2", "name": "Loader de projeto", "members": ["S2.1", "S2.2", "S2.3", "S2.4", "S2.5", "S2.6", "S2.7", "S2.8", "S2.9", "S2.10", "S2.11", "S2.12", "S2.13", "S2.14", "S2.15"] },
-    { "id": "S3", "name": "Ferramentas e UI", "members": ["S3.1", "S3.2", "S3.3", "S3.4"] },
-    { "id": "S4", "name": "Performance", "members": ["S4.1", "S4.2", "S4.3", "S4.4", "S4.5", "S4.6", "S4.7"] },
-    { "id": "S5", "name": "Testes", "members": ["S5.1", "S5.2", "S5.3", "S5.4", "S5.5", "S5.6", "S5.7"] },
-    { "id": "S6", "name": "Segurança", "members": ["S6.1", "S6.2"] },
-    { "id": "S7", "name": "Release e governança", "members": ["S7.1", "S7.2", "S7.3", "S7.4", "S7.5", "S7.6"] },
-    { "id": "S8", "name": "Trilha MCP e plugin", "members": ["S8.1", "S8.2", "S8.3", "S8.4"] }
+    {
+      "id": "S1",
+      "name": "Baseline e setup",
+      "members": [
+        "S1.1",
+        "S1.2",
+        "S1.3"
+      ]
+    },
+    {
+      "id": "S2",
+      "name": "Loader de projeto",
+      "members": [
+        "S2.1",
+        "S2.2",
+        "S2.3",
+        "S2.4",
+        "S2.5",
+        "S2.6",
+        "S2.7",
+        "S2.8",
+        "S2.9",
+        "S2.10",
+        "S2.11",
+        "S2.12",
+        "S2.13",
+        "S2.14",
+        "S2.15",
+        "S2.16"
+      ]
+    },
+    {
+      "id": "S3",
+      "name": "Ferramentas e UI",
+      "members": [
+        "S3.1",
+        "S3.2",
+        "S3.3",
+        "S3.4"
+      ]
+    },
+    {
+      "id": "S4",
+      "name": "Performance",
+      "members": [
+        "S4.1",
+        "S4.2",
+        "S4.3",
+        "S4.4",
+        "S4.5",
+        "S4.6",
+        "S4.7"
+      ]
+    },
+    {
+      "id": "S5",
+      "name": "Testes",
+      "members": [
+        "S5.1",
+        "S5.2",
+        "S5.3",
+        "S5.4",
+        "S5.5",
+        "S5.6",
+        "S5.7"
+      ]
+    },
+    {
+      "id": "S6",
+      "name": "Segurança",
+      "members": [
+        "S6.1",
+        "S6.2"
+      ]
+    },
+    {
+      "id": "S7",
+      "name": "Release e governança",
+      "members": [
+        "S7.1",
+        "S7.2",
+        "S7.3",
+        "S7.4",
+        "S7.5",
+        "S7.6"
+      ]
+    },
+    {
+      "id": "S8",
+      "name": "Trilha MCP e plugin",
+      "members": [
+        "S8.1",
+        "S8.2",
+        "S8.3",
+        "S8.4"
+      ]
+    }
   ],
   "phase_docs": {
-    "S8": [["docs/superpowers/reports/2026-09-18-wnext-checkpoint-mcp-plugin-track.md", "report"]]
+    "S8": [
+      [
+        "docs/superpowers/reports/2026-09-18-wnext-checkpoint-mcp-plugin-track.md",
+        "report"
+      ]
+    ]
   },
   "releases": {
-    "0.24.0": { "date": "2026-09-12", "ids": ["S1.3", "S2.1"] },
-    "0.25.0": { "date": "2026-09-16", "ids": ["S3.1"] }
+    "0.22.0": {
+      "date": "2026-09-12",
+      "ids": [
+        "S4.1"
+      ]
+    },
+    "0.23.0": {
+      "date": "2026-09-12",
+      "ids": [
+        "S1.2"
+      ]
+    },
+    "0.24.0": {
+      "date": "2026-09-12",
+      "ids": [
+        "S1.3"
+      ]
+    },
+    "0.25.0": {
+      "date": "2026-09-16",
+      "ids": [
+        "S3.1"
+      ]
+    }
   }
 }
