@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-19",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 75,
+    "progress": 71,
     "docs": [],
     "children": [
       {
@@ -521,10 +521,29 @@
             "title": "fix-261013-19-s2-16-reload-deferred-findings.md)"
           }
         ],
-        "reason": "Issue #19 aberta",
+        "reason": "Issue #19",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.17",
+        "type": "spec",
+        "name": "Achados restantes da revisão do reload",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px)",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
         "version": "Unreleased"
       }
     ]

@@ -32,7 +32,8 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.13 | 2 | S2 | Undo/redo global | checklist B | — | — | — | — | registered |
 | S2.14 | 2 | S2 | Persistência de changes pendentes | checklist B; exige decisão própria | — | — | — | — | registered |
 | S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B | — | — | — | — | registered |
-| S2.16 | 2 | S2 | Fechar findings adiados da revisão do reload | Issue #19 aberta | — | — | [](../changelog.d/fix-261013-19-s2-16-reload-deferred-findings.md) | #19 | done |
+| S2.16 | 2 | S2 | Fechar findings adiados da revisão do reload | Issue #19 | — | — | [](../changelog.d/fix-261013-19-s2-16-reload-deferred-findings.md) | #19 | done |
+| S2.17 | 2 | S2 | Achados restantes da revisão do reload | Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px) | — | — | — | #32 | registered |
 | S3 | 1 | — | Ferramentas e UI | Checklist C e ferramentas 0.25 | — | — | — | — | in-progress |
 | S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md) | — | done |
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | — | — | — | registered |
