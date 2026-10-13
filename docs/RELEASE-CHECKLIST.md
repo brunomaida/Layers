@@ -77,6 +77,6 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 ## G. Documentação de release
 
 - [ ] `README.md`: o que é, requisitos (Chrome/Edge), como rodar, como conectar um projeto.
-- [ ] `CHANGELOG.md` com entradas por versão (padrão `changelog.d/` do Traval).
+- [x] `CHANGELOG.md` com entradas por versão (padrão `changelog.d/` do Traval).
 - [ ] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação).
 - [ ] Atalhos e interações (exportar o conteúdo do painel `?` para `docs/shortcuts.md`).

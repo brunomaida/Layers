@@ -1017,7 +1017,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-19",
+    "end": "2026-10-18",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1052,27 +1052,34 @@
         "id": "S7.2",
         "type": "spec",
         "name": "CHANGELOG por versão",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "—",
+        "statusLabel": "—",
         "tags": [
           "scaffold"
         ],
         "progress": 0,
-        "docs": [],
+        "docs": [
+          {
+            "name": "docs-261013-23-s7-2-changelog-checklist.md",
+            "type": "report",
+            "path": "/changelog.d/docs-261013-23-s7-2-changelog-checklist.md",
+            "title": "Changed"
+          }
+        ],
         "reason": "checklist G",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S7.3",
         "type": "spec",
         "name": "Matriz de suporte",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1090,8 +1097,8 @@
         "id": "S7.4",
         "type": "spec",
         "name": "docs/shortcuts.md",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
