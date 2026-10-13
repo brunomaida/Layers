@@ -26,21 +26,21 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 
 ## Git
 
-- Commit gate: `npm test` passando. Ao clonar, rode `bash scripts/install-hooks.sh`; o `pre-push` bloqueia push em develop/master e delega ao hook global (detalhes em docs/LOCAL-SETUP.md).
+- Commit gate: `npm test` passando. Ao clonar, rode `bash scripts/install-hooks.sh`; o `pre-push` recusa push com develop/master em checkout e delega ao hook global (detalhes em docs/LOCAL-SETUP.md).
 - Fragmento `changelog.d/<slug>.md` por branch (skill `changelog-draft`), com bloco `### Perf` (measured | estimated | N/A, ≥1 bullet de ≥20 caracteres); CHANGELOG.md só no release.
 
 ## Layout
 
-index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · bench/ (microbenchmarks do core, `npm run bench`) · e2e/ (testes de performance de UI, Playwright) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
+index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · bench/ (microbenchmarks do core, `npm run bench`) · e2e/ (testes de performance de UI, Playwright) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (snapshot do DOM e spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
 
 ## Testes
 
 - Vitest em `test/`, nomes `Metodo_Cenario_Esperado`; fixtures em `fixtures/`, casos em docs/RELEASE-CHECKLIST.md § E.
-- Gates: unit = commit; E2E/perf = manual enquanto não houver CI.
+- Gates: unit = commit; integração = merge; E2E/perf = manual enquanto não houver CI.
 
 ## Estilo
 
-- Prosa PT-BR nos docs (o corpus é PT-BR); comentários de código e commits em EN. Conventional Commits; nunca `Co-Authored-By` nem atribuição a IA.
+- Prosa PT-BR nos docs (o corpus é PT-BR); comentários de código e commits em EN. Conventional Commits, commits pequenos; nunca `Co-Authored-By` nem atribuição a IA.
 - index.html é grande: edite com âncoras únicas e confira a contagem de matches antes de substituir.
 
 ## Manutenção
