@@ -13,7 +13,7 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 ## Stack (override do global: JS puro, sem .NET)
 
 - HTML + CSS inline + JS, sem TypeScript e sem bundler em produção; Vite só como dev server e para testes (`npm run dev`, porta 5180).
-- React 18.3.1 UMD em `vendor/`, css-tree no loader; Vitest (unit, `npm test`) e Playwright (E2E/perf, `npm run test:e2e`).
+- React 18.3.1 UMD em `vendor/`, css-tree no loader; Vitest (unit, `npm test`) e Playwright (E2E/perf, `npm run test:e2e`; os primeiros specs chegam com S4.4).
 - Node 22.22.2+ ou 24.15.0+ com npm 12+ (verificado em Node 24.19.0).
 - Não se aplicam do global: IClock, `DateTime`, BenchmarkDotNet, zero-alloc/`Unsafe`/NUMA e path-tiers (.NET). Tier de performance = General; orçamentos em docs/RELEASE-CHECKLIST.md § D.
 
@@ -26,21 +26,21 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 
 ## Git
 
-- Commit gate: `npm test` passando. Ao clonar, rode `bash scripts/install-hooks.sh`; o `pre-push` bloqueia push em develop/master e delega ao hook global (detalhes em docs/LOCAL-SETUP.md).
+- Commit gate: `npm test` passando. Ao clonar, rode `bash scripts/install-hooks.sh`; o `pre-push` recusa push com develop/master em checkout e delega ao hook global (detalhes em docs/LOCAL-SETUP.md).
 - Fragmento `changelog.d/<slug>.md` por branch (skill `changelog-draft`), com bloco `### Perf` (measured | estimated | N/A, ≥1 bullet de ≥20 caracteres); CHANGELOG.md só no release.
 
 ## Layout
 
-index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
+index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (snapshot do DOM e spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
 
 ## Testes
 
 - Vitest em `test/`, nomes `Metodo_Cenario_Esperado`; fixtures em `fixtures/`, casos em docs/RELEASE-CHECKLIST.md § E.
-- Gates: unit = commit; E2E/perf = manual enquanto não houver CI.
+- Gates: unit = commit; integração = merge; E2E/perf = manual enquanto não houver CI.
 
 ## Estilo
 
-- Prosa PT-BR nos docs (o corpus é PT-BR); comentários de código e commits em EN. Conventional Commits; nunca `Co-Authored-By` nem atribuição a IA.
+- Prosa PT-BR nos docs (o corpus é PT-BR); comentários de código e commits em EN. Conventional Commits, commits pequenos; nunca `Co-Authored-By` nem atribuição a IA.
 - index.html é grande: edite com âncoras únicas e confira a contagem de matches antes de substituir.
 
 ## Manutenção
