@@ -63,7 +63,7 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
-        "version": "Unreleased"
+        "version": "0.23.0"
       },
       {
         "id": "S1.3",
@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-09-30",
+    "end": "2026-10-02",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 73,
+    "progress": 69,
     "docs": [],
     "children": [
       {
@@ -134,7 +134,7 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
-        "version": "0.24.0"
+        "version": "Unreleased"
       },
       {
         "id": "S2.2",
@@ -228,12 +228,6 @@
         ],
         "progress": 100,
         "docs": [
-          {
-            "name": "2026-09-13-spike-superficies-latentes.md)",
-            "type": "spec",
-            "path": "/[](superpowers/reports/2026-09-13-spike-superficies-latentes.md)",
-            "title": "2026-09-13-spike-superficies-latentes.md)"
-          },
           {
             "name": "feature-260913-2-spike-superficies-latentes.md)",
             "type": "report",
@@ -423,7 +417,7 @@
             "title": "feature-260925-project-param.md)"
           }
         ],
-        "reason": "PR #21",
+        "reason": "PRs #21 e #22",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -433,33 +427,6 @@
         "id": "S2.12",
         "type": "spec",
         "name": "Aviso de interactions mortas",
-        "start": "2026-09-13",
-        "end": "2026-09-15",
-        "status": "todo",
-        "statusLabel": "Registered",
-        "tags": [
-          "perf",
-          "scaffold"
-        ],
-        "progress": 0,
-        "docs": [
-          {
-            "name": "2026-09-13-spike-superficies-latentes.md)",
-            "type": "spec",
-            "path": "/[](superpowers/reports/2026-09-13-spike-superficies-latentes.md)",
-            "title": "2026-09-13-spike-superficies-latentes.md)"
-          }
-        ],
-        "reason": "checklist B L27",
-        "is_branch": false,
-        "start_synthetic": false,
-        "end_synthetic": false,
-        "version": "Unreleased"
-      },
-      {
-        "id": "S2.13",
-        "type": "spec",
-        "name": "Undo/redo global",
         "start": "2026-09-26",
         "end": "2026-09-28",
         "status": "todo",
@@ -469,16 +436,16 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist B L28",
+        "reason": "checklist B; ver spike superficies-latentes (docs/superpowers/reports)",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
         "version": "Unreleased"
       },
       {
-        "id": "S2.14",
+        "id": "S2.13",
         "type": "spec",
-        "name": "Persistência de changes pendentes",
+        "name": "Undo/redo global",
         "start": "2026-09-27",
         "end": "2026-09-29",
         "status": "todo",
@@ -488,7 +455,26 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist B L29; exige decisão própria",
+        "reason": "checklist B",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.14",
+        "type": "spec",
+        "name": "Persistência de changes pendentes",
+        "start": "2026-09-28",
+        "end": "2026-09-30",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist B; exige decisão própria",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -498,8 +484,8 @@
         "id": "S2.15",
         "type": "spec",
         "name": "Marcador manual para TS/JS",
-        "start": "2026-09-28",
-        "end": "2026-09-30",
+        "start": "2026-09-29",
+        "end": "2026-10-01",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -508,7 +494,26 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist B L30",
+        "reason": "checklist B",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.16",
+        "type": "spec",
+        "name": "Fechar findings adiados da revisão do reload",
+        "start": "2026-09-30",
+        "end": "2026-10-02",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Issue #19 aberta",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -569,7 +574,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist C L37; decisão de produto",
+        "reason": "checklist C; decisão de produto",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -588,7 +593,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist C L38",
+        "reason": "checklist C",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -607,7 +612,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist C L39",
+        "reason": "checklist C",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -619,8 +624,8 @@
     "id": "S4",
     "type": "phase",
     "name": "Performance",
-    "start": "2026-09-13",
-    "end": "2026-10-19",
+    "start": "2026-10-13",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -649,33 +654,25 @@
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
-        "version": "Unreleased"
+        "version": "0.22.0"
       },
       {
         "id": "S4.2",
         "type": "spec",
         "name": "Medição da travessia do scan",
-        "start": "2026-09-13",
-        "end": "2026-09-15",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "done",
         "statusLabel": "Completed",
         "tags": [
-          "perf",
           "scaffold"
         ],
         "progress": 100,
-        "docs": [
-          {
-            "name": "2026-09-13-spike-superficies-latentes.md)",
-            "type": "spec",
-            "path": "/[](superpowers/reports/2026-09-13-spike-superficies-latentes.md)",
-            "title": "2026-09-13-spike-superficies-latentes.md)"
-          }
-        ],
-        "reason": "Spike da fatia 5 (~2,5 µs/nó)",
+        "docs": [],
+        "reason": "Spike da fatia 5 (~2,5 µs/nó); ver spike superficies-latentes (docs/superpowers/reports)",
         "is_branch": false,
-        "start_synthetic": false,
-        "end_synthetic": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
         "version": "Unreleased"
       },
       {
@@ -744,25 +741,6 @@
         "id": "S4.5",
         "type": "spec",
         "name": "Culling de planos fora do viewport",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
-        "tags": [
-          "scaffold"
-        ],
-        "progress": 0,
-        "docs": [],
-        "reason": "checklist D L44",
-        "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
-        "version": "Unreleased"
-      },
-      {
-        "id": "S4.6",
-        "type": "spec",
-        "name": "Cache de getComputedStyle por nó",
         "start": "2026-10-16",
         "end": "2026-10-18",
         "status": "todo",
@@ -772,16 +750,16 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist D L45",
+        "reason": "checklist D",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
         "version": "Unreleased"
       },
       {
-        "id": "S4.7",
+        "id": "S4.6",
         "type": "spec",
-        "name": "Árvore virtualizada",
+        "name": "Cache de getComputedStyle por nó",
         "start": "2026-10-17",
         "end": "2026-10-19",
         "status": "todo",
@@ -791,7 +769,26 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist D L46",
+        "reason": "checklist D",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.7",
+        "type": "spec",
+        "name": "Árvore virtualizada",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist D",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -818,7 +815,7 @@
       {
         "id": "S5.1",
         "type": "spec",
-        "name": "Unit do core (Vitest, 128 casos)",
+        "name": "Unit do core (Vitest, 138 casos)",
         "start": "2026-10-14",
         "end": "2026-10-16",
         "status": "done",
@@ -849,7 +846,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist E L57",
+        "reason": "checklist E",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -868,7 +865,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist E L58",
+        "reason": "checklist E",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -887,7 +884,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist E L60",
+        "reason": "checklist E",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -907,7 +904,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist E L61; extrair de index.html",
+        "reason": "checklist E; extrair de index.html",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -926,7 +923,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist E L62; infra nasce em S4.4",
+        "reason": "checklist E; infra nasce em S4.4",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -945,7 +942,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist E L63",
+        "reason": "checklist E",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -1001,7 +998,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist F L75",
+        "reason": "checklist F",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -1039,7 +1036,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist G L80",
+        "reason": "checklist G",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -1058,7 +1055,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist G L81",
+        "reason": "checklist G",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -1077,7 +1074,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist G L82",
+        "reason": "checklist G",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
@@ -1096,7 +1093,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "checklist G L83",
+        "reason": "checklist G",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
