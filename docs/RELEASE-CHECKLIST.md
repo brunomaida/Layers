@@ -43,7 +43,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 25 concluídos
 - [ ] Culling: pular planos fora do viewport e com opacidade < 0,05.
 - [ ] Cache de `getComputedStyle` por nó, invalidado em change.
 - [ ] Árvore virtualizada.
-- [~] Budget: scan < 300 ms para 1.500 nós; orbit > 50 fps (core: `npm run bench`, histórico em [bench-history](reports/bench-history/bench-history.md); UI: `npx playwright test e2e/perf.spec.js`, S4.4 no [roadmap](roadmap.md)). Medido em 2026-10-13: scan sintético de ~1,5 mil tags em ~44 ms (dentro do orçamento); orbit ~13 fps no Traval (433 tags), limitado por JS na main thread — orçamento ainda não cumprido, coberto por culling, cache e árvore virtual. Travessia do `scan()` já medida no spike da fatia 5 — ~2,5 µs/nó, ~3,8 ms para 1.500 nós, 80× abaixo do orçamento; falta o render do React e o fps do orbit, que precisam de aba em foco.
+- [~] Budget: scan < 300 ms para 1.500 nós; orbit > 50 fps (core: `npm run bench`, histórico em [bench-history](reports/bench-history/bench-history.md); UI: `npx playwright test e2e/perf.spec.js`, S4.4 no [roadmap](roadmap.md)). Medido em 2026-10-13 (Chromium 153, i7-12700): scan sintético de 1.712 tags em ~56 ms (dentro do orçamento); orbit com input real ~42 fps no Traval (24 ms/frame, p95 36 ms), abaixo dos 50 fps — orçamento ainda não cumprido (S4.5–S4.7). Travessia do `scan()` já medida no spike da fatia 5 — ~2,5 µs/nó, ~3,8 ms para 1.500 nós, 80× abaixo do orçamento; falta o render do React e o fps do orbit, que precisam de aba em foco.
 
 ## E. Testes
 
