@@ -15,9 +15,9 @@
 - layers-specs.md movido para docs/text-specs/; layers-start-kit-desktop.zip removido.
 
 ## 0.25.0 — 2026-09-16
-Novas ferramentas: Medir (redlines entre elementos), Box Model (margin/border/padding com sync no palco) e Tokens (variáveis CSS resolvidas com arquivo/linha, via AST em lib/layers-core.js).
-Menu de projeto: Exemplos + "Zerar interface".
-Botão Medir padronizado (ícone + texto, borda/texto em selectColor quando ativo), no mesmo padrão de Explodido/Foco.
+- Novas ferramentas: Medir (redlines entre elementos), Box Model (margin/border/padding com sync no palco) e Tokens (variáveis CSS resolvidas com arquivo/linha, via AST em lib/layers-core.js).
+- Menu de projeto: Exemplos + "Zerar interface".
+- Botão Medir padronizado (ícone + texto, borda/texto em selectColor quando ativo), no mesmo padrão de Explodido/Foco.
 
 ## 0.24.0 — 2026-09-12
 - LAYERS baseline: editor sem projeto embutido. Mock do Traval removido; palco, árvore e
