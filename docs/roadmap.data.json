@@ -1016,7 +1016,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 17,
+    "progress": 27,
     "docs": [],
     "children": [
       {
@@ -1135,13 +1135,13 @@
         "name": "CLAUDE.md enxuto",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold",
           "tests"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
