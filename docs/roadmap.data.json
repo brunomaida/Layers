@@ -1277,6 +1277,7 @@
     "end": "2026-10-22",
     "statusLabel": "Reference",
     "tags": [
+      "bdn",
       "perf",
       "scaffold"
     ],
@@ -1287,6 +1288,12 @@
         "type": "spec",
         "path": "/docs/text-specs/layers-specs.md",
         "title": "Projeto de Edição Visual das estruturas visuais de uma Página Web"
+      },
+      {
+        "name": "bench-history.md",
+        "type": "report",
+        "path": "/docs/reports/bench-history/bench-history.md",
+        "title": "Benchmark History"
       },
       {
         "name": "docs-260921-5-doc-sync.md",
