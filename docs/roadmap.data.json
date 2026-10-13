@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 69,
+    "progress": 72,
     "docs": [],
     "children": [
       {
@@ -506,12 +506,12 @@
         "name": "Fechar findings adiados da revisão do reload",
         "start": "2026-09-30",
         "end": "2026-10-02",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "Issue #19 aberta",
         "is_branch": false,
