@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-02",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 69,
+    "progress": 71,
     "docs": [],
     "children": [
       {
@@ -427,8 +427,8 @@
         "id": "S2.12",
         "type": "spec",
         "name": "Aviso de interactions mortas",
-        "start": "2026-09-26",
-        "end": "2026-09-28",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -446,8 +446,8 @@
         "id": "S2.13",
         "type": "spec",
         "name": "Undo/redo global",
-        "start": "2026-09-27",
-        "end": "2026-09-29",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -465,8 +465,8 @@
         "id": "S2.14",
         "type": "spec",
         "name": "Persistência de changes pendentes",
-        "start": "2026-09-28",
-        "end": "2026-09-30",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -484,8 +484,8 @@
         "id": "S2.15",
         "type": "spec",
         "name": "Marcador manual para TS/JS",
-        "start": "2026-09-29",
-        "end": "2026-10-01",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -504,8 +504,35 @@
         "id": "S2.16",
         "type": "spec",
         "name": "Fechar findings adiados da revisão do reload",
-        "start": "2026-09-30",
-        "end": "2026-10-02",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "fix-261013-19-s2-16-reload-deferred-findings.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261013-19-s2-16-reload-deferred-findings.md)",
+            "title": "fix-261013-19-s2-16-reload-deferred-findings.md)"
+          }
+        ],
+        "reason": "Issue #19",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.17",
+        "type": "spec",
+        "name": "Achados restantes da revisão do reload",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -513,7 +540,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "Issue #19 aberta",
+        "reason": "Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px)",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,

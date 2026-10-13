@@ -992,3 +992,33 @@ describe('ProjectRequest', () => {
     expect(core.projectBase('?project=' + encodeURIComponent('//h/s'))).toBeNull();
   });
 });
+
+describe('DismissWatch', () => {
+  it('Dismiss_NumericMtime_AcceptsNewValue', () => {
+    expect(core.dismissWatch({ 'a.css': 1, 'b.css': 2 }, { 'a.css': 1, 'b.css': 9 })).toEqual({ 'a.css': 1, 'b.css': 9 });
+  });
+
+  it('Dismiss_MissingFile_StaysWatchedAsMissing', () => {
+    expect(core.dismissWatch({ 'a.css': 1 }, { 'a.css': 'missing' })).toEqual({ 'a.css': 'missing' });
+  });
+
+  it('Dismiss_PathNotInCurrent_KeepsPreviousValue', () => {
+    expect(core.dismissWatch({ 'a.css': 1, 'b.css': 2 }, { 'a.css': 5 })).toEqual({ 'a.css': 5, 'b.css': 2 });
+  });
+
+  it('Dismiss_DoesNotMutateInput', () => {
+    const w = { 'a.css': 1 };
+    core.dismissWatch(w, { 'a.css': 7 });
+    expect(w).toEqual({ 'a.css': 1 });
+  });
+});
+
+describe('StaleFilesAfterMissingDismiss', () => {
+  it('StaleFiles_StillMissingAfterDismiss_IsQuiet', () => {
+    expect(core.staleFiles({ 'a.css': 'missing' }, { 'a.css': 'missing' })).toEqual([]);
+  });
+
+  it('StaleFiles_ReappearsAfterMissingDismiss_IsStale', () => {
+    expect(core.staleFiles({ 'a.css': 'missing' }, { 'a.css': 123 })).toEqual(['a.css']);
+  });
+});
