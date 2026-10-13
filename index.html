@@ -741,7 +741,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
 </sc-if>
 
 <sc-if value="{{ staleOpen }}" hint-placeholder-val="{{ false }}">
-  <div role="status" style="position:fixed;left:50%;top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;max-width:min(520px,calc(100vw - 32px));padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
+  <div role="status" style="position:fixed;left:{{ staleLeft }};top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;max-width:min(520px,calc(100vw - 32px));padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ staleMsg }}</span>
     <button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button>
     <button onClick="{{ dismissStale }}" title="Ignorar" style="all:unset;cursor:pointer;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">×</button>
@@ -1186,10 +1186,11 @@ class Component extends DCLogic {
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
   openDemo(d) { this.setState({ dir: null, demoBase: d.base, dirName: d.name + ' (exemplo)', cbOpen: null, cssRules: {}, fileText: {} }, () => this.loadProject()); }
-  resetUI() { this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
+  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
     this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
+    this.mtimes = {}; // mtimes sao por projeto: sem isto o watch herda os da pasta anterior e o 1o foco acusa um aviso falso
     // F:66 — capturado JA AQUI, antes do primeiro await: se lido de novo depois de
     // this.readText() (que pode ficar pendente por um bom tempo numa pasta grande), um clique
     // em OUTRA pasta muda this.dirViaClick para true debaixo do pe e essa leitura pendente
@@ -1215,10 +1216,10 @@ class Component extends DCLogic {
       // dois pode ser a unica vez que o aviso de truncagem aparece
       this.toast('layers.json criado automaticamente.' + (r.capped ? ' Varredura truncada por um teto de tamanho/quantidade — revise o resultado.' : ''), 'ok');
     }
-    let man; try { man = JSON.parse(raw); } catch (e) { this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
+    let man; try { man = JSON.parse(raw); } catch (e) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
     const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
     const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); const mockPath = P(man.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
-    let html; try { html = await this.readText(mockPath); } catch (e) { this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija o campo "mock" ou gere o arquivo.' }); return; }
+    let html; try { html = await this.readText(mockPath); } catch (e) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija o campo "mock" ou gere o arquivo.' }); return; }
     const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
     // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
     doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
@@ -1229,10 +1230,11 @@ class Component extends DCLogic {
     if (dcFile && !/\.html?$/i.test(dcFile)) { warn.push('dcSource deve ser um .html: ' + dcFile); dcFile = null; }
     if (dcFile) { try { dcText = await this.readText(dcFile); } catch (e) { warn.push('dcSource não lido: ' + dcFile); } }
     const built = buildProjectFromHtml({ doc, html, man, css, dcFile, dcText, mockPath, mockDir, warn });
-    if (built.empty) { this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
-    await this.hoistFaces(built.faces, warn); this.varIdx = built.varIdx;
+    if (built.empty) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
+    if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
+    await this.hoistFaces(built.faces, warn); if (seq !== this.loadSeq) return; this.varIdx = built.varIdx;
     const { rootEl, scoped, inlineScoped, utility, snapMock, dc } = built;
-    const host = this.pageRef.current; if (!host) { this.loadedSeq = this.loadSeq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
+    const host = this.pageRef.current; if (!host) { if (seq === this.loadSeq) this.loadedSeq = seq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     const name = man.name || this.state.dirName;
@@ -1472,8 +1474,7 @@ class Component extends DCLogic {
     } finally { this.staleBusy = false; }
   }
   dismissStale() {
-    const add = {}; Object.keys(this.staleCur || {}).forEach(p => { if (typeof this.staleCur[p] === 'number') add[p] = this.staleCur[p]; });
-    const w = { ...this.watch, ...add }; Object.keys(this.staleCur || {}).forEach(p => { if (this.staleCur[p] === 'missing') delete w[p]; }); this.watch = w; this.setState({ stale: null });
+    this.watch = LayersCore.dismissWatch(this.watch, this.staleCur || {}); this.setState({ stale: null });
   }
   reloadProject() {
     const s = this.state; if (!s.dir) return;
@@ -2154,7 +2155,7 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(), hasDir: !!s.dir, reloadItem: () => { this.setState({ cbOpen: null }); this.reloadProject(); }, staleTop: (36 + s.topBarH + 12) + 'px', staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
+      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(), hasDir: !!s.dir, reloadItem: () => { this.setState({ cbOpen: null }); this.reloadProject(); }, staleTop: (36 + s.topBarH + 12) + 'px', staleLeft: (() => { const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * (typeof window !== 'undefined' ? window.innerWidth : 1280))) * s.colScale : 30; const half = 'min(260px, calc(50vw - 16px))'; return 'min(calc(100vw - 16px - ' + half + '), max(50%, calc(' + (colPx + 24) + 'px + ' + half + ')))'; })(), staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
       demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: () => this.openDemo(d) }; }),
       ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
