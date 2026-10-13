@@ -26,7 +26,7 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 
 ## Git
 
-- Commit gate: `npm test` passando. Ao clonar, rode `bash scripts/install-hooks.sh`; o `pre-push` recusa push com develop/master em checkout e delega ao hook global (detalhes em docs/LOCAL-SETUP.md).
+- Commit gate: `npm test` passando. Ao clonar, rode `bash scripts/install-hooks.sh`; o `pre-push` recusa push cujo destino é develop/master e delega ao hook global (detalhes em docs/LOCAL-SETUP.md).
 - Fragmento `changelog.d/<slug>.md` por branch (skill `changelog-draft`), com bloco `### Perf` (measured | estimated | N/A, ≥1 bullet de ≥20 caracteres); CHANGELOG.md só no release.
 
 ## Layout
