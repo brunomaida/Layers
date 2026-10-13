@@ -15,7 +15,7 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 - HTML + CSS inline + JS, sem TypeScript e sem bundler em produção; Vite só como dev server e para testes (`npm run dev`, porta 5180).
 - React 18.3.1 UMD em `vendor/`, css-tree no loader; Vitest (unit, `npm test`) e Playwright (E2E/perf, `npm run test:e2e`; os primeiros specs chegam com S4.4).
 - Node 22.22.2+ ou 24.15.0+ com npm 12+ (verificado em Node 24.19.0).
-- Não se aplicam do global: IClock, `DateTime`, BenchmarkDotNet, zero-alloc/`Unsafe`/NUMA e path-tiers (.NET). Tier de performance = General; orçamentos em docs/RELEASE-CHECKLIST.md § D.
+- Não se aplicam do global: IClock, `DateTime`, BenchmarkDotNet, zero-alloc/`Unsafe`/NUMA e path-tiers (.NET). Tier de performance = General; orçamentos em docs/RELEASE-CHECKLIST.md § D, metodologia em docs/bench-methodology.md.
 
 ## Recursos sem rede (hard)
 
@@ -31,7 +31,7 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 
 ## Layout
 
-index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (snapshot do DOM e spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
+index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · bench/ (microbenchmarks do core, `npm run bench`) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (snapshot do DOM e spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
 
 ## Testes
 

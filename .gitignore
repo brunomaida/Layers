@@ -10,3 +10,4 @@ test-results
 # Exports do editor (artefato, nao fonte)
 export/
 __pycache__/
+bench/results/raw.json

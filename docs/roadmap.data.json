@@ -634,7 +634,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 29,
+    "progress": 43,
     "docs": [],
     "children": [
       {
@@ -681,20 +681,26 @@
         "name": "Suite de benchmark do core",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "bdn",
           "scaffold",
           "tests"
         ],
-        "progress": 0,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          },
+          {
+            "name": "feature-261013-23-s4-3-bench-suite.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261013-23-s4-3-bench-suite.md)",
+            "title": "feature-261013-23-s4-3-bench-suite.md)"
           }
         ],
         "reason": "Disciplina BDN em JS",
@@ -1268,6 +1274,7 @@
     "end": "2026-10-22",
     "statusLabel": "Reference",
     "tags": [
+      "bdn",
       "perf",
       "scaffold"
     ],
@@ -1278,6 +1285,12 @@
         "type": "spec",
         "path": "/docs/text-specs/layers-specs.md",
         "title": "Projeto de Edição Visual das estruturas visuais de uma Página Web"
+      },
+      {
+        "name": "bench-history.md",
+        "type": "report",
+        "path": "/docs/reports/bench-history/bench-history.md",
+        "title": "Benchmark History"
       },
       {
         "name": "docs-260921-5-doc-sync.md",
