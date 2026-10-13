@@ -629,7 +629,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 51,
+    "progress": 57,
     "docs": [],
     "children": [
       {
@@ -718,20 +718,26 @@
         "name": "Testes de performance de UI",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "perf",
           "scaffold",
           "tests"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          },
+          {
+            "name": "feature-261013-23-s4-4-ui-perf-tests.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261013-23-s4-4-ui-perf-tests.md)",
+            "title": "feature-261013-23-s4-4-ui-perf-tests.md)"
           }
         ],
         "reason": "Playwright: scan, orbit e explode",

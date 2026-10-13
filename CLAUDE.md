@@ -31,7 +31,7 @@ Leia primeiro: docs/ARCHITECTURE.md e docs/roadmap.md (tracker; o gate da v1 é 
 
 ## Layout
 
-index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · bench/ (microbenchmarks do core, `npm run bench`) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
+index.html (app) · support.js (runtime gerado) · lib/layers-core.js (lógica pura do loader) · test/ (Vitest) · bench/ (microbenchmarks do core, `npm run bench`) · e2e/ (testes de performance de UI, Playwright) · fixtures/ (projetos-alvo, `?layers=fixtures/<nome>/`) · tools/ (spikes da fatia 5) · scripts/ (vendor-assets, install-hooks) · docs/ (mapa em docs/TOPOLOGY.md e docs/_index.md).
 
 ## Testes
 

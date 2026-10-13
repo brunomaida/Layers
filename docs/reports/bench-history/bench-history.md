@@ -7,7 +7,7 @@ created: 2026-10-13
 
 # Benchmark History
 
-_generated 2026-10-13T22:05:51Z · env `9cde50ed` · 12th Gen Intel(R) Core(TM) i7-12700 · node v24.19.0 · 20 cores · GC=V8_
+_generated 2026-10-13T22:14:05Z · env `473384da` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium (playwright) · 20 cores · GC=V8_
 
 _Methodology: `docs/bench-methodology.md` (v1)_
 
@@ -15,6 +15,20 @@ _Methodology: `docs/bench-methodology.md` (v1)_
 > Interactive view: Atlas Bench tab (`http://127.0.0.1:5190/`), reads `bench-history.json`.
 
 ## 2026-10-13
+
+### layers-ui — 22:13:33Z  ·  _latency · env 473384da · 8b38d8a294d69ad2f89f0407e290afbe6b6c773a_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 113.00 ns | 0.00 ns | — | — | new |
+| `load/traval/wall-ms` | 1.50 µs | 0.00 ns | — | — | new |
+| `load/traval/gcs-calls` | 832.00 ns | 0.00 ns | — | — | new |
+| `scan/1500-tags-ms` | 43.20 ns | 0.00 ns | — | — | new |
+| `scan/1500-tags-gcs-calls` | 1.66 µs | 0.00 ns | — | — | new |
+| `orbit/traval/fps` | 16.95 ns | 0.00 ns | — | — | new |
+| `orbit/traval/p95-frame-ms` | 66.80 ns | 0.00 ns | — | — | new |
+| `orbit/traval/longtasks` | 0.00 ns | 0.00 ns | — | — | new |
+| `explode/traval/toggle-ms` | 67.80 ns | 0.00 ns | — | — | new |
 
 ### layers-core — 22:05:51Z  ·  _micro · env 9cde50ed · 6c6dbfd9bec267d42865408b5bbf87875edfdc5e_
 
