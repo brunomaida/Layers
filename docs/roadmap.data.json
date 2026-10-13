@@ -635,7 +635,14 @@
       "tests"
     ],
     "progress": 57,
-    "docs": [],
+    "docs": [
+      {
+        "name": "fix-261013-23-s4-4a-vitest-exclude-e2e.md",
+        "type": "report",
+        "path": "/changelog.d/fix-261013-23-s4-4a-vitest-exclude-e2e.md",
+        "title": "Fixed"
+      }
+    ],
     "children": [
       {
         "id": "S4.1",
