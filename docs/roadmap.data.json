@@ -1016,7 +1016,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 10,
+    "progress": 17,
     "docs": [],
     "children": [
       {
@@ -1102,19 +1102,25 @@
         "name": "Bootstrap do roadmap",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold",
           "tests"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          },
+          {
+            "name": "docs-261013-23-s7-5-roadmap-bootstrap.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261013-23-s7-5-roadmap-bootstrap.md)",
+            "title": "docs-261013-23-s7-5-roadmap-bootstrap.md)"
           }
         ],
         "reason": "Este tracker",
