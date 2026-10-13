@@ -55,7 +55,7 @@
           {
             "name": "feature-260912-v2-23-project-history.md)",
             "type": "report",
-            "path": "/[](../changelog.d/feature-260912-v2-23-project-history.md)",
+            "path": "/[](../changelog.d/archived/0.23.0/feature-260912-v2-23-project-history.md)",
             "title": "feature-260912-v2-23-project-history.md)"
           }
         ],
@@ -81,7 +81,7 @@
           {
             "name": "feature-260912-v2-24-baseline-loader.md)",
             "type": "report",
-            "path": "/[](../changelog.d/feature-260912-v2-24-baseline-loader.md)",
+            "path": "/[](../changelog.d/archived/0.24.0/feature-260912-v2-24-baseline-loader.md)",
             "title": "feature-260912-v2-24-baseline-loader.md)"
           }
         ],
@@ -546,7 +546,7 @@
           {
             "name": "feature-260916-v2-24b-tools-reconcile.md)",
             "type": "report",
-            "path": "/[](../changelog.d/feature-260916-v2-24b-tools-reconcile.md)",
+            "path": "/[](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md)",
             "title": "feature-260916-v2-24b-tools-reconcile.md)"
           }
         ],
@@ -1275,6 +1275,18 @@
         "type": "spec",
         "path": "/docs/text-specs/layers-specs.md",
         "title": "Projeto de Edição Visual das estruturas visuais de uma Página Web"
+      },
+      {
+        "name": "docs-260921-5-doc-sync.md",
+        "type": "report",
+        "path": "/changelog.d/docs-260921-5-doc-sync.md",
+        "title": "docs/260921-5-doc-sync — 2026-09-21"
+      },
+      {
+        "name": "docs-260922-0-frontmatter-vocab.md",
+        "type": "report",
+        "path": "/changelog.d/docs-260922-0-frontmatter-vocab.md",
+        "title": "docs/260922-0-frontmatter-vocab — 2026-09-22"
       },
       {
         "name": "docs-261013-23-roadmap-claude-md-perf-plan.md",

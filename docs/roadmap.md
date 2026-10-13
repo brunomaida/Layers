@@ -14,8 +14,8 @@ Tracker de fases e leaves do Layers. A ordem de prioridade do trabalho vem das s
 |---|---|---|---|---|---|---|---|---|---|
 | S1 | 1 | — | Baseline e setup | Repo, fontes/React versionados, baseline sem projeto embutido | — | — | — | — | done |
 | S1.1 | 2 | S1 | Setup do repo e recursos versionados | checklist A | — | — | [](../changelog.d/setup-260912-project-setup.md) | — | done |
-| S1.2 | 2 | S1 | Histórico de projetos (0.23) | Dropdown de projetos recentes | — | — | [](../changelog.d/feature-260912-v2-23-project-history.md) | — | done |
-| S1.3 | 2 | S1 | Baseline sem projeto embutido (0.24) | Mock do Traval removido | — | — | [](../changelog.d/feature-260912-v2-24-baseline-loader.md) | — | done |
+| S1.2 | 2 | S1 | Histórico de projetos (0.23) | Dropdown de projetos recentes | — | — | [](../changelog.d/archived/0.23.0/feature-260912-v2-23-project-history.md) | — | done |
+| S1.3 | 2 | S1 | Baseline sem projeto embutido (0.24) | Mock do Traval removido | — | — | [](../changelog.d/archived/0.24.0/feature-260912-v2-24-baseline-loader.md) | — | done |
 | S2 | 1 | — | Loader de projeto | Abrir e editar projetos reais (checklist B) | — | — | — | — | in-progress |
 | S2.1 | 2 | S2 | Loader layers.json e rede zero | PR #3 | — | — | [](../changelog.d/feature-260912-2-loader-baseline-rede-zero.md) | — | done |
 | S2.2 | 2 | S2 | Motor CSS por AST | PR #4 | — | — | [](../changelog.d/feature-260913-2-motor-css-ast.md) | — | done |
@@ -33,7 +33,7 @@ Tracker de fases e leaves do Layers. A ordem de prioridade do trabalho vem das s
 | S2.14 | 2 | S2 | Persistência de changes pendentes | checklist B L29; exige decisão própria | — | — | — | — | registered |
 | S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B L30 | — | — | — | — | registered |
 | S3 | 1 | — | Ferramentas e UI | Checklist C e ferramentas 0.25 | — | — | — | — | in-progress |
-| S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/feature-260916-v2-24b-tools-reconcile.md) | — | done |
+| S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md) | — | done |
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C L37; decisão de produto | — | — | — | — | registered |
 | S3.3 | 2 | S3 | Tooltips ação e atalho | checklist C L38 | — | — | — | — | registered |
 | S3.4 | 2 | S3 | Fonte única de aparência | checklist C L39 | — | — | — | — | registered |
