@@ -118,6 +118,13 @@ As chaves antigas continuam no navegador até a v2.26 e são lidas uma vez, na m
 roda de novo e traz o tema antigo de volta. O mapa completo das chaves está em
 [ARCHITECTURE.md](ARCHITECTURE.md) § Persistência.
 
+## Hooks do git
+
+- Branch protection no GitHub está inativa (exige GitHub Pro em repo privado); a regra "nunca commitar em develop/master" é local, via `.githooks/pre-push`.
+- Este ambiente tem `core.hooksPath` global (`~/.git-hooks`), que vence o `.git/hooks/` do repositório. `bash scripts/install-hooks.sh` aponta `core.hooksPath` para `.githooks/`.
+- `.githooks/pre-push` delega ao hook global antes das guardas locais (o gate de `changelog.d` continua valendo) e também recusa referências externas (Google Fonts/unpkg) e alteração de `support.js`.
+- O hook é versionado: em uma branch que ainda não tem `.githooks/`, o git não roda hook nenhum, nem o global.
+
 ## Reinicie o dev server depois de mexer em `vite.config.js`
 
 O Vite carrega os plugins **uma vez, na partida**. Um server que já estava no ar quando o
