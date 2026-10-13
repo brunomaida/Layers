@@ -1,0 +1,1297 @@
+[
+  {
+    "id": "S1",
+    "type": "phase",
+    "name": "Baseline e setup",
+    "start": "2026-09-12",
+    "end": "2026-09-14",
+    "status": "done",
+    "statusLabel": "Completed",
+    "tags": [
+      "scaffold"
+    ],
+    "progress": 100,
+    "docs": [],
+    "children": [
+      {
+        "id": "S1.1",
+        "type": "spec",
+        "name": "Setup do repo e recursos versionados",
+        "start": "2026-09-12",
+        "end": "2026-09-14",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "setup-260912-project-setup.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/setup-260912-project-setup.md)",
+            "title": "setup-260912-project-setup.md)"
+          }
+        ],
+        "reason": "checklist A",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S1.2",
+        "type": "spec",
+        "name": "Histórico de projetos (0.23)",
+        "start": "2026-09-12",
+        "end": "2026-09-14",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260912-v2-23-project-history.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/archived/0.23.0/feature-260912-v2-23-project-history.md)",
+            "title": "feature-260912-v2-23-project-history.md)"
+          }
+        ],
+        "reason": "Dropdown de projetos recentes",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "0.23.0"
+      },
+      {
+        "id": "S1.3",
+        "type": "spec",
+        "name": "Baseline sem projeto embutido (0.24)",
+        "start": "2026-09-12",
+        "end": "2026-09-14",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260912-v2-24-baseline-loader.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/archived/0.24.0/feature-260912-v2-24-baseline-loader.md)",
+            "title": "feature-260912-v2-24-baseline-loader.md)"
+          }
+        ],
+        "reason": "Mock do Traval removido",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "0.24.0"
+      }
+    ]
+  },
+  {
+    "id": "S2",
+    "type": "phase",
+    "name": "Loader de projeto",
+    "start": "2026-09-12",
+    "end": "2026-10-02",
+    "status": "wip",
+    "statusLabel": "In Progress",
+    "tags": [
+      "analysis",
+      "bug",
+      "perf",
+      "scaffold"
+    ],
+    "progress": 69,
+    "docs": [],
+    "children": [
+      {
+        "id": "S2.1",
+        "type": "spec",
+        "name": "Loader layers.json e rede zero",
+        "start": "2026-09-12",
+        "end": "2026-09-14",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260912-2-loader-baseline-rede-zero.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260912-2-loader-baseline-rede-zero.md)",
+            "title": "feature-260912-2-loader-baseline-rede-zero.md)"
+          }
+        ],
+        "reason": "PR #3",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.2",
+        "type": "spec",
+        "name": "Motor CSS por AST",
+        "start": "2026-09-13",
+        "end": "2026-09-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260913-2-motor-css-ast.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260913-2-motor-css-ast.md)",
+            "title": "feature-260913-2-motor-css-ast.md)"
+          }
+        ],
+        "reason": "PR #4",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.3",
+        "type": "spec",
+        "name": "Ingestão de .zip e GitHub",
+        "start": "2026-09-13",
+        "end": "2026-09-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260913-2-ingestao-zip-github.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260913-2-ingestao-zip-github.md)",
+            "title": "feature-260913-2-ingestao-zip-github.md)"
+          }
+        ],
+        "reason": "PR #5",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.4",
+        "type": "spec",
+        "name": "Persistência layers/v1",
+        "start": "2026-09-13",
+        "end": "2026-09-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260913-2-persistencia-layers-v1.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260913-2-persistencia-layers-v1.md)",
+            "title": "feature-260913-2-persistencia-layers-v1.md)"
+          }
+        ],
+        "reason": "PR #6",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.5",
+        "type": "spec",
+        "name": "Spike de superfícies latentes",
+        "start": "2026-09-13",
+        "end": "2026-09-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "perf",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260913-2-spike-superficies-latentes.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260913-2-spike-superficies-latentes.md)",
+            "title": "feature-260913-2-spike-superficies-latentes.md)"
+          }
+        ],
+        "reason": "PR #7",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.6",
+        "type": "spec",
+        "name": "Fixtures reais, lote 1",
+        "start": "2026-09-14",
+        "end": "2026-09-16",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260914-8-fixtures-reais-html-css-js-ts-jsx.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260914-8-fixtures-reais-html-css-js-ts-jsx.md)",
+            "title": "feature-260914-8-fixtures-reais-html-css-js-ts-jsx.md)"
+          }
+        ],
+        "reason": "PR #9",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.7",
+        "type": "spec",
+        "name": "Fixtures reais, lote 2",
+        "start": "2026-09-14",
+        "end": "2026-09-16",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-09-14-fixtures-reais-batch-2.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-09-14-fixtures-reais-batch-2.md)",
+            "title": "2026-09-14-fixtures-reais-batch-2.md)"
+          },
+          {
+            "name": "feature-260914-10-fixtures-reais-batch-2.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260914-10-fixtures-reais-batch-2.md)",
+            "title": "feature-260914-10-fixtures-reais-batch-2.md)"
+          }
+        ],
+        "reason": "PR #11",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.8",
+        "type": "spec",
+        "name": "Auto-criação de layers.json",
+        "start": "2026-09-18",
+        "end": "2026-09-20",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-09-18-layers-auto-criacao-de-layers-json-quando.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-09-18-layers-auto-criacao-de-layers-json-quando.md)",
+            "title": "2026-09-18-layers-auto-criacao-de-layers-json-quando.md)"
+          },
+          {
+            "name": "feature-260918-13-auto-create-layers-json.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260918-13-auto-create-layers-json.md)",
+            "title": "feature-260918-13-auto-create-layers-json.md)"
+          }
+        ],
+        "reason": "PR #14",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.9",
+        "type": "spec",
+        "name": "Mapeador de template dc e writer em camadas",
+        "start": "2026-09-18",
+        "end": "2026-09-20",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-09-18-layers-editar-apps-renderizados-por-js-no.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-09-18-layers-editar-apps-renderizados-por-js-no.md)",
+            "title": "2026-09-18-layers-editar-apps-renderizados-por-js-no.md)"
+          },
+          {
+            "name": "feature-260918-15-dc-template-writer.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260918-15-dc-template-writer.md)",
+            "title": "feature-260918-15-dc-template-writer.md)"
+          }
+        ],
+        "reason": "PR #16, slices 0-2",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.10",
+        "type": "spec",
+        "name": "Recarregar projeto e banner disco mudou",
+        "start": "2026-09-20",
+        "end": "2026-09-22",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-09-20-layers-spec-recarregar-projeto-banner-disco-mudou.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-09-20-layers-spec-recarregar-projeto-banner-disco-mudou.md)",
+            "title": "2026-09-20-layers-spec-recarregar-projeto-banner-disco-mudou.md)"
+          },
+          {
+            "name": "feature-260920-17-project-reload.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260920-17-project-reload.md)",
+            "title": "feature-260920-17-project-reload.md)"
+          }
+        ],
+        "reason": "PR #18",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.11",
+        "type": "spec",
+        "name": "Parâmetro ?project= (lançamento pelo Atlas)",
+        "start": "2026-09-25",
+        "end": "2026-09-27",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260925-project-param.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-260925-project-param.md)",
+            "title": "feature-260925-project-param.md)"
+          }
+        ],
+        "reason": "PRs #21 e #22",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.12",
+        "type": "spec",
+        "name": "Aviso de interactions mortas",
+        "start": "2026-09-26",
+        "end": "2026-09-28",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist B; ver spike superficies-latentes (docs/superpowers/reports)",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.13",
+        "type": "spec",
+        "name": "Undo/redo global",
+        "start": "2026-09-27",
+        "end": "2026-09-29",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist B",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.14",
+        "type": "spec",
+        "name": "Persistência de changes pendentes",
+        "start": "2026-09-28",
+        "end": "2026-09-30",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist B; exige decisão própria",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.15",
+        "type": "spec",
+        "name": "Marcador manual para TS/JS",
+        "start": "2026-09-29",
+        "end": "2026-10-01",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "analysis",
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist B",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.16",
+        "type": "spec",
+        "name": "Fechar findings adiados da revisão do reload",
+        "start": "2026-09-30",
+        "end": "2026-10-02",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Issue #19 aberta",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "S3",
+    "type": "phase",
+    "name": "Ferramentas e UI",
+    "start": "2026-09-16",
+    "end": "2026-09-21",
+    "status": "wip",
+    "statusLabel": "In Progress",
+    "tags": [
+      "scaffold"
+    ],
+    "progress": 25,
+    "docs": [],
+    "children": [
+      {
+        "id": "S3.1",
+        "type": "spec",
+        "name": "Medir, Box Model e Tokens",
+        "start": "2026-09-16",
+        "end": "2026-09-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-260916-v2-24b-tools-reconcile.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md)",
+            "title": "feature-260916-v2-24b-tools-reconcile.md)"
+          }
+        ],
+        "reason": "PR #12",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "0.25.0"
+      },
+      {
+        "id": "S3.2",
+        "type": "spec",
+        "name": "Padrão único de abertura de menus",
+        "start": "2026-09-17",
+        "end": "2026-09-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist C; decisão de produto",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S3.3",
+        "type": "spec",
+        "name": "Tooltips ação e atalho",
+        "start": "2026-09-18",
+        "end": "2026-09-20",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist C",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S3.4",
+        "type": "spec",
+        "name": "Fonte única de aparência",
+        "start": "2026-09-19",
+        "end": "2026-09-21",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist C",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "S4",
+    "type": "phase",
+    "name": "Performance",
+    "start": "2026-10-13",
+    "end": "2026-10-20",
+    "status": "wip",
+    "statusLabel": "In Progress",
+    "tags": [
+      "bdn",
+      "perf",
+      "scaffold",
+      "tests"
+    ],
+    "progress": 29,
+    "docs": [],
+    "children": [
+      {
+        "id": "S4.1",
+        "type": "spec",
+        "name": "contain e will-change só em drag",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [],
+        "reason": "v2.22",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "0.22.0"
+      },
+      {
+        "id": "S4.2",
+        "type": "spec",
+        "name": "Medição da travessia do scan",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [],
+        "reason": "Spike da fatia 5 (~2,5 µs/nó); ver spike superficies-latentes (docs/superpowers/reports)",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.3",
+        "type": "spec",
+        "name": "Suite de benchmark do core",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "bdn",
+          "scaffold",
+          "tests"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          }
+        ],
+        "reason": "Disciplina BDN em JS",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.4",
+        "type": "spec",
+        "name": "Testes de performance de UI",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "perf",
+          "scaffold",
+          "tests"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          }
+        ],
+        "reason": "Playwright: scan, orbit e explode",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.5",
+        "type": "spec",
+        "name": "Culling de planos fora do viewport",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist D",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.6",
+        "type": "spec",
+        "name": "Cache de getComputedStyle por nó",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist D",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.7",
+        "type": "spec",
+        "name": "Árvore virtualizada",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist D",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "S5",
+    "type": "phase",
+    "name": "Testes",
+    "start": "2026-10-14",
+    "end": "2026-10-22",
+    "status": "wip",
+    "statusLabel": "In Progress",
+    "tags": [
+      "bug",
+      "scaffold",
+      "tests"
+    ],
+    "progress": 14,
+    "docs": [],
+    "children": [
+      {
+        "id": "S5.1",
+        "type": "spec",
+        "name": "Unit do core (Vitest, 138 casos)",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold",
+          "tests"
+        ],
+        "progress": 100,
+        "docs": [],
+        "reason": "patchCssAt, parseSheet, scopeAst, zip e dc",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S5.2",
+        "type": "spec",
+        "name": "Snapshot de árvore por fixture",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist E",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S5.3",
+        "type": "spec",
+        "name": "Origem de 30 nós amostrados",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist E",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S5.4",
+        "type": "spec",
+        "name": "Escopo todos iguais",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist E",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S5.5",
+        "type": "spec",
+        "name": "lineDiff testável",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold",
+          "tests"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist E; extrair de index.html",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S5.6",
+        "type": "spec",
+        "name": "E2E Playwright funcional",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist E; infra nasce em S4.4",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S5.7",
+        "type": "spec",
+        "name": "Compatibilidade de navegadores",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist E",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "S6",
+    "type": "phase",
+    "name": "Segurança",
+    "start": "2026-10-14",
+    "end": "2026-10-17",
+    "status": "wip",
+    "statusLabel": "In Progress",
+    "tags": [
+      "perf",
+      "scaffold"
+    ],
+    "progress": 50,
+    "docs": [],
+    "children": [
+      {
+        "id": "S6.1",
+        "type": "spec",
+        "name": "Superfície de gravação e ingestão",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "perf",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [],
+        "reason": "checklist F, 9 itens",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S6.2",
+        "type": "spec",
+        "name": "Hash no log de gravação",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist F",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "S7",
+    "type": "phase",
+    "name": "Release e governança",
+    "start": "2026-10-13",
+    "end": "2026-10-19",
+    "status": "wip",
+    "statusLabel": "In Progress",
+    "tags": [
+      "docs",
+      "scaffold",
+      "tests"
+    ],
+    "progress": 17,
+    "docs": [],
+    "children": [
+      {
+        "id": "S7.1",
+        "type": "spec",
+        "name": "README atualizado",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "docs",
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist G",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.2",
+        "type": "spec",
+        "name": "CHANGELOG por versão",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist G",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.3",
+        "type": "spec",
+        "name": "Matriz de suporte",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist G",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.4",
+        "type": "spec",
+        "name": "docs/shortcuts.md",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "checklist G",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.5",
+        "type": "spec",
+        "name": "Bootstrap do roadmap",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold",
+          "tests"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          },
+          {
+            "name": "docs-261013-23-s7-5-roadmap-bootstrap.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261013-23-s7-5-roadmap-bootstrap.md)",
+            "title": "docs-261013-23-s7-5-roadmap-bootstrap.md)"
+          }
+        ],
+        "reason": "Este tracker",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.6",
+        "type": "spec",
+        "name": "CLAUDE.md enxuto",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold",
+          "tests"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
+            "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          }
+        ],
+        "reason": "Revisão de duplicatas e fatos stale",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "S8",
+    "type": "phase",
+    "name": "Trilha MCP e plugin",
+    "start": "2026-10-14",
+    "end": "2026-10-19",
+    "status": "todo",
+    "statusLabel": "Registered",
+    "tags": [
+      "scaffold"
+    ],
+    "progress": 0,
+    "docs": [
+      {
+        "name": "2026-09-18-wnext-checkpoint-mcp-plugin-track.md",
+        "type": "report",
+        "path": "/docs/superpowers/reports/2026-09-18-wnext-checkpoint-mcp-plugin-track.md",
+        "title": "Checkpoint — Layers: branch dc-template-writer aberta + trilha MCP/plugin (ideia gravada)"
+      }
+    ],
+    "children": [
+      {
+        "id": "S8.1",
+        "type": "spec",
+        "name": "Spike de servidor MCP stdio sobre o core",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "find_rule, get_rule_text, propose_css_patch",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S8.2",
+        "type": "spec",
+        "name": "Spike Playwright: data-vite-dev-id sobrevive",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Apps Vite com React",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S8.3",
+        "type": "spec",
+        "name": "Snapshot headless (slice 3)",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Depende de S8.1 e S8.2",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S8.4",
+        "type": "spec",
+        "name": "apply_patch e porta Node de writeText",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Modelo de confiança primeiro",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
+    "id": "PRJ",
+    "type": "phase",
+    "name": "Project & Cross-cutting Docs",
+    "start": "2026-09-12",
+    "end": "2026-10-22",
+    "statusLabel": "Reference",
+    "tags": [
+      "perf",
+      "scaffold"
+    ],
+    "progress": 0,
+    "docs": [
+      {
+        "name": "layers-specs.md",
+        "type": "spec",
+        "path": "/docs/text-specs/layers-specs.md",
+        "title": "Projeto de Edição Visual das estruturas visuais de uma Página Web"
+      },
+      {
+        "name": "docs-260921-5-doc-sync.md",
+        "type": "report",
+        "path": "/changelog.d/docs-260921-5-doc-sync.md",
+        "title": "docs/260921-5-doc-sync — 2026-09-21"
+      },
+      {
+        "name": "docs-260922-0-frontmatter-vocab.md",
+        "type": "report",
+        "path": "/changelog.d/docs-260922-0-frontmatter-vocab.md",
+        "title": "docs/260922-0-frontmatter-vocab — 2026-09-22"
+      },
+      {
+        "name": "docs-261013-23-roadmap-claude-md-perf-plan.md",
+        "type": "report",
+        "path": "/changelog.d/docs-261013-23-roadmap-claude-md-perf-plan.md",
+        "title": "Added"
+      }
+    ],
+    "children": []
+  }
+]

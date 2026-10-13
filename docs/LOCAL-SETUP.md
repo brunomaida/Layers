@@ -1,6 +1,5 @@
 ---
 type: guide
-status: active
 solution: Layers
 ---
 
