@@ -164,8 +164,12 @@ aparece com o primeiro path e `+N`. Editar `src/**/*.ts` não dispara: não est�
 (o app alvo só entra via mock/snapshot). Escritas do próprio LAYERS (`writeText`) atualizam
 `this.watch`, então não se auto-acusam; "×" (`dismissStale`) aceita os mtimes atuais. Cargas
 concorrentes (`loadedSeq !== loadSeq`) suprimem a checagem.
-A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele). O conjunto vigiado
-lista só o que foi lido com sucesso; `dismissStale` remove do `watch` os paths ausentes.
+A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele); em telas estreitas
+`staleLeft` o afasta para a direita da coluna da árvore (inalterado em telas largas). O conjunto vigiado
+lista só o que foi lido com sucesso e `this.mtimes` é zerado a cada `loadProject`, para não herdar os mtimes da
+pasta anterior. `LayersCore.dismissWatch` aceita os mtimes atuais e mantém os paths ausentes no `watch` como
+`'missing'`: continuam vigiados e voltam a acusar quando reaparecem (salvamento atômico = apaga + renomeia).
+Uma carga superada (`seq !== loadSeq`) não descarrega nem marca `loadedSeq` por cima da carga mais nova.
 
 ### Guarda de conflito na gravação
 
