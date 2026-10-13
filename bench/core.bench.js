@@ -53,6 +53,6 @@ describe('openZip', () => {
   // cold path, ~1 KB archive: catches regressions in the EOCD scan and inflate setup
   bench('zip/evil', async () => {
     const r = await core.openZip(w.zip);
-    if (!r.files.length) throw new Error('openZip returned no files');
+    if (!r.files.size) throw new Error('openZip returned no files');
   }, opts);
 });

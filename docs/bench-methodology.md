@@ -26,10 +26,10 @@ created: 2026-10-13
 - UI (Playwright, tag `latency`): see `e2e/perf.spec.js` once S4.4 lands.
 
 ## Noise Floor
-Observed on the reference machine (i7-12700, Node 24): parseSheet/scopeAst on small sheets vary about 20-35 % run to run; large sheets about 5-20 %. Hence the 10 µs floor and 2 sigma rule below. Record the first stable baseline before gating.
+Observed on the reference machine (i7-12700, Node 24): parseSheet/scopeAst on small sheets vary about 20-35 % run to run; large sheets about 5-20 %. Hence the 10 µs floor (`noiseFloorNs: 10000`), the 2 sigma rule and the 25 % `regressionPct` for `micro` below; the per-invocation StdDev includes GC pauses, so smaller thresholds would only alarm on noise. Record the first stable baseline before gating.
 
 ## Decision rules
-A delta counts as a regression only when it exceeds `regressionPct` (5 %), exceeds 2 sigma of the baseline and is above `noiseFloorNs`. Compare only inside the same `env` hash; never compare runs from different machines or Node majors.
+A delta counts as a regression only when it exceeds `regressionPct` (25 % for `micro`), exceeds 2 sigma of the baseline and is above `noiseFloorNs`. Compare only inside the same `env` hash; never compare runs from different machines or Node majors.
 
 ## Interpreting Results
 Mean and StdDev decide speed; `Alloc B/op` is a trend indicator (young-generation scavenges make single values jumpy). Watch `parseSheet` and `scopeAst`: they run once per stylesheet at project load.
@@ -55,9 +55,14 @@ The block below is parsed by the `bench-report` tooling. Edit the values; keep t
   },
   "perTag": {
     "micro": {
-      "noiseFloorNs": 10,
+      "noiseFloorNs": 10000,
+      "regressionPct": 0.25,
       "gated": true,
       "run": "npm run bench"
+    },
+    "latency": {
+      "gated": false,
+      "run": "npx playwright test e2e/perf.spec.js"
     }
   }
 }
