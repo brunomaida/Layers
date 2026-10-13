@@ -43,6 +43,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.2 | 2 | S4 | Medição da travessia do scan | Spike da fatia 5 (~2,5 µs/nó); ver spike superficies-latentes (docs/superpowers/reports) | — | — | — | — | done |
 | S4.3 | 2 | S4 | Suite de benchmark do core | Disciplina BDN em JS | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/feature-261013-23-s4-3-bench-suite.md) | #23 | done |
 | S4.4 | 2 | S4 | Testes de performance de UI | Playwright: scan, orbit e explode | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/feature-261013-23-s4-4-ui-perf-tests.md) | #23 | done |
+| S4.4a | 3 | S4.4 | Vitest ignora e2e/ | npm test falhava ao coletar o spec do Playwright | — | — | [](../changelog.d/fix-261013-23-s4-4a-vitest-exclude-e2e.md) | #23 | done |
 | S4.5 | 2 | S4 | Culling de planos fora do viewport | checklist D | — | — | — | — | registered |
 | S4.6 | 2 | S4 | Cache de getComputedStyle por nó | checklist D | — | — | — | — | registered |
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |

@@ -82,4 +82,6 @@ function serveProjectRaw() {
 export default {
   plugins: [serveFixturesRaw(), serveProjectRaw()],
   server: { watch: { ignored: ['**/.design-history/**', '**/*.bak', '**/*.tmp', '**/*.design-draft.*'] } },
+  // unit tests only: e2e/*.spec.js belongs to Playwright and fails if Vitest collects it
+  test: { include: ['test/**/*.test.js'] },
 };
