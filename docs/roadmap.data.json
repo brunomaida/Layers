@@ -629,7 +629,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 37,
+    "progress": 43,
     "docs": [],
     "children": [
       {
@@ -684,20 +684,26 @@
         "name": "Suite de benchmark do core",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "bdn",
           "scaffold",
           "tests"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md)",
             "title": "2026-10-13-roadmap-claude-md-enxuto-testes-design.md)"
+          },
+          {
+            "name": "feature-261013-23-s4-3-bench-suite.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261013-23-s4-3-bench-suite.md)",
+            "title": "feature-261013-23-s4-3-bench-suite.md)"
           }
         ],
         "reason": "Disciplina BDN em JS",

@@ -7,6 +7,7 @@
     "dev": "vite --port 5180",
     "preview": "vite preview --port 5180",
     "test": "vitest run --passWithNoTests",
+    "bench": "node bench/run.mjs",
     "test:e2e": "playwright test"
   },
   "devDependencies": {

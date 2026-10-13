@@ -1,0 +1,807 @@
+{
+  "schema_version": 1,
+  "generated_utc": "2026-10-13T22:05:51Z",
+  "repo": "Layers",
+  "current_env": {
+    "env_key": "9cde50ed",
+    "env": {
+      "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+      "cores": 20,
+      "os": "win32 10.0.26200",
+      "runtime": "node v24.19.0",
+      "gc": "V8",
+      "tool": "vitest-bench/tinybench"
+    }
+  },
+  "open_regressions": [],
+  "gate_candidates": [
+    {
+      "bench_id": "parseSheet/plain-admin/materialdesignicons",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "parseSheet/ecommerce-jsx/app",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "parseSheet/traval/components",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "parseSheet/axai/painel",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "parseSheet/marketview/inline",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "scopeAst/plain-admin/materialdesignicons",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "scopeAst/ecommerce-jsx/app",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "scopeAst/traval/components",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "scopeAst/axai/painel",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "scopeAst/marketview/inline",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "isUtilitySheet/plain-admin/materialdesignicons",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "isUtilitySheet/ecommerce-jsx/app",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "isUtilitySheet/traval/components",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "isUtilitySheet/axai/painel",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "isUtilitySheet/marketview/inline",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "buildIndex/traval/4-sheets",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "varIndex/traval/4-sheets",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "patchCssAt/ecommerce-jsx/app/color",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "mapDcTemplate/dc-template/index",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "patchDc/dc-template/one-item",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "deriveManifest/plain-admin/html+css",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    },
+    {
+      "bench_id": "openZip/zip/evil",
+      "suite": "layers-core",
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "pct": null,
+      "alloc_flag": false,
+      "significant": false
+    }
+  ],
+  "runs": [
+    {
+      "timestamp_utc": "2026-10-13T22:05:51.193Z",
+      "suite": "layers-core",
+      "tag": "micro",
+      "env_key": "9cde50ed",
+      "env": {
+        "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+        "cores": 20,
+        "os": "win32 10.0.26200",
+        "runtime": "node v24.19.0",
+        "gc": "V8",
+        "tool": "vitest-bench/tinybench"
+      },
+      "git_sha": "6c6dbfd9bec267d42865408b5bbf87875edfdc5e",
+      "git_dirty": true,
+      "source": "ingest",
+      "confidence": "high",
+      "baseline": false,
+      "records": [
+        {
+          "bench_id": "parseSheet/plain-admin/materialdesignicons",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 14993344.7761194,
+          "median": null,
+          "stddev": 3113506.9589969274,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 5139442,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 66.6962585688516,
+            "allocBytesPerOp": 5139442
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "parseSheet/ecommerce-jsx/app",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 7720809.999999994,
+          "median": null,
+          "stddev": 1129897.9827619856,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 2954665,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 129.52008921343756,
+            "allocBytesPerOp": 2954665
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "parseSheet/traval/components",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 524836.9359916035,
+          "median": null,
+          "stddev": 81942.93270513782,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 444606,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 1905.3537040236022,
+            "allocBytesPerOp": 444606
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "parseSheet/axai/painel",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1175463.45475912,
+          "median": null,
+          "stddev": 309143.5193704412,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 860607,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 850.7282773881927,
+            "allocBytesPerOp": 860607
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "parseSheet/marketview/inline",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1057353.065539116,
+          "median": null,
+          "stddev": 271674.86713908456,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 908018,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 945.7578859811852,
+            "allocBytesPerOp": 908018
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "scopeAst/plain-admin/materialdesignicons",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 19347511.53846166,
+          "median": null,
+          "stddev": 2960577.854343486,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 6019414,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 51.686233550607355,
+            "allocBytesPerOp": 6019414
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "scopeAst/ecommerce-jsx/app",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 11785012.941176297,
+          "median": null,
+          "stddev": 2593954.7531478535,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 10655434,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 84.85353431442113,
+            "allocBytesPerOp": 10655434
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "scopeAst/traval/components",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 667243.6290860651,
+          "median": null,
+          "stddev": 247319.86211524074,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 498818,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 1498.7029570738905,
+            "allocBytesPerOp": 498818
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "scopeAst/axai/painel",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1219788.4146341183,
+          "median": null,
+          "stddev": 262600.6609484973,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 890007,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 819.8143120583377,
+            "allocBytesPerOp": 890007
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "scopeAst/marketview/inline",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1234308.014796517,
+          "median": null,
+          "stddev": 172554.50474715818,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 1761580,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 810.1705473935984,
+            "allocBytesPerOp": 1761580
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "isUtilitySheet/plain-admin/materialdesignicons",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 15795995.312500168,
+          "median": null,
+          "stddev": 4158391.480667282,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 63.307185157788034
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "isUtilitySheet/ecommerce-jsx/app",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 7450677.037037073,
+          "median": null,
+          "stddev": 352884.2436184586,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 134.2159907118551
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "isUtilitySheet/traval/components",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 557516.1092530537,
+          "median": null,
+          "stddev": 113745.2716286079,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 1793.6701440605464
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "isUtilitySheet/axai/painel",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1072412.1114684006,
+          "median": null,
+          "stddev": 191801.88201742547,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 932.4773464472997
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "isUtilitySheet/marketview/inline",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1037467.0124481448,
+          "median": null,
+          "stddev": 234596.86924647045,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 963.8860686666724
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "buildIndex/traval/4-sheets",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1903438.2129276749,
+          "median": null,
+          "stddev": 398552.6357587473,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 1382094,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 525.3650962811669,
+            "allocBytesPerOp": 1382094
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "varIndex/traval/4-sheets",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 1636937.3158755812,
+          "median": null,
+          "stddev": 306764.2854616065,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 610.8969416859496
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "patchCssAt/ecommerce-jsx/app/color",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 15199496.969696846,
+          "median": null,
+          "stddev": 1118311.3220001978,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 65.79165099961496
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "mapDcTemplate/dc-template/index",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 3621.241793382718,
+          "median": null,
+          "stddev": 7516.692464988867,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": 10897,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 276148.3648585277,
+            "allocBytesPerOp": 10897
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "patchDc/dc-template/one-item",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 11759.311609957836,
+          "median": null,
+          "stddev": 8092.344105132456,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 85038.99149616851
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "deriveManifest/plain-admin/html+css",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": 159962.74792067712,
+          "median": null,
+          "stddev": 29229.958394859583,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {
+            "throughputOpsSec": 6251.455498225645
+          },
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        },
+        {
+          "bench_id": "openZip/zip/evil",
+          "suite": "layers-core",
+          "unit": "ns",
+          "mean": null,
+          "median": null,
+          "stddev": null,
+          "min": null,
+          "max": null,
+          "p95": null,
+          "p99": null,
+          "alloc_bytes": null,
+          "gen0": null,
+          "gen1": null,
+          "gen2": null,
+          "extra": {},
+          "delta": {
+            "verdict": "new",
+            "pct": null,
+            "prev_mean": null,
+            "alloc_flag": false,
+            "significant": false
+          }
+        }
+      ],
+      "run_id": "b1e3720ac5a87afc",
+      "methodology_version": "1",
+      "date": "2026-10-13"
+    }
+  ],
+  "methodology": {
+    "path": "docs/bench-methodology.md",
+    "version": "1"
+  }
+}
