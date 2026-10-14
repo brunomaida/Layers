@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Implementation Report — s2-20-stale-authored-src</title>
+  <style>
+:root {
+  --bg:              #ffffff;
+  --bg-sidebar:      #fafafa;
+  --bg-header:       #ffffff;
+  --bg-footer:       #fafafa;
+  --bg-code:         #f4f4f5;
+  --bg-decision:     #f9f9f9;
+  --border:          #e8e8e8;
+  --border-decision: #d4d4d8;
+  --border-indent:   #e4e4e7;
+  --text:            #1c1c1e;
+  --text-muted:      #71717a;
+  --text-code:       #3f3f46;
+  --accent-active:   #1c1c1e;
+  --accent-active-bg:#f0f0f0;
+  --decision-icon:   #71717a;
+
+  --btn-approve-bg:     #f0fdf4;
+  --btn-approve-border: #bbf7d0;
+  --btn-approve-text:   #15803d;
+  --btn-decline-bg:     #fff1f2;
+  --btn-decline-border: #fecdd3;
+  --btn-decline-text:   #be123c;
+  --btn-revision-bg:    #f4f4f5;
+  --btn-revision-border:#d4d4d8;
+  --btn-revision-text:  #3f3f46;
+
+  --fs-scale:   1;
+  --fs-body:    calc(var(--fs-scale) * 17.5px);
+  --fs-sm:      calc(var(--fs-scale) * 16px);
+  --fs-xs:      calc(var(--fs-scale) * 14px);
+  --fs-code:    calc(var(--fs-scale) * 15.5px);
+  --fs-h2:      calc(var(--fs-scale) * 21px);
+  --fs-h3:      calc(var(--fs-scale) * 17.5px);
+  --fs-h4:      calc(var(--fs-scale) * 16px);
+  --fs-btn:     calc(var(--fs-scale) * 16px);
+  --fs-chip:    calc(var(--fs-scale) * 13.75px);
+  --fs-sidebar: calc(var(--fs-scale) * 16px);
+  --fs-sub-sidebar: calc(var(--fs-scale) * 15.5px);
+  --fs-label:   calc(var(--fs-scale) * 11px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--fs-body);
+  color: var(--text);
+  background: var(--bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  min-height: 52px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 10px 20px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 var(--border);
+}
+.header-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; row-gap: 2px; }
+.header-label {
+  font-weight: 700; font-size: 13px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+}
+.header-sep { color: #d1d5db; font-size: 18px; }
+.header-filename {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  overflow-wrap: anywhere; white-space: normal;
+}
+.header-center { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.chip {
+  font-size: var(--fs-chip); padding: 3px 11px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text-muted); white-space: nowrap;
+}
+.chip-warn { background: #f4f4f5; border-color: #d4d4d8; color: #52525b; }
+
+.body { flex: 1; display: flex; overflow: hidden; }
+
+.sidebar {
+  width: 290px; flex-shrink: 0; background: var(--bg-sidebar);
+  border-right: 1px solid var(--border); display: flex;
+  flex-direction: column; overflow-y: auto;
+}
+.sidebar-title {
+  padding: 16px 18px 8px; font-size: var(--fs-label); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+}
+.tree { padding: 4px 10px 16px; list-style: none; }
+.tree-row { display: flex; align-items: center; }
+.tree-toggle {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 10px; width: 22px; height: 30px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+  border-radius: 4px; transition: background 0.1s; padding: 0;
+}
+.tree-toggle:hover { background: rgba(0,0,0,0.06); }
+.tree-toggle.hidden { visibility: hidden; pointer-events: none; }
+
+.tree-item > .tree-row > a {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px 5px 4px; border-radius: 6px; text-decoration: none;
+  color: var(--text); font-size: var(--fs-sidebar); line-height: 1.3;
+  font-weight: 500; transition: background 0.15s ease, color 0.15s ease;
+}
+.tree-item > .tree-row > a:hover { background: rgba(0,0,0,0.035); }
+.tree-item.active > .tree-row > a {
+  background: var(--accent-active-bg); color: var(--accent-active); font-weight: 600;
+}
+
+.tree-children {
+  list-style: none; padding-left: 0; margin-left: 22px;
+  border-left: 2px solid var(--border-indent); padding-left: 8px;
+  margin-top: 2px; margin-bottom: 4px;
+}
+.tree-children.collapsed { display: none; }
+.tree-children .tree-item > .tree-row > a {
+  font-size: var(--fs-sub-sidebar); color: var(--text-muted); font-weight: 400;
+}
+.tree-children .tree-item.active > .tree-row > a {
+  color: var(--accent-active); background: var(--accent-active-bg); font-weight: 500;
+}
+.tree-num {
+  font-variant-numeric: tabular-nums; color: var(--text-muted);
+  font-size: 0.9em; margin-right: 2px;
+}
+.tree-badge {
+  font-size: 11px; padding: 1px 6px; border-radius: 4px;
+  background: #f4f4f5; color: #71717a;
+  border: 1px solid #d4d4d8; margin-left: auto;
+}
+.sidebar-divider { margin: 8px 18px; border: none; border-top: 1px solid var(--border); }
+.sidebar-legend {
+  padding: 2px 18px 16px; font-size: var(--fs-xs); color: var(--text-muted);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.legend-item { display: flex; align-items: center; gap: 7px; }
+
+.content { flex: 1; overflow-y: auto; min-width: 0; }
+.content-inner { max-width: 1280px; margin: 0 auto; padding: 32px 36px 24px; }
+
+.plan-preamble {
+  font-size: var(--fs-sm); color: var(--text-muted);
+  margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.plan-preamble p { margin: 0 0 8px; }
+.plan-preamble p:last-child { margin-bottom: 0; }
+
+section.top-section { margin-bottom: 44px; scroll-margin-top: 16px; }
+
+.section-heading {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  padding: 10px 14px; background: #f4f4f5; border-radius: 8px;
+}
+.section-heading h2 { font-size: var(--fs-h2); font-weight: 700; margin: 0; flex: 1; }
+.section-heading h3 { font-size: var(--fs-h3); font-weight: 600; margin: 0; flex: 1; }
+.section-num-badge {
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  min-width: 28px; color: #1c1c1e; font-size: 19px; font-weight: 800;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  flex-shrink: 0; margin-right: 4px;
+}
+
+.section-collapse {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 12px; width: 22px; height: 22px; display: flex;
+  align-items: center; justify-content: center; border-radius: 4px;
+  flex-shrink: 0; transition: background 0.1s; padding: 0;
+}
+.section-collapse:hover { background: rgba(0,0,0,0.06); }
+
+.section-body {
+  display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start;
+}
+.section-body.collapsed { display: none; }
+.section-body.no-aside { grid-template-columns: 1fr; }
+.section-main { min-width: 0; }
+
+.section-aside { position: sticky; top: 16px; }
+.aside-label {
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 8px;
+}
+.aside-textarea {
+  width: 100%; min-height: 100px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-sidebar); font-size: var(--fs-sm); font-family: inherit;
+  resize: vertical; color: var(--text); line-height: 1.55;
+  transition: border-color 0.15s, background 0.15s;
+}
+.aside-textarea:focus { outline: none; border-color: #a1a1aa; background: #fff; box-shadow: 0 0 0 3px rgba(161,161,170,0.1); }
+.aside-textarea::placeholder { color: #9ca3af; }
+
+.subsections {
+  margin-top: 8px; margin-left: 20px; padding-left: 24px;
+  border-left: 2px solid var(--border-indent);
+}
+.subsections.collapsed { display: none; }
+
+section.sub-section { margin-bottom: 36px; scroll-margin-top: 16px; }
+section.sub-section .section-heading {
+  background: #fafafa; border: 1px solid var(--border);
+  margin-bottom: 12px; padding: 7px 12px;
+}
+section.sub-section .section-num-badge { font-size: 15px; color: #52525b; min-width: 36px; }
+
+h4 { font-size: var(--fs-h4); font-weight: 600; margin: 16px 0 8px; color: var(--text-muted); }
+p { margin-bottom: 12px; line-height: 1.7; }
+
+code {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: var(--fs-code); background: var(--bg-code);
+  padding: 2px 6px; border-radius: 4px; color: var(--text-code);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 18px; overflow-x: auto;
+  margin: 14px 0; font-size: var(--fs-code);
+}
+pre code { background: none; padding: 0; }
+
+ul, ol { padding-left: 22px; margin-bottom: 12px; }
+li { margin-bottom: 6px; line-height: 1.65; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: var(--fs-sm); table-layout: fixed; }
+th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
+th { background: var(--bg-sidebar); font-weight: 600; }
+tr:nth-child(even) td { background: #fafafa; }
+
+blockquote {
+  border-left: 3px solid var(--border); padding: 4px 14px;
+  color: var(--text-muted); margin: 12px 0; font-style: italic;
+}
+
+strong { font-weight: 600; }
+
+.decision-callout {
+  background: #3f3f46; border: none; border-left: 3px solid #71717a;
+  border-radius: 10px; padding: 16px 18px; margin: 18px 0;
+}
+.decision-header {
+  display: flex; align-items: center; gap: 7px; font-weight: 600;
+  font-size: var(--fs-sm); color: #f4f4f5; margin-bottom: 10px;
+}
+.decision-body {
+  font-size: var(--fs-sm); color: #d4d4d8;
+  margin-bottom: 12px; line-height: 1.65;
+}
+.decision-body ul { padding-left: 20px; }
+.decision-body strong { color: #ffffff; }
+.decision-body code { background: #52525b; color: #f4f4f5; }
+.decision-callout textarea {
+  width: 100%; min-height: 56px; padding: 9px 12px;
+  border: 1px solid #52525b; border-radius: 8px; background: #52525b;
+  font-size: var(--fs-sm); font-family: inherit; resize: vertical;
+  color: #f4f4f5; line-height: 1.55;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.decision-callout textarea:focus {
+  outline: none; border-color: #a1a1aa;
+  box-shadow: 0 0 0 3px rgba(161,161,170,0.2);
+}
+.decision-callout textarea::placeholder { color: #a1a1aa; }
+
+footer {
+  background: var(--bg-footer); border-top: 1px solid var(--border);
+  padding: 18px 28px 20px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.footer-notes-label {
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.footer-notes-textarea {
+  width: 100%; min-height: 80px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: var(--fs-sm); font-family: inherit; color: var(--text);
+  background: var(--bg); resize: vertical; line-height: 1.6;
+}
+.footer-notes-textarea:focus { outline: none; border-color: #a1a1aa; box-shadow: 0 0 0 3px rgba(161,161,170,0.1); transition: border-color 0.15s, box-shadow 0.15s; }
+.footer-actions { display: flex; justify-content: center; gap: 14px; }
+
+button {
+  padding: 0 24px; height: 44px; border: 1px solid transparent;
+  border-radius: 10px; font-size: var(--fs-btn); font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; gap: 7px;
+  transition: background 0.15s ease, border-color 0.15s ease,
+              box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s;
+}
+button:active:not(:disabled) { transform: scale(0.98); }
+button:disabled { opacity: 0.4; cursor: default; }
+
+.btn-approve {
+  background: var(--btn-approve-bg); border-color: var(--btn-approve-border);
+  color: var(--btn-approve-text); min-width: 144px; justify-content: center;
+}
+.btn-approve:hover:not(:disabled) { background: #dcfce7; box-shadow: 0 1px 4px rgba(21,128,61,0.12); }
+.btn-decline {
+  background: var(--btn-decline-bg); border-color: var(--btn-decline-border);
+  color: var(--btn-decline-text); min-width: 144px; justify-content: center;
+}
+.btn-decline:hover:not(:disabled) { background: #ffe4e6; box-shadow: 0 1px 4px rgba(190,18,60,0.12); }
+.btn-revision {
+  background: var(--btn-revision-bg); border-color: var(--btn-revision-border);
+  color: var(--btn-revision-text); min-width: 184px; justify-content: center;
+}
+.btn-revision:hover:not(:disabled) { background: #ececec; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+.decision-banner {
+  display: none; position: fixed; top: 60px; left: 50%;
+  transform: translateX(-50%); color: white; padding: 12px 28px;
+  border-radius: 9px; font-size: var(--fs-sm); font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 200;
+  animation: slideDown 0.2s ease; white-space: nowrap;
+}
+@keyframes slideDown {
+  from { opacity: 0; top: 52px; }
+  to   { opacity: 1; top: 60px; }
+}
+
+.delta-pos { color: #be123c; font-weight: 600; }
+.delta-neg { color: #15803d; font-weight: 600; }
+.delta-zero { color: var(--text-muted); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 3px; transition: background 0.15s; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+.header-right {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0;
+}
+.header-json-name {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px;
+}
+.btn-copy-json {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0 9px; height: 26px; font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-copy-json:hover:not(:disabled) { background: var(--accent-active-bg); color: var(--text); border-color: #a1a1aa; }
+.btn-copy-json.copied { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+
+.mobile-toolbar { display: none; }
+
+@media (max-width: 768px) {
+  /* App-shell (fixed header/toolbar + internal scroll pane) wastes too much
+     of a phone's vertical space when the header wraps to 2-3 rows. Switch to
+     a normal scrolling document so header/toolbar scroll away with content
+     instead of staying pinned. */
+  body { height: auto; overflow: visible; }
+  .body { overflow: visible; }
+  .content { overflow: visible; }
+
+  .sidebar { display: none; }
+  .content-inner { padding: 16px 14px 20px; max-width: 100%; }
+  .section-body, .section-body.no-aside { grid-template-columns: 1fr; gap: 16px; }
+  .section-aside { position: static; }
+  header { grid-template-columns: 1fr; height: auto; row-gap: 6px; padding: 10px 14px; }
+  .header-center { flex-wrap: wrap; justify-content: flex-start; }
+
+  .section-heading {
+    background: none; border-radius: 0; padding: 8px 0; margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  section.sub-section .section-heading {
+    background: none; border: none; padding: 6px 0; margin-bottom: 10px;
+  }
+
+  .mobile-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-bottom: 1px solid var(--border);
+    background: var(--bg-header); flex-shrink: 0;
+  }
+  .mt-group { display: flex; gap: 4px; }
+  .mt-group button {
+    height: 26px; padding: 0 10px; font-size: 12px; min-width: 0;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-muted);
+  }
+  .mt-group button.on { background: var(--accent-active-bg); color: var(--accent-active); font-weight: 600; }
+
+  body.density-compact .content-inner { padding: 10px 12px 16px; }
+  body.density-compact section.top-section { margin-bottom: 26px; }
+  body.density-compact section.sub-section { margin-bottom: 20px; }
+  body.density-compact p { margin-bottom: 8px; line-height: 1.5; }
+  body.density-compact li { margin-bottom: 3px; line-height: 1.45; }
+  body.density-compact .section-heading { padding: 4px 0; margin-bottom: 8px; }
+  body.density-compact th, body.density-compact td { padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="header-label">Implementation Report</span>
+    <span class="header-sep">›</span>
+    <span class="header-filename">s2-20-stale-authored-src</span>
+  </div>
+  <div class="header-center">
+    <span class="chip">2026-10-14</span>
+    <span class="chip">6 sections</span>
+    <span class="chip">5 commits</span>
+    <span class="chip chip-warn">final</span>
+  </div>
+  <div></div>
+</header>
+
+<div class="body">
+
+  <nav class="sidebar">
+    <div class="sidebar-title">Structure</div>
+    <ul class="tree">
+<li class="tree-item" data-section="sec-1" id="tree-sec-1">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-1"><span class="tree-num">1.</span> Resumo</a>
+  </div>
+</li>
+<li class="tree-item" data-section="sec-2" id="tree-sec-2">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-2')">▼</button>
+    <a href="#sec-2"><span class="tree-num">2.</span> Mudanças</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-2-children">
+    <li class="tree-item" data-section="sec-2-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-1"><span class="tree-num">2.1</span> Added (1)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-2-2">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-2"><span class="tree-num">2.2</span> Changed (9)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-2-3">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-3"><span class="tree-num">2.3</span> Changelog fragment</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-3" id="tree-sec-3">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-3')">▼</button>
+    <a href="#sec-3"><span class="tree-num">3.</span> Arquivos tocados</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-3-children">
+    <li class="tree-item" data-section="sec-3-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-1"><span class="tree-num">3.1</span> src (2)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-2">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-2"><span class="tree-num">3.2</span> test (1)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-3">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-3"><span class="tree-num">3.3</span> doc (5)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-4">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-4"><span class="tree-num">3.4</span> config (1)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-5">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-5"><span class="tree-num">3.5</span> other (1)</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-4" id="tree-sec-4">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-4"><span class="tree-num">4.</span> Testes</a>
+  </div>
+</li>
+<li class="tree-item" data-section="sec-5" id="tree-sec-5">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-5')">▼</button>
+    <a href="#sec-5"><span class="tree-num">5.</span> Commits ↔ changelog</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-5-children">
+    <li class="tree-item" data-section="sec-5-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-5-1"><span class="tree-num">5.1</span> Todos os commits</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-6" id="tree-sec-6">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-6"><span class="tree-num">6.</span> Custo (tokens + tempo)</a>
+  </div>
+</li>
+    </ul>
+  </nav>
+
+  <div class="content" id="content">
+    <div class="content-inner">
+<section class="top-section" id="sec-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-1-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">1</span> Resumo</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-1-body">
+    <div class="section-main"><p>A hand-written <code>data-src</code> in the mock always won over the derived one, so a rule that moved in its sheet made the patch target the wrong line (Traval: 31 of 199 nodes). The loader now keeps an authored <code>data-src</code> only while the loaded sheet shows the selector at that line (<code>LayersCore.checkOrigin</code>); otherwise the line is corrected from the AST index when the selector still exists in the same file, or the attribute is dropped and the derived rule applies. Files outside the loaded sheets (<code>.ts</code>) are left as they are. A warning reports how many were corrected and dropped (Traval: 10 and 21).</p></div>
+  </div>
+  
+</section>
+<section class="top-section" id="sec-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-body" data-sub="sec-2-subs" data-tree="sec-2" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">2</span> Mudanças</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-2-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-2-subs"><section class="sub-section" id="sec-2-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.1</span> Added (1)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-1-body">
+    <div class="section-main"><ul><li><code>changelog.d/fix-261013-0-s2-20-stale-authored-src.md</code> (+13/-0, doc)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-2-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-2-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.2</span> Changed (9)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-2-body">
+    <div class="section-main"><ul><li><code>docs/ARCHITECTURE.md</code> (+1/-1, doc)</li><li><code>docs/RELEASE-CHECKLIST.md</code> (+2/-2, doc)</li><li><code>docs/roadmap.data.json</code> (+4/-4, doc)</li><li><code>docs/roadmap.md</code> (+1/-1, doc)</li><li><code>e2e/__snapshots__/tree.json</code> (+1/-1, config)</li><li><code>e2e/origin-sample.spec.js</code> (+3/-4, src)</li><li><code>index.html</code> (+11/-0, other)</li><li><code>lib/layers-core.js</code> (+23/-0, src)</li><li><code>test/layers-core.test.js</code> (+57/-0, test)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-2-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-3-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.3</span> Changelog fragment</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-3-body">
+    <div class="section-main"><p><strong>Fixed:</strong></p>
+<ul><li>A hand-written <code>data-src</code> in the mock always won over the derived one, so a rule that moved in its sheet made the patch target the wrong line (Traval: 31 of 199 nodes). The loader now keeps an authored <code>data-src</code> only while the loaded sheet shows the selector at that line (<code>LayersCore.checkOrigin</code>); otherwise the line is corrected from the AST index when the selector still exists in the same file, or the attribute is dropped and the derived rule applies. Files outside the loaded sheets (<code>.ts</code>) are left as they are. A warning reports how many were corrected and dropped (Traval: 10 and 21).</li></ul>
+<p><strong>Changed:</strong></p>
+<ul><li><code>e2e/origin-sample.spec.js</code> now fails on a stale authored <code>data-src</code>; the Traval tree snapshot drops from 199 to 178 nodes with <code>src</code>.</li></ul>
+<p><strong>Perf:</strong></p>
+<ul><li>N/A — one pass over the nodes that carry a <code>data-src</code> at load; sheet text is already in memory.</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-body" data-sub="sec-3-subs" data-tree="sec-3" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">3</span> Arquivos tocados</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-3-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-3-subs"><section class="sub-section" id="sec-3-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.1</span> src (2)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-1-body">
+    <div class="section-main"><ul><li><a href="../../../e2e/origin-sample.spec.js"><code>e2e/origin-sample.spec.js</code></a> — M (+3/-4)</li><li><a href="../../../lib/layers-core.js"><code>lib/layers-core.js</code></a> — M (+23/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-2-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.2</span> test (1)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-2-body">
+    <div class="section-main"><ul><li><a href="../../../test/layers-core.test.js"><code>test/layers-core.test.js</code></a> — M (+57/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-3-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.3</span> doc (5)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-3-body">
+    <div class="section-main"><ul><li><a href="../../../changelog.d/fix-261013-0-s2-20-stale-authored-src.md"><code>changelog.d/fix-261013-0-s2-20-stale-authored-src.md</code></a> — A (+13/-0)</li><li><a href="../../ARCHITECTURE.md"><code>docs/ARCHITECTURE.md</code></a> — M (+1/-1)</li><li><a href="../../RELEASE-CHECKLIST.md"><code>docs/RELEASE-CHECKLIST.md</code></a> — M (+2/-2)</li><li><a href="../../roadmap.data.json"><code>docs/roadmap.data.json</code></a> — M (+4/-4)</li><li><a href="../../roadmap.md"><code>docs/roadmap.md</code></a> — M (+1/-1)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-4">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-4-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.4</span> config (1)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-4-body">
+    <div class="section-main"><ul><li><a href="../../../e2e/__snapshots__/tree.json"><code>e2e/__snapshots__/tree.json</code></a> — M (+1/-1)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-5">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-5-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.5</span> other (1)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-5-body">
+    <div class="section-main"><ul><li><a href="../../../index.html"><code>index.html</code></a> — M (+11/-0)</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-4">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">4</span> Testes</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-4-body">
+    <div class="section-main"><ul><li><strong>Atributos <code>[Fact]</code>/<code>[Theory]</code> em arquivos de teste tocados:</strong> 0</li></ul>
+<p><strong>Arquivos:</strong></p>
+<ul><li><a href="../../../test/layers-core.test.js"><code>test/layers-core.test.js</code></a></li></ul></div>
+  </div>
+  
+</section>
+<section class="top-section" id="sec-5">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-5-body" data-sub="sec-5-subs" data-tree="sec-5" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">5</span> Commits ↔ changelog</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-5-body">
+    <div class="section-main"><ul><li><strong>Fixed:</strong> A hand-written <code>data-src</code> in the mock always won over the derived one, so a rule that moved in its sheet made the patch target the wrong line (Traval: 31 of 199 nodes). The loader now keeps an authored <code>data-src</code> only while the loaded sheet shows the selector at that line (<code>LayersCore.checkOrigin</code>); otherwise the line is corrected from the AST index when the selector still exists in the same file, or the attribute is dropped and the derived rule applies. Files outside the loaded sheets (<code>.ts</code>) are left as they are. A warning reports how many were corrected and dropped (Traval: 10 and 21).</li><li><a href="https://github.com/brunomaida/Layers/commit/581559206041f918bbb416d8c2d907b49c36b9cd"><code>5815592</code></a> feat(core): checkOrigin validates an authored data-src against the loaded sheet (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/02505a397bd7b506cc5c7ceef95ed4a59e0af58b"><code>02505a3</code></a> fix(loader): correct or drop a stale authored data-src before deriving origins (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/f5e2aec7c801c207b85d5a2288f6339c28864217"><code>f5e2aec</code></a> test(e2e): fail on stale authored data-src, refresh Traval tree snapshot (S2.20)</li><li><strong>Changed:</strong> <code>e2e/origin-sample.spec.js</code> now fails on a stale authored <code>data-src</code>; the Traval tree snapshot drops from 199 to 178 nodes with <code>src</code>.</li><li><a href="https://github.com/brunomaida/Layers/commit/581559206041f918bbb416d8c2d907b49c36b9cd"><code>5815592</code></a> feat(core): checkOrigin validates an authored data-src against the loaded sheet (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/02505a397bd7b506cc5c7ceef95ed4a59e0af58b"><code>02505a3</code></a> fix(loader): correct or drop a stale authored data-src before deriving origins (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/f5e2aec7c801c207b85d5a2288f6339c28864217"><code>f5e2aec</code></a> test(e2e): fail on stale authored data-src, refresh Traval tree snapshot (S2.20)</li><li><strong>Perf:</strong> N/A — one pass over the nodes that carry a <code>data-src</code> at load; sheet text is already in memory.</li><li><a href="https://github.com/brunomaida/Layers/commit/581559206041f918bbb416d8c2d907b49c36b9cd"><code>5815592</code></a> feat(core): checkOrigin validates an authored data-src against the loaded sheet (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/02505a397bd7b506cc5c7ceef95ed4a59e0af58b"><code>02505a3</code></a> fix(loader): correct or drop a stale authored data-src before deriving origins (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/f5e2aec7c801c207b85d5a2288f6339c28864217"><code>f5e2aec</code></a> test(e2e): fail on stale authored data-src, refresh Traval tree snapshot (S2.20)</li></ul></div>
+  </div>
+  <div class="subsections" id="sec-5-subs"><section class="sub-section" id="sec-5-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-5-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">5.1</span> Todos os commits</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-5-1-body">
+    <div class="section-main"><ul><li><a href="https://github.com/brunomaida/Layers/commit/75db3f91a36a46e428a7ff5e7224500a87695ba8"><code>75db3f9</code></a> docs(roadmap): mark S2.20 in-progress (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/581559206041f918bbb416d8c2d907b49c36b9cd"><code>5815592</code></a> feat(core): checkOrigin validates an authored data-src against the loaded sheet (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/02505a397bd7b506cc5c7ceef95ed4a59e0af58b"><code>02505a3</code></a> fix(loader): correct or drop a stale authored data-src before deriving origins (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/f5e2aec7c801c207b85d5a2288f6339c28864217"><code>f5e2aec</code></a> test(e2e): fail on stale authored data-src, refresh Traval tree snapshot (S2.20)</li><li><a href="https://github.com/brunomaida/Layers/commit/636b72b8de238369eca5648b7496c78c8f1027c7"><code>636b72b</code></a> docs: close S2.20 with changelog fragment, checklist and architecture note (S2.20)</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-6">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-6-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">6</span> Custo (tokens + tempo)</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-6-body">
+    <div class="section-main"><table><thead><tr><th>Sessão</th><th>Início</th><th>Duração</th><th>Input</th><th>Output</th><th>Cache read</th><th>Cache create</th></tr></thead><tbody><tr><td><code>5b54a0ee</code></td><td>2026-10-13 21:25</td><td>56.5m</td><td>560</td><td>221.2k</td><td>55.37M</td><td>546.7k</td></tr><tr><td><strong>Total (1)</strong></td><td>—</td><td><strong>56.5m</strong></td><td><strong>560</strong></td><td><strong>221.2k</strong></td><td><strong>55.37M</strong></td><td><strong>546.7k</strong></td></tr></tbody></table></div>
+  </div>
+  
+</section>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSection(btn) {
+  const body = document.getElementById(btn.dataset.body);
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶' : '▼';
+
+  if (btn.dataset.sub) {
+    const sub = document.getElementById(btn.dataset.sub);
+    if (sub) sub.classList.toggle('collapsed', collapsed);
+  }
+
+  if (btn.dataset.tree) {
+    const treeChildren = document.getElementById('tree-' + btn.dataset.tree + '-children');
+    const treeToggle   = document.querySelector('#tree-' + btn.dataset.tree + ' .tree-row .tree-toggle:not(.hidden)');
+    if (treeChildren) treeChildren.classList.toggle('collapsed', collapsed);
+    if (treeToggle)   treeToggle.textContent = collapsed ? '▶' : '▼';
+  }
+}
+
+function syncTree(sectionId) {
+  const treeChildren = document.getElementById('tree-' + sectionId + '-children');
+  const treeToggle   = document.querySelector('#tree-' + sectionId + ' .tree-row .tree-toggle:not(.hidden)');
+  if (!treeChildren || !treeToggle) return;
+  const collapsed = treeChildren.classList.toggle('collapsed');
+  treeToggle.textContent = collapsed ? '▶' : '▼';
+  const subEl   = document.getElementById(sectionId + '-subs');
+  const bodyBtn = document.querySelector('[data-tree="' + sectionId + '"]');
+  if (subEl)   subEl.classList.toggle('collapsed', collapsed);
+  if (bodyBtn) bodyBtn.textContent = collapsed ? '▶' : '▼';
+}
+
+const __activeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
+      const match = document.querySelector('.tree-item[data-section="' + id + '"]');
+      if (match) {
+        match.classList.add('active');
+        match.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  });
+}, { rootMargin: '-15% 0px -65% 0px', threshold: 0 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('section[id]').forEach(s => __activeObserver.observe(s));
+});
+</script>
+</body>
+</html>

@@ -1066,3 +1066,60 @@ describe('LineDiff', () => {
     expect(d[1]).toEqual({ no: '2', text: 'b', kind: '-' });
   });
 });
+
+describe('CheckOrigin', () => {
+  const css = [
+    '.a {',
+    '  color: red;',
+    '}',
+    '',
+    '.h2,',
+    '.h3,',
+    '.h4 {',
+    '  margin: 0;',
+    '}',
+    '.card-title { color: blue; }',
+  ].join('\n');
+  const files = { 'a.css': css, 'page.html': '<style>\n.in { x: 1 }\n</style>' };
+
+  it('SelectorNaLinha_Ok', () => {
+    expect(core.checkOrigin('a.css|.a|1', files, ['a'], '')).toBe('ok');
+  });
+
+  it('ListaDeSeletoresComecandoAntes_Ok', () => {
+    expect(core.checkOrigin('a.css|.h4|5', files, ['h4'], '')).toBe('ok');
+  });
+
+  it('LinhaDeOutraRegra_Stale', () => {
+    expect(core.checkOrigin('a.css|.a|5', files, ['a'], '')).toBe('stale');
+  });
+
+  it('LinhaForaDoArquivo_Stale', () => {
+    expect(core.checkOrigin('a.css|.a|99', files, ['a'], '')).toBe('stale');
+  });
+
+  it('PrefixoDeOutraClasse_Stale', () => {
+    expect(core.checkOrigin('a.css|.card|10', files, ['card'], '')).toBe('stale');
+  });
+
+  it('ClasseDoNoNaLinha_Ok', () => {
+    expect(core.checkOrigin('a.css|.old-name|1', files, ['a'], '')).toBe('ok');
+  });
+
+  it('ArquivoNaoCarregado_External', () => {
+    expect(core.checkOrigin('src/ui/shell.ts|.shell|3', files, ['shell'], '')).toBe('external');
+  });
+
+  it('StyleEmbutidoNoHtml_UsaLinhaAbsoluta', () => {
+    expect(core.checkOrigin('page.html|.in|2', files, ['in'], '')).toBe('ok');
+    expect(core.checkOrigin('page.html|.in|3', files, ['in'], '')).toBe('stale');
+  });
+
+  it('TemplateDc_Ok', () => {
+    expect(core.checkOrigin('index.html|tpl:3|7', { 'index.html': 'x' }, [], '')).toBe('ok');
+  });
+
+  it('SemFormatoArquivoSeletorLinha_Ok', () => {
+    expect(core.checkOrigin('qualquer coisa', files, [], '')).toBe('ok');
+  });
+});

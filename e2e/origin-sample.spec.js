@@ -5,7 +5,8 @@ import { readNodes } from './tree-helpers.js';
 
 // S5.3: for up to 30 nodes sampled per fixture (evenly spaced, DOM order, only nodes that carry a
 // `data-src`), the `file|selector|line` origin must resolve to a real file in the fixture and the
-// line must show the selector (or, for selector lists, a class the node carries).
+// line must show the selector (or, for selector lists, a class the node carries). An authored
+// `data-src` that went stale is corrected or dropped by the loader (S2.20), so none may remain.
 const ROOT = path.resolve('fixtures');
 const SAMPLE = Number(process.env.ORIGIN_SAMPLE) || 30;
 const FIXTURES = [
@@ -93,9 +94,7 @@ for (const name of FIXTURES) {
       if (why) derivedBad.push(`${e.src}  (${why})`);
     }
     info.annotations.push({ type: 'origin-sample', description: `${picked.length} sampled: ${derived} derived, ${authored} authored (${unverifiable} unverifiable), ${external} explicit` });
-    if (authoredBad.length) {
-      info.annotations.push({ type: 'stale-authored-data-src', description: `${authoredBad.length} of ${picked.length}: ${authoredBad.slice(0, 3).join('; ')}` });
-    }
+    expect(authoredBad, `${name}: authored data-src that no longer matches its sheet`).toEqual([]);
     expect(derivedBad, `${name}: derived origins that do not resolve (${derived} derived of ${picked.length})`).toEqual([]);
   });
 }
