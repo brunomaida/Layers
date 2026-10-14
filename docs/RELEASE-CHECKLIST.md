@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 30 concluídos, 3 parciais, 14 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 31 concluídos, 3 parciais, 13 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -23,7 +23,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 30 concluídos
 - [x] Resolução de origem (arquivo/linha) a partir das folhas carregadas, sem depender de `data-src` autoral. Índice por AST (`css-tree`), cobrindo `@media`, `@layer`, nesting e `<style>` embutido no HTML (linha absoluta do arquivo).
 - [x] Estados vazios/erro: o painel do palco diz **por que** está vazio — pasta sem `layers.json`, `layers.json` presente mas com JSON inválido (estado distinto de "ausente" desde a auto-criação, ver item abaixo), `mock` não encontrado, `<body>` do mock vazio, mock que rende só a raiz (shell de app → aponta `tools/layers-snapshot.js`) e navegador sem FS Access. Folha de `styles` ausente não esvazia: carrega e avisa.
 - [x] Pasta local sem `layers.json`: auto-criação de um manifesto mínimo (`LayersCore.deriveManifest`, heurística portada de `tools/layers-derive.js`) quando a conexão veio de um clique (`useDir(dir, true)`); reconexão sem gesto (`restoreSession`) nunca escreve sozinha — cai no mesmo painel com um botão "Criar layers.json" para o mesmo processo sob clique explícito. `layers.json` existente nunca é sobrescrito (recheque de existência imediatamente antes da gravação).
-- [ ] Avisar quando um seletor de `interactions` não resolve no mock. Medido no spike da fatia 5: 7 das 8 entradas do Traval apontam para classes que o mock autoral não tem (foram escritas contra o app real), e o menu ⚡ Interagir lista sete ações sem efeito. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §5.
+- [x] Avisar quando um seletor de `interactions` não resolve no mock (`LayersCore.deadInteractions`): a carga acrescenta um aviso com os três primeiros e a superfície sem alvo ganha o rótulo "sem alvo" no menu ⚡ Interagir; `e2e/dead-interactions.spec.js`. Medido no spike da fatia 5: 7 das 8 entradas do Traval apontam para classes que o mock autoral não tem (foram escritas contra o app real), e o menu ⚡ Interagir lista sete ações sem efeito. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §5.
 - [ ] Undo/redo global (câmera fora; ajustes de propriedade e código dentro).
 - [ ] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir). A fatia 4 persistiu interface, histórico e sessão (`layers/v1/*`); ajuste pendente continua só em memória, de propósito — gravar edição não aplicada precisa de decisão própria.
 - [~] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Falta marcar TS/JS explicitamente como "manual" na interface.

@@ -89,6 +89,8 @@ Cada item é uma linha da coluna esquerda do menu ⚡ Interagir; `groups[].items
 
 Toda ação re-escaneia o mock.
 
+Seletor que não casa nada no mock (`show`, `toggle`, `hide`, `on`, `click`, `class`) é avisado na carga e a superfície sem alvo aparece como "sem alvo" no menu. Elementos ocultos contam como alvo; só o seletor sem nenhum elemento (ou inválido) é morto.
+
 ## Snapshot de apps renderizados por JS
 
 Apps que montam o DOM em runtime (React/Babel, TS via Vite) não têm HTML estático. Use `tools/layers-snapshot.js` no console do app rodando: baixa `mock.html` com o `<body>` atual + todo o CSS carregado inline, e sugere o `viewport`. Repita quando a UI mudar.
