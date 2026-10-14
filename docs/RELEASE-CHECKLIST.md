@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 26 concluídos, 3 parciais, 18 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 27 concluídos, 3 parciais, 17 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -57,7 +57,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [ ] Origem: para 30 nós amostrados por fixture, `src` aponta para arquivo/linha que contém o seletor.
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
 - [ ] Escopo "todos iguais": afeta todos os usos e nenhum outro.
-- [ ] `lineDiff`: contexto de 3 linhas, sem alterações, arquivo novo.
+- [x] `lineDiff` (`LayersCore.lineDiff`): contexto de 3 linhas, sem alterações, arquivo novo — 6 casos em `test/layers-core.test.js`.
 - [ ] E2E (Playwright; infra e specs de performance prontos em `e2e/`, faltam os specs funcionais): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.
 - [ ] Compatibilidade: Chrome/Edge completos; Firefox/Safari em somente leitura com mensagem.
 
