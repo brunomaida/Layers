@@ -25,6 +25,7 @@ Ajustes pendentes sobrevivem a um reload ou à reabertura do projeto. Ao reabrir
 - Botão, menu ou painel novos: o visual está congelado (CLAUDE.md). A única saída visível é o toast existente.
 - Validar ou salvar parcialmente: a unidade de restauração é a entrada inteira do projeto.
 - Exportar/importar ajustes no `layers-config.json`.
+- Defeitos que já existem e não mudam aqui: `approve` limpa `changes` mesmo quando um arquivo falha ou é pulado; `openDemo` não zera `this.zip`/`this.repo`; `revert`, `cancelAll` e undo usam `this.els`, que não contém nó de tamanho zero (desfazer um `display:none` não restaura o DOM).
 
 ## Design
 
@@ -51,8 +52,8 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 
 | Campo | Regra |
 |---|---|
-| `<chave>` | calculada uma vez no início síncrono de `loadProject`, na ordem de `readBytes`: pasta ou `.zip` ou repositório → `projectId` (`folder:`, `zip:`, `repo:`); senão `fx:` + `fixtureBase` sem barra final. Demo, `?layers=` e `?project=` caem em `fx:`. Guardada em `this.pendingKey` e usada em toda gravação: nunca se lê `projectId` na hora de escrever |
-| `hash` | `LayersCore.sourceHash` sobre `[mockPath, html, …(arquivo, texto) de cada .css, dcFile, dcText]`, texto cru como lido |
+| `<chave>` | calculada uma vez no início síncrono de `loadProject`, espelhando a origem que `readBytes` realmente lê: `state.dir`, `this.zip` ou `this.repo` → `projectId` (`folder:`, `zip:`, `repo:`); senão `fx:` + `fixtureBase` sem barra final (demo, `?layers=`, `?project=`). Guardada em `this.pendingKey` e usada em toda gravação: nunca se lê `projectId` na hora de escrever |
+| `hash` | `LayersCore.sourceHash` sobre `[JSON.stringify(man), mockPath, html, …(arquivo, texto) de cada .css, dcFile, dcText]`. `man` entra porque `rules`, `root.src` e `viewport` mudam `data-src` (portanto `c.src`, que o "Aplicar" usa para escolher arquivo e seletor) e o tamanho dos nós |
 | `changes` | o registro completo de cada change; só valores CSS e metadados, nunca conteúdo de arquivo (regra de [ARCHITECTURE § Persistência](../../ARCHITECTURE.md)) |
 | teto | 200 changes: acima disso a entrada é removida e um toast `warn` avisa que o ajuste não será restaurado |
 | expiração | entradas com `savedAt` de mais de 30 dias são removidas na escrita |
@@ -63,10 +64,11 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 |---|---|---|
 | `LayersCore.sourceHash(parts)` | Pura, síncrona. Hash não criptográfico (FNV-1a 53 bits) sobre a lista de strings, com separador entre elas. | `lib/layers-core.js` |
 | `LayersCore.restorePlan(entry, hash)` | Pura. `entry` nulo → `{ keep: [], dropped: 0 }`; `entry.hash === hash` → `{ keep: changes com decided:true, dropped: 0 }`; senão `{ keep: [], dropped: changes.length }`. | `lib/layers-core.js` |
-| `LayersCore.getPending(storage, chave)` | Lê e sanitiza a entrada (tipos, `schema`); lixo vira `null`. | `lib/layers-core.js` |
+| `LayersCore.getPending(storage, chave)` | Lê e sanitiza a entrada: `schema`, `hash` string, e em cada change `key`/`id`/`prop`/`to` strings, `ids` array de strings, `fromInline` objeto, `prop !== 'cssText'`. Qualquer violação devolve `null` (entrada inteira): um registro malformado nunca chega a `cloneChanges`. | `lib/layers-core.js` |
 | `LayersCore.setPending(storage, chave, entry, now)` | Lê a chave, troca ou remove a entrada (`entry === null` remove), aplica teto e expiração, grava. | `lib/layers-core.js` |
 | `elAtPath(id)` | Desce `this.mockRoot.children` pelo caminho `0.i.j…`. Não usa `this.els`: nó de tamanho zero (`display:none`, `width:0`) fica fora de `els` mas o caminho segue válido. | `index.html`, junto de `scan` |
-| `restorePending(entry, hash)` | Aplica `restorePlan`: para cada change, em ordem, `elAtPath(i).style[prop] = c.to` por id; devolve `{ changes, dropped }`. Roda em `loadProject` antes do `setState`. | `index.html`, junto de `loadProject` |
+| `restorePending(entry, hash)` | Aplica `restorePlan`: para cada change, em ordem, `elAtPath(i).style[prop] = c.to` por id; devolve `{ changes, dropped }`. Roda em `loadProject` antes do `setState`, só na carga vencedora (depois do guard `seq !== this.loadSeq` de `index.html:1253`). | `index.html`, junto de `loadProject` |
+| `refreshPendingHash()` | Assíncrona. Relê as mesmas fontes da lista do hash e atualiza `this.pendingHash`, marcando `pendingDirty`. Chamada depois de `approve` e `rollback` que gravaram arquivo, porque eles reescrevem os `.css` sem recarregar o projeto. | `index.html`, junto de `approve` |
 
 `scan()` já roda no callback do `setState` de `loadProject` (`index.html:1257`), depois do DOM reestilizado: os nós refletem os valores restaurados sem `scanSoon()` extra.
 
@@ -75,11 +77,13 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 | Evento | Efeito na entrada do projeto |
 |---|---|
 | `loadProject` (1ª instrução, antes de qualquer `await`) | `writeConfig()` drena a rajada pendente na chave antiga; depois `pendingReady = false` e `this.pendingKey` recalculada |
-| `loadProject`, após ler as fontes | `restorePending` + `setState({ changes })` no lugar do `changes: []`; `pendingReady = true`; só então vale `seq === this.loadSeq` (outra carga concorrente vence e a restauração desta é descartada) |
+| `loadProject`, após ler as fontes e passar o guard `seq !== this.loadSeq` | Só na carga vencedora: `this.pendingHash = hash`; `restorePending`; `setState({ changes, pending: null, … })` no lugar de `changes: []`; semeia `pendingSig` com a assinatura da entrada lida (ou vazia se `null`) e `pendingDirty = false`; por fim `pendingReady = true`. Carga perdedora nunca liga `pendingReady` |
+| `loadProject` com fonte que falhou na leitura (`warn` de `css não encontrado` ou `dcSource não lido`) | O hash não é confiável: nada é restaurado, `pendingReady` fica falso nesta sessão e a entrada permanece; toast `warn` informa que os ajustes salvos foram mantidos |
 | edição (`applyEdit`, `applyCodeText`, `revert`, undo/redo) | `state.changes` troca de identidade → `persistSoon()` → entrada reescrita com o `hash` corrente |
 | `approve` / `cancelAll` | `changes` vira `[]` → entrada removida |
-| `doReload` após confirmar "recarregar descarta todas" | `setPending(…, null)` **antes** de `loadProject`, senão a restauração ressuscitaria o que o usuário descartou |
-| `resetUI` | remove a entrada do projeto atual: é um "zerar tudo" explícito |
+| `doReload` após confirmar "recarregar descarta todas" | `pendingReady = false`, `pendingDirty = false` e só então `setPending(this.pendingKey, null)`, antes de `loadProject`: sem isso o drain do início de `loadProject` regravaria a edição ainda no trailing de 400 ms e a restauração a ressuscitaria |
+| `approve` / `rollback` com arquivo gravado | `refreshPendingHash()`: o hash da sessão passa a descrever os arquivos recém-gravados, senão toda edição seguinte seria descartada no próximo reload |
+| `resetUI` | remove a entrada do projeto atual, mas só se `pendingReady` for verdadeiro (durante uma carga em andamento `pendingKey` já aponta para outro projeto) |
 | `unloadProject(why)` por erro de carga | `pendingReady` fica falso; a entrada permanece (projeto que falhou ao abrir não perde ajustes) |
 | `pagehide` | o `writeConfig` existente drena a escrita, mas só grava a entrada se o trecho pendente estiver sujo (`pendingDirty`) |
 
@@ -92,7 +96,9 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 - `localStorage` indisponível ou cheio: `setJson` já devolve `false` e a store cai no `memStore`; o ajuste não sobrevive, sem erro visível.
 - JSON corrompido ou `schema` desconhecido: `getPending` devolve `null`; a próxima escrita sobrescreve.
 - Hash diferente: toast `warn` com a contagem descartada; a entrada é removida pela assinatura (`changes` vazio, `dirty`).
-- Restaurar mid-pergunta de escopo: o change volta `decided: true`, `scope: 'one'` com os ids que tinha, o mesmo efeito do Escape em `decide(false)`.
+- Restaurar mid-pergunta de escopo: o change volta `decided: true`, `scope: 'one'` com os ids que tinha, o mesmo efeito do Escape em `decide(false)`. `loadProject` zera `state.pending` para que uma pergunta aberta não atravesse a troca de projeto.
+- Leitura transitória falha (css 404 em repositório, rede): o hash mudaria sem que a fonte tenha mudado; por isso a entrada é preservada e a sessão não grava (ver ciclo de vida).
+- Depois de "Aplicar", ajustes feitos no mesmo projeto têm `fromInline` capturado do DOM que ainda carrega o valor aprovado inline; no reload o DOM novo traz o valor pelo `.css`. Reverter esse ajuste restaura o valor aprovado, não o `''` anterior ao "Aplicar". Efeito visual idêntico.
 - Troca de projeto menos de 400 ms depois de editar: o `writeConfig()` do início de `loadProject` grava a última edição na chave antiga antes de recalcular a chave.
 - Duas abas no mesmo projeto: o último a gravar vence, mas só aba com `pendingDirty` grava. Aprovar na aba A remove a entrada; a aba B só a regrava se tiver editado depois, caso em que os ajustes dela voltam como pendentes na próxima abertura.
 - Duas pastas com o mesmo nome (cópia, worktree) compartilham `folder:<nome>`; com fontes idênticas o hash casa e os ajustes de uma aparecem na outra. Risco aceito: o toast do loader já nomeia o projeto.
@@ -103,8 +109,8 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 
 | Nível | Caso | Gate |
 |---|---|---|
-| Vitest (`test/layers-core.test.js`) | `SourceHash_MesmasPartes_MesmoHash`, `SourceHash_PartesTrocadasDeFronteira_HashDiferente`, `RestorePlan_HashIgual_RestauraTudoDecidedTrue`, `RestorePlan_HashDiferente_DescartaTudo`, `RestorePlan_EntryNula_VazioSemDescarte`, `SetPending_AcimaDoTeto_RemoveEntrada`, `SetPending_Expirada_Remove`, `SetPending_EntryNull_RemoveSoDoProjeto`, `GetPending_JsonCorrompido_DevolveNull` | commit |
-| E2E Playwright (`e2e/pending-persist.spec.js`, fixture traval) | editar uma propriedade → recarregar → ajuste de volta com toast; editar o `.css` da fixture (mudar uma linha dentro de uma regra `data-src`) e reabrir → descartado com toast `warn`; editar e trocar de projeto em menos de 400 ms preserva a edição; demo seguido de pasta grava na chave `folder:`; `cancelAll` e "Aplicar" limpam a entrada; "R" com confirmação não ressuscita; carga que falha mantém a entrada; aba ociosa não apaga a entrada; ajuste `display:none` sobrevive; restaurar não cria passo de undo; toast do loader com aviso continua visível junto da contagem | manual |
+| Vitest (`test/layers-core.test.js`) | `SourceHash_MesmasPartes_MesmoHash`, `SourceHash_PartesTrocadasDeFronteira_HashDiferente`, `RestorePlan_HashIgual_RestauraTudoDecidedTrue`, `RestorePlan_HashDiferente_DescartaTudo`, `RestorePlan_EntryNula_VazioSemDescarte`, `SetPending_AcimaDoTeto_RemoveEntrada`, `SetPending_Expirada_Remove`, `SetPending_EntryNull_RemoveSoDoProjeto`, `SetPending_OutraChave_Preserva`, `GetPending_JsonCorrompido_DevolveNull`, `GetPending_ChangeSemIds_DevolveNull`, `GetPending_PropCssText_DevolveNull`, `SourceHash_DcNuloVsVazio_HashDiferente`, `SourceHash_ManMudou_HashDiferente`, `RestorePlan_HashIgual_PreservaOrdem` | commit |
+| E2E Playwright (`e2e/pending-persist.spec.js`, fixture traval) | editar uma propriedade → recarregar → ajuste de volta com toast; editar o `.css` da fixture (mudar uma linha dentro de uma regra `data-src`) e reabrir → descartado com toast `warn`, e um segundo reload não repete o toast; editar só `rules` no `layers.json` e reabrir → descartado; editar e trocar de projeto em menos de 400 ms preserva a edição; demo seguido de pasta grava na chave `folder:`; `cancelAll` e "Aplicar" limpam a entrada; "Aplicar", editar de novo e recarregar → restaurado; "R" com confirmação em menos de 400 ms da edição não ressuscita; carga que falha mantém a entrada; duas cargas concorrentes A→B não gravam na chave uma da outra; aba ociosa não apaga a entrada; ajuste `display:none` sobrevive ao reload (só a restauração, sem testar revert); restaurar não cria passo de undo; toast do loader com aviso continua visível junto da contagem | manual |
 
 ## Docs a atualizar
 
