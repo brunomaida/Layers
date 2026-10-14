@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 75,
+    "progress": 78,
     "docs": [],
     "children": [
       {
@@ -455,12 +455,12 @@
         "name": "Undo/redo global",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist B",
         "is_branch": false,
