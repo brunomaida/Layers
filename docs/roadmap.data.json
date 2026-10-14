@@ -1022,7 +1022,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 71,
+    "progress": 80,
     "docs": [],
     "children": [
       {
@@ -1170,12 +1170,12 @@
         "name": "E2E Playwright funcional",
         "start": "2026-10-15",
         "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist E; infra nasce em S4.4",
         "is_branch": false,
