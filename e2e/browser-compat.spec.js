@@ -1,4 +1,5 @@
 import fs from 'node:fs';
+import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { readNodes, readTree } from './tree-helpers.js';
 import { selectLayer } from './folder-helpers.js';
@@ -178,4 +179,36 @@ test('Compat_FsAccess_FixtureDraftAsksToConnectFolder', async ({ page }) => {
   await editCard(page);
   await draftAndExport(page);
   await expect(page.getByText(HINT_FS, { exact: false })).toBeVisible();
+});
+
+// serves github.com/acme/demo from a fixture: API for default_branch, raw for the files
+async function mockRepo(page, fixture) {
+  const root = path.resolve('fixtures', fixture);
+  const cors = { 'access-control-allow-origin': '*' };
+  await page.route('https://api.github.com/repos/acme/demo', (r) => r.fulfill({ json: { default_branch: 'main' }, headers: cors }));
+  await page.route('https://raw.githubusercontent.com/acme/demo/main/**', (r) => {
+    const rel = decodeURIComponent(new URL(r.request().url()).pathname.replace('/acme/demo/main/', ''));
+    const abs = path.join(root, rel);
+    const ok = abs.startsWith(root + path.sep) && fs.existsSync(abs);
+    return r.fulfill({ status: ok ? 200 : 404, body: ok ? fs.readFileSync(abs) : '', headers: cors });
+  });
+}
+
+test('Compat_GithubRepoMocked_LoadsReadOnlyAndRefusesWrite', async ({ page }) => {
+  const seen = await guardEgress(page);
+  await mockRepo(page, 'plain-css');
+  await page.goto('/');
+  await openProjects(page, /Registrar repositório GitHub/);
+  await page.getByPlaceholder('github.com/usuario/repo').fill('github.com/acme/demo');
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('Repositório acme/demo registrado.')).toBeVisible();
+  // the Projetos menu is still open after addRepo; exact text skips the toast that also says acme/demo
+  await page.getByText('acme/demo', { exact: true }).first().click();
+  await page.getByRole('button', { name: 'Carregar' }).click();
+  await editCard(page, null);
+  await draftAndExport(page);
+  await expect(page.getByText('Projeto carregado de um repositório remoto, que é somente leitura.', { exact: false })).toBeVisible();
+  const hosts = new Set(seen.filter((u) => /^https?:/.test(u)).map((u) => new URL(u).host));
+  hosts.delete('localhost:5180');
+  expect([...hosts].sort(), 'only the two mocked GitHub hosts').toEqual(['api.github.com', 'raw.githubusercontent.com']);
 });
