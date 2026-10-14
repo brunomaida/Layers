@@ -62,7 +62,7 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 
 | Unidade | Responsabilidade | Onde |
 |---|---|---|
-| `LayersCore.sourceHash(parts)` | Pura, síncrona. Hash não criptográfico (FNV-1a 53 bits) sobre a lista de strings, com separador entre elas. | `lib/layers-core.js` |
+| `LayersCore.sourceHash(parts)` | Pura, síncrona. Hash não criptográfico de 53 bits (cyrb53, base 36) sobre a lista de partes; cada parte entra com tipo e comprimento, e `null` difere de `''`. | `lib/layers-core.js` |
 | `LayersCore.restorePlan(entry, hash)` | Pura. `entry` nulo → `{ keep: [], dropped: 0 }`; `entry.hash === hash` → `{ keep: changes com decided:true, dropped: 0 }`; senão `{ keep: [], dropped: changes.length }`. | `lib/layers-core.js` |
 | `LayersCore.getPending(storage, chave)` | Lê e sanitiza a entrada: `schema`, `hash` string, e em cada change `key`/`id`/`prop`/`to` strings, `ids` array de strings, `fromInline` objeto, `prop !== 'cssText'`. Qualquer violação devolve `null` (entrada inteira): um registro malformado nunca chega a `cloneChanges`. | `lib/layers-core.js` |
 | `LayersCore.setPending(storage, chave, entry, now)` | Lê a chave, troca ou remove a entrada (`entry === null` remove), aplica teto e expiração, grava. | `lib/layers-core.js` |
@@ -77,7 +77,7 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 | Evento | Efeito na entrada do projeto |
 |---|---|
 | `loadProject` (1ª instrução, antes de qualquer `await`) | `writeConfig()` drena a rajada pendente na chave antiga; depois `pendingReady = false` e `this.pendingKey` recalculada |
-| `loadProject`, após ler as fontes e passar o guard `seq !== this.loadSeq` | Só na carga vencedora: `this.pendingHash = hash`; `restorePending`; `setState({ changes, pending: null, … })` no lugar de `changes: []`; semeia `pendingSig` com a assinatura da entrada lida (ou vazia se `null`) e `pendingDirty = false`; por fim `pendingReady = true`. Carga perdedora nunca liga `pendingReady` |
+| `loadProject`, após ler as fontes e passar o guard `seq !== this.loadSeq` | Só na carga vencedora: `this.pendingHash = hash`; `restorePending`; `setState({ changes, pending: null, … })` no lugar de `changes: []`; semeia `pendingSeen` com o array restaurado (identidade de `state.changes`) e `pendingDirty = dropped > 0`; por fim `pendingReady = true`. Carga perdedora nunca liga `pendingReady` |
 | `loadProject` com fonte que falhou na leitura (`warn` de `css não encontrado` ou `dcSource não lido`) | O hash não é confiável: nada é restaurado, `pendingReady` fica falso nesta sessão e a entrada permanece; toast `warn` informa que os ajustes salvos foram mantidos |
 | edição (`applyEdit`, `applyCodeText`, `revert`, undo/redo) | `state.changes` troca de identidade → `persistSoon()` → entrada reescrita com o `hash` corrente |
 | `approve` / `cancelAll` | `changes` vira `[]` → entrada removida |
