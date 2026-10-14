@@ -1124,6 +1124,34 @@ describe('CheckOrigin', () => {
   });
 });
 
+describe('IsManualSource', () => {
+  it('ExtensoesTsJs_True', () => {
+    for (const f of ['src/ui/shell.ts', 'App.tsx', 'a.js', 'b.jsx', 'c.mjs', 'd.cjs', 'e.mts', 'f.cts', 'types.d.ts']) {
+      expect(core.isManualSource(f), f).toBe(true);
+    }
+  });
+
+  it('ExtensaoMaiuscula_True', () => {
+    expect(core.isManualSource('App.TSX')).toBe(true);
+  });
+
+  it('CssHtmlScss_False', () => {
+    for (const f of ['a.css', 'index.html', 'a.scss', 'page.htm']) {
+      expect(core.isManualSource(f), f).toBe(false);
+    }
+  });
+
+  it('PastaComExtensaoTs_False', () => {
+    expect(core.isManualSource('a.ts/style.css')).toBe(false);
+  });
+
+  it('VazioNuloIndefinido_FalseSemLancar', () => {
+    expect(core.isManualSource('')).toBe(false);
+    expect(core.isManualSource(null)).toBe(false);
+    expect(core.isManualSource(undefined)).toBe(false);
+  });
+});
+
 describe('DismissWatchSeen', () => {
   it('Dismiss_OwnWriteBetweenCheckAndDismiss_KeepsWrittenValue', () => {
     // checkStale saw a.css at 1 and found 5 on disk; our own write then moved watch[a.css] to 6
