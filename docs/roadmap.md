@@ -39,7 +39,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.20 | 2 | S2 | Origem autoral obsoleta em data-src corrigida ou descartada | Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice | — | — | [](../changelog.d/fix-261013-0-s2-20-stale-authored-src.md) | — | done |
 | S3 | 1 | — | Ferramentas e UI | Checklist C e ferramentas 0.25 | — | — | — | — | in-progress |
 | S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md) | — | done |
-| S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | — | — | — | registered |
+| S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | [](superpowers/plans/2026-10-14-s3-2-menu-open-pattern.md) | — | — | in-progress |
 | S3.3 | 2 | S3 | Tooltips ação e atalho | checklist C | — | — | — | — | registered |
 | S3.4 | 2 | S3 | Fonte única de aparência | checklist C | — | — | — | — | registered |
 | S4 | 1 | — | Performance | Checklist D; orçamentos scan/orbit | — | — | — | — | in-progress |
