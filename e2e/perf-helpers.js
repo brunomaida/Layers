@@ -33,15 +33,17 @@ export async function instrument(page) {
   });
 }
 
-// Waits for a burst of at least `minNodes` computed-style reads that has been idle for 400 ms and
-// returns the largest one: `nodes` is the getComputedStyle call count (about the scanned node
-// count), `ms` its span and `endMs` the time since navigation start at which it ended.
+// Waits until the last burst of at least `minNodes` computed-style reads has been idle for 400 ms and
+// returns the largest burst: `nodes` is its getComputedStyle call count (about the scanned node
+// count), `ms` its span and `endMs` the time since navigation start at which it ended. Smaller bursts
+// after it (one call per app render, the helpers' own reads) are ignored.
 export async function waitForScan(page, minNodes = 5, timeout = 20_000) {
   await page.waitForFunction(
     (n) => {
       const b = window.__perf.bursts;
-      const last = b[b.length - 1];
-      return !!last && last.count >= n && performance.now() - last.last > 400;
+      let last = null;
+      for (let i = b.length - 1; i >= 0 && !last; i--) if (b[i].count >= n) last = b[i];
+      return !!last && performance.now() - last.last > 400;
     },
     minNodes,
     { timeout },
