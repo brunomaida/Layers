@@ -1208,8 +1208,8 @@
     "id": "S6",
     "type": "phase",
     "name": "Segurança",
-    "start": "2026-10-15",
-    "end": "2026-10-18",
+    "start": "2026-10-14",
+    "end": "2026-10-17",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1243,19 +1243,26 @@
         "id": "S6.2",
         "type": "spec",
         "name": "Hash no log de gravação",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
         "status": "wip",
         "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
         "progress": 60,
-        "docs": [],
+        "docs": [
+          {
+            "name": "2026-10-14-s6-2-write-log-hash.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s6-2-write-log-hash.md)",
+            "title": "2026-10-14-s6-2-write-log-hash.md)"
+          }
+        ],
         "reason": "checklist F",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
