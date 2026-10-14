@@ -1183,3 +1183,49 @@ describe('MovedSince', () => {
     expect(core.movedSince(undefined, { 'a.css': 5 })).toEqual([]);
   });
 });
+
+describe('DeadInteractions', () => {
+  const alive = new Set(['.panel', '#menu', '.btn']);
+  const count = (sel) => (alive.has(sel) ? 1 : 0);
+
+  it('SuperficieSemAlvo_ListaComRotuloDoItem', () => {
+    const items = [{ key: 'p', label: 'Painel', show: '.gone' }];
+    expect(core.deadInteractions(items, count)).toEqual([{ label: 'Painel', sel: '.gone' }]);
+  });
+
+  it('ChipsComSeletoresMortos_ListaCadaUm', () => {
+    const items = [{
+      label: 'Menu',
+      groups: [{ label: 'Estado', items: [
+        { label: 'Abrir', toggle: '#menu' },
+        { label: 'Fechar', hide: '.nope' },
+        { label: 'Marcar', class: { selector: '.nada', name: 'on' } },
+        { label: 'Clicar', click: '.btn' },
+      ] }],
+    }];
+    expect(core.deadInteractions(items, count)).toEqual([
+      { label: 'Menu › Fechar', sel: '.nope' },
+      { label: 'Menu › Marcar', sel: '.nada' },
+    ]);
+  });
+
+  it('ClassComoString_UsaOSeletor', () => {
+    const items = [{ label: 'X', groups: [{ items: [{ label: 'Ativar', class: '.ghost' }] }] }];
+    expect(core.deadInteractions(items, count)).toEqual([{ label: 'X › Ativar', sel: '.ghost' }]);
+  });
+
+  it('SeletorRepetido_AparecePorItem', () => {
+    const items = [{ label: 'A', show: '.x' }, { label: 'B', show: '.x' }];
+    expect(core.deadInteractions(items, count).map((d) => d.label)).toEqual(['A', 'B']);
+  });
+
+  it('SeparadorEManifestoVazio_SemAvisos', () => {
+    expect(core.deadInteractions([{ sep: 'Superfícies' }], count)).toEqual([]);
+    expect(core.deadInteractions(undefined, count)).toEqual([]);
+  });
+
+  it('ContadorQueLanca_ContaComoMorto', () => {
+    const boom = () => { throw new Error('invalid selector'); };
+    expect(core.deadInteractions([{ label: 'A', show: '::bad(' }], boom)).toEqual([{ label: 'A', sel: '::bad(' }]);
+  });
+});
