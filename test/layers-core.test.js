@@ -748,9 +748,10 @@ describe('MapDcTemplate', () => {
     expect(map.map((e) => e.line)).toEqual([3, 4, 6]);
   });
 
-  it('AttrNames_ListaNomesEmMinusculas', () => {
-    const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" style="a:b"></div>'));
-    expect(d.attrNames).toEqual(['class', 'data-x', 'style']);
+  it('Entrada_SoCamposConsumidos_StyleAindaDetectado', () => {
+    const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" STYLE="a:b"></div>'));
+    expect(Object.keys(d).sort()).toEqual(['line', 'styleRange', 'tag', 'tplId']);
+    expect(d.styleRange).not.toBeNull();
   });
 });
 
@@ -852,10 +853,10 @@ describe('PatchAttrAt', () => {
 
   it('DcCodes_EnumCongelado', () => {
     expect(Object.isFrozen(core.DC_CODES)).toBe(true);
-    for (const c of ['VALUE_HAS_BINDING', 'MAP_MISALIGNED', 'SOURCE_CHANGED', 'SOURCE_NOT_CSS', 'UTILITY_SHEET',
-      'HELMET_PLACEHOLDER', 'SNAPSHOT_STYLE', 'READONLY_ORIGIN', 'TPL_FANOUT', 'NO_INLINE_STYLE', 'PROP_NOT_INLINE', 'VALUE_UNSAFE']) {
-      expect(core.DC_CODES[c]).toBe(c);
-    }
+    const codes = ['VALUE_HAS_BINDING', 'MAP_MISALIGNED', 'SOURCE_CHANGED', 'SOURCE_NOT_CSS', 'HELMET_PLACEHOLDER',
+      'SNAPSHOT_STYLE', 'TPL_FANOUT', 'NO_INLINE_STYLE', 'PROP_NOT_INLINE', 'VALUE_UNSAFE'];
+    expect(Object.keys(core.DC_CODES).sort()).toEqual([...codes].sort());
+    for (const c of codes) expect(core.DC_CODES[c]).toBe(c);
   });
 });
 
