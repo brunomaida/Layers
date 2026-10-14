@@ -23,43 +23,44 @@ Verified code surface (develop @ `8f74cb4`):
 | v2.7-b comment | `index.html:905-908` | says opacity culling was dropped: dimmed planes floor at 0.30/0.35, solo at 0.08 (unreachable) |
 | `Plane` (`React.memo`) | `index.html:910-926` | one absolutely positioned div per node, `translateZ(z)` |
 | `visibleMax()` / `cam()` | `index.html:1608-1621` | memoized camera: `fit`, `S`, `yawT`, `shiftX` |
-| `flushMove()` | `index.html:1463-1468` | orbit/pan/focus drag, sets `dragging: true` per rAF |
+| `onMove` | `index.html:2281-2284` | orbit/pan/focus drag, sets `dragging: true` per mousemove once the pointer moved ≥ 3 px (`flushMove()` at `1463-1468` has no call site: dead code) |
 | `scene()` | `index.html:1947-2004` | per-node loop `1957-1970` builds `planes[]`, `zOf`, `nextPrev`; world transform `2001-2002` |
 | `onUp` | `index.html:2285` | `dragging: false` on release |
 
 Findings that shape the design:
 
-- `cam()` computes `fit` so the whole page footprint fits the stage. At default zoom almost no plane is off-screen, so viewport culling is expected to move `orbit/traval` (default view) little; gains concentrate on zoom/pan/focus. Task 1 measures this before any code changes, and adds a zoomed orbit scenario so the after-measure can show the effect.
-- `cam()` and `scene()` run on every drag frame; the cull test adds 4 corner projections per node per frame (~1.7k for Traval), with no allocation per node.
+- `cam()` computes `fit` so the whole page footprint fits the stage. At default zoom almost no plane is off-screen, so viewport culling is expected to move `orbit/traval` (default view) little; gains concentrate on zoom/pan/focus. Task 1 measures this before any code changes, and adds a zoomed orbit scenario so the after-measure can show the effect. Chromium already skips raster for off-screen composited layers, so the plane count alone does not prove a frame-time gain: Task 1 also measures an upper bound (off-screen planes hidden by hand).
+- `cam()` and `scene()` run on every drag render (one `setState` per mousemove in `onMove`); the cull test adds 4 corner projections per node per render (~1.7k for Traval), with no allocation per node.
 - During a drag `scene()` already sets every plane's transition to `none`; when the drag is released, all planes re-render anyway because the `dragging` prop flips. Culling only while dragging therefore cannot cause a plane to pop in or out mid-transition, and no click, hover or tree selection can reach a plane during a drag.
 - The v2.7-b comment holds for opacity: no plane population sits under 0.05 by construction, so an opacity threshold either culls nothing or changes the visual. Task 3 rewrites the comment to describe viewport culling and keep the opacity verdict.
 
 Sequencing: S4.6 (getComputedStyle cache) also touches `scene()` (bmHover, `index.html:1992`) and sequences **after** S4.5, so each leaf's before/after perf delta can be attributed to it. This plan does not touch any `getComputedStyle` site.
 
 Reuses: `cam()` (`S`, `yawT`, `shiftX`) and `scene()`'s `fx/fy/fz`; the `React.memo` contract of `Plane` with stable `this.H`; `e2e/perf-helpers.js` (`instrument`, `waitForScan`, `orbitDrag`, `writeBench`); the `LayersCore` `api` export pattern next to `staleBannerBox` (`lib/layers-core.js:512`, export `:1158`); `bench-history-cli.py` ingest.
-Out of scope: getComputedStyle cache (S4.6); virtual tree (S4.7); grouping leaf planes (ARCHITECTURE "agrupamento de folhas"); a `vitest bench` microbenchmark for the culler (tier General: bench only when asked); culling outside a drag (wheel zoom, `frame()`, static view); `DC_CODES`/`dcWhy`/`hoistFaces` (S2.19), `writeText`/`exportFull` (S6.2), README (S7.1), new functional e2e specs of S5.6.
+Out of scope: getComputedStyle cache (S4.6); virtual tree (S4.7); the stale `flushMove()` row in `docs/ARCHITECTURE.md:56` and the dead `flushMove()` itself (mentioned, not fixed); grouping leaf planes (ARCHITECTURE "agrupamento de folhas"); a `vitest bench` microbenchmark for the culler (tier General: bench only when asked); culling outside a drag (wheel zoom, `frame()`, static view); `DC_CODES`/`dcWhy`/`hoistFaces` (S2.19), `writeText`/`exportFull` (S6.2), README (S7.1), new functional e2e specs of S5.6.
 
 ## Design: Architecture & Flows
 
-Single component (`scene()` inside `index.html`) plus one pure helper in `lib/layers-core.js`. The diagram shows one drag frame.
+Single component (`scene()` inside `index.html`) plus one pure helper in `lib/layers-core.js`. The diagram shows one drag render (one per mousemove).
 
-### Per-frame data flow (micro)
+### Per-render data flow (micro)
 
 ```
- mousemove ──▶ flushMove() (rAF) ──▶ setState({ dragging:true, yaw|tilt|pan|focus })
+ mousemove ──▶ onMove (≥ 3 px) ──▶ setState({ dragging:true, yaw|tilt|pan|focus })
                                               │
                                               ▼
  ┌────────────────────────────── scene() ──────────────────────────────┐
  │ cam() ─▶ { S, yawT, shiftX }          (memoized, unchanged)          │
  │ fx, fy, fz, panX, panY, tilt, persp, stageW/H, pageW/H               │
  │        │                                                             │
- │        ▼  once per frame, only when dragging              [NEW]      │
+ │        ▼  once per render, only when dragging             [NEW]      │
  │ cull = LayersCore.viewCuller({ ...camera, margin })                  │
  │        │                                                             │
  │ nodes.forEach(n) ────────────────────────────────────────────────┐   │
  │   iso filter ─▶ z, dim, op  (unchanged)                          │   │
  │   zOf[n.id] = z ; nextPrev[n.id] = { z, op }   (all nodes)       │   │
- │   culled = cull && !sel && !hov && cull(n.x, n.y, n.w, n.h, z)   │NEW│
+ │   culled = cull && !sel && !hov && !(spacing === 0 && shadow)    │NEW│
+ │            && cull(n.x, n.y, n.w, n.h, z)                        │   │
  │        │  project 4 corners: translate3d(-f) ▶ rotateY ▶ rotateX │   │
  │        │  ▶ scale(S) ▶ translate(tx,ty) ▶ perspective divide     │   │
  │        ▼                                                         │   │
@@ -109,6 +110,7 @@ No mockup: nothing the user sees changes (visual frozen).
 - World origin = stage centre = `perspective-origin`; page offset `(-pageW/2, -pageH/2)`.
 - `zOf`/`nextPrev` still written for culled planes (measure, bmHover, label read `zOf`).
 - `sel` and `hov` are never culled; isolation (`isoId`) filtering is unchanged and runs before culling.
+- Flat mode (`spacing === 0`) paints `n.shadow` (`index.html:914`), which scales with `S` while `CULL_MARGIN` is a fixed screen size: planes with a shadow in flat mode are never culled.
 - `culled` on `Plane` is applied after the `n.text`/`n.isCheck` branches that set `display`.
 
 > [!DECISION] culling-criterion
@@ -128,11 +130,11 @@ No mockup: nothing the user sees changes (visual frozen).
 | File | Responsibility |
 |---|---|
 | `e2e/perf-helpers.js` | `planeCensus`, `zoomIn` helpers |
-| `e2e/perf.spec.js` | census in orbit records; zoomed orbit scenario; budget test kept or flipped |
+| `e2e/perf.spec.js` | census in orbit records; zoomed orbit scenario; zoomed upper-bound scenario (`orbit/traval-zoom-ideal`); budget test kept or flipped |
 | `lib/layers-core.js` | `viewCuller` (pure), exported on `LayersCore` |
 | `test/layers-core.test.js` | unit tests for `viewCuller` |
 | `index.html` | `CULL_MARGIN`, `culled` prop on `Plane`, culler in `scene()`, comment 905-908 rewritten |
-| `e2e/viewport-culling.spec.js` | invariant: on-screen planes never culled; none culled after release |
+| `e2e/viewport-culling.spec.js` | invariant: no hidden plane intersects the stage during a drag; none hidden after release |
 | `bench/results/*.bench.json`, `docs/reports/bench-history/` | baseline and after runs |
 | `docs/ARCHITECTURE.md`, `docs/RELEASE-CHECKLIST.md`, `changelog.d/feature-261014-0-s4-5-viewport-culling.md` | closing docs |
 
@@ -142,12 +144,12 @@ No mockup: nothing the user sees changes (visual frozen).
 
 **Files:**
 - Modify: `e2e/perf-helpers.js` (append after `orbitDrag`, before `writeBench`, line ~110)
-- Modify: `e2e/perf.spec.js` (`EXPECTED` at :4-10, `Orbit_Drag_RecordsFrameInterval` at :53-66, new test after it)
+- Modify: `e2e/perf.spec.js` (`EXPECTED` at :4-10, `Orbit_Drag_RecordsFrameInterval` at :53-66, two new tests after it)
 - Create: `bench/results/<ts>-layers-ui.bench.json` ×3 (written by the runs)
 
 **Interfaces:**
 - Consumes: nothing new.
-- Produces: `planeCensus(page) → { total, offscreen, partial, opBelow005, opZero }`; `zoomIn(page, steps)`; bench id `orbit/traval-zoom/mean-frame-ms` with `extra.census`.
+- Produces: `planeCensus(page, hide = false) → { total, offscreen, partial, opBelow005, opZero }` (off-screen = outside the stage grown by 15 % of its larger side, the culler's margin; `hide` sets `display:none` on those planes); `zoomIn(page, steps)`; bench ids `orbit/traval-zoom/mean-frame-ms` and `orbit/traval-zoom-ideal/mean-frame-ms` with `extra.census`.
 
 - [ ] **Step 1: Add the helpers**
 
@@ -155,14 +157,18 @@ Append to `e2e/perf-helpers.js` after `orbitDrag` (before `export function write
 
 ```js
 // Plane census from the DOM (inline styles only per plane): planes are the stage divs with an
-// inline translateZ transform and a pointer/crosshair cursor (overlays have no cursor).
-export async function planeCensus(page) {
-  return page.evaluate(() => {
+// inline translateZ transform and a pointer/crosshair cursor (overlays have no cursor). Off-screen is
+// measured against the stage grown by 15 % of its larger side (the culler's CULL_MARGIN).
+// hide = true sets display:none on the off-screen planes (Task 1 upper-bound spike).
+export async function planeCensus(page, hide = false) {
+  return page.evaluate((hide) => {
     const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
       getComputedStyle(el).backgroundImage.includes('radial-gradient'),
     );
     if (!stage) throw new Error('stage element not found');
-    const sb = stage.getBoundingClientRect();
+    const s = stage.getBoundingClientRect();
+    const m = 0.15 * Math.max(s.width, s.height);
+    const sb = { left: s.left - m, right: s.right + m, top: s.top - m, bottom: s.bottom + m };
     const planes = [...stage.querySelectorAll('div')].filter(
       (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
     );
@@ -171,14 +177,16 @@ export async function planeCensus(page) {
       const r = el.getBoundingClientRect();
       const out = r.right < sb.left || r.left > sb.right || r.bottom < sb.top || r.top > sb.bottom;
       const inside = r.left >= sb.left && r.right <= sb.right && r.top >= sb.top && r.bottom <= sb.bottom;
-      if (out) c.offscreen++;
-      else if (!inside) c.partial++;
+      if (out) {
+        c.offscreen++;
+        if (hide) el.style.display = 'none';
+      } else if (!inside) c.partial++;
       const op = el.style.opacity === '' ? 1 : +el.style.opacity;
       if (op < 0.05) c.opBelow005++;
       if (op === 0) c.opZero++;
     }
     return c;
-  });
+  }, hide);
 }
 
 // Wheel zoom at the stage centre (zoomBy 1.1 per event), then wait out the 0.35 s world transition.
@@ -196,15 +204,15 @@ export async function zoomIn(page, steps) {
 }
 ```
 
-The census reads only inline styles and rects per plane (no per-plane `getComputedStyle`), and runs after `waitForScan`, so it cannot distort the scan burst.
+The census reads only inline styles and rects per plane (no per-plane `getComputedStyle`), and runs after `waitForScan`, so it cannot distort the scan burst. With `hide`, the hand-set `display:none` survives the drag re-renders: React writes only style keys whose value changed, and `display` does not change for any plane on develop.
 
 - [ ] **Step 2: Record the census and the zoomed scenario**
 
 In `e2e/perf.spec.js`:
 - import: `import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn } from './perf-helpers.js';`
-- `EXPECTED`: add `'orbit/traval-zoom/mean-frame-ms',` after `'orbit/traval/mean-frame-ms',`.
+- `EXPECTED`: add `'orbit/traval-zoom/mean-frame-ms',` and `'orbit/traval-zoom-ideal/mean-frame-ms',` after `'orbit/traval/mean-frame-ms',`.
 - In `Orbit_Drag_RecordsFrameInterval`, before `orbit = await orbitDrag(page, 1500);` add `const census = await planeCensus(page);` and add `census,` to the `extra` object.
-- Insert after that test:
+- Insert after that test (zoomed scenario, then its upper bound):
 
 ```js
 test('Orbit_Zoomed_RecordsFrameInterval', async ({ page }) => {
@@ -225,12 +233,32 @@ test('Orbit_Zoomed_RecordsFrameInterval', async ({ page }) => {
   });
   expect(z.frames).toBeGreaterThanOrEqual(30);
 });
+
+// Upper bound for the go/no-go: the planes off the grown stage before the drag are hidden by hand.
+test('Orbit_ZoomedIdeal_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/?layers=fixtures/traval/');
+  await waitForScan(page);
+  await zoomIn(page, 12);
+  const census = await planeCensus(page, true);
+  const z = await orbitDrag(page, 1500);
+  rec('orbit/traval-zoom-ideal/mean-frame-ms', z.meanFrameMs, {
+    fps: z.fps,
+    p95FrameMs: z.p95FrameMs,
+    frames: z.frames,
+    loafCount: z.loafCount,
+    loafScriptShare: z.loafScriptShare,
+    zoomSteps: 12,
+    census,
+  });
+  expect(z.frames).toBeGreaterThanOrEqual(30);
+});
 ```
 
 - [ ] **Step 3: Verify the spec runs**
 
 Run: `npx playwright test e2e/perf.spec.js`
-Expected: all tests pass except `Orbit_Budget_Above50Fps` reported as expected-fail; one new `bench/results/*-layers-ui.bench.json` with both orbit ids and `census` in their `extra`. Delete that file (written from a dirty tree).
+Expected: all tests pass except `Orbit_Budget_Above50Fps` reported as expected-fail; one new `bench/results/*-layers-ui.bench.json` with the three orbit ids and `census` in each one's `extra`. Delete that file (written from a dirty tree).
 
 - [ ] **Step 4: Commit the spec, then measure on a clean tree**
 
@@ -246,12 +274,12 @@ Run `npx playwright test e2e/perf.spec.js` three times (tab in focus, nothing el
 Compute the medians of the three runs with this command (prints a table; keep it for Task 5 and the changelog):
 
 ```bash
-node -e "const fs=require('fs');const f=fs.readdirSync('bench/results').filter(x=>x.endsWith('-layers-ui.bench.json')).sort().slice(-3);const med=a=>a.sort((x,y)=>x-y)[1];for(const id of ['orbit/traval/mean-frame-ms','orbit/traval-zoom/mean-frame-ms']){const r=f.map(x=>JSON.parse(fs.readFileSync('bench/results/'+x)).benchmarks.find(b=>b.benchId===id));console.log(id,'ms',med(r.map(b=>b.value)).toFixed(1),'fps',med(r.map(b=>b.extra.fps)).toFixed(1),'p95',med(r.map(b=>b.extra.p95FrameMs)).toFixed(1),'census',JSON.stringify(r[0].extra.census))}"
+node -e "const fs=require('fs');const f=fs.readdirSync('bench/results').filter(x=>x.endsWith('-layers-ui.bench.json')).sort().slice(-3);const med=a=>a.sort((x,y)=>x-y)[1];for(const id of ['orbit/traval/mean-frame-ms','orbit/traval-zoom/mean-frame-ms','orbit/traval-zoom-ideal/mean-frame-ms']){const r=f.map(x=>JSON.parse(fs.readFileSync('bench/results/'+x)).benchmarks.find(b=>b.benchId===id));console.log(id,'ms',med(r.map(b=>b.value)).toFixed(1),'fps',med(r.map(b=>b.extra.fps)).toFixed(1),'p95',med(r.map(b=>b.extra.p95FrameMs)).toFixed(1),'census',JSON.stringify(r[0].extra.census))}"
 ```
 
 Then: `python ~/.claude/hooks/bench-history-cli.py ingest --repo .` and `python ~/.claude/hooks/bench-history-cli.py render --repo .`.
 
-**Go/no-go:** if the zoomed census has `offscreen` < 10 % of `total`, stop after this task and report the numbers: viewport culling cannot reach the budget on this fixture and the leaf needs re-scoping.
+**Go/no-go:** stop after this task and report the numbers if either holds: the zoomed census has `offscreen` < 10 % of `total`, or the `orbit/traval-zoom-ideal` median mean-frame is less than 10 % below the `orbit/traval-zoom` median (within noise: Chromium already skips raster for off-screen layers, so hiding them saves nothing). Either way viewport culling cannot reach the budget on this fixture and the leaf needs re-scoping. No later task starts before this gate passes.
 
 - [ ] **Step 6: Commit the baseline**
 
@@ -319,9 +347,25 @@ describe('ViewCuller', () => {
     expect(cull({ yaw: 90, persp: 100000 })(450, 250, 100, 100, 1000)).toBe(true);
   });
 
+  it('Yaw90_PanCompensaX_NaoCorta', () => {
+    // sign check: x' = +1000 and tx = -1000 bring it back to the centre; x' = -z would give -2000 (culled)
+    expect(cull({ yaw: 90, persp: 100000, tx: -1000 })(450, 250, 100, 100, 1000)).toBe(false);
+  });
+
   it('Tilt90_ProfundidadeViraY', () => {
     // rotateX(90deg): y' = -z, so z = 1000 lands above the stage
     expect(cull({ tilt: 90, persp: 100000 })(450, 250, 100, 100, 1000)).toBe(true);
+  });
+
+  it('Tilt90_PanCompensaY_NaoCorta', () => {
+    // sign check: y' = -1000 and ty = +1000 bring it back to the centre; y' = +z would give +2000 (culled)
+    expect(cull({ tilt: 90, persp: 100000, ty: 1000 })(450, 250, 100, 100, 1000)).toBe(false);
+  });
+
+  it('YawTiltCombinados_OrdemRotateXRotateY', () => {
+    // corners (231.2,-506) (354.1,-551.2) (237.7,-396.3) (364.6,-438.2); reversed rotation order: max y -326.8, kept at 60
+    expect(cull({ yaw: -32, tilt: 20, margin: 60 })(900, 50, 100, 100, 300)).toBe(true);
+    expect(cull({ yaw: -32, tilt: 20, margin: 110 })(900, 50, 100, 100, 300)).toBe(false);
   });
 
   it('FocoDesloca_Corta', () => {
@@ -401,8 +445,8 @@ Replace `index.html:905-908` (the four `// v2.7-b ...` lines; anchor `// v2.7-b:
 
 ```js
 // S4.5: durante o arrasto, plano cuja projeção cai inteira fora do palco (+ CULL_MARGIN) fica display:none (LayersCore.viewCuller).
-// Opacidade não corta (v2.7-b): esmaecidos ficam em 0.30/0.35 e o solo em 0.08, todos visíveis.
-const CULL_MARGIN = 0.15; // fraction of the larger stage side kept around the viewport (outline, shadow)
+// Opacidade não corta (v2.7-b): esmaecidos ficam em 0.30/0.35, visíveis; o solo (0.08) é inalcançável: as pastilhas chamam isolate().
+const CULL_MARGIN = 0.15; // fraction of the larger stage side kept around the viewport (outline); flat-mode shadows are exempt
 ```
 
 - [ ] **Step 2: Honour `culled` in `Plane`**
@@ -419,7 +463,7 @@ After the `if (n.isCheck) { ... }` line (`index.html:919`) insert:
       if (culled) st.display = 'none';
 ```
 
-- [ ] **Step 3: Build the culler once per frame**
+- [ ] **Step 3: Build the culler once per render**
 
 After `index.html:1952` (the line starting `const fx = focus ? focus.x - s.pageW / 2 : 0`) insert:
 
@@ -432,16 +476,18 @@ After `index.html:1952` (the line starting `const fx = focus ? focus.x - s.pageW
 `index.html:1963` — after `const sel = n.id === selId, hov = n.id === hoverId, soloOff = solo && n.depth !== active;` add on the next line:
 
 ```js
-      const culled = !!cull && !sel && !hov && cull(n.x, n.y, n.w, n.h, z);
+      const culled = !!cull && !sel && !hov && !(spacing === 0 && n.shadow !== 'none') && cull(n.x, n.y, n.w, n.h, z);
 ```
+
+The `spacing === 0 && n.shadow !== 'none'` exemption mirrors `Plane`'s `boxShadow` rule (`index.html:914`): in flat mode the shadow scales with `S` and can reach past the fixed screen margin.
 
 `index.html:1968` — in the `React.createElement(Plane, { ... })` props, after `dragging: dragging,` add `culled: culled,`. `zOf[n.id] = z` and `nextPrev[n.id]` stay unconditional.
 
 - [ ] **Step 5: Verify**
 
 Run: `npm test` — Expected: PASS.
-Run: `npx playwright test e2e/tree-snapshot.spec.js e2e/origin-sample.spec.js e2e/manual-marker.spec.js` — Expected: PASS (static frames unchanged).
-Manual: `npm run dev`, `http://localhost:5180/?layers=fixtures/traval/`, zoom in with the wheel, orbit: no plane that should be on screen blinks; release restores all planes; select via tree, isolate (double click), toggle Explodido, `M` measure and box-model hover all behave as on develop.
+Run: `npx playwright test e2e/tree-snapshot.spec.js e2e/origin-sample.spec.js e2e/manual-marker.spec.js` — Expected: PASS (static frames unchanged: `cull` is `null` whenever `dragging` is false, so selection, isolation, Explodido, measure and box-model hover never see a culled plane).
+The drag behaviour (no on-stage plane hidden, release restores all) is proven by the Task 4 e2e; no manual check.
 
 - [ ] **Step 6: Commit**
 
@@ -459,7 +505,7 @@ git commit -m "perf(scene): hide off-screen planes while dragging the camera (S4
 
 **Interfaces:**
 - Consumes: Task 3 (`display:none` on culled planes), `waitForScan`/`instrument`/`zoomIn` from `e2e/perf-helpers.js`.
-- Produces: proof that no on-screen plane is culled and that release restores all planes.
+- Produces: proof that no hidden plane intersects the stage during a drag and that release restores all planes.
 
 - [ ] **Step 1: Write the spec**
 
@@ -467,23 +513,29 @@ git commit -m "perf(scene): hide off-screen planes while dragging the camera (S4
 import { test, expect } from '@playwright/test';
 import { instrument, waitForScan, zoomIn } from './perf-helpers.js';
 
-// S4.5: while the camera is dragged, planes fully outside the stage are display:none. A plane that
-// intersects the stage must never be hidden, and releasing the drag must show every plane again.
-const planes = (page) =>
+// S4.5: while the camera is dragged, planes fully outside the stage are display:none. A hidden plane
+// must not intersect the stage, and releasing the drag must show every plane again.
+// One synchronous pass: each hidden plane is un-hidden, measured and re-hidden before any frame runs.
+const cullState = (page) =>
   page.evaluate(() => {
     const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
       getComputedStyle(el).backgroundImage.includes('radial-gradient'),
     );
     const sb = stage.getBoundingClientRect();
-    const inset = 20;
-    return [...stage.querySelectorAll('div')]
-      .filter((el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor))
-      .map((el) => {
-        const r = el.getBoundingClientRect();
-        const onStage = el.style.display !== 'none' &&
-          r.right > sb.left + inset && r.left < sb.right - inset && r.bottom > sb.top + inset && r.top < sb.bottom - inset;
-        return { onStage, hidden: el.style.display === 'none' };
-      });
+    const planes = [...stage.querySelectorAll('div')].filter(
+      (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+    );
+    let hidden = 0, hiddenOnStage = 0;
+    for (const el of planes) {
+      if (el.style.display !== 'none') continue;
+      hidden++;
+      el.style.display = '';
+      const r = el.getBoundingClientRect();
+      el.style.display = 'none';
+      if (r.right > sb.left && r.left < sb.right && r.bottom > sb.top && r.top < sb.bottom) hiddenOnStage++;
+    }
+    // Plane sets willChange 'transform' only while dragging (index.html:912)
+    return { hidden, hiddenOnStage, dragging: planes.some((el) => el.style.willChange === 'transform') };
   });
 
 async function stageCentre(page) {
@@ -498,53 +550,56 @@ async function stageCentre(page) {
 
 const frames = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
 
-test('Culling_DragZoomed_OnScreenPlanesNeverHidden', async ({ page }) => {
+// Orbit to a pose clearly away from the static one; the first move crosses onMove's 3 px threshold.
+async function dragTo(page, dx, dy) {
+  const c = await stageCentre(page);
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.down();
+  await page.mouse.move(c.x + 8, c.y);
+  await page.mouse.move(c.x + dx, c.y + dy, { steps: 5 });
+  await frames(page);
+}
+
+test('Culling_DragZoomed_HiddenPlanesOffStage', async ({ page }) => {
   await instrument(page);
   await page.goto('/?layers=fixtures/traval/');
   await waitForScan(page);
   await zoomIn(page, 12);
-  const before = await planes(page);
-  expect(before.some((p) => p.hidden), 'static frame culls nothing').toBe(false);
-  const c = await stageCentre(page);
-  await page.mouse.move(c.x, c.y);
-  await page.mouse.down();
-  await page.mouse.move(c.x + 1, c.y);
-  await frames(page);
-  const during = await planes(page);
-  // indices match: same DOM order, plane set unchanged by the drag
-  const lost = before.filter((p, i) => p.onStage && during[i].hidden).length;
-  expect(lost, 'on-screen planes hidden during drag').toBe(0);
-  expect(during.filter((p) => p.hidden).length, 'zoomed drag culls something').toBeGreaterThan(0);
+  expect((await cullState(page)).hidden, 'static frame culls nothing').toBe(0);
+  await dragTo(page, 60, 40);
+  const during = await cullState(page);
+  expect(during.dragging, 'drag started').toBe(true);
+  expect(during.hiddenOnStage, 'hidden planes that intersect the stage').toBe(0);
+  expect(during.hidden, 'zoomed drag culls something').toBeGreaterThan(0);
   await page.mouse.up();
   await frames(page);
-  const after = await planes(page);
-  expect(after.some((p) => p.hidden), 'release restores every plane').toBe(false);
+  expect((await cullState(page)).hidden, 'release restores every plane').toBe(0);
 });
 
-test('Culling_DefaultView_DragHidesNoOnScreenPlane', async ({ page }) => {
+test('Culling_DefaultView_HiddenPlanesOffStage', async ({ page }) => {
   await instrument(page);
   await page.goto('/?layers=fixtures/traval/');
   await waitForScan(page);
-  const before = await planes(page);
-  const c = await stageCentre(page);
-  await page.mouse.move(c.x, c.y);
-  await page.mouse.down();
-  await page.mouse.move(c.x + 1, c.y);
-  await frames(page);
-  const during = await planes(page);
-  expect(before.filter((p, i) => p.onStage && during[i].hidden).length).toBe(0);
+  await dragTo(page, 60, 40);
+  const during = await cullState(page);
+  expect(during.dragging, 'drag started').toBe(true);
+  expect(during.hiddenOnStage, 'hidden planes that intersect the stage').toBe(0);
   await page.mouse.up();
+  await frames(page);
+  expect((await cullState(page)).hidden, 'release restores every plane').toBe(0);
 });
 ```
+
+Clearing `display` turns a text plane from `flex` to `block` for the measurement; its rect is unchanged (explicit `width`/`height`, `box-sizing: border-box`).
 
 - [ ] **Step 2: Run it**
 
 Run: `npx playwright test e2e/viewport-culling.spec.js`
-Expected: PASS. If `zoomed drag culls something` fails, the zoom did not push planes off-stage (check the Task 1 zoomed census) — raise `zoomIn` steps, never loosen `lost === 0`.
+Expected: PASS. If `drag started` fails, the pointer did not cross `onMove`'s 3 px threshold (`index.html:2281`): fix the drag, not the assertion. If `zoomed drag culls something` fails, compare with the Task 1 zoomed census and report; never loosen `hiddenOnStage === 0`.
 
 - [ ] **Step 3: Regression proof against develop**
 
-Temporarily set `CULL_MARGIN = -0.4` in `index.html` (culls planes that are still on stage), run `npx playwright test e2e/viewport-culling.spec.js`. Expected: FAIL on `on-screen planes hidden during drag`. Restore with `git checkout -- index.html` (never `git stash`: the stash is shared across worktrees).
+Temporarily set `CULL_MARGIN = -0.4` in `index.html` (culls planes that are still on stage), run `npx playwright test e2e/viewport-culling.spec.js`. Expected: FAIL on `hidden planes that intersect the stage` (with `drag started` passing). Restore with `git checkout -- index.html` (never `git stash`: the stash is shared across worktrees).
 
 - [ ] **Step 4: Commit**
 
@@ -567,7 +622,7 @@ git commit -m "test(e2e): prove culling never hides on-screen planes (S4.5)"
 
 - [ ] **Step 1: Run on a clean tree** (Mechanical)
 
-Run `npx playwright test e2e/perf.spec.js` three times under the Task 1 conditions; then the Task 1 Step 5 `node -e` command. Expected: three files with `git.dirty: false`; a printed table for both orbit ids. Report raw `exit_code` and the table.
+Run `npx playwright test e2e/perf.spec.js` three times under the Task 1 conditions; then the Task 1 Step 5 `node -e` command. Expected: three files with `git.dirty: false`; a printed table for the three orbit ids. Report raw `exit_code` and the table.
 
 - [ ] **Step 2: Interpret and settle the budget test**
 
@@ -575,6 +630,7 @@ Compare medians against the baseline with bench-methodology rules (same `env`).
 - If `Orbit_Budget_Above50Fps` is reported as "expected to fail, but passed" in all three runs: delete the `test.fail(true, ...)` line and the 3-line comment above it, so the budget is enforced.
 - Otherwise: keep `test.fail`, and change only the comment's number line to `// Known gap (checklist D, S4.6-S4.7): about <after fps> fps on the Traval mock after S4.5 culling.` and the `test.fail` message to `'orbit budget not met yet: getComputedStyle cache and virtual tree are open'`.
 - Regression guard: default-view `orbit/traval` median must not be slower than baseline by more than 10 % (cull cost on a fully visible scene); if it is, stop and report.
+- Tail guard: zoomed `orbit/traval-zoom` median `p95FrameMs` after must be ≤ baseline (the culler must not trade mean for spikes); if it is not, stop and report.
 
 - [ ] **Step 3: Ingest and commit**
 
@@ -593,14 +649,22 @@ Delete the result file written by the confirmation run if the tree was dirty.
 ### Task 6: Docs and changelog
 
 **Files:**
-- Modify: `docs/ARCHITECTURE.md:55`, `docs/ARCHITECTURE.md:123`, `docs/RELEASE-CHECKLIST.md:8`, `docs/RELEASE-CHECKLIST.md:43`, `docs/RELEASE-CHECKLIST.md:46`
+- Modify: `docs/ARCHITECTURE.md:55`, `docs/ARCHITECTURE.md:123`, `docs/RELEASE-CHECKLIST.md:43`, `docs/RELEASE-CHECKLIST.md:46` (counter at `docs/RELEASE-CHECKLIST.md:8` left to the integration recount)
 - Create: `changelog.d/feature-261014-0-s4-5-viewport-culling.md`
 
 **Interfaces:**
 - Consumes: Task 1 and Task 5 medians (`<b-*>` baseline, `<a-*>` after) and census.
 - Produces: docs consistent with the feature; roadmap row closes later in `phase-close-gate`.
 
-- [ ] **Step 1: ARCHITECTURE**
+- [ ] **Step 1: Resolve the variable text** (6.1, Workhorse)
+
+From the Task 1 and Task 5 tables and the Task 5 Step 2 outcome, write out, with no `<…>` left:
+- the `docs/RELEASE-CHECKLIST.md:46` replacement (Step 3 below): pick the `abaixo dos 50 fps` clause when the budget test kept `test.fail`; pick `dentro do orçamento` and decide `[~]` → `[x]` only if scan and orbit both pass;
+- the changelog `### Perf` bullets (Step 4 below) with every number filled.
+
+Hand both texts to Step 2-5 verbatim; Steps 2-5 make no judgment.
+
+- [ ] **Step 2: ARCHITECTURE** (6.2, Executor)
 
 `docs/ARCHITECTURE.md:55` — replace the row with:
 
@@ -614,7 +678,7 @@ Delete the result file written by the confirmation run if the tree was dirty.
 - DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações: `contain`, `will-change` só durante drag, transições desligadas no drag (v2.22) e culling por viewport durante o arrasto (S4.5; selecionado e hover nunca cortam; opacidade não é critério, ver comentário v2.7-b no `Plane`). Próximo passo: cache de `getComputedStyle` (S4.6), árvore virtualizada (S4.7) e agrupamento de folhas.
 ```
 
-- [ ] **Step 2: Checklist**
+- [ ] **Step 3: Checklist** (6.2, Executor)
 
 `docs/RELEASE-CHECKLIST.md:43` — replace with:
 
@@ -622,13 +686,13 @@ Delete the result file written by the confirmation run if the tree was dirty.
 - [x] Culling: durante o arrasto da câmera, planos com projeção inteira fora do palco ficam `display:none` (`LayersCore.viewCuller`, S4.5; `e2e/viewport-culling.spec.js`). Opacidade < 0,05 descartada como critério: os planos esmaecidos ficam em 0,30/0,35 (v2.7-b), então um limiar útil mudaria o visual.
 ```
 
-`docs/RELEASE-CHECKLIST.md:8` — `31 concluídos, 3 parciais, 13 abertos` → `32 concluídos, 3 parciais, 12 abertos`.
+`docs/RELEASE-CHECKLIST.md:46` — replace `orbit com input real ~42 fps no Traval (24 ms/frame, p95 36 ms), abaixo dos 50 fps — orçamento ainda não cumprido (S4.5–S4.7)` with the Step 1 text, of the form `orbit com input real ~<a-fps> fps no Traval após o culling da S4.5 (<a-ms> ms/frame, p95 <a-p95> ms; antes ~<b-fps> fps)` followed by `, abaixo dos 50 fps — orçamento ainda não cumprido (S4.6–S4.7)` or `, dentro do orçamento` (with `[~]` → `[x]`), as Step 1 resolved it.
 
-`docs/RELEASE-CHECKLIST.md:46` — replace `orbit com input real ~42 fps no Traval (24 ms/frame, p95 36 ms), abaixo dos 50 fps — orçamento ainda não cumprido (S4.5–S4.7)` with `orbit com input real ~<a-fps> fps no Traval após o culling da S4.5 (<a-ms> ms/frame, p95 <a-p95> ms; antes ~<b-fps> fps)` followed by `, abaixo dos 50 fps — orçamento ainda não cumprido (S4.6–S4.7)` when the budget test kept `test.fail`, or `, dentro do orçamento` and `[~]` → `[x]` only if scan and orbit both pass.
+The `Hoje:` counter at `docs/RELEASE-CHECKLIST.md:8` is not touched: counter left to the integration recount.
 
-- [ ] **Step 3: Changelog fragment**
+- [ ] **Step 4: Changelog fragment** (6.2, Executor)
 
-Create `changelog.d/feature-261014-0-s4-5-viewport-culling.md` (fill every `<…>` from the Task 1/5 tables; no placeholder may remain):
+Create `changelog.d/feature-261014-0-s4-5-viewport-culling.md`, with the `### Perf` bullets replaced by the Step 1 text (no placeholder may remain):
 
 ```md
 ---
@@ -638,14 +702,14 @@ adr: none
 ### Added
 - Culling de planos por viewport durante o arrasto da câmera (orbit, pan, foco): plano cuja projeção cai inteira fora do palco ampliado em 15 % fica `display:none`; selecionado e hover nunca cortam, e soltar o arrasto mostra todos. `LayersCore.viewCuller` (puro, testado) replica a transformação do mundo de `scene()`.
 - `e2e/viewport-culling.spec.js`: nenhum plano visível some durante o arrasto; nenhum fica oculto depois de soltar.
-- `e2e/perf.spec.js`: censo de planos e cenário de orbit com zoom (`orbit/traval-zoom/mean-frame-ms`).
+- `e2e/perf.spec.js`: censo de planos, cenário de orbit com zoom (`orbit/traval-zoom/mean-frame-ms`) e seu limite superior com os planos fora do palco ocultos à mão (`orbit/traval-zoom-ideal/mean-frame-ms`).
 
 ### Perf
 - measured — orbit Traval, vista padrão: <b-fps> → <a-fps> fps (<b-ms> → <a-ms> ms/frame, p95 <b-p95> → <a-p95> ms); mediana de 3 execuções, Chromium <ver>, i7-12700.
 - measured — orbit Traval com zoom 1,1^12: <bz-fps> → <az-fps> fps (<bz-ms> → <az-ms> ms/frame, p95 <bz-p95> → <az-p95> ms); censo com zoom: <offscreen>/<total> planos fora do palco.
 ```
 
-- [ ] **Step 4: Verify and commit**
+- [ ] **Step 5: Verify and commit** (6.2, Executor)
 
 Run: `npm test` — Expected: PASS. Run: `grep -n "<[a-z]" changelog.d/feature-261014-0-s4-5-viewport-culling.md` — Expected: no placeholder lines.
 
@@ -661,11 +725,11 @@ git commit -m "docs: close S4.5 with changelog fragment, checklist and architect
 | Requirement | Task |
 |---|---|
 | Baseline first, existing perf spec, same fixture | 1 |
-| Census decides whether culling can matter (go/no-go) | 1 |
+| Census and upper-bound spike decide whether culling can matter (go/no-go) | 1 |
 | Pure helper in `lib/layers-core.js` + Vitest | 2 |
 | `scene()`/`Plane` wiring, v2.7-b comment rewritten | 3 |
 | Visual frozen: on-screen planes never culled, release restores all | 3 (exemptions), 4 (e2e) |
-| Selection/hover/isolation/tree/explode/measure/bmHover unaffected | 3 (drag-only, `sel`/`hov` exempt, `zOf` intact), 3 Step 5 manual |
+| Selection/hover/isolation/tree/explode/measure/bmHover unaffected | 3 (drag-only, `sel`/`hov` exempt, `zOf` intact; static-frame e2e in Step 5), 4 (release restores all) |
 | Before/after on the same fixture in `### Perf` (measured) | 5, 6 |
 | Budget test flipped or comment updated | 5 |
 | ARCHITECTURE § Limites conhecidos, checklist D, changelog | 6 |
@@ -676,13 +740,14 @@ git commit -m "docs: close S4.5 with changelog fragment, checklist and architect
 | Step | Role | Tier | Model | Rationale |
 |---|---|---|---|---|
 | 1. Baseline, census, zoomed scenario | gen | Standard | Workhorse | test authoring and measurement judgment (go/no-go) |
-| 2. `viewCuller` + unit tests | gen | Standard | Workhorse | projection math, test authoring |
-| 3. `scene()`/`Plane` wiring | gen | Standard | Workhorse | hot-path edit with exact anchors |
-| 2, 3. Design review of culling (projection, exemptions, per-frame cost) | review | Architectural | Architect | hot path, rule 5; via `adversarial-reviewer` |
+| 2. `viewCuller` + unit tests | gen | Standard | Workhorse | hot path kept at Standard: code and sign/order test vectors are given verbatim (vectors cross-checked against an independent CSS matrix composition), so generation is transcription; the per-task Architect review below gates it |
+| 3. `scene()`/`Plane` wiring | gen | Standard | Workhorse | hot-path edit with exact anchors, code given verbatim; gated by the per-task Architect review below |
+| 2, 3. Design review of culling (projection, exemptions, per-render cost) | review | Architectural | Architect | hot path, rule 5; via `adversarial-reviewer`, after Task 3 and before Task 4 |
 | 4. Invariant e2e | gen | Standard | Workhorse | test authoring |
 | 5 Step 1. Three perf runs + median table | gen | Mechanical | Executor | run-and-summarize; caller validates `exit_code`, `git.dirty: false`, table |
 | 5 Step 2-3. Interpret, budget test, ingest | gen | Standard | Workhorse | perf judgment |
-| 6. Docs and changelog with numbers | gen | Mechanical | Executor | text given verbatim; caller validates no `<…>` placeholder left and numbers match Task 1/5 tables |
+| 6.1 (Step 1). Resolve line-46 wording, `[~]`→`[x]` decision, Perf numbers | gen | Standard | Workhorse | judgment on the budget outcome |
+| 6.2 (Steps 2-5). Write docs and changelog verbatim, verify, commit | gen | Mechanical | Executor | text given verbatim by 6.1; caller validates no `<…>` placeholder left, numbers match the Task 1/5 tables, `exit_code` |
 | Pre-merge review | review | Architectural | Architect | verifier ≥ generator |
 
 > [!DECISION] gh-issue-gate
@@ -696,4 +761,4 @@ git commit -m "docs: close S4.5 with changelog fragment, checklist and architect
 > - **Option B**: if the Task 1 go/no-go fails, re-scope S4.5 (e.g. leaf grouping) before any code task
 
 > [!DECISION] execution
-> Method: **Subagent-driven** (recommended): Tasks 1, 2 and 4 have disjoint files; Task 3 depends on 2, Task 5 on 1-4, Task 6 on 5. Mechanical steps (5 Step 1, 6) go to the `executor` subagent.
+> Method: **Subagent-driven** (recommended), strictly sequential: 1 (gate) → 2 → 3 → 4 → 5 → 6. Task 2 starts only after the Task 1 go/no-go passes; Task 4 imports Task 1's `zoomIn` and needs Task 3's `display:none`; the per-task Architect review of Tasks 2-3 runs before Task 4. Mechanical steps (5 Step 1, 6.2) go to the `executor` subagent.
