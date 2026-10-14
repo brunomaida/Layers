@@ -1290,11 +1290,18 @@
           "scaffold"
         ],
         "progress": 60,
-        "docs": [],
+        "docs": [
+          {
+            "name": "2026-10-14-s7-1-readme.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s7-1-readme.md)",
+            "title": "2026-10-14-s7-1-readme.md)"
+          }
+        ],
         "reason": "checklist G",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
