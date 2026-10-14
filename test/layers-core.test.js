@@ -1123,3 +1123,63 @@ describe('CheckOrigin', () => {
     expect(core.checkOrigin('qualquer coisa', files, [], '')).toBe('ok');
   });
 });
+
+describe('DismissWatchSeen', () => {
+  it('Dismiss_OwnWriteBetweenCheckAndDismiss_KeepsWrittenValue', () => {
+    // checkStale saw a.css at 1 and found 5 on disk; our own write then moved watch[a.css] to 6
+    const seen = { 'a.css': 1 };
+    const watch = { 'a.css': 6 };
+    expect(core.dismissWatch(watch, { 'a.css': 5 }, seen)).toEqual({ 'a.css': 6 });
+  });
+
+  it('Dismiss_UnchangedSinceCheck_AcceptsNewValue', () => {
+    expect(core.dismissWatch({ 'a.css': 1, 'b.css': 2 }, { 'a.css': 5, 'b.css': 9 }, { 'a.css': 1, 'b.css': 2 })).toEqual({ 'a.css': 5, 'b.css': 9 });
+  });
+
+  it('Dismiss_WithoutSeen_KeepsPreviousBehavior', () => {
+    expect(core.dismissWatch({ 'a.css': 1 }, { 'a.css': 5 })).toEqual({ 'a.css': 5 });
+  });
+});
+
+describe('StaleBannerBox', () => {
+  const clear = (b, vw, col, right) => b.left >= col && b.left + b.width <= vw - right;
+
+  it('Viewport1024PainelAberto_NaoCobreColunaNemPainelDireito', () => {
+    const b = core.staleBannerBox(1024, 384, 340);
+    expect(clear(b, 1024, 384, 340)).toBe(true);
+    expect(b.width).toBeGreaterThanOrEqual(240);
+  });
+
+  it('Viewport1280_UsaLarguraMaxima', () => {
+    const b = core.staleBannerBox(1280, 384, 340);
+    expect(b.width).toBe(520);
+    expect(clear(b, 1280, 384, 340)).toBe(true);
+  });
+
+  it('PainelDireitoFechado_CentralizaNaJanela', () => {
+    const b = core.staleBannerBox(1600, 30, 30);
+    expect(b.left + b.width / 2).toBe(800);
+  });
+
+  it('JanelaEstreita_MantemLarguraMinimaDentroDaJanela', () => {
+    const b = core.staleBannerBox(600, 384, 340);
+    expect(b.width).toBe(240);
+    expect(b.left).toBeGreaterThanOrEqual(0);
+    expect(b.left + b.width).toBeLessThanOrEqual(600);
+  });
+});
+
+describe('MovedSince', () => {
+  it('Rollback_ExternalChangeAfterApprove_ListsPath', () => {
+    expect(core.movedSince({ 'a.css': 10, 'b.css': 20 }, { 'a.css': 10, 'b.css': 25 })).toEqual(['b.css']);
+  });
+
+  it('Rollback_NothingMoved_Empty', () => {
+    expect(core.movedSince({ 'a.css': 10 }, { 'a.css': 10 })).toEqual([]);
+  });
+
+  it('Rollback_FileUnreadableOrNotRecorded_IsNotMoved', () => {
+    expect(core.movedSince({ 'a.css': 10 }, {})).toEqual([]);
+    expect(core.movedSince(undefined, { 'a.css': 5 })).toEqual([]);
+  });
+});
