@@ -52,7 +52,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |
 | S5 | 1 | — | Testes | Checklist E | — | — | — | — | in-progress |
 | S5.1 | 2 | S5 | Unit do core (Vitest) | patchCssAt, parseSheet, scopeAst, zip e dc | — | — | — | — | done |
-| S5.2 | 2 | S5 | Snapshot de árvore por fixture | checklist E | — | — | — | #35 | in-progress |
+| S5.2 | 2 | S5 | Snapshot de árvore por fixture | checklist E | — | — | [](../changelog.d/feature-261013-35-s5-2-tree-snapshot.md) | #35 | done |
 | S5.3 | 2 | S5 | Origem de 30 nós amostrados | checklist E | — | — | — | #35 | registered |
 | S5.4 | 2 | S5 | Escopo todos iguais | checklist E | — | — | — | #35 | registered |
 | S5.5 | 2 | S5 | lineDiff testável | checklist E; extrair de index.html | — | — | [](../changelog.d/refactor-261013-35-s5-5-linediff-core.md) | #35 | done |
