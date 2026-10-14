@@ -80,3 +80,43 @@ test('Undo_FocusInTextField_LeavesAppliedEditAlone', async ({ page }) => {
   expect(count(await page.evaluate(shadows), 'rgb(1, 2, 3)')).toBe(1);
   await expect(page.getByText('Desfeito')).toHaveCount(0);
 });
+
+// Final-review fixes: a modal/diff panel owns the edit list, and one slider gesture is one step.
+const opacities = () => {
+  const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+  return [...host.shadowRoot.querySelectorAll('*')].filter((e) => e.localName !== 'style').map((e) => e.style.opacity);
+};
+
+const range = (page) => page.locator('xpath=//*[normalize-space(text())="Opacidade"]/ancestor::*[.//input[@type="range"]][1]//input[@type="range"]').first();
+
+test('Undo_DiffPanelOpen_DoesNothing', async ({ page }) => {
+  await open(page, 'Só este');
+  await typeShadow(page, SHADOW);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Ver diff', { exact: false }).first().click();
+  await page.waitForTimeout(300);
+  await press(page, 'Control+z');
+  expect(count(await page.evaluate(shadows), 'rgb(1, 2, 3)')).toBe(1);
+  await expect(page.getByText('Desfeito')).toHaveCount(0);
+});
+
+test('Undo_RangeBurst_IsOneStep', async ({ page }) => {
+  await open(page, 'Só este');
+  const base = await page.evaluate(opacities);
+  await range(page).focus();
+  for (let i = 0; i < 4; i++) await page.keyboard.press('ArrowLeft'); // four ticks of one gesture
+  expect(await page.evaluate(opacities)).not.toEqual(base);
+  await press(page, 'Control+z');
+  expect(await page.evaluate(opacities)).toEqual(base);
+});
+
+test('Undo_FocusOnRange_StillUndoes', async ({ page }) => {
+  await open(page, 'Só este');
+  const base = await page.evaluate(opacities);
+  await range(page).focus();
+  await page.keyboard.press('ArrowLeft');
+  expect(await page.evaluate(opacities)).not.toEqual(base);
+  await page.keyboard.press('Control+z'); // focus stays on the slider
+  await page.waitForTimeout(200);
+  expect(await page.evaluate(opacities)).toEqual(base);
+});
