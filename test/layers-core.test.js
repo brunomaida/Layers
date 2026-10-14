@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import fs from 'node:fs';
 import { core } from './setup.js';
 
@@ -1402,6 +1402,73 @@ describe('SourceHash', () => {
     const a = core.sourceHash([JSON.stringify({ rules: { a: 1 } }), 'mock.html', '<p>']);
     const b = core.sourceHash([JSON.stringify({ rules: { a: 2 } }), 'mock.html', '<p>']);
     expect(a).not.toBe(b);
+  });
+});
+
+describe('ContentHash', () => {
+  it('Vazio_VetorSha256', async () => {
+    expect(await core.contentHash('')).toEqual({ sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', bytes: 0 });
+  });
+
+  it('Abc_VetorSha256', async () => {
+    expect(await core.contentHash('abc')).toEqual({ sha256: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', bytes: 3 });
+  });
+
+  it('DigestRejeita_HashNuloEBytesMantidos', async () => {
+    const spy = vi.spyOn(globalThis.crypto.subtle, 'digest').mockRejectedValue(new Error('no digest'));
+    try {
+      expect(await core.contentHash('ç')).toEqual({ sha256: null, bytes: 2 });
+    } finally { spy.mockRestore(); }
+  });
+
+  it('NaoAscii_HashEBytesUtf8', async () => {
+    expect(await core.contentHash('ç')).toEqual({ sha256: '8bfa829b8119a6f39b91fd8decec63830b556e4d88a9da29334d7b0558829f2d', bytes: 2 });
+  });
+});
+
+describe('WriteLogText', () => {
+  const H0 = 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855';
+  const H1 = 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad';
+  const entry = (o) => ({ at: '2026-10-14T12:00:00.000Z', path: 'style.css', from: 0, to: 3, fromHash: H0, toHash: H1, bak: false, ...o });
+
+  it('Cabecalho_PrimeiraLinhaComVersao', () => {
+    expect(core.writeLogText([entry({})]).split('\n')[0]).toMatch(/^# layers-export\.log v2 /);
+    expect(core.WRITE_LOG_VERSION).toBe(2);
+  });
+
+  it('Entrada_LinhaComTamanhosEHashes', () => {
+    expect(core.writeLogText([entry({})]).split('\n')[1]).toBe('2026-10-14T12:00:00.000Z  style.css  0 -> 3 bytes  sha256 ' + H0 + ' -> ' + H1);
+  });
+
+  it('ComBak_SufixoBakGuardado', () => {
+    expect(core.writeLogText([entry({ bak: true })]).split('\n')[1]).toMatch(/ -> [0-9a-f]{64}  \.bak guardado$/);
+  });
+
+  it('HashNulo_TracoNoLugarDoHashMantemTamanho', () => {
+    expect(core.writeLogText([entry({ fromHash: null, toHash: null })]).split('\n')[1]).toBe('2026-10-14T12:00:00.000Z  style.css  0 -> 3 bytes  sha256 - -> -');
+  });
+
+  it('TamanhoNulo_TracoNoLugarDoTamanho', () => {
+    expect(core.writeLogText([entry({ from: null, to: null })]).split('\n')[1]).toMatch(/^2026-10-14T12:00:00\.000Z {2}style\.css {2}- -> - bytes {2}sha256 /);
+  });
+
+  it('PathComQuebraDeLinha_UmaLinhaPorEntrada', () => {
+    const text = core.writeLogText([entry({ path: 'a\n2026-10-14T00:00:00.000Z  forged.css\t\x00b' }), entry({ path: 'x  y' })]);
+    const lines = text.trimEnd().split('\n');
+    expect(lines).toHaveLength(3);
+    expect(lines[1]).toContain(String.raw`  a\x0a2026-10-14T00:00:00.000Z\x20\x20forged.css\x09\x00b  `);
+    expect(lines[2]).toContain(String.raw`  x\x20\x20y  `);
+    expect(text).not.toMatch(/[\x09\x00]/);
+  });
+
+  it('PathComum_ImpressoSemAlteracao', () => {
+    expect(core.writeLogText([entry({ path: 'css/ação café.css' })]).split('\n')[1]).toContain('  css/ação café.css  ');
+  });
+
+  it('VariasEntradas_UmaLinhaPorEntradaETerminaComNovaLinha', () => {
+    const text = core.writeLogText([entry({}), entry({ path: 'b.css' })]);
+    expect(text.endsWith('\n')).toBe(true);
+    expect(text.trimEnd().split('\n')).toHaveLength(3);
   });
 });
 

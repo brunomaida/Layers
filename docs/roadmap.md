@@ -57,11 +57,11 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S5.3 | 2 | S5 | Origem de 30 nós amostrados | checklist E | — | — | [](../changelog.d/feature-261013-35-s5-3-origin-sample.md) | #35 | done |
 | S5.4 | 2 | S5 | Escopo todos iguais | checklist E; achou regressão em scopedSelector | — | — | [](../changelog.d/fix-261013-35-s5-4-scope-all-equal.md) | #35 | done |
 | S5.5 | 2 | S5 | lineDiff testável | checklist E; extrair de index.html | — | — | [](../changelog.d/refactor-261013-35-s5-5-linediff-core.md) | #35 | done |
-| S5.6 | 2 | S5 | E2E Playwright funcional | checklist E; infra nasce em S4.4 | — | — | — | — | registered |
+| S5.6 | 2 | S5 | E2E Playwright funcional | checklist E; infra nasce em S4.4 | — | [](superpowers/plans/2026-10-14-s5-6-e2e-functional.md) | [](../changelog.d/feature-261014-0-s5-6-e2e-functional.md) | — | done |
 | S5.7 | 2 | S5 | Compatibilidade de navegadores | checklist E | — | — | — | — | registered |
 | S6 | 1 | — | Segurança | Checklist F | — | — | — | — | in-progress |
 | S6.1 | 2 | S6 | Superfície de gravação e ingestão | checklist F, 9 itens | — | — | — | — | done |
-| S6.2 | 2 | S6 | Hash no log de gravação | checklist F | — | — | — | — | registered |
+| S6.2 | 2 | S6 | Hash no log de gravação | checklist F | — | [](superpowers/plans/2026-10-14-s6-2-write-log-hash.md) | [](../changelog.d/feature-261014-0-s6-2-write-log-hash.md) | — | done |
 | S7 | 1 | — | Release e governança | Checklist G e docs do projeto | — | — | — | — | in-progress |
 | S7.1 | 2 | S7 | README atualizado | checklist G | — | — | — | — | registered |
 | S7.2 | 2 | S7 | CHANGELOG por versão | checklist G | — | — | [](../changelog.d/docs-261013-23-s7-2-changelog-checklist.md) | #23 | done |
