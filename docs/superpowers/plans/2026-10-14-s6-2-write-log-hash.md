@@ -42,8 +42,8 @@ Micro: one component (`index.html` app class) plus one pure core helper pair. Da
 │ writeText(path, text)  [EDIT] │        │ lib/layers-core.js       [NEW]   │
 │  before = f.text()            │        │ contentHash(text) -> Promise<    │
 │  .bak / .tmp + move (as today)│        │   {sha256: hex, bytes: n}>       │
-│  try [a, b] = await hashes    │──────▶ │  SHA-256(UTF-8), crypto.subtle   │
-│  catch -> a = b = nulls       │◀────── │                                  │
+│  [a, b] = await hashes        │──────▶ │  SHA-256(UTF-8), crypto.subtle   │
+│  (digest fail -> sha256 null) │◀────── │  catch -> {sha256: null, bytes}  │
 │  writeLog.push({path, at,     │        │ writeLogText(entries) -> string  │
 │   from, to, fromHash, toHash, │        │  "# layers-export.log v2 ..."    │
 │   bak})                       │        │  one line per entry, null -> '-' │
@@ -66,7 +66,7 @@ Micro: one component (`index.html` app class) plus one pure core helper pair. Da
 2026-10-14T12:02:00.000Z  style.css  812 -> 815 bytes  sha256 - -> -
 ```
 
-Hashes are full 64-char lowercase hex (shortened above); sizes are UTF-8 byte lengths. `after` equals `sha256sum`/`Get-FileHash` of the written file. `before` equals the hash of `<path>.bak` only when all three hold: it is the first write of that path in the session, the file was non-empty, and the `.bak` write succeeded (`.bak` failures are swallowed at `index.html:1833`). `before` of a new file is the empty-string hash. If the digest fails, sizes and hashes print as `-` (last line above) and the write itself is unaffected.
+Hashes are full 64-char lowercase hex (shortened above); sizes are UTF-8 byte lengths. `after` equals `sha256sum`/`Get-FileHash` of the written file. `before` equals the hash of `<path>.bak` only for the first write of that path in the session with non-empty previous content, and only if the `.bak` write succeeded (`if (before && !this.baks[path])` in `writeText`; `.bak` failures are swallowed). `before` of a new file is the empty-string hash. If the digest fails, only the hashes print as `-` (last line above); sizes stay, and the write itself is unaffected. Paths are printed with control characters, Unicode line breaks and runs of 2+ spaces escaped (`\xNN`), so a path cannot forge or split a line.
 
 > [!DECISION] hash-algorithm
 > Integrity/audit hash owned by checklist F; writes are cold path (one click, a few FS round-trips of ~ms each).
@@ -216,7 +216,7 @@ git commit -m "feat(core): add SHA-256 contentHash and versioned writeLogText (S
 
 **Interfaces:**
 - Consumes: `LayersCore.contentHash`, `LayersCore.writeLogText` (Task 1).
-- Produces: `this.writeLog` entries gain `fromHash`, `toHash`; `from`/`to` become UTF-8 byte lengths (`null` on digest failure); `layers-export.log` in format v2.
+- Produces: `this.writeLog` entries gain `fromHash`, `toHash`; `from`/`to` become UTF-8 byte lengths (kept on digest failure, only the hashes become `null`); `layers-export.log` in format v2.
 
 - [ ] **Step 1: Write the failing e2e**
 
@@ -335,11 +335,10 @@ Expected: both tests FAIL on the hash assertions (log has no hash yet). If one f
 
 - [ ] **Step 3: Write minimal implementation**
 
-`index.html:1843` — replace the line (single match on `this.writeLog = (this.writeLog || []).concat(`). The digest runs after the write and the mtime refresh (`:1842`), so the mtime-check→write window stays as narrow as today, and a digest failure only blanks the log fields (`-`), never blocks or aborts a write (a thrown `writeText` would be swallowed by `rollback`'s `catch (e) {}` at `:1915`, which then resets state as if it had worked):
+`index.html:1843` — replace the line (single match on `this.writeLog = (this.writeLog || []).concat(`). The digest runs after the write and the mtime refresh (`:1842`), so the mtime-check→write window stays as narrow as today, and a digest failure only blanks the hash fields (`-`; `contentHash` catches it and keeps the byte counts), never blocks or aborts a write (a thrown `writeText` would be swallowed by `rollback`'s `catch (e) {}` at `:1915`, which then resets state as if it had worked):
 
 ```js
-    let a = { sha256: null, bytes: null }, b = a;
-    try { [a, b] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]); } catch (e) {}
+    const [a, b] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]);
     this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: a.bytes, to: b.bytes, fromHash: a.sha256, toHash: b.sha256, bak: !!this.baks[path] });
 ```
 
@@ -401,10 +400,10 @@ In `docs/ARCHITECTURE.md`, append to the paragraph of § Guarda de conflito na g
 
 ```md
 Depois de gravar, cada gravação entra em `this.writeLog` com tamanho em bytes UTF-8 e SHA-256 (`LayersCore.contentHash`)
-do conteúdo antes e depois; se o digest falhar, os campos saem como `-` e a gravação segue. `exportFull` grava o registro
+do conteúdo antes e depois; se o digest falhar, só os hashes saem como `-` (os tamanhos ficam) e a gravação segue. `exportFull` grava o registro
 como `layers-export.log` no formato v2 (`LayersCore.writeLogText`, cabeçalho `# layers-export.log v2`). O hash "depois"
-confere com `sha256sum` do arquivo gravado. O "antes" confere com o `.bak` da sessão só na primeira gravação do caminho na
-sessão, com arquivo não vazio e `.bak` gravado com sucesso. "Antes" e `.bak` são o texto decodificado (`f.text()`)
+confere com `sha256sum` do arquivo gravado. O "antes" confere com o `.bak` só na primeira gravação do caminho na sessão com
+conteúdo anterior não vazio, e apenas se a gravação do `.bak` teve sucesso. "Antes" e `.bak` são o texto decodificado (`f.text()`)
 regravado em UTF-8: BOM e bytes não UTF-8 do original não se preservam.
 ```
 

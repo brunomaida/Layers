@@ -7,6 +7,7 @@ adr: none
 - `e2e/write-log-hash.spec.js`: rascunho + exportação numa pasta OPFS; o log traz o hash e ele confere com o arquivo; um segundo rascunho mostra o "antes" igual ao hash do `.bak`.
 
 ### Fixed
+- `layers-export.log`: o caminho sai com caracteres de controle e espaços duplos escapados (`\xNN`); um nome de arquivo com quebra de linha não forja nem parte mais uma linha do log. Se o digest falhar, só os hashes saem como `-` e os tamanhos em bytes ficam.
 - `layers-export.log`: os tamanhos antes/depois passam a ser bytes UTF-8 (antes eram unidades UTF-16 rotuladas como `bytes`).
 
 ### Perf
