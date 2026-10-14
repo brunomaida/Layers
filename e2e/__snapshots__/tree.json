@@ -1,0 +1,215 @@
+{
+  "traval": {
+    "nodes": 428,
+    "maxDepth": 11,
+    "withSrc": 199,
+    "srcFiles": [
+      "src/chart/brtTime.ts",
+      "src/chart/chartTheme.ts",
+      "src/chart/chartWrapper.ts",
+      "src/chart/originMarkerPrimitive.ts",
+      "src/chart/positionBoxPrimitive.ts",
+      "src/chart/sessionLinePrimitive.ts",
+      "src/chart/studyPrimitive.ts",
+      "src/styles/components.css",
+      "src/styles/dashboard.css",
+      "src/styles/layout.css",
+      "src/ui/chartStage.ts",
+      "src/ui/equitySparkline.ts",
+      "src/ui/indicatorPaneHeader.ts",
+      "src/ui/panelHeader.ts",
+      "src/ui/shell.ts",
+      "src/ui/studiesToolbar.ts"
+    ],
+    "rootBox": {
+      "w": 1280,
+      "h": 760
+    }
+  },
+  "axai": {
+    "nodes": 124,
+    "maxDepth": 8,
+    "withSrc": 51,
+    "srcFiles": [
+      "wwwroot/painel.css"
+    ],
+    "rootBox": {
+      "w": 1280,
+      "h": 1600
+    }
+  },
+  "marketview": {
+    "nodes": 80,
+    "maxDepth": 7,
+    "withSrc": 17,
+    "srcFiles": [
+      "index.html"
+    ],
+    "rootBox": {
+      "w": 1440,
+      "h": 900
+    }
+  },
+  "plain-css": {
+    "nodes": 6,
+    "maxDepth": 3,
+    "withSrc": 5,
+    "srcFiles": [
+      "style.css"
+    ],
+    "rootBox": {
+      "w": 900,
+      "h": 214
+    }
+  },
+  "nested-oklch": {
+    "nodes": 7,
+    "maxDepth": 3,
+    "withSrc": 6,
+    "srcFiles": [
+      "style.css"
+    ],
+    "rootBox": {
+      "w": 900,
+      "h": 172
+    }
+  },
+  "dc-template": {
+    "nodes": 5,
+    "maxDepth": 2,
+    "withSrc": 5,
+    "srcFiles": [
+      "index.html"
+    ],
+    "rootBox": {
+      "w": 400,
+      "h": 55
+    }
+  },
+  "student-dashboard": {
+    "nodes": 151,
+    "maxDepth": 8,
+    "withSrc": 16,
+    "srcFiles": [
+      "style.css"
+    ],
+    "rootBox": {
+      "w": 1280,
+      "h": 900
+    }
+  },
+  "plain-admin": {
+    "nodes": 658,
+    "maxDepth": 16,
+    "withSrc": 293,
+    "srcFiles": [
+      "assets/css/bootstrap.min.css",
+      "assets/css/lineicons.css",
+      "assets/css/main.css"
+    ],
+    "rootBox": {
+      "w": 1280,
+      "h": 2751
+    }
+  },
+  "choices-js": {
+    "nodes": 16,
+    "maxDepth": 4,
+    "withSrc": 11,
+    "srcFiles": [
+      "choices.min.css"
+    ],
+    "rootBox": {
+      "w": 640,
+      "h": 61
+    }
+  },
+  "todomvc-react": {
+    "nodes": 40,
+    "maxDepth": 7,
+    "withSrc": 14,
+    "srcFiles": [
+      "app.css",
+      "src/app.jsx"
+    ],
+    "rootBox": {
+      "w": 550,
+      "h": 720
+    }
+  },
+  "coffee-masters": {
+    "nodes": 135,
+    "maxDepth": 13,
+    "withSrc": 12,
+    "srcFiles": [
+      "home.css",
+      "src/pages/home/index.ts"
+    ],
+    "rootBox": {
+      "w": 1280,
+      "h": 1434
+    }
+  },
+  "vcard-portfolio": {
+    "nodes": 413,
+    "maxDepth": 10,
+    "withSrc": 256,
+    "srcFiles": [
+      "assets/css/style.css"
+    ],
+    "rootBox": {
+      "w": 1200,
+      "h": 1060
+    }
+  },
+  "pico-css": {
+    "nodes": 243,
+    "maxDepth": 9,
+    "withSrc": 15,
+    "srcFiles": [
+      "css/pico.min.css"
+    ],
+    "rootBox": {
+      "w": 1024,
+      "h": 3596
+    }
+  },
+  "slick-carousel": {
+    "nodes": 34,
+    "maxDepth": 5,
+    "withSrc": 13,
+    "srcFiles": [
+      "slick-theme.css",
+      "slick.css"
+    ],
+    "rootBox": {
+      "w": 610,
+      "h": 49
+    }
+  },
+  "mobile-select": {
+    "nodes": 22,
+    "maxDepth": 8,
+    "withSrc": 1,
+    "srcFiles": [
+      "src/ms-core.ts"
+    ],
+    "rootBox": {
+      "w": 375,
+      "h": 500
+    }
+  },
+  "ecommerce-jsx": {
+    "nodes": 479,
+    "maxDepth": 12,
+    "withSrc": 192,
+    "srcFiles": [
+      "app.css",
+      "src/Components/Header/Header/Header.jsx"
+    ],
+    "rootBox": {
+      "w": 1280,
+      "h": 853
+    }
+  }
+}
