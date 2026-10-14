@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-18",
+    "end": "2026-10-17",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -629,19 +629,26 @@
         "id": "S2.19",
         "type": "spec",
         "name": "Limpar códigos dc reservados e avisos do hoistFaces",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
         "status": "wip",
         "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
         "progress": 60,
-        "docs": [],
+        "docs": [
+          {
+            "name": "2026-10-14-s2-19-dc-reserved-codes.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s2-19-dc-reserved-codes.md)",
+            "title": "2026-10-14-s2-19-dc-reserved-codes.md)"
+          }
+        ],
         "reason": "`UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames`",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
