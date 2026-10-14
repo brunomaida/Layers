@@ -1,40 +1,14 @@
 import crypto from 'node:crypto';
-import fs from 'node:fs';
-import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { connectFixture, selectLayer } from './folder-helpers.js';
 
 // S6.2: layers-export.log carries a SHA-256 before -> after per write, and the "after" hash
 // matches the file on disk. Only token presence is asserted; the line layout belongs to the unit tests.
-const FIXTURE = path.resolve('fixtures/plain-css');
-const FILES = ['layers.json', 'index.html', 'style.css'].map((n) => [n, fs.readFileSync(path.join(FIXTURE, n), 'utf8')]);
 const SHADOW = '0 0 0 3px rgb(1, 2, 3)';
 const SHADOW_2 = '0 0 0 4px rgb(4, 5, 6)';
 const sha = (bytes) => crypto.createHash('sha256').update(bytes).digest('hex');
 
-async function connect(page) {
-  await page.addInitScript(() => {
-    window.showDirectoryPicker = async () => window.__proj;
-  });
-  await page.goto('/');
-  await page.evaluate(async (files) => {
-    const root = await navigator.storage.getDirectory();
-    for (const name of ['proj', 'export']) { try { await root.removeEntry(name, { recursive: true }); } catch (e) { /* first run */ } }
-    const dir = await root.getDirectoryHandle('proj', { create: true });
-    for (const [name, text] of files) {
-      const w = await (await dir.getFileHandle(name, { create: true })).createWritable();
-      await w.write(text);
-      await w.close();
-    }
-    window.__proj = dir;
-  }, FILES);
-  const trigger = page.getByText('Nenhum projeto').first();
-  const item = page.getByText(/Conectar pasta/i).first();
-  await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
-  await item.click();
-  await readNodes(page);
-}
+const connect = (page) => connectFixture(page, 'plain-css');
 
 const field = (page) => page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
 
@@ -51,7 +25,7 @@ const readOpfsBytes = async (page, dirName, file) => Buffer.from(await page.eval
 
 test('ExportLog_AfterDraft_HasSha256MatchingDisk', async ({ page }) => {
   await connect(page);
-  await page.locator('[data-node-id][title^=".card"]').first().click();
+  await selectLayer(page, '.card');
   await field(page).click({ clickCount: 3 });
   await page.keyboard.type(SHADOW);
   await page.keyboard.press('Tab');
@@ -81,7 +55,7 @@ test('ExportLog_AfterDraft_HasSha256MatchingDisk', async ({ page }) => {
 // Approve is not used: it clears the pending changes and exportFull then returns early.
 test('ExportLog_AfterRedraft_BeforeHashMatchesBak', async ({ page }) => {
   await connect(page);
-  await page.locator('[data-node-id][title^=".card"]').first().click();
+  await selectLayer(page, '.card');
   for (const value of [SHADOW, SHADOW_2]) {
     await field(page).click({ clickCount: 3 });
     await page.keyboard.type(value);
@@ -114,7 +88,7 @@ test('ExportLog_DigestRejects_WriteSucceedsHashesDashed', async ({ page }) => {
     crypto.subtle.digest = () => Promise.reject(new Error('digest unavailable'));
   });
   await connect(page);
-  await page.locator('[data-node-id][title^=".card"]').first().click();
+  await selectLayer(page, '.card');
   await field(page).click({ clickCount: 3 });
   await page.keyboard.type(SHADOW);
   await page.keyboard.press('Tab');
