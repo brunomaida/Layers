@@ -58,7 +58,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
 - [x] Escopo "todos iguais": afeta todos os usos e nenhum outro (`e2e/scope-all-equal.spec.js`, via UI no `axai`: `.sum-stat` com 6 usos; contraste "Só este" = 1 elemento). Gate manual (E2E).
 - [x] `lineDiff` (`LayersCore.lineDiff`): contexto de 3 linhas, sem alterações, arquivo novo — 6 casos em `test/layers-core.test.js`.
-- [ ] E2E (Playwright; infra e specs de performance prontos em `e2e/`, faltam os specs funcionais): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.
+- [x] E2E funcional (Playwright): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado, numa cópia real do `plain-css` no OPFS (`e2e/apply-flow.spec.js`, helper `e2e/folder-helpers.js`); confere `.bak`, histórico e ausência de rascunho/`.tmp`, mais rollback e sua recusa. Gate manual (E2E): `npm run test:e2e`.
 - [ ] Compatibilidade: Chrome/Edge completos; Firefox/Safari em somente leitura com mensagem.
 
 ## F. Segurança
