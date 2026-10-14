@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 65,
+    "progress": 68,
     "docs": [],
     "children": [
       {
@@ -533,12 +533,12 @@
         "name": "Achados restantes da revisão do reload",
         "start": "2026-10-18",
         "end": "2026-10-20",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px)",
         "is_branch": false,
