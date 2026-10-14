@@ -128,15 +128,16 @@ requisições, todas em `localhost:5180`. Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 
 O `data-src` de um elemento é `arquivo|seletor|linha`. O que ocupa o slot do seletor decide como se grava:
 
-| Origem | `data-src` | Gravação | Recusa (`LayersCore.DC_CODES`) |
+| Origem | `data-src` | Gravação | Recusa (código ou toast) |
 |---|---|---|---|
 | Regra em `.css` | `arquivo.css\|.classe\|linha` | `patchCssAt` | folha de utilitários recusa por toast (`utilityBlock`) |
 | Template dc (`<x-dc>`) | `dcSource\|tpl:N\|linha` | `patchDc` → `patchAttrAt`, só valor literal em `style=""` | `VALUE_HAS_BINDING`, `NO_INLINE_STYLE`, `PROP_NOT_INLINE`, `VALUE_UNSAFE`, `SOURCE_CHANGED`, `MAP_MISALIGNED` |
 | Qualquer outro arquivo | `arquivo\|…` | nenhuma | `SOURCE_NOT_CSS`; `SNAPSHOT_STYLE` para o `<style>` do próprio snapshot |
 | Origem sem pasta gravável | — | nenhuma | toast que nomeia a origem (`readOnlyBlock`) |
 
-O código da recusa é o contrato; a frase mostrada no log do rascunho (`dcWhy` em `index.html`) deriva
-dele e vem com um snippet para colar à mão. Só o template dc tem mapa por índice: o runtime carimba
+Onde há código (`LayersCore.DC_CODES`), o código da recusa é o contrato; a frase mostrada no log
+do rascunho (`dcWhy` em `index.html`) deriva dele e vem com um snippet para colar à mão. Só o
+template dc tem mapa por índice: o runtime carimba
 `data-dc-tpl="N"` em ordem de documento, `LayersCore.mapDcTemplate` conta as start tags do arquivo
 na mesma ordem (o conteúdo de `<template>` não é carimbado, então é pulado) e o mapa só vale se
 `checkDcMap` bate as tags do render **e** `dcStyleMismatch` bate os valores literais do `style=""`
@@ -148,7 +149,9 @@ idêntico a ele, então uma edição sua no arquivo entre o rascunho e a aprova�
 
 `loadProject` lê o `layers.json`, o mock e as folhas, e chama `buildProjectFromHtml` (função de
 módulo em `index.html`, só devolve dados): sanitiza, escopa as folhas, monta a raiz (L0) e atribui
-`data-src`. O chamador faz o hoist de `@font-face` e monta o resultado no shadow root fora da tela. Os avisos do hoist entram em `warn` depois dos do build (folha de utilitários, mapa dc, `rules`); como o toast de carga mostra só `warn[0]`, um aviso que desabilita gravação ganha de uma fonte do projeto ausente.
+`data-src`. O chamador faz o hoist de `@font-face` e monta o resultado no shadow root fora da tela. Os avisos escritos pelo hoist entram em `warn` depois dos do build (folha de utilitários,
+mapa dc, `rules`); como o toast de carga mostra só `warn[0]`, um aviso que desabilita gravação
+ganha de uma fonte do projeto ausente.
 A fonte de camadas é sempre um mock sanitizado; nenhum script do projeto roda na origem do editor.
 Ler um app renderizado por JS **sem** snapshot manual (Chromium headless em processo separado) está
 decidido e não implementado: ver a ADR de 2026-09-18 em `architecture-decisions.md`. Iframe de mesma

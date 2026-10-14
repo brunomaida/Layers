@@ -1277,7 +1277,7 @@ class Component extends DCLogic {
     const built = buildProjectFromHtml({ doc, html, man, css, dcFile, dcText, mockPath, mockDir, warn });
     if (built.empty) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
-    // face warnings land after the build's (utility sheet, dc map, rules): a write-disabling one outranks a missing project font for warn[0]
+    // warnings written by the hoist land after the build's (utility sheet, dc map, rules): a write-disabling one outranks a missing project font for warn[0]
     await this.hoistFaces(built.faces, warn); if (seq !== this.loadSeq) return; this.varIdx = built.varIdx;
     const { rootEl, scoped, inlineScoped, utility, snapMock, dc } = built;
     const host = this.pageRef.current; if (!host) { if (seq === this.loadSeq) this.loadedSeq = seq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
