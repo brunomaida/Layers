@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 88,
+    "progress": 90,
     "docs": [],
     "children": [
       {
@@ -519,19 +519,25 @@
         "name": "Marcador manual para TS/JS",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "analysis",
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s2-15-manual-marker-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-14-s2-15-manual-marker-design.md)",
             "title": "2026-10-14-s2-15-manual-marker-design.md)"
+          },
+          {
+            "name": "feature-261014-0-s2-15-manual-marker.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s2-15-manual-marker.md)",
+            "title": "feature-261014-0-s2-15-manual-marker.md)"
           }
         ],
         "reason": "checklist B",

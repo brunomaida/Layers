@@ -26,11 +26,11 @@ O comportamento "patch manual" para origens TS/JS já existe como texto livre: n
  origem do nó (src = file|selector|line)
         │ ruleOf
         ▼
- ┌───────────────────────────┐  true  ┌──────────────────────────────────┐
- │ LayersCore.isManualSource │ ─────▶ │ cabeçalho do painel: "patch manual"│
- │ (file)  [novo]            │        │ tooltip do chip: "— patch manual" │
- └──────────┬────────────────┘        │ Ajustes: prefixo "patch manual ·" │
-            │                         └──────────────────────────────────┘
+ ┌───────────────────────────┐  true  ┌─────────────────────────────────────┐
+ │ LayersCore.isManualSource │ ─────▶ │ cabeçalho do painel: "patch manual" │
+ │ (file)  [novo]            │        │ tooltip do chip: "— patch manual"   │
+ └──────────┬────────────────┘        │ Ajustes: prefixo "patch manual ·"   │
+            │                         └─────────────────────────────────────┘
             │ false
             ▼
    fluxo CSS inalterado (".css real" / "mock")
