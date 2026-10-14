@@ -1573,3 +1573,119 @@ describe('SetPending / GetPending', () => {
     expect(core.getPending(st, 'fx:a')).toBeNull();
   });
 });
+
+describe('MenuStep', () => {
+  const step = (menu, pin, ev, t, pending = null) => core.menuStep({ menu, pin, pending }, ev, t);
+  const enter = (key, extra) => ({ type: 'enter', key, pointer: 'mouse', buttons: 0, ...extra });
+  const leave = (key, extra) => ({ type: 'leave', key, pointer: 'mouse', ...extra });
+  const DELAY = { openDelay: 120, closeGrace: 260 };
+  const SHUT = { menu: null, pin: false, timer: null };
+
+  it('Timing_Default_ZeroOpenDelayAnd260Grace', () => {
+    expect(core.MENU_TIMING).toEqual({ openDelay: 0, closeGrace: 260 });
+  });
+
+  it('Enter_NothingOpen_OpensUnpinnedNow', () => {
+    expect(step(null, false, enter('apar'))).toEqual({ menu: 'apar', pin: false, timer: null });
+  });
+
+  it('Enter_NothingOpenWithDelay_SchedulesOpen', () => {
+    expect(step(null, false, enter('apar'), DELAY)).toEqual({ menu: null, pin: false, timer: { kind: 'open', key: 'apar', ms: 120 } });
+  });
+
+  it('EnterLeave_Touch_Ignored', () => {
+    expect(step(null, false, enter('hist', { pointer: 'touch' }))).toBeNull();
+    expect(step('hist', false, leave('hist', { pointer: 'touch' }))).toBeNull();
+  });
+
+  it('Enter_ButtonPressed_Ignored', () => {
+    expect(step(null, false, enter('inter', { buttons: 1 }))).toBeNull();
+  });
+
+  it('Enter_SameMenuOpen_CancelsCloseTimer', () => {
+    expect(step('inter', false, enter('inter'))).toEqual({ menu: 'inter', pin: false, timer: null });
+  });
+
+  it('Enter_OtherUnpinnedOpen_SwitchesNowEvenWithDelay', () => {
+    expect(step('apar', false, enter('inter'), DELAY)).toEqual({ menu: 'inter', pin: false, timer: null });
+  });
+
+  it('Enter_OtherPinnedOpen_Ignored', () => {
+    expect(step('apar', true, enter('inter'))).toBeNull();
+  });
+
+  it('Leave_UnpinnedOpen_SchedulesCloseGrace', () => {
+    expect(step('acoes', false, leave('acoes'))).toEqual({ menu: 'acoes', pin: false, timer: { kind: 'close', key: 'acoes', ms: 260 } });
+  });
+
+  it('Leave_Pinned_Ignored', () => {
+    expect(step('acoes', true, leave('acoes'))).toBeNull();
+  });
+
+  it('Leave_OtherMenuOpen_Ignored', () => {
+    expect(step('apar', false, leave('inter'))).toBeNull();
+  });
+
+  it('Leave_NothingOpenPendingSameKey_CancelsPendingOpen', () => {
+    expect(step(null, false, leave('hist'), DELAY, 'hist')).toEqual(SHUT);
+  });
+
+  it('Leave_NothingOpenNoOrOtherPending_Ignored', () => {
+    expect(step(null, false, leave('hist'))).toBeNull();
+    expect(step(null, false, leave('hist'), DELAY, 'apar')).toBeNull();
+  });
+
+  it('TimerOpen_NothingOpen_OpensUnpinned', () => {
+    expect(step(null, false, { type: 'timer', kind: 'open', key: 'hist' })).toEqual({ menu: 'hist', pin: false, timer: null });
+  });
+
+  it('TimerOpen_SomethingOpen_Ignored', () => {
+    expect(step('apar', true, { type: 'timer', kind: 'open', key: 'hist' })).toBeNull();
+  });
+
+  it('TimerClose_StillUnpinned_Closes', () => {
+    expect(step('inter', false, { type: 'timer', kind: 'close', key: 'inter' })).toEqual(SHUT);
+  });
+
+  it('TimerClose_PinnedMeanwhile_Ignored', () => {
+    expect(step('inter', true, { type: 'timer', kind: 'close', key: 'inter' })).toBeNull();
+  });
+
+  it('TimerClose_OtherMenuNow_Ignored', () => {
+    expect(step('apar', false, { type: 'timer', kind: 'close', key: 'inter' })).toBeNull();
+  });
+
+  it('Click_Closed_OpensPinned', () => {
+    expect(step(null, false, { type: 'click', key: 'hist' })).toEqual({ menu: 'hist', pin: true, timer: null });
+  });
+
+  it('Click_UnpinnedOpen_Pins', () => {
+    expect(step('hist', false, { type: 'click', key: 'hist' })).toEqual({ menu: 'hist', pin: true, timer: null });
+  });
+
+  it('Click_Pinned_Closes', () => {
+    expect(step('hist', true, { type: 'click', key: 'hist' })).toEqual(SHUT);
+  });
+
+  it('Click_OtherPinned_SwitchesPinned', () => {
+    expect(step('apar', true, { type: 'click', key: 'acoes' })).toEqual({ menu: 'acoes', pin: true, timer: null });
+  });
+
+  it('Inside_Unpinned_Pins', () => {
+    expect(step('inter', false, { type: 'inside', key: 'inter' })).toEqual({ menu: 'inter', pin: true, timer: null });
+  });
+
+  it('Inside_PinnedOrOther_Ignored', () => {
+    expect(step('inter', true, { type: 'inside', key: 'inter' })).toBeNull();
+    expect(step('apar', false, { type: 'inside', key: 'inter' })).toBeNull();
+  });
+
+  it('Close_OpenOrPending_ClosesEvenWhenPinned', () => {
+    expect(step('apar', true, { type: 'close' })).toEqual(SHUT);
+    expect(step(null, false, { type: 'close' }, DELAY, 'hist')).toEqual(SHUT);
+  });
+
+  it('Close_NothingOpen_Ignored', () => {
+    expect(step(null, false, { type: 'close' })).toBeNull();
+  });
+});
