@@ -56,6 +56,7 @@ Regras:
 | `flushMove()` | Orbit/pan/focus por `requestAnimationFrame`. |
 | `codeFor()`, `patchCss()`, `LayersCore.lineDiff()` (dados puros; `index.html` só pinta) | Leitura do código da regra, patch preservando formatação, diff para revisão. |
 | `setProp()`, `applyCode()`, `revert()` | Mutação de estilo, registro de `changes`, escopo. |
+| `pushUndo()`, `undo()`, `redo()`, `stepHistory()`, `LayersCore.inlineDelta`, `LayersCore.pushSnapshot` | Undo/redo global (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) sobre snapshots de `changes[]`; `inlineDelta` calcula as escritas inline entre dois snapshots. |
 | `connectDir`, `readText`, `writeText`, `exportFull` | I/O de arquivos. |
 | `checkStale`, `reloadProject`, `doReload`, `dismissStale`, `onFocus` | Recarregar projeto e aviso de "arquivos mudaram no disco" (ver § Loader de projeto). Helpers puros em `LayersCore`: `staleFiles`, `hasUnsaved`, `pickWatched`. |
 | `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
@@ -66,7 +67,7 @@ Regras:
 
 - Câmera: `yaw, tilt, zoom, panX, panY, focus, spacing, persp, flat`.
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
-- Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`.
+- Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`.
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
 - Recarga: `stale` (paths que mudaram no disco, ou `null`); `this.watch` (mtimes vigiados, fora do state) e `this.loadedSeq` (geração do `loadSeq` a que o watch pertence).
 - Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
