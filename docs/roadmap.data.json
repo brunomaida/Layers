@@ -813,7 +813,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 62,
+    "progress": 70,
     "docs": [],
     "children": [
       {
@@ -956,12 +956,12 @@
         "name": "Culling de planos fora do viewport",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist D",
         "is_branch": false,
