@@ -1216,7 +1216,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 50,
+    "progress": 80,
     "docs": [],
     "children": [
       {
@@ -1245,12 +1245,12 @@
         "name": "Hash no log de gravação",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist F",
         "is_branch": false,
