@@ -28,7 +28,7 @@ Ctrl+Z desfaz e Ctrl+Shift+Z / Ctrl+Y refaz os ajustes de propriedade e de códi
 Abordagem escolhida: snapshot de `changes[]` (alternativas descartadas: par do/inverso por operação, porque o inverso de `extend`/`decide` reescreve vários nós; log de eventos com replay, porque re-aplica tudo no DOM).
 
 ```
- applyEdit / decide / applyCodeText / revert / cancelAll
+ applyEdit (+ decide) / applyCodeText / revert / cancelAll
         │  1) pushUndo(clone de changes[])  → limpa redo
         │  2) muta changes[] + el.style (como hoje)
         ▼
@@ -66,13 +66,15 @@ Para cada `(id, prop)`:
 - Com `state.pending` aberto (pergunta de escopo `one`/`all`), Ctrl+Z não faz nada: o usuário responde a pergunta primeiro.
 - Foco em `input`, `textarea` ou `select`: o handler não age, vale o undo nativo.
 - Pilha vazia: toast `Nada para desfazer` / `Nada para refazer`.
-- Passo executado: toast `Desfeito: <prop>` / `Refeito: <prop>`, onde `<prop>` vem da diferença entre os dois `changes[]`; `N ajustes` quando mais de uma propriedade muda.
+- Passo executado: toast `Desfeito: <prop>` / `Refeito: <prop>`, onde `<prop>` vem da diferença entre os dois `changes[]`; `N propriedades` quando mais de uma propriedade muda.
 - Após restaurar, `scanSoon()` como em `revert`.
 
 ## Erros e bordas
 
 - Snapshot referencia `id` que sumiu do DOM após re-scan: o delta pula esse `id`; nenhum erro.
-- `applyEdit` que não muda nada (valor igual ou `CSS.supports` falso) retorna antes de `pushUndo`: não cria passo vazio.
+- `applyEdit` com valor inválido (`CSS.supports` falso) retorna antes de qualquer mudança; com o mesmo valor já registrado no ajuste (`c.to === val`) não chama `pushUndo`: não cria passo fantasma.
+- `decide` (resposta da pergunta de escopo) não abre passo próprio: faz parte do passo do `applyEdit` que abriu a pergunta, então um Ctrl+Z desfaz os dois.
+- `applyCodeText` só cria passo quando pelo menos uma declaração muda algo.
 - `cancelAll` vira um passo único: Ctrl+Z restaura todos os ajustes cancelados.
 
 ## Testes
