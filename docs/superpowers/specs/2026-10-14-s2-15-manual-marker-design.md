@@ -26,10 +26,11 @@ O comportamento "patch manual" para origens TS/JS já existe como texto livre: n
  origem do nó (src = file|selector|line)
         │ ruleOf
         ▼
- ┌───────────────────────────┐  true  ┌──────────────────────────────┐
- │ LayersCore.isManualSource │ ─────▶ │ chip origem: ".ts · manual"  │
- │ (file)  [novo]            │        │ lista ajustes: "patch manual"│
- └──────────┬────────────────┘        └──────────────────────────────┘
+ ┌───────────────────────────┐  true  ┌──────────────────────────────────┐
+ │ LayersCore.isManualSource │ ─────▶ │ cabeçalho do painel: "patch manual"│
+ │ (file)  [novo]            │        │ tooltip do chip: "— patch manual" │
+ └──────────┬────────────────┘        │ Ajustes: prefixo "patch manual ·" │
+            │                         └──────────────────────────────────┘
             │ false
             ▼
    fluxo CSS inalterado (".css real" / "mock")
@@ -40,11 +41,11 @@ O comportamento "patch manual" para origens TS/JS já existe como texto livre: n
 | # | Arquivo | Mudança |
 |---|---|---|
 | 1 | `lib/layers-core.js` | `isManualSource(file)`: `/\.[cm]?[jt]sx?$/i`; exportar |
-| 2 | `index.html` (`originShort`, `originSource`) | chip `.ts · manual` (antes `mock`); tooltip `origem: <file> — patch manual` |
-| 3 | `index.html` (lista de ajustes) | sufixo ` · patch manual` (`--warn`) na linha `file › selector` quando `isManualSource(file)` |
-| 4 | `index.html` (`codeRow` nota) | usar `isManualSource` só onde o marcador é tocado; os demais `/\.css$/` ficam |
+| 2 | `index.html` (cabeçalho do painel, `originSource`) | span `· patch manual` (`--warn`) após `selSize`; tooltip do chip `origem: <file> — patch manual`. O texto do chip (`mock`) não muda: o slot tem ~12px úteis e cortaria o marcador |
+| 3 | `index.html` (lista de ajustes) | prefixo `patch manual · ` (`--warn`) na linha `file › selector`; prefixo, não sufixo, porque a linha corta por reticências no fim |
+| 4 | — | descartada: a nota do `codeRow` já diz "patch manual no .ts"; fica como está |
 | 5 | `test/layers-core.test.js` | `isManualSource_TsJsx_True`, `_Css_False`, `_Html_False` |
-| 6 | `e2e/manual-marker.spec.js` | fixture com `.ts`: chip contém "manual"; ajuste na lista contém "patch manual" |
+| 6 | `e2e/manual-marker.spec.js` | traval, origem curta (`.shell`) e longa (`origin marker`): cabeçalho e Ajustes mostram "manual" sem recorte (mede a caixa, não só o texto) |
 | 7 | docs | checklist L29 `[x]`; roadmap S2.15 `done`; nota em ARCHITECTURE; fragmento `changelog.d` com `### Perf` N/A |
 
 ## Verificação
@@ -54,6 +55,10 @@ O comportamento "patch manual" para origens TS/JS já existe como texto livre: n
 | Unit (commit) | `npm test` |
 | E2E (manual) | `npm run test:e2e -- e2e/manual-marker.spec.js` e `origin-sample`/`tree-snapshot` sem regressão |
 | Rede | DevTools → Network sem requisição fora de `localhost:5180` |
+
+## Limites conhecidos
+
+O marcador cobre extensão TS/JS. O gravador pula mais casos (`.scss`, `.vue`, snapshot `mock.html`, ajuste não-tpl em `index.html` dc); neles o patch também é manual e segue sem marcador. Ampliar é decisão própria.
 
 ## Fora de escopo
 
