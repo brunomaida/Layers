@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
-import { connectFixture, selectLayer, readDisk, listDisk } from './folder-helpers.js';
+import { connectFixture, selectLayer, readDisk, listDisk, mtimeDisk } from './folder-helpers.js';
 
 // S5.6: checklist E end to end on a real connected folder (OPFS copy of plain-css): connect, select,
 // edit, view the diff, draft, approve, and read the file back. `.card` has one use and no
@@ -32,6 +32,8 @@ async function approveAll(page) {
   await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(DECL);
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  // approve swallows write errors and still reports done: prove the write landed
+  await expect.poll(() => readDisk(page, 'style.css')).toMatch(DECL);
 }
 
 // Split around the top-level `.card { … }` block (the @media one comes later in the file).
@@ -88,13 +90,15 @@ test('Rollback_FileChangedOutside_RefusesAndKeepsFile', async ({ page }) => {
   await editCard(page);
   await approveAll(page);
   await page.getByRole('button', { name: 'Fechar' }).first().click();
-  await page.waitForTimeout(50); // a later mtime than the one approve recorded
+  const before = await mtimeDisk(page, 'style.css');
   const outside = (await readDisk(page, 'style.css')) + '\n/* changed outside LAYERS */\n';
   await page.evaluate(async (text) => {
     const w = await (await window.__proj.getFileHandle('style.css')).createWritable();
     await w.write(text);
     await w.close();
   }, outside);
+  // the guard compares mtimes: wait until the external write is visibly later than approve's
+  await expect.poll(() => mtimeDisk(page, 'style.css')).not.toBe(before);
   await page.getByRole('button', { name: 'Rollback' }).click();
   await expect(page.getByText(/Reverter recusado/)).toBeVisible();
   expect(await readDisk(page, 'style.css')).toBe(outside);
