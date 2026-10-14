@@ -813,7 +813,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 75,
+    "progress": 73,
     "docs": [],
     "children": [
       {
@@ -945,6 +945,33 @@
           }
         ],
         "reason": "npm test falhava ao coletar o spec do Playwright",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.4b",
+        "type": "spec",
+        "name": "waitForScan ignora rajadas pequenas",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "fix-261014-0-s4-4b-wait-for-scan.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261014-0-s4-4b-wait-for-scan.md)",
+            "title": "fix-261014-0-s4-4b-wait-for-scan.md)"
+          }
+        ],
+        "reason": "Só a última rajada de getComputedStyle era conferida; 40-50 % das execuções completas de perf.spec.js estouravam o timeout",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
