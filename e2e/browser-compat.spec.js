@@ -212,3 +212,21 @@ test('Compat_GithubRepoMocked_LoadsReadOnlyAndRefusesWrite', async ({ page }) =>
   hosts.delete('localhost:5180');
   expect([...hosts].sort(), 'only the two mocked GitHub hosts').toEqual(['api.github.com', 'raw.githubusercontent.com']);
 });
+
+// not an assertion: images for the manual visual review (3D depth, fonts, layout) per engine
+test('Compat_TravalOrbit_ScreenshotsForManualReview', async ({ page }, info) => {
+  await page.goto('/?layers=fixtures/traval/');
+  await readNodes(page);
+  await page.screenshot({ path: info.outputPath(`${info.project.name}-traval-default.png`) });
+  const c = await page.evaluate(() => {
+    const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) => getComputedStyle(el).backgroundImage.includes('radial-gradient'));
+    const b = stage.getBoundingClientRect();
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  });
+  await page.mouse.move(c.x, c.y);
+  await page.mouse.down();
+  await page.mouse.move(c.x + 160, c.y - 60, { steps: 20 });
+  await page.mouse.up();
+  await page.waitForTimeout(300);
+  await page.screenshot({ path: info.outputPath(`${info.project.name}-traval-orbit.png`) });
+});
