@@ -1015,6 +1015,17 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
   // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
   const idx = LayersCore.buildIndex(css.concat(inlineCss)).byClass;
+  // data-src autoral que a folha carregada nao mostra mais naquela linha: se o seletor ainda existe
+  // no mesmo arquivo, a linha e corrigida; senao o atributo cai e o derivado (abaixo) assume, em vez
+  // de o patch mirar a regra errada. Arquivo fora das folhas (.ts) fica como esta.
+  const srcFiles = {}; css.forEach(c => { srcFiles[c.file] = c.text; }); if (inlineCss.length) srcFiles[mockPath] = html;
+  let srcFixed = 0, srcDropped = 0;
+  [rootEl, ...rootEl.querySelectorAll('[data-src]')].forEach(e => {
+    if (!e.dataset.src || LayersCore.checkOrigin(e.dataset.src, srcFiles, [...e.classList], e.id) !== 'stale') return;
+    const m = /^(.*)\|([^|]*)\|\d+$/.exec(e.dataset.src); const hit = m && idx[m[2]];
+    if (hit && hit.file === m[1]) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; srcFixed++; } else { delete e.dataset.src; srcDropped++; }
+  });
+  if (srcFixed || srcDropped) warn.push('data-src autoral obsoleto: ' + srcFixed + ' corrigido(s) pela linha atual da regra, ' + srcDropped + ' descartado(s)');
   const varIdx = LayersCore.varIndex(css.concat(inlineCss));
   // folha de utilitarios: editar .p-6 mudaria todo o projeto, entao a gravacao e recusada com
   // motivo em vez de fingir que deu certo (docs/layers-requisitos.md)

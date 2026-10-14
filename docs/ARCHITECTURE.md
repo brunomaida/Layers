@@ -42,7 +42,7 @@ Modelo de nós  { id, parent, depth, name, src, x, y, w, h, bg, borders, font, t
 Regras:
 
 - O modelo de nós é sempre derivado do DOM; nunca é editado diretamente. Um ajuste escreve `style` inline no elemento e re-escaneia (`scanSoon`, debounce 90 ms + `ResizeObserver`).
-- `data-src="arquivo|seletor|linha"` liga cada nó à regra de origem. Sem `data-src` o nó herda o do ancestral mais próximo.
+- `data-src="arquivo|seletor|linha"` liga cada nó à regra de origem. Sem `data-src` o nó herda o do ancestral mais próximo. Um `data-src` escrito à mão no mock só vale enquanto a folha carregada mostra o seletor naquela linha (`LayersCore.checkOrigin`): se o seletor ainda existe no mesmo arquivo a linha é corrigida, senão o atributo cai e a regra derivada das folhas assume; arquivo fora das folhas (`.ts`) fica como está.
 - Um `change` guarda `fromInline` por id para reverter sem re-scan.
 - Escopo de aplicação (`scope`): `one` (só este), `all` (todos os usos da mesma regra) ou `ask`.
 
