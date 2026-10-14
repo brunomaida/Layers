@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 60,
+    "progress": 63,
     "docs": [],
     "children": [
       {
@@ -590,12 +590,12 @@
         "name": "Origem autoral em data-src obsoleta vence a derivada",
         "start": "2026-10-21",
         "end": "2026-10-23",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice",
         "is_branch": false,
