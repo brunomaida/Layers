@@ -28,7 +28,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.9 | 2 | S2 | Mapeador de template dc e writer em camadas | PR #16, slices 0-2 | — | [](superpowers/plans/2026-09-18-layers-editar-apps-renderizados-por-js-no.md) | [](../changelog.d/feature-260918-15-dc-template-writer.md) | #15 | done |
 | S2.10 | 2 | S2 | Recarregar projeto e banner disco mudou | PR #18 | — | [](superpowers/plans/2026-09-20-layers-spec-recarregar-projeto-banner-disco-mudou.md) | [](../changelog.d/feature-260920-17-project-reload.md) | #17 | done |
 | S2.11 | 2 | S2 | Parâmetro ?project= (lançamento pelo Atlas) | PRs #21 e #22 | — | — | [](../changelog.d/feature-260925-project-param.md) | — | done |
-| S2.12 | 2 | S2 | Aviso de interactions mortas | checklist B; ver spike superficies-latentes (docs/superpowers/reports) | — | — | — | — | registered |
+| S2.12 | 2 | S2 | Aviso de interactions mortas | checklist B; ver spike superficies-latentes (docs/superpowers/reports) | — | — | [](../changelog.d/feature-261013-0-s2-12-dead-interactions.md) | — | done |
 | S2.13 | 2 | S2 | Undo/redo global | checklist B | — | — | — | — | registered |
 | S2.14 | 2 | S2 | Persistência de changes pendentes | checklist B; exige decisão própria | — | — | — | — | registered |
 | S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B | — | — | — | — | registered |
