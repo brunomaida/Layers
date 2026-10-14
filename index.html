@@ -1841,7 +1841,9 @@ class Component extends DCLogic {
       else { await this.rawWrite(path, text); const dir = await this.dirOf(tmp); await dir.removeEntry(tmp.split('/').pop()); moved = true; }
     } catch (e) { if (!moved) await this.rawWrite(path, text); }
     try { this.mtimes[path] = (await (await this.fileHandle(path, false)).getFile()).lastModified; if (this.watch && path in this.watch) this.watch[path] = this.mtimes[path]; } catch (e) {}
-    this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: before.length, to: text.length, bak: !!this.baks[path] });
+    let a = { sha256: null, bytes: null }, b = a;
+    try { [a, b] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]); } catch (e) {}
+    this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: a.bytes, to: b.bytes, fromHash: a.sha256, toHash: b.sha256, bak: !!this.baks[path] });
   }
   async rawWrite(path, text) { const h = await this.fileHandle(path, true); const w = await h.createWritable(); await w.write(text); await w.close(); }
   async dirOf(path) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); return d; }
@@ -1940,8 +1942,8 @@ class Component extends DCLogic {
     for (const f of files) { if (f.dc) { try { const r = this.patchedDc(await this.readText(f.path), f.list); if (!r.applied) { log.push('⚠ ' + f.path + ': nenhuma edição gravável'); continue; } await writeInto(target, f.path, r.text); log.push('✓ ' + f.path + ' (' + r.applied + '/' + f.list.length + ')'); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } continue; } if (!/\.css$/.test(f.path)) { log.push('⚠ ' + f.path + ': fonte TS — não exportado'); continue; } try { await writeInto(target, f.path, this.patched(await this.readText(f.path), f.list)); log.push('✓ ' + f.path); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } }
     const manifest = this.state.changes.map(c => ({ file: ruleOf(c)[0], selector: this.patchSel(c), line: ruleOf(c)[2], property: kebab(c.prop), from: c.from, to: c.to, elements: c.ids.length, scope: c.scope }));
     try { await writeInto(target, 'layers-changes.json', JSON.stringify(manifest, null, 2)); log.push('✓ layers-changes.json (manifesto)'); } catch (e) { log.push('✗ manifesto: ' + e.message); }
-    // F:70 — registro do que foi gravado nesta sessao: caminho, quando, tamanho antes/depois
-    if ((this.writeLog || []).length) { try { await writeInto(target, 'layers-export.log', this.writeLog.map(w => [w.at, w.path, w.from + ' -> ' + w.to + ' bytes', w.bak ? '.bak guardado' : ''].filter(Boolean).join('  ')).join('\n') + '\n'); log.push('✓ layers-export.log (' + this.writeLog.length + ' gravação(ões))'); } catch (e) { log.push('✗ layers-export.log: ' + e.message); } }
+    // F:70 — what this session wrote: path, when, size before/after, SHA-256 before/after (format v2)
+    if ((this.writeLog || []).length) { try { await writeInto(target, 'layers-export.log', LayersCore.writeLogText(this.writeLog)); log.push('✓ layers-export.log (' + this.writeLog.length + ' gravação(ões))'); } catch (e) { log.push('✗ layers-export.log: ' + e.message); } }
     this.setState({ modal: { stage: 'export', branch: '', msg: '', log: ['Exportado para a pasta: ' + target.name, ...log] } });
   }
 
