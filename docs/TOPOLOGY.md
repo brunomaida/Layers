@@ -104,3 +104,9 @@ verifica a ordem das tags.
 
 Componente novo, mudança na ordem de carga do `<head>`, novo artefato gerado, ou
 troca do mock pelo loader.
+
+<!-- doc-links:auto -->
+## Related
+
+- [Architecture decisions](architecture-decisions.md)
+- [Bench methodology](bench-methodology.md)
