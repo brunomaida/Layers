@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 85,
+    "progress": 88,
     "docs": [],
     "children": [
       {
@@ -519,13 +519,13 @@
         "name": "Marcador manual para TS/JS",
         "start": "2026-10-15",
         "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "analysis",
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist B",
         "is_branch": false,
