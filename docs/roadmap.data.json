@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-23",
+    "end": "2026-10-22",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 63,
+    "progress": 65,
     "docs": [],
     "children": [
       {
@@ -587,20 +587,34 @@
       {
         "id": "S2.20",
         "type": "spec",
-        "name": "Origem autoral em data-src obsoleta vence a derivada",
-        "start": "2026-10-21",
-        "end": "2026-10-23",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "name": "Origem autoral obsoleta em data-src corrigida ou descartada",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
+          "bug",
           "scaffold"
         ],
-        "progress": 60,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "fix-261013-0-s2-20-stale-authored-src.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261013-0-s2-20-stale-authored-src.md)",
+            "title": "fix-261013-0-s2-20-stale-authored-src.md)"
+          },
+          {
+            "name": "2026-10-13-s2-20-stale-authored-src.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-13-s2-20-stale-authored-src.md",
+            "title": "Implementation Report — s2-20-stale-authored-src"
+          }
+        ],
         "reason": "Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
@@ -1536,7 +1550,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-23",
+    "end": "2026-10-22",
     "statusLabel": "Reference",
     "tags": [
       "bdn",
