@@ -1089,7 +1089,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingDirty = false; hashSpec = null;
+  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1112,7 +1112,9 @@ class Component extends DCLogic {
   writePending() {
     if (!this.pendingReady || !this.pendingKey || !this.pendingDirty) return;
     const ch = this.state.changes;
-    if (ch.length > LayersCore.PENDING_CAP) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' ajustes pendentes: não serão restaurados ao reabrir.', 'warn');
+    const over = ch.length > LayersCore.PENDING_CAP;
+    if (over && !this.pendingCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' ajustes pendentes: não serão restaurados ao reabrir.', 'warn');
+    this.pendingCapWarned = over;
     LayersCore.setPending(LS_STORE, this.pendingKey, ch.length ? { hash: this.pendingHash, changes: ch } : null, Date.now());
     this.pendingDirty = false;
   }
@@ -1133,7 +1135,7 @@ class Component extends DCLogic {
       if (seq !== this.loadSeq) return;
       this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec);
       this.pendingSeen = this.state.changes; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
-    } catch (e) { /* pendingReady fica falso: a entrada antiga permanece e a proxima carga a descarta */ }
+    } catch (e) { this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos.', 'warn'); } // pendingReady fica falso: a entrada antiga permanece e a proxima carga a descarta
   }
   // sessionStorage vence o session ao restaurar: N abas, N projetos.
   markTab() { try { SS_STORE.setItem(TAB_LS, JSON.stringify({ projectId: this.projectId || null })); } catch (e) {} }
@@ -1300,7 +1302,7 @@ class Component extends DCLogic {
     const plan = incomplete ? { keep: [], dropped: 0 } : LayersCore.restorePlan(saved, hash);
     plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
     const restored = plan.keep, dropped = plan.dropped;
-    const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete && saved ? ' · ajustes salvos mantidos: fonte não lida' : '';
+    const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete ? (saved ? ' · ajustes salvos mantidos: fonte não lida' : ' · ajustes desta sessão não serão salvos: fonte não lida') : '';
     this.hashSpec = hs;
     this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
