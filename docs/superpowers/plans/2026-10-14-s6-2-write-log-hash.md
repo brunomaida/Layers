@@ -25,7 +25,8 @@ Every `writeText` caller (`draftDc` `:1863`, `makeDraft` `:1882`, `approve` `:18
 Parallel leaves: S5.6 adds functional e2e specs and must not assert the exact log line; this plan's e2e asserts only hash-token presence. S5.7 later edits the FS-capability check in `exportFull` (`:1935`, ~8 lines above `:1943`); this plan's `exportFull` hunk is limited to `:1942-1943`.
 
 Reuses: `writeText`/`writeLog`, `exportFull`/`writeInto`, the OPFS `showDirectoryPicker` stub from `e2e/stale-banner.spec.js`, `readNodes` from `e2e/tree-helpers.js`, `test/setup.js` (`core`).
-Out of scope: `from`/`to` are UTF-16 code units (`String.length`) but the log labels them `bytes` (wrong for non-ASCII); `writeInto` export writes and `.bak`/`.tmp` raw writes stay unlogged; `hash53`/`sourceHash`/`partHash` unchanged; no hash in the on-screen export log (`modal.log`).
+In scope (small growth, user may veto): `from`/`to` are UTF-16 code units today (`String.length`) under a `bytes` label; since `contentHash` already encodes UTF-8, it also returns the UTF-8 byte length and v2 logs real bytes, so the v2 format does not lock in the wrong label.
+Out of scope: `before` and `.bak` are the decoded text (`f.text()`, `index.html:1829`) re-encoded as UTF-8, so a BOM or non-UTF-8 bytes of the original file are not preserved and the `before` hash covers the re-encoded text; `writeInto` export writes and `.bak`/`.tmp` raw writes stay unlogged; `hash53`/`sourceHash`/`partHash` unchanged; no hash in the on-screen export log (`modal.log`).
 
 ## Design: Architecture & Flows
 
@@ -39,12 +40,13 @@ Micro: one component (`index.html` app class) plus one pure core helper pair. Da
           ▼
 ┌───────────────────────────────┐        ┌──────────────────────────────────┐
 │ writeText(path, text)  [EDIT] │        │ lib/layers-core.js       [NEW]   │
-│  before = f.text()            │──────▶ │ contentHash(text) -> Promise<hex>│
-│  [fromHash,toHash] = await    │◀────── │  SHA-256(UTF-8), crypto.subtle   │
-│  .bak / .tmp + move           │        │                                  │
+│  before = f.text()            │        │ contentHash(text) -> Promise<    │
+│  .bak / .tmp + move (as today)│        │   {sha256: hex, bytes: n}>       │
+│  try [a, b] = await hashes    │──────▶ │  SHA-256(UTF-8), crypto.subtle   │
+│  catch -> a = b = nulls       │◀────── │                                  │
 │  writeLog.push({path, at,     │        │ writeLogText(entries) -> string  │
 │   from, to, fromHash, toHash, │        │  "# layers-export.log v2 ..."    │
-│   bak})                       │        │  one line per entry              │
+│   bak})                       │        │  one line per entry, null -> '-' │
 └───────────────┬───────────────┘        └────────────────┬─────────────────┘
                 │ this.writeLog                           │
                 ▼                                         │
@@ -58,20 +60,21 @@ Micro: one component (`index.html` app class) plus one pure core helper pair. Da
 ### Log format (v2)
 
 ```
-# layers-export.log v2 — at  path  from -> to bytes  sha256 before -> after  [.bak guardado]
+# layers-export.log v2 — at  path  from -> to bytes (UTF-8)  sha256 before -> after  [.bak guardado]
 2026-10-14T12:00:00.000Z  style.design-draft.css  0 -> 812 bytes  sha256 e3b0…b855 -> 9f1c…
 2026-10-14T12:01:00.000Z  style.css  790 -> 812 bytes  sha256 41aa…07 -> 9f1c…  .bak guardado
+2026-10-14T12:02:00.000Z  style.css  812 -> 815 bytes  sha256 - -> -
 ```
 
-Hashes are full 64-char lowercase hex (shortened above). `after` equals `sha256sum`/`Get-FileHash` of the written file; `before` equals the hash of `<path>.bak` on the first write of the session (the `.bak` holds the same decoded `before` text). `before` of a new file is the empty-string hash.
+Hashes are full 64-char lowercase hex (shortened above); sizes are UTF-8 byte lengths. `after` equals `sha256sum`/`Get-FileHash` of the written file. `before` equals the hash of `<path>.bak` only when all three hold: it is the first write of that path in the session, the file was non-empty, and the `.bak` write succeeded (`.bak` failures are swallowed at `index.html:1833`). `before` of a new file is the empty-string hash. If the digest fails, sizes and hashes print as `-` (last line above) and the write itself is unaffected.
 
 > [!DECISION] hash-algorithm
 > Integrity/audit hash owned by checklist F; writes are cold path (one click, a few FS round-trips of ~ms each).
-> - **Option A (recommended)**: SHA-256 via `crypto.subtle.digest`. Collision-resistant (2^128 birthday bound) and verifiable with standard tools against the file on disk. Native digest runs at hundreds of MB/s: a 200 KB stylesheet costs well under 1 ms plus one `TextEncoder` buffer of the file size (short-lived, young-gen GC). Async fits `writeText`, already async; secure context is guaranteed wherever `writeText` can run.
+> - **Option A (recommended)**: SHA-256 via `crypto.subtle.digest`. Collision-resistant (2^128 birthday bound) and verifiable with standard tools against the file on disk. Native digest runs at hundreds of MB/s: a 200 KB stylesheet costs well under 1 ms plus two `TextEncoder` buffers (before/after) and the digest's internal copy (short-lived, young-gen GC). Async fits `writeText`, already async; secure context is guaranteed wherever `writeText` can run.
 > - **Option B**: reuse `hash53` (cyrb53). Sync, zero new code, but 53 non-cryptographic bits: collisions are craftable and the birthday bound is ~2^26.5; computed over UTF-16 code units, so no external tool reproduces it. Fit for cache keys (its S2.14 use), not for an audit trail.
 
 > [!DECISION] hash-scope
-> - **Option A (recommended)**: hash both `before` and `after`, mirroring the `from -> to` size pair. `after` proves what was written; `before` proves what was overwritten and matches the `.bak`.
+> - **Option A (recommended)**: hash both `before` and `after`, mirroring the `from -> to` size pair. `after` proves what was written; `before` proves what was overwritten and matches the `.bak` under the conditions above.
 > - **Option B**: `after` only. Half the digests, but loses the link to the overwritten version.
 
 > [!DECISION] log-format-version
@@ -96,7 +99,7 @@ Hashes are full 64-char lowercase hex (shortened above). `after` equals `sha256s
 - Test: `test/layers-core.test.js` (new `describe` blocks after the `SourceHash` block ending at line ~1335)
 
 **Interfaces:**
-- Produces: `LayersCore.contentHash(text: string): Promise<string>` (64-char lowercase hex); `LayersCore.writeLogText(entries: {at, path, from, to, fromHash, toHash, bak}[]): string`; `LayersCore.WRITE_LOG_VERSION = 2`.
+- Produces: `LayersCore.contentHash(text: string): Promise<{ sha256: string, bytes: number }>` (64-char lowercase hex, UTF-8 byte length); `LayersCore.writeLogText(entries: {at, path, from, to, fromHash, toHash, bak}[]): string` (`null` size/hash prints `-`); `LayersCore.WRITE_LOG_VERSION = 2`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -105,15 +108,15 @@ Insert after the closing `});` of `describe('SourceHash'`:
 ```js
 describe('ContentHash', () => {
   it('Vazio_VetorSha256', async () => {
-    expect(await core.contentHash('')).toBe('e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855');
+    expect(await core.contentHash('')).toEqual({ sha256: 'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855', bytes: 0 });
   });
 
   it('Abc_VetorSha256', async () => {
-    expect(await core.contentHash('abc')).toBe('ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+    expect(await core.contentHash('abc')).toEqual({ sha256: 'ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad', bytes: 3 });
   });
 
-  it('NaoAscii_HashDosBytesUtf8', async () => {
-    expect(await core.contentHash('ç')).toBe('8bfa829b8119a6f39b91fd8decec63830b556e4d88a9da29334d7b0558829f2d');
+  it('NaoAscii_HashEBytesUtf8', async () => {
+    expect(await core.contentHash('ç')).toEqual({ sha256: '8bfa829b8119a6f39b91fd8decec63830b556e4d88a9da29334d7b0558829f2d', bytes: 2 });
   });
 });
 
@@ -135,6 +138,10 @@ describe('WriteLogText', () => {
     expect(core.writeLogText([entry({ bak: true })]).split('\n')[1]).toMatch(/ -> [0-9a-f]{64}  \.bak guardado$/);
   });
 
+  it('HashNulo_TracoNoLugarDeTamanhoEHash', () => {
+    expect(core.writeLogText([entry({ from: null, to: null, fromHash: null, toHash: null })]).split('\n')[1]).toBe('2026-10-14T12:00:00.000Z  style.css  - -> - bytes  sha256 - -> -');
+  });
+
   it('VariasEntradas_UmaLinhaPorEntradaETerminaComNovaLinha', () => {
     const text = core.writeLogText([entry({}), entry({ path: 'b.css' })]);
     expect(text.endsWith('\n')).toBe(true);
@@ -143,7 +150,7 @@ describe('WriteLogText', () => {
 });
 ```
 
-The three digests were checked against `node:crypto` `createHash('sha256')` over UTF-8.
+The three digests and byte counts were checked against `node:crypto` `createHash('sha256')` and `Buffer.byteLength` over UTF-8.
 
 - [ ] **Step 2: Run tests to verify they fail**
 
@@ -161,17 +168,19 @@ In `lib/layers-core.js`, immediately after the closing `}` of `function sourceHa
   // Bumped when a layers-export.log column changes meaning or position.
   var WRITE_LOG_VERSION = 2;
 
-  // SHA-256 of the UTF-8 bytes, lowercase hex: same value as sha256sum on the written file.
+  // SHA-256 of the UTF-8 bytes (lowercase hex, same as sha256sum on the written file) and their count.
   async function contentHash(text) {
-    var buf = await globalThis.crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
-    return Array.from(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+    var bytes = new TextEncoder().encode(text);
+    var buf = await globalThis.crypto.subtle.digest('SHA-256', bytes);
+    return { sha256: Array.from(new Uint8Array(buf), function (b) { return b.toString(16).padStart(2, '0'); }).join(''), bytes: bytes.length };
   }
 
-  // layers-export.log text: versioned header, then one line per writeText entry.
+  // layers-export.log text: versioned header, then one line per writeText entry; null prints '-'.
   function writeLogText(entries) {
-    var lines = ['# layers-export.log v' + WRITE_LOG_VERSION + ' — at  path  from -> to bytes  sha256 before -> after  [.bak guardado]'];
+    var v = function (x) { return x == null ? '-' : x; };
+    var lines = ['# layers-export.log v' + WRITE_LOG_VERSION + ' — at  path  from -> to bytes (UTF-8)  sha256 before -> after  [.bak guardado]'];
     (entries || []).forEach(function (w) {
-      lines.push([w.at, w.path, w.from + ' -> ' + w.to + ' bytes', 'sha256 ' + w.fromHash + ' -> ' + w.toHash, w.bak ? '.bak guardado' : ''].filter(Boolean).join('  '));
+      lines.push([w.at, w.path, v(w.from) + ' -> ' + v(w.to) + ' bytes', 'sha256 ' + v(w.fromHash) + ' -> ' + v(w.toHash), w.bak ? '.bak guardado' : ''].filter(Boolean).join('  '));
     });
     return lines.join('\n') + '\n';
   }
@@ -202,12 +211,12 @@ git commit -m "feat(core): add SHA-256 contentHash and versioned writeLogText (S
 ### Task 2: Hash in `writeText` and export log, with e2e
 
 **Files:**
-- Modify: `index.html:1833` (insert before the `.bak` line), `index.html:1843` (`writeLog` entry), `index.html:1942-1943` (comment + `layers-export.log` write)
+- Modify: `index.html:1843` (`writeLog` entry, after the mtime refresh at `:1842`), `index.html:1942-1943` (comment + `layers-export.log` write)
 - Create: `e2e/write-log-hash.spec.js`
 
 **Interfaces:**
 - Consumes: `LayersCore.contentHash`, `LayersCore.writeLogText` (Task 1).
-- Produces: `this.writeLog` entries gain `fromHash`, `toHash`; `layers-export.log` in format v2.
+- Produces: `this.writeLog` entries gain `fromHash`, `toHash`; `from`/`to` become UTF-8 byte lengths (`null` on digest failure); `layers-export.log` in format v2.
 
 - [ ] **Step 1: Write the failing e2e**
 
@@ -282,27 +291,56 @@ test('ExportLog_AfterDraft_HasSha256MatchingDisk', async ({ page }) => {
   const log = await readOpfs(page, 'export', 'layers-export.log');
   const draft = await readOpfs(page, 'proj', 'style.design-draft.css');
   expect(log).toMatch(/sha256 [0-9a-f]{64} -> [0-9a-f]{64}/);
-  expect(log).toContain('-> ' + crypto.createHash('sha256').update(draft, 'utf8').digest('hex'));
+  expect(log).toContain('-> ' + sha(draft));
+});
+
+// Overwrite path: a second draft overwrites the first one, so "before" is non-empty and a .bak is made.
+// Approve is not used: it clears the pending changes and exportFull then returns early (index.html:1934).
+test('ExportLog_AfterRedraft_BeforeHashMatchesBak', async ({ page }) => {
+  await connect(page);
+  await page.locator('[data-node-id][title^=".card"]').first().click();
+  for (const value of [SHADOW, SHADOW_2]) {
+    await field(page).click({ clickCount: 3 });
+    await page.keyboard.type(value);
+    await page.keyboard.press('Tab');
+    await page.waitForTimeout(300);
+    await page.getByText('Ações ▾').click();
+    await page.getByText('Aplicar nos arquivos…').click();
+    await page.getByText('1 · Gerar rascunho paralelo').click();
+    await expect(page.getByText('rascunho gravado: style.design-draft.css').last()).toBeVisible();
+    await page.evaluate(() => document.activeElement && document.activeElement.blur());
+    await page.keyboard.press('Escape');
+  }
+
+  await page.evaluate(async () => {
+    window.__proj = await (await navigator.storage.getDirectory()).getDirectoryHandle('export', { create: true });
+  });
+  await page.getByText('Ações ▾').click();
+  await page.getByText('Exportar versões completas…').click();
+  await expect(page.getByText(/layers-export\.log \(\d+ gravação/)).toBeVisible();
+
+  const log = await readOpfs(page, 'export', 'layers-export.log');
+  const bak = await readOpfs(page, 'proj', 'style.design-draft.css.bak');
+  const draft = await readOpfs(page, 'proj', 'style.design-draft.css');
+  expect(log).toContain('sha256 ' + sha(bak) + ' -> ' + sha(draft) + '  .bak guardado');
 });
 ```
+
+Add next to `SHADOW`: `const SHADOW_2 = '0 0 0 4px rgb(4, 5, 6)';` and `const sha = (text) => crypto.createHash('sha256').update(text, 'utf8').digest('hex');`.
 
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `npx playwright test e2e/write-log-hash.spec.js`
-Expected: FAIL on `toMatch(/sha256 .../)` (log has no hash yet). If it fails earlier, fix the driving steps only: `.card` row title (`title^=`), the edit field (open the scope prompt with `Só este` if it appears), or a modal left open (Escape). If `ensureWrite` refuses on the OPFS handle, stub `queryPermission` to return `'granted'` in `addInitScript`.
+Expected: both tests FAIL on the hash assertions (log has no hash yet). If one fails earlier, fix the driving steps only: `.card` row title (`title^=`), the edit field (open the scope prompt with `Só este` if it appears), or a modal left open (Escape). If `ensureWrite` refuses on the OPFS handle, stub `queryPermission` to return `'granted'` in `addInitScript`.
 
 - [ ] **Step 3: Write minimal implementation**
 
-`index.html:1833` — insert immediately before the line starting `    if (before && !this.baks[path]) {` (single match), so a digest failure aborts before anything is written:
+`index.html:1843` — replace the line (single match on `this.writeLog = (this.writeLog || []).concat(`). The digest runs after the write and the mtime refresh (`:1842`), so the mtime-check→write window stays as narrow as today, and a digest failure only blanks the log fields (`-`), never blocks or aborts a write (a thrown `writeText` would be swallowed by `rollback`'s `catch (e) {}` at `:1915`, which then resets state as if it had worked):
 
 ```js
-    const [fromHash, toHash] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]);
-```
-
-`index.html:1843` — replace the line (single match on `this.writeLog = (this.writeLog || []).concat(`):
-
-```js
-    this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: before.length, to: text.length, fromHash, toHash, bak: !!this.baks[path] });
+    let a = { sha256: null, bytes: null }, b = a;
+    try { [a, b] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]); } catch (e) {}
+    this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: a.bytes, to: b.bytes, fromHash: a.sha256, toHash: b.sha256, bak: !!this.baks[path] });
 ```
 
 `index.html:1942` — replace the comment:
@@ -333,37 +371,44 @@ git add index.html e2e/write-log-hash.spec.js
 git commit -m "feat(io): log SHA-256 before and after each write in layers-export.log (S6.2)"
 ```
 
+- [ ] **Step 7: Deduplicate `connect` on rebase over S5.6**
+
+The local `connect()` is a third copy of the `e2e/stale-banner.spec.js` helper. Merge order is S2.19, S5.6, then S6.2: on rebase over S5.6, if `e2e/folder-helpers.js` exists, import `connect` from it, delete the local copy, re-run `npx playwright test e2e/write-log-hash.spec.js` (PASS) and commit `test(e2e): reuse folder-helpers connect (S6.2)`. If S5.6 has not merged yet, keep the local copy and note it in the PR body.
+
 ---
 
 ### Task 3: Docs and changelog
 
 **Files:**
-- Modify: `docs/RELEASE-CHECKLIST.md:8` (counter), `docs/RELEASE-CHECKLIST.md:74` (F item), `docs/ARCHITECTURE.md:185-190` (§ Guarda de conflito na gravação)
+- Modify: `docs/RELEASE-CHECKLIST.md:74` (F item), `docs/ARCHITECTURE.md:185-190` (§ Guarda de conflito na gravação)
 - Create: `changelog.d/feature-261014-0-s6-2-write-log-hash.md`
+- Not touched: the counter on `docs/RELEASE-CHECKLIST.md:8` is left for the integration task, which recounts it once after the parallel leaves merge.
+
+**Interfaces:**
+- Produces: docs consistent with the feature; the S6.2 roadmap row closes later in `phase-close-gate`, not in this plan (same as S2.15).
 
 - [ ] **Step 1: Close the checklist item**
 
 Replace `docs/RELEASE-CHECKLIST.md:74` with:
 
 ```md
-- [x] Log de gravações: `layers-export.log` sai na exportação com cabeçalho de versão (`v2`), caminho, timestamp, tamanho antes/depois, SHA-256 do conteúdo antes e depois e se houve `.bak` (`LayersCore.contentHash`/`writeLogText`; `e2e/write-log-hash.spec.js`).
+- [x] Log de gravações: `layers-export.log` sai na exportação com cabeçalho de versão (`v2`), caminho, timestamp, tamanho antes/depois em bytes UTF-8, SHA-256 do conteúdo antes e depois e se houve `.bak` (`LayersCore.contentHash`/`writeLogText`; `e2e/write-log-hash.spec.js`).
 ```
 
-- [ ] **Step 2: Recount the header**
-
-Run `grep -c '^- \[x\]'`, `grep -c '^- \[~\]'` and `grep -c '^- \[ \]'` on `docs/RELEASE-CHECKLIST.md`, then write those three numbers into line 8 (`Hoje: <x> concluídos, <~> parciais, <open> abertos.`). The line is stale today (says 31/3/13, the file has 34/2/11 before this task), so never adjust it by ±1.
-
-- [ ] **Step 3: Update the architecture note**
+- [ ] **Step 2: Update the architecture note**
 
 In `docs/ARCHITECTURE.md`, append to the paragraph of § Guarda de conflito na gravação (after `grava via \`.tmp\` + \`move\`.`):
 
 ```md
-Cada gravação entra em `this.writeLog` com tamanho e SHA-256 (`LayersCore.contentHash`, bytes UTF-8) do conteúdo antes e
-depois; `exportFull` grava o registro como `layers-export.log` no formato v2 (`LayersCore.writeLogText`, cabeçalho
-`# layers-export.log v2`). O hash "depois" confere com `sha256sum` do arquivo gravado; o "antes" confere com o `.bak` da sessão.
+Depois de gravar, cada gravação entra em `this.writeLog` com tamanho em bytes UTF-8 e SHA-256 (`LayersCore.contentHash`)
+do conteúdo antes e depois; se o digest falhar, os campos saem como `-` e a gravação segue. `exportFull` grava o registro
+como `layers-export.log` no formato v2 (`LayersCore.writeLogText`, cabeçalho `# layers-export.log v2`). O hash "depois"
+confere com `sha256sum` do arquivo gravado. O "antes" confere com o `.bak` da sessão só na primeira gravação do caminho na
+sessão, com arquivo não vazio e `.bak` gravado com sucesso. "Antes" e `.bak` são o texto decodificado (`f.text()`)
+regravado em UTF-8: BOM e bytes não UTF-8 do original não se preservam.
 ```
 
-- [ ] **Step 4: Write the changelog fragment**
+- [ ] **Step 3: Write the changelog fragment**
 
 Create `changelog.d/feature-261014-0-s6-2-write-log-hash.md`:
 
@@ -374,13 +419,16 @@ adr: none
 
 ### Added
 - `layers-export.log` registra o SHA-256 do conteúdo antes e depois de cada gravação e ganha cabeçalho de versão (`# layers-export.log v2`). O hash "depois" confere com `sha256sum`/`Get-FileHash` do arquivo gravado. `LayersCore.contentHash` e `LayersCore.writeLogText` (testados).
-- `e2e/write-log-hash.spec.js`: rascunho + exportação numa pasta OPFS; o log traz o hash e ele confere com o arquivo.
+- `e2e/write-log-hash.spec.js`: rascunho + exportação numa pasta OPFS; o log traz o hash e ele confere com o arquivo; um segundo rascunho mostra o "antes" igual ao hash do `.bak`.
+
+### Fixed
+- `layers-export.log`: os tamanhos antes/depois passam a ser bytes UTF-8 (antes eram unidades UTF-16 rotuladas como `bytes`).
 
 ### Perf
-- estimated — dois `crypto.subtle.digest` SHA-256 por gravação (caminho frio, um clique); abaixo de 1 ms para uma folha de 200 KB, mais um buffer UTF-8 do tamanho do arquivo.
+- estimated — dois `crypto.subtle.digest` SHA-256 por gravação, depois da escrita (caminho frio, um clique); abaixo de 1 ms para uma folha de 200 KB. Memória: dois buffers UTF-8 (antes/depois) e a cópia interna do digest, de vida curta.
 ```
 
-- [ ] **Step 5: Verify and commit**
+- [ ] **Step 4: Verify and commit**
 
 Run: `npm test` — Expected: PASS.
 
@@ -399,7 +447,7 @@ git commit -m "docs: close S6.2 with checklist, architecture note and changelog 
 | 1. Review | review | Architectural | Architect | security-adjacent (audit hash), rule 5 |
 | 2. `writeText`/`exportFull` + e2e | gen | Standard | Workhorse | write path, e2e authoring |
 | 2. Review | review | Architectural | Architect | security-adjacent write path, rule 5 |
-| 3. Docs + changelog | gen | Mechanical | Executor | text given verbatim; counts by `grep -c` |
+| 3. Docs + changelog | gen | Mechanical | Executor | text given verbatim |
 | Pre-merge review | review | Architectural | Architect | verifier ≥ generator (`adversarial-reviewer`) |
 
 > [!DECISION] gh-issue-gate
@@ -415,7 +463,7 @@ git commit -m "docs: close S6.2 with checklist, architecture note and changelog 
 > Current tree (relevant slice): S6 Segurança (in-progress) › S6.1 Superfície de gravação e ingestão (done) · S6.2 Hash no log de gravação (in-progress).
 > Fork of an existing row? **No** (row already tracked).
 > - **Option A**: keep meso `S6.2` (recommended)
-> - **Option B**: split the `from`/`to` "bytes" mislabel into a new micro `S6.2a` if the user wants it fixed
+> - **Option B**: if the user vetoes the scope growth, drop the UTF-8 byte sizes from this leaf (keep `String.length`) and track the "bytes" mislabel as a new micro `S6.2a`
 
 > [!DECISION] execution
 > Method: **Native** (recommended: 3 small sequential tasks, Task 2 depends on Task 1; Task 3 still goes to the `executor` subagent; per-task reviews via `adversarial-reviewer`).
