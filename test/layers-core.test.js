@@ -1281,3 +1281,129 @@ describe('PushSnapshot', () => {
     expect(core.pushSnapshot(undefined, 1, 5)).toEqual([1]);
   });
 });
+
+const pendingChange = (o) => ({ key: '0.1|color', id: '0.1', ids: ['0.1'], name: '.a', src: 'a.css|.a|3', prop: 'color', from: 'red', fromInline: { '0.1': '' }, to: 'blue', scope: 'one', decided: false, scopedSel: null, ...o });
+const memStorage = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } }; };
+const DAY = 24 * 60 * 60 * 1000;
+
+describe('SourceHash', () => {
+  it('MesmasPartes_MesmoHash', () => {
+    expect(core.sourceHash(['a', 'b'])).toBe(core.sourceHash(['a', 'b']));
+  });
+
+  it('PartesTrocadasDeFronteira_HashDiferente', () => {
+    expect(core.sourceHash(['ab', 'c'])).not.toBe(core.sourceHash(['a', 'bc']));
+  });
+
+  it('DcNuloVsVazio_HashDiferente', () => {
+    expect(core.sourceHash(['x', null])).not.toBe(core.sourceHash(['x', '']));
+  });
+
+  it('ManMudou_HashDiferente', () => {
+    const a = core.sourceHash([JSON.stringify({ rules: { a: 1 } }), 'mock.html', '<p>']);
+    const b = core.sourceHash([JSON.stringify({ rules: { a: 2 } }), 'mock.html', '<p>']);
+    expect(a).not.toBe(b);
+  });
+});
+
+describe('RestorePlan', () => {
+  it('HashIgual_RestauraTudoDecidedTrue', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({}), pendingChange({ key: '0.2|color', id: '0.2', ids: ['0.2'] })] };
+    const plan = core.restorePlan(entry, 'h');
+    expect(plan.dropped).toBe(0);
+    expect(plan.keep.map((c) => c.decided)).toEqual([true, true]);
+    expect(plan.keep[0]).not.toBe(entry.changes[0]);
+  });
+
+  it('HashIgual_PreservaOrdem', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({ key: 'b|x', prop: 'x' }), pendingChange({ key: 'a|x', prop: 'x' })] };
+    expect(core.restorePlan(entry, 'h').keep.map((c) => c.key)).toEqual(['b|x', 'a|x']);
+  });
+
+  it('HashDiferente_DescartaTudo', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({}), pendingChange({ key: 'k2' })] };
+    expect(core.restorePlan(entry, 'outro')).toEqual({ keep: [], dropped: 2 });
+  });
+
+  it('EntryNula_VazioSemDescarte', () => {
+    expect(core.restorePlan(null, 'h')).toEqual({ keep: [], dropped: 0 });
+  });
+});
+
+describe('SetPending / GetPending', () => {
+  it('RoundTrip_DevolveEntrada', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.hash).toBe('h');
+    expect(e.savedAt).toBe(1000);
+    expect(e.changes).toHaveLength(1);
+  });
+
+  it('EntryNull_RemoveSoDoProjeto', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    core.setPending(st, 'fx:b', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    core.setPending(st, 'fx:a', null, 2000);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+    expect(core.getPending(st, 'fx:b')).not.toBeNull();
+  });
+
+  it('OutraChave_Preserva', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h1', changes: [pendingChange({})] }, 1000);
+    core.setPending(st, 'fx:b', { hash: 'h2', changes: [pendingChange({})] }, 1000);
+    expect(core.getPending(st, 'fx:a').hash).toBe('h1');
+  });
+
+  it('AcimaDoTeto_RemoveEntrada', () => {
+    const st = memStorage();
+    const many = Array.from({ length: core.PENDING_CAP + 1 }, (_, i) => pendingChange({ key: 'k' + i }));
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    core.setPending(st, 'fx:a', { hash: 'h', changes: many }, 2000);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('Expirada_Remove', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:old', { hash: 'h', changes: [pendingChange({})] }, 0);
+    core.setPending(st, 'fx:new', { hash: 'h', changes: [pendingChange({})] }, 31 * DAY);
+    expect(core.getPending(st, 'fx:old')).toBeNull();
+    expect(core.getPending(st, 'fx:new')).not.toBeNull();
+  });
+
+  it('GravacaoFalha_NaoDeixaEntradaAntigaRessuscitar', () => {
+    const m = new Map(); let full = false;
+    const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (full) throw new Error('quota'); m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    full = true;
+    expect(core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({ to: 'green' })] }, 2000)).toBe(false);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('JsonCorrompido_DevolveNull', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', '{nao e json');
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('ChangeSemIds_DevolveNull', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ ids: 'nao-array' })] } } }));
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('PropSomenteLeitura_DevolveNull', () => {
+    const st = memStorage();
+    ['length', 'parentRule', '0'].forEach((prop) => {
+      st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop })] } } }));
+      expect(core.getPending(st, 'fx:a')).toBeNull();
+    });
+  });
+
+  it('PropCssText_DevolveNull', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop: 'cssText' })] } } }));
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+});
