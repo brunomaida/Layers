@@ -106,7 +106,7 @@ Se o seu render estiver diferente, o motivo mais provável é preferência salva
 browser. Limpe e recarregue:
 
 ```js
-['meta', 'ui', 'projects', 'session'].forEach(k => localStorage.removeItem('layers/v1/' + k));
+['meta', 'ui', 'projects', 'session', 'pending'].forEach(k => localStorage.removeItem('layers/v1/' + k));
 ['layers-cfg', 'layers-hist', 'layers-inter-size',
  'traval-layer-editor-cfg', 'traval-layer-editor-hist', 'traval-layer-editor-inter-size']
   .forEach(k => localStorage.removeItem(k));
