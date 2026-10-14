@@ -1371,6 +1371,19 @@ describe('WriteLogText', () => {
     expect(core.writeLogText([entry({ from: null, to: null, fromHash: null, toHash: null })]).split('\n')[1]).toBe('2026-10-14T12:00:00.000Z  style.css  - -> - bytes  sha256 - -> -');
   });
 
+  it('PathComQuebraDeLinha_UmaLinhaPorEntrada', () => {
+    const text = core.writeLogText([entry({ path: 'a\n2026-10-14T00:00:00.000Z  forged.css\t\x00b' }), entry({ path: 'x  y' })]);
+    const lines = text.trimEnd().split('\n');
+    expect(lines).toHaveLength(3);
+    expect(lines[1]).toContain(String.raw`  a\x0a2026-10-14T00:00:00.000Z\x20\x20forged.css\x09\x00b  `);
+    expect(lines[2]).toContain(String.raw`  x\x20\x20y  `);
+    expect(text).not.toMatch(/[\x09\x00]/);
+  });
+
+  it('PathComum_ImpressoSemAlteracao', () => {
+    expect(core.writeLogText([entry({ path: 'css/ação café.css' })]).split('\n')[1]).toContain('  css/ação café.css  ');
+  });
+
   it('VariasEntradas_UmaLinhaPorEntradaETerminaComNovaLinha', () => {
     const text = core.writeLogText([entry({}), entry({ path: 'b.css' })]);
     expect(text.endsWith('\n')).toBe(true);
