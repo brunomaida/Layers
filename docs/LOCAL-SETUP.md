@@ -34,8 +34,10 @@ não suporta a linha 23 (`^20.0.0 || ^22.0.0 || >=24.0.0`).
 
 ## O que garante o visual idêntico
 
-Todo recurso de runtime está **versionado no repositório**. O app não faz nenhuma
-requisição externa: verificado com 12 requisições, todas em `localhost:5180`.
+Todo recurso de runtime está **versionado no repositório**. Nenhuma requisição sai
+no carregamento: todas ficam em `localhost:5180`. A única saída de rede é o loader de
+repositório público do GitHub (`api.github.com` e `raw.githubusercontent.com`), iniciado
+por você.
 
 ```
 index.html
@@ -150,7 +152,7 @@ Custou meia medição do spike da fatia 5 — ver
 ## Verificar que está tudo local
 
 Com o dev server no ar, abra o DevTools → Network e recarregue. **Nenhuma requisição
-pode sair de `localhost:5180`.** Se aparecer `fonts.googleapis.com`, `fonts.gstatic.com`
+pode sair de `localhost:5180` no carregamento.** Se aparecer `fonts.googleapis.com`, `fonts.gstatic.com`
 ou `unpkg.com`, o `index.html` regrediu para as tags de CDN.
 
 Checagem rápida no console:
