@@ -78,16 +78,21 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 - support.js — runtime gerado (não editar)
 - lib/layers-core.js — lógica pura do loader (sem DOM/React), carregada pelo index.html
 - vendor/ — React + ReactDOM UMD + csstree versionados (sem CDN)
-- fonts/ — 15 .woff2 + fonts.css gerado (ver fonts/README.md)
+- fonts/ — fontes do editor (15 .woff2, fonts.css) e dos projetos carregados (17 .woff2, projects.css), geradas (ver fonts/README.md)
 - run.bat — sobe o dev server (duplo clique)
-- test/ — testes unitários (Vitest) de lib/layers-core.js: `npm test`
+- test/ — testes unitários (Vitest): `npm test`
+- e2e/ — testes E2E e de performance de UI (Playwright, playwright.config.js): `npm run test:e2e`
+- bench/ — microbenchmarks do core (vitest.bench.config.js): `npm run bench`
 - tools/ — layers-snapshot.js, layers-suggest.js, layers-derive.js (snapshot e spikes do loader)
-- fixtures/ — projetos-alvo do loader, servidos por HTTP (`#layers=<pasta>/`)
-- vite.config.js — config do dev server (serve fixtures/ sem o wrapper de HMR)
-- scripts/vendor-assets.py — regenera fonts/ e vendor/
+- fixtures/ — projetos-alvo do loader, servidos por HTTP (`?layers=fixtures/<nome>/`)
+- vite.config.js — config do dev server (serve fixtures/ e `?project=` sem o wrapper de HMR)
+- scripts/vendor-assets.py — regenera fonts/ e vendor/; scripts/install-hooks.sh — ativa os hooks do git
+- changelog.d/ — um fragmento por branch; CHANGELOG.md — histórico por versão
 - docs/LOCAL-SETUP.md — rodar local com visual idêntico
+- docs/layers-json.md — contrato do layers.json e das origens
 - docs/ARCHITECTURE.md — arquitetura e fluxo de dados
 - docs/RELEASE-CHECKLIST.md — pendências para a v1 (funcional, testes, segurança)
+- docs/roadmap.md — tracker de fases; docs/TOPOLOGY.md — mapa dos docs
 - docs/text-specs/layers-specs.md — histórico de requisitos v2.0 → v2.21
 - CLAUDE.md — instruções para o Claude Code
 
@@ -95,6 +100,7 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 - layers/v1/ui — tema, cor de seleção, cores de origem, cabeçalho, escala de fonte, painéis, navegação, árvore, escopo
 - layers/v1/projects — histórico de projetos (pasta, .zip, repositório)
 - layers/v1/session — último projeto, seleção e câmera; `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
+- layers/v1/pending — ajustes ainda não gravados, por projeto; voltam ao reabrir se as fontes não mudaram
 - layers/v1/meta — schema e data da última gravação
 
 Nada de conteúdo de arquivo aqui: o handle da pasta conectada mora no IndexedDB
@@ -109,5 +115,7 @@ Tema **Gray · 1 Grafite** · acento **5 · Cinza médio** · seleção **Coral*
 cores de origem Mono · cabeçalho B · sliderScale 85 · fontScale 1
 
 ## Sem rede
-Todo recurso de runtime está no repositório — fontes e React inclusos. O app não faz
-nenhuma requisição externa. Detalhes e como verificar: docs/LOCAL-SETUP.md.
+Todo recurso de runtime está no repositório — fontes e React inclusos. Nada é buscado na
+rede ao carregar. A única saída é o loader de repositório GitHub, iniciado por você e
+confirmado a cada carga (CSP `connect-src` só com api.github.com e
+raw.githubusercontent.com). Detalhes e como verificar: docs/LOCAL-SETUP.md.

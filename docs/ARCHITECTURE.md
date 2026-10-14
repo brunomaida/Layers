@@ -115,8 +115,10 @@ Escrita entre abas é "último que grava vence" para `ui` e `projects` — não 
 
 ## Rede
 
-Nenhuma. Fontes e React são servidos do próprio repositório — verificado com 12
-requisições, todas em `localhost:5180`. Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
+Nenhuma requisição no carregamento. Fontes e React são servidos do próprio repositório — verificado com 12
+requisições, todas em `localhost:5180`. Única saída: o loader de repositório público do GitHub, iniciado
+pelo usuário e confirmado a cada carga (CSP `connect-src` api.github.com e raw.githubusercontent.com).
+Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 
 ## Limites conhecidos
 
