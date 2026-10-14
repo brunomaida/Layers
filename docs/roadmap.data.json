@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-22",
+    "end": "2026-10-21",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 65,
+    "progress": 70,
     "docs": [],
     "children": [
       {
@@ -531,27 +531,41 @@
         "id": "S2.17",
         "type": "spec",
         "name": "Achados restantes da revisão do reload",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
+          "bug",
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "fix-261013-32-s2-17-reload-residuals.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261013-32-s2-17-reload-residuals.md)",
+            "title": "fix-261013-32-s2-17-reload-residuals.md)"
+          },
+          {
+            "name": "2026-10-13-s2-17-reload-residuals.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-13-s2-17-reload-residuals.md",
+            "title": "Implementation Report — s2-17-reload-residuals"
+          }
+        ],
         "reason": "Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px)",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S2.18",
         "type": "spec",
         "name": "Verificação manual da gravação real do template dc",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -569,8 +583,8 @@
         "id": "S2.19",
         "type": "spec",
         "name": "Limpar códigos dc reservados e avisos do hoistFaces",
-        "start": "2026-10-20",
-        "end": "2026-10-22",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1550,7 +1564,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-22",
+    "end": "2026-10-21",
     "statusLabel": "Reference",
     "tags": [
       "bdn",
