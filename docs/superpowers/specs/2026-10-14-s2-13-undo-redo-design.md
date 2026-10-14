@@ -63,8 +63,9 @@ Para cada `(id, prop)`:
 ### Comportamento
 
 - Pilha de 100 snapshots; acima disso descarta o mais antigo.
-- Com `state.pending` aberto (pergunta de escopo `one`/`all`), Ctrl+Z não faz nada: o usuário responde a pergunta primeiro.
-- Foco em `input`, `textarea` ou `select`: o handler não age, vale o undo nativo.
+- Com `state.pending` (pergunta de escopo `one`/`all`), `state.modal` ou `state.diff` abertos, Ctrl+Z não faz nada: o painel ou a pergunta é dono da lista de ajustes (mesma regra de `reloadProject`).
+- Edições seguidas da mesma propriedade do mesmo elemento em até 600 ms (arrasto de slider, tecla de seta segurada) formam um único passo.
+- Foco em `textarea` ou `input` de texto/número: o handler não age, vale o undo nativo. Com foco em `range`, `color`, `checkbox`, `radio` ou `select`, o atalho global age.
 - Pilha vazia: toast `Nada para desfazer` / `Nada para refazer`.
 - Passo executado: toast `Desfeito: <prop>` / `Refeito: <prop>`, onde `<prop>` vem da diferença entre os dois `changes[]`; `N propriedades` quando mais de uma propriedade muda.
 - Após restaurar, `scanSoon()` como em `revert`.
