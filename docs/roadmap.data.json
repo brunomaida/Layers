@@ -1274,7 +1274,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 70,
+    "progress": 75,
     "docs": [],
     "children": [
       {
@@ -1283,19 +1283,31 @@
         "name": "README atualizado",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "docs",
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s7-1-readme.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-14-s7-1-readme.md)",
             "title": "2026-10-14-s7-1-readme.md)"
+          },
+          {
+            "name": "docs-261014-0-s7-1-readme.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261014-0-s7-1-readme.md)",
+            "title": "docs-261014-0-s7-1-readme.md)"
+          },
+          {
+            "name": "2026-10-14-s7-1-readme.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s7-1-readme.md",
+            "title": "Implementation Report — s7-1-readme"
           }
         ],
         "reason": "checklist G",
