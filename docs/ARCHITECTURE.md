@@ -164,11 +164,15 @@ aparece com o primeiro path e `+N`. Editar `src/**/*.ts` não dispara: não est�
 (o app alvo só entra via mock/snapshot). Escritas do próprio LAYERS (`writeText`) atualizam
 `this.watch`, então não se auto-acusam; "×" (`dismissStale`) aceita os mtimes atuais. Cargas
 concorrentes (`loadedSeq !== loadSeq`) suprimem a checagem.
-A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele); em telas estreitas
-`staleLeft` o afasta para a direita da coluna da árvore (inalterado em telas largas). O conjunto vigiado
+A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele); `LayersCore.staleBannerBox`
+mantém a caixa entre a coluna da árvore e o painel direito (largura mínima de 240 px; a 1024 px ela encolhe). O conjunto vigiado
 lista só o que foi lido com sucesso e `this.mtimes` é zerado a cada `loadProject`, para não herdar os mtimes da
 pasta anterior. `LayersCore.dismissWatch` aceita os mtimes atuais e mantém os paths ausentes no `watch` como
 `'missing'`: continuam vigiados e voltam a acusar quando reaparecem (salvamento atômico = apaga + renomeia).
+Com o `watch` de quando `checkStale` leu (`staleSeen`), o "×" só aceita paths que uma gravação própria não moveu
+desde então. Reverter uma aprovação (`rollback`) compara o mtime atual com o que o `approve` deixou
+(`entry.written`) e recusa se o arquivo mudou fora do LAYERS, mesmo depois de um reload; `retryCreateLayersJson`
+lê o `loadSeq` na entrada e desiste se uma carga mais nova começou.
 Uma carga superada (`seq !== loadSeq`) não descarrega nem marca `loadedSeq` por cima da carga mais nova.
 
 ### Guarda de conflito na gravação

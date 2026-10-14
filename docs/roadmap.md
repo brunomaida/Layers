@@ -33,7 +33,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.14 | 2 | S2 | Persistência de changes pendentes | checklist B; exige decisão própria | — | — | — | — | registered |
 | S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B | — | — | — | — | registered |
 | S2.16 | 2 | S2 | Fechar findings adiados da revisão do reload | Issue #19 | — | — | [](../changelog.d/fix-261013-19-s2-16-reload-deferred-findings.md) | #19 | done |
-| S2.17 | 2 | S2 | Achados restantes da revisão do reload | Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px) | — | — | — | #32 | in-progress |
+| S2.17 | 2 | S2 | Achados restantes da revisão do reload | Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px) | — | — | [](../changelog.d/fix-261013-32-s2-17-reload-residuals.md) | #32 | done |
 | S2.18 | 2 | S2 | Verificação manual da gravação real do template dc | Checkpoint 2026-09-18: gravar via `dcSource` nunca foi verificado à mão (conectar pasta → editar → aprovar → diff) | — | — | — | — | registered |
 | S2.19 | 2 | S2 | Limpar códigos dc reservados e avisos do hoistFaces | `UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames` | — | — | — | — | registered |
 | S2.20 | 2 | S2 | Origem autoral obsoleta em data-src corrigida ou descartada | Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice | — | — | [](../changelog.d/fix-261013-0-s2-20-stale-authored-src.md) | — | done |
