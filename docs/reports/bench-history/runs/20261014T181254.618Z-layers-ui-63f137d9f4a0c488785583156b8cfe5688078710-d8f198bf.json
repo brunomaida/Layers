@@ -1,0 +1,188 @@
+{
+  "timestamp_utc": "2026-10-14T18:12:54.618Z",
+  "suite": "layers-ui",
+  "tag": "latency",
+  "env_key": "61c971a2",
+  "env": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+    "cores": 20,
+    "os": "win32 10.0.26200",
+    "runtime": "chromium 153.0.8010.12 (playwright)",
+    "gc": "V8",
+    "tool": "playwright"
+  },
+  "git_sha": "63f137d9f4a0c488785583156b8cfe5688078710",
+  "git_dirty": false,
+  "source": "ingest",
+  "confidence": "high",
+  "baseline": false,
+  "records": [
+    {
+      "bench_id": "load/traval/first-scan-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 8.199999995529652,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {
+        "gcsCalls": 416
+      }
+    },
+    {
+      "bench_id": "load/traval/first-scan-end-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 540.1999999955297,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {}
+    },
+    {
+      "bench_id": "scan/1500-tags-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 44.20000000298023,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {
+        "gcsCalls": 1660,
+        "tags": 1712
+      }
+    },
+    {
+      "bench_id": "orbit/traval/mean-frame-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 25.277419354838713,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {
+        "fps": 39.56100051046452,
+        "p95FrameMs": 50,
+        "frames": 62,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "bench_id": "orbit/traval-zoom/mean-frame-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 21.91917808219178,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {
+        "fps": 45.62214861571152,
+        "p95FrameMs": 33.40000000000009,
+        "frames": 73,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "zoomSteps": 12,
+        "census": {
+          "total": 414,
+          "offscreen": 254,
+          "partial": 81,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "bench_id": "orbit/traval-zoom-ideal/mean-frame-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 17.400857142857145,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {
+        "fps": 57.46843341050522,
+        "p95FrameMs": 16.800000000000182,
+        "frames": 91,
+        "loafCount": 1,
+        "loafScriptShare": 0,
+        "zoomSteps": 12,
+        "census": {
+          "total": 414,
+          "offscreen": 254,
+          "partial": 81,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "bench_id": "explode/traval/toggle-ms",
+      "suite": "layers-ui",
+      "unit": "ms",
+      "mean": 71.59999999403954,
+      "median": null,
+      "stddev": 0,
+      "min": null,
+      "max": null,
+      "p95": null,
+      "p99": null,
+      "alloc_bytes": null,
+      "gen0": null,
+      "gen1": null,
+      "gen2": null,
+      "extra": {}
+    }
+  ],
+  "run_id": "d8f198bfd31d31fb",
+  "methodology_version": "1"
+}
