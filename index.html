@@ -1239,6 +1239,9 @@ class Component extends DCLogic {
     const host = this.pageRef.current; if (!host) { if (seq === this.loadSeq) this.loadedSeq = seq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
+    // interactions escritas contra o app real costumam mirar classes que o mock nao tem (S2.12)
+    const dead = LayersCore.deadInteractions(man.interactions, q => sh.querySelectorAll(q).length + (rootEl.matches(q) ? 1 : 0));
+    if (dead.length) warn.push(dead.length + ' seletor(es) de interactions sem alvo no mock: ' + dead.slice(0, 3).map(d => d.label + ' → ' + d.sel).join('; ') + (dead.length > 3 ? '…' : ''));
     const name = man.name || this.state.dirName;
     // Projeto novo abre na vista padrao; reabrir o ultimo projeto mantem camera e selecao.
     // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
@@ -2066,7 +2069,7 @@ class Component extends DCLogic {
       { key: 'mode', label: 'Modo interativo', hint: s.interact ? 'ON' : 'OFF', kind: 'mode', on: s.interact, toggle: flip('interact'), desc: s.project ? 'Com o modo ligado, o clique numa camada do palco dispara o clique nativo do elemento no mock (checkbox, radio, details). As superfícies e ações abaixo vêm de layers.json › interactions do projeto ' + s.project.name + '.' : 'Nenhum projeto carregado. Este menu lista as superfícies (painéis, popovers) e ações (abas, seções, ancoragens) que cada projeto declara em layers.json › interactions — veja docs/layers-json.md.', groups: [
         { label: 'Estado', items: [item(s.interact ? 'Ligado' : 'Desligado', s.interact, flip('interact'))] } ] },
       ...manInter.map((it, i) => { if (!it || typeof it !== 'object') return null; if (it.sep !== undefined) return { key: 'sep' + i, label: typeof it.sep === 'string' ? it.sep : (it.label || ''), sep: true };
-        return { key: it.key || 'i' + i, label: it.label || 'Item ' + (i + 1), kind: it.show ? 'surface' : 'action', on: it.show ? isShown(it.show) : null, eye: it.show ? act({ toggle: it.show }) : null, desc: it.desc || '',
+        return { key: it.key || 'i' + i, label: it.label || 'Item ' + (i + 1), kind: it.show ? 'surface' : 'action', hint: it.show && isShown(it.show) === null ? 'sem alvo' : '', on: it.show ? isShown(it.show) : null, eye: it.show ? act({ toggle: it.show }) : null, desc: it.desc || '',
           groups: (Array.isArray(it.groups) ? it.groups : []).map(g => ({ label: g.label || '', items: (Array.isArray(g.items) ? g.items : []).map(a => item(a.label || '', hasAct(a) ? actOn(a) : null, hasAct(a) ? act(a) : null, a.hint)) })) }; }).filter(Boolean),
     ];
     const curInter = INTER.find(i => i.key === s.interSel && !i.sep) || INTER[0];
