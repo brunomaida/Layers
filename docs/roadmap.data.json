@@ -813,7 +813,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 70,
+    "progress": 75,
     "docs": [],
     "children": [
       {
@@ -956,18 +956,24 @@
         "name": "Culling de planos fora do viewport",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s4-5-viewport-culling.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-14-s4-5-viewport-culling.md)",
             "title": "2026-10-14-s4-5-viewport-culling.md)"
+          },
+          {
+            "name": "feature-261014-0-s4-5-viewport-culling.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s4-5-viewport-culling.md)",
+            "title": "feature-261014-0-s4-5-viewport-culling.md)"
           }
         ],
         "reason": "checklist D",
