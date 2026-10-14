@@ -909,7 +909,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 43,
+    "progress": 51,
     "docs": [],
     "children": [
       {
@@ -965,12 +965,12 @@
         "name": "Origem de 30 nós amostrados",
         "start": "2026-10-15",
         "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist E",
         "is_branch": false,
