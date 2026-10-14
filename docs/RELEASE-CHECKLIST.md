@@ -71,7 +71,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] Não aplicável desde a v2.24: não há iframe. O mock vive num shadow root do próprio documento e nenhum script do projeto é executado — o isolamento vem da sanitização (item acima), não de `sandbox=`.
 - [x] Sem chamadas de rede em runtime, incluindo as fontes que o projeto carregado pede: `fonts/projects.css` versiona Newsreader e Geist, `@font-face` do projeto sobe para o documento com `blob:`, e a meta CSP (`default-src 'self'`, `connect-src` só com a allowlist do GitHub) é a guarda. Medido com os 4 projetos: 18/18 requisições em `localhost:5180`, zero externas.
 - [x] `localStorage` só com preferências de UI, histórico de projetos e ponteiros de sessão; o handle da pasta fica no IndexedDB `layers-hist` e conteúdo de arquivo não sai do disco.
-- [~] Log de gravações: `layers-export.log` sai na exportação com caminho, timestamp, tamanho antes/depois e se houve `.bak`. Falta o hash.
+- [x] Log de gravações: `layers-export.log` sai na exportação com cabeçalho de versão (`v2`), caminho, timestamp, tamanho antes/depois em bytes UTF-8, SHA-256 do conteúdo antes e depois e se houve `.bak` (`LayersCore.contentHash`/`writeLogText`; `e2e/write-log-hash.spec.js`).
 - [x] Dependências de dev fixadas (`package-lock.json`, lockfileVersion 3) e auditadas: `npm audit` reporta 0 vulnerabilidades. Requer npm 11+.
 
 ## G. Documentação de release

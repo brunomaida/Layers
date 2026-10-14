@@ -1221,15 +1221,15 @@
     "id": "S6",
     "type": "phase",
     "name": "Segurança",
-    "start": "2026-10-15",
-    "end": "2026-10-18",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "start": "2026-10-14",
+    "end": "2026-10-17",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "perf",
       "scaffold"
     ],
-    "progress": 50,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -1256,19 +1256,32 @@
         "id": "S6.2",
         "type": "spec",
         "name": "Hash no log de gravação",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s6-2-write-log-hash.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s6-2-write-log-hash.md)",
+            "title": "2026-10-14-s6-2-write-log-hash.md)"
+          },
+          {
+            "name": "feature-261014-0-s6-2-write-log-hash.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s6-2-write-log-hash.md)",
+            "title": "feature-261014-0-s6-2-write-log-hash.md)"
+          }
+        ],
         "reason": "checklist F",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
