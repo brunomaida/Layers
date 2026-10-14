@@ -813,15 +813,15 @@
       "scaffold",
       "tests"
     ],
-    "progress": 62,
+    "progress": 75,
     "docs": [],
     "children": [
       {
         "id": "S4.1",
         "type": "spec",
         "name": "contain e will-change só em drag",
-        "start": "2026-10-14",
-        "end": "2026-10-16",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "done",
         "statusLabel": "Completed",
         "tags": [
@@ -839,8 +839,8 @@
         "id": "S4.2",
         "type": "spec",
         "name": "Medição da travessia do scan",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "done",
         "statusLabel": "Completed",
         "tags": [
@@ -954,19 +954,32 @@
         "id": "S4.5",
         "type": "spec",
         "name": "Culling de planos fora do viewport",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s4-5-viewport-culling.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s4-5-viewport-culling.md)",
+            "title": "2026-10-14-s4-5-viewport-culling.md)"
+          },
+          {
+            "name": "feature-261014-0-s4-5-viewport-culling.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s4-5-viewport-culling.md)",
+            "title": "feature-261014-0-s4-5-viewport-culling.md)"
+          }
+        ],
         "reason": "checklist D",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
@@ -1022,15 +1035,15 @@
       "scaffold",
       "tests"
     ],
-    "progress": 71,
+    "progress": 86,
     "docs": [],
     "children": [
       {
         "id": "S5.1",
         "type": "spec",
         "name": "Unit do core (Vitest)",
-        "start": "2026-10-14",
-        "end": "2026-10-16",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "done",
         "statusLabel": "Completed",
         "tags": [
@@ -1168,19 +1181,32 @@
         "id": "S5.6",
         "type": "spec",
         "name": "E2E Playwright funcional",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s5-6-e2e-functional.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s5-6-e2e-functional.md)",
+            "title": "2026-10-14-s5-6-e2e-functional.md)"
+          },
+          {
+            "name": "feature-261014-0-s5-6-e2e-functional.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s5-6-e2e-functional.md)",
+            "title": "feature-261014-0-s5-6-e2e-functional.md)"
+          }
+        ],
         "reason": "checklist E; infra nasce em S4.4",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
@@ -1208,15 +1234,15 @@
     "id": "S6",
     "type": "phase",
     "name": "Segurança",
-    "start": "2026-10-15",
-    "end": "2026-10-18",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "start": "2026-10-14",
+    "end": "2026-10-17",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "perf",
       "scaffold"
     ],
-    "progress": 50,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -1243,19 +1269,32 @@
         "id": "S6.2",
         "type": "spec",
         "name": "Hash no log de gravação",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s6-2-write-log-hash.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s6-2-write-log-hash.md)",
+            "title": "2026-10-14-s6-2-write-log-hash.md)"
+          },
+          {
+            "name": "feature-261014-0-s6-2-write-log-hash.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s6-2-write-log-hash.md)",
+            "title": "feature-261014-0-s6-2-write-log-hash.md)"
+          }
+        ],
         "reason": "checklist F",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
