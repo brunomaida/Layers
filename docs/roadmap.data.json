@@ -1318,6 +1318,12 @@
             "type": "report",
             "path": "/[](../changelog.d/docs-261013-0-s7-8-tracker-reconcile.md)",
             "title": "docs-261013-0-s7-8-tracker-reconcile.md)"
+          },
+          {
+            "name": "2026-10-13-s7-8-tracker-reconcile.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-13-s7-8-tracker-reconcile.md",
+            "title": "Implementation Report — s7-8-tracker-reconcile"
           }
         ],
         "reason": "Varredura 2026-10-13: contador do checklist, S5.1, package.json, S7.2 e S4.4a fora do tracker",
