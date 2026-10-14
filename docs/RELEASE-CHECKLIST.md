@@ -26,7 +26,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 31 concluídos
 - [x] Avisar quando um seletor de `interactions` não resolve no mock (`LayersCore.deadInteractions`): a carga acrescenta um aviso com os três primeiros e a superfície sem alvo ganha o rótulo "sem alvo" no menu ⚡ Interagir; `e2e/dead-interactions.spec.js`. Medido no spike da fatia 5: 7 das 8 entradas do Traval apontam para classes que o mock autoral não tem (foram escritas contra o app real), e o menu ⚡ Interagir lista sete ações sem efeito. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §5.
 - [x] Undo/redo global (câmera fora; ajustes de propriedade e código dentro): Ctrl+Z, Ctrl+Shift+Z e Ctrl+Y sobre snapshots de `changes[]` (`LayersCore.inlineDelta`), pilha de 100 passos zerada ao recarregar ou aplicar; `e2e/undo-redo.spec.js`.
 - [x] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir): `layers/v1/pending`, validade por hash das fontes (tudo-ou-nada), toast de restaurados/descartados; `e2e/pending-persist.spec.js`.
-- [~] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Falta marcar TS/JS explicitamente como "manual" na interface.
+- [x] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Origem TS/JS aparece como "manual" no cabeçalho do painel de propriedades e na lista de Ajustes (S2.15; `e2e/manual-marker.spec.js`).
 
 ## C. Consistência de interface
 
