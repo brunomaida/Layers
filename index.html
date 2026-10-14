@@ -833,8 +833,10 @@ const SHORTCUTS = [
   ['Camadas', [['PgUp / PgDn','camada ativa acima / abaixo'],['chip L0…Ln · clique','mostrar só essa camada'],['chip L0…Ln · hover','foco: frame da camada + atenuação das demais'],['Todas','voltar a mostrar todas'],['Explodido / Plano · Distância','espaçamento entre camadas'],['Frames · Intensidade','wireframe dos contêineres sem fundo/borda'],['Foco de camada · Destaque · Demais','liga o foco por hover/clique nos chips; Destaque = intensidade da camada em foco, Demais = opacidade das outras'],['chip · hover com seleção ativa','foca só os elementos da camada dentro do ramo selecionado/isolado']]],
   ['Árvore de camadas', [['hover','destaca o frame do elemento no palco'],['clique','selecionar'],['clique no palco','seleciona e rola a árvore até o elemento'],['{ } · ⊟ (barra da aba)','recolher todos os códigos abertos · recolher todas as linhas (só recolhem)'],['{ } na linha','abrir / fechar o código daquele elemento ou regra (padrão: oculto)'],['⌕ Buscar camada · Destacar / Filtrar','destaca ou mostra só as camadas cujo nome contém o texto (Esc limpa)'],['Hierarquia / Elementos','árvore do DOM · definições de estilo (arquivo › regra) sem repetição, com usos e código'],['{ } (Hierarquia)','mostra o código do elemento selecionado logo abaixo dele; Aplicar respeita "Aplicar em"'],['Elementos · regra ▾','lista os usos + textarea com o código; ctrl+Enter ou Aplicar grava em todos os usos'],['duplo clique','isolar o ramo'],['▾ / ▸','expandir / recolher o nó']]],
   ['Propriedades', [['● ● ● (cores de origem)','declarada na regra · herdada de regra acima · editada na sessão — paleta no tweak Cores de origem'],['chips declarada / herdada / editada','filtram as propriedades por origem (combináveis)'],['⌕ Buscar propriedade · Destacar / Filtrar','por nome, propriedade CSS ou título da seção'],['⊟ / ⊞','recolher / expandir todas as seções'],['P · » / «','recolher / expandir o painel de propriedades'],['Enter','aplicar o valor do campo'],['Esc (no campo)','descartar a edição'],['Aplicar em','alcance: perguntar · só este · todos iguais'],['▾ título do grupo','recolher / expandir o grupo']]],
+  ['Edição', [['Ctrl + Z','desfazer o último ajuste (propriedade ou código)'],['Ctrl + Shift + Z · Ctrl + Y','refazer']]],
   ['Geral', [['?','abrir / fechar este painel'],['R','recarregar o projeto do disco (pasta local)'],['⚡ Interagir','superfícies e ações definidas pelo projeto em layers.json › interactions'],['Ações ▾','ver diff · aplicar nos arquivos · exportar']]],
 ];
+const UNDO_CAP = 100;
 const kebab = p => p.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 const toHex = c => { const m = /rgba?\((\d+),\s*(\d+),\s*(\d+)/.exec(c || ''); if (!m) return /^#[0-9a-f]{6}$/i.test(c || '') ? c : '#000000'; return '#' + [m[1], m[2], m[3]].map(v => (+v).toString(16).padStart(2, '0')).join(''); };
@@ -1251,11 +1253,12 @@ class Component extends DCLogic {
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
+    this.resetUndo();
     this.setState({ stale: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
   }
-  unloadProject(why) { this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { this.resetUndo(); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1447,6 +1450,7 @@ class Component extends DCLogic {
     if (this.fixtureBase && !this.state.dir) { const base = this.fixtureBase; this.setState({ dirName: base.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject()); }
     this.onKey = e => {
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) { const k = String(e.key).toLowerCase(); if (k === 'z' || k === 'y') { e.preventDefault(); if (k === 'y' || e.shiftKey) this.redo(); else this.undo(); return; } }
       const mode = e.shiftKey ? 'plane' : 'screen'; const st = 40;
       const map = { ArrowLeft: () => this.pan(-st, 0, mode), ArrowRight: () => this.pan(st, 0, mode), ArrowUp: () => this.pan(0, -st, mode), ArrowDown: () => this.pan(0, st, mode),
         PageUp: () => this.stepActive(1), PageDown: () => this.stepActive(-1), q: () => this.orbit(-10, 0), e: () => this.orbit(10, 0), w: () => this.orbit(0, 10), s: () => this.orbit(0, -10),
@@ -1589,16 +1593,17 @@ class Component extends DCLogic {
     const camel = k => k.replace(/-([a-z])/g, (_, c) => c.toUpperCase());
     const parse = body => { const o = {}; body.replace(/\/\*[\s\S]*?\*\//g, '').split(/;(?![^(]*\))/).forEach(d => { const i = d.indexOf(':'); if (i > 0) { const k = d.slice(0, i).trim(); const v = d.slice(i + 1).trim(); if (k && v) o[camel(k)] = v; } }); return o; };
     const decls = parse(m[1]); const om = /[{]([^}]*)[}]/.exec(origText || ''); const orig = om ? parse(om[1]) : {};
-    const first = this.els[rule.ids[0]]; if (!first) return; const changes = this.cloneChanges();
+    const first = this.els[rule.ids[0]]; if (!first) return; const changes = this.cloneChanges(); let touched = false;
     Object.entries(decls).forEach(([prop, val]) => {
       if (orig[prop] === val || first.style[prop] === val || (window.CSS && CSS.supports && !CSS.supports(kebab(prop), val))) return;
+      touched = true;
       let c = rule.one ? null : changes.find(x => x.prop === prop && x.src === rule.src && x.scope === 'all');
       const one = rule.one === true;
       if (!c) c = one ? changes.find(x => x.prop === prop && x.ids.length === 1 && x.ids[0] === rule.ids[0]) : c;
       if (!c) { c = { key: rule.ids[0] + '|' + prop, id: rule.ids[0], ids: [], name: rule.name, src: rule.src, prop, from: first.style[prop] || getComputedStyle(first)[prop], fromInline: {}, scope: one ? 'one' : 'all', decided: true, scopedSel: one ? this.scopedSelector(rule.ids[0]) : null }; changes.push(c); }
       c.to = val; rule.ids.forEach(i => { const e2 = this.els[i]; if (!e2) return; if (!(i in c.fromInline)) c.fromInline[i] = e2.style[prop]; if (!c.ids.includes(i)) c.ids.push(i); e2.style[prop] = val; });
     });
-    this.setState(st => { const b = { ...st.codeBuf }; delete b[rule.key]; return { changes, codeBuf: b }; }); this.scanSoon();
+    if (touched) this.pushUndo(); this.setState(st => { const b = { ...st.codeBuf }; delete b[rule.key]; return { changes, codeBuf: b }; }); this.scanSoon();
   }
   revealInTree(id) {
     const box = this.treeScrollRef.current; if (!box) return; // árvore recolhida: fica como está
@@ -1661,10 +1666,11 @@ class Component extends DCLogic {
     val = String(val).trim(); if (val === '' || (window.CSS && CSS.supports && !CSS.supports(kebab(prop), val))) return;
     const changes = this.cloneChanges(); let c = changes.find(x => x.prop === prop && x.ids.includes(id));
     if (!c) { c = { key: id + '|' + prop, id, ids: [id], name: n.name, src: n.src, prop, from: el.style[prop] || getComputedStyle(el)[prop], fromInline: { [id]: el.style[prop] }, scope: 'one', decided: false, scopedSel: this.scopedSelector(id) }; changes.push(c); }
+    const same = c.to === val;
     c.to = val; c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[prop] = val; });
     let pending = s.pending;
     if (!c.decided) { const sibs = this.sharedIds(id); if (sibs.length > 1) { if (s.scope === 'all') { this.extend(c, sibs, {}); c.decided = true; } else if (s.scope === 'one') c.decided = true; else pending = { key: c.key, count: sibs.length, name: n.name, selector: ruleOf(n)[1] }; } else c.decided = true; }
-    this.setState({ changes, pending, buf: {} }); this.scanSoon();
+    if (!same) this.pushUndo(); this.setState({ changes, pending, buf: {} }); this.scanSoon();
   }
   extend(c, ids, orig) { ids.forEach(i => { if (c.ids.includes(i)) return; const e2 = this.els[i]; if (!e2) return; c.fromInline[i] = i in orig ? orig[i] : e2.style[c.prop]; e2.style[c.prop] = c.to; c.ids.push(i); }); c.scope = 'all'; }
   decide(all) {
@@ -1672,7 +1678,23 @@ class Component extends DCLogic {
     if (c) { c.decided = true; if (all) { const orig = {}; const rest = []; changes.forEach(x => { if (x !== c && x.prop === c.prop && this.sharedIds(c.id).includes(x.id)) Object.assign(orig, x.fromInline); else rest.push(x); }); this.extend(c, this.sharedIds(c.id), orig); changes.length = 0; changes.push(...rest); } }
     this.setState({ changes, pending: null, scope: s.remember ? (all ? 'all' : 'one') : s.scope }); this.scanSoon();
   }
-  revert(c) { c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }); this.setState(s => ({ changes: s.changes.filter(x => x.key !== c.key) })); this.scanSoon(); }
+  revert(c) { this.pushUndo(); c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }); this.setState(s => ({ changes: s.changes.filter(x => x.key !== c.key) })); this.scanSoon(); }
+  pushUndo() { this.undoS = LayersCore.pushSnapshot(this.undoS, this.cloneChanges(), UNDO_CAP); this.redoS = []; }
+  resetUndo() { this.undoS = []; this.redoS = []; }
+  undo() { this.stepHistory(true); }
+  redo() { this.stepHistory(false); }
+  stepHistory(back) {
+    if (this.state.pending) return;
+    const from = (back ? this.undoS : this.redoS) || [];
+    if (!from.length) { this.toast(back ? 'Nada para desfazer' : 'Nada para refazer', 'ok'); return; }
+    const target = from[from.length - 1]; const cur = this.cloneChanges(); const rest = from.slice(0, -1);
+    if (back) { this.undoS = rest; this.redoS = LayersCore.pushSnapshot(this.redoS, cur, UNDO_CAP); } else { this.redoS = rest; this.undoS = LayersCore.pushSnapshot(this.undoS, cur, UNDO_CAP); }
+    const delta = LayersCore.inlineDelta(cur, target);
+    delta.forEach(d => { const e2 = this.els[d.id]; if (e2) e2.style[d.prop] = d.value; });
+    const props = [...new Set(delta.map(d => d.prop))];
+    this.setState({ changes: target, buf: {} }); this.scanSoon();
+    this.toast((back ? 'Desfeito: ' : 'Refeito: ') + (props.length === 1 ? props[0] : props.length + ' propriedades'), 'ok');
+  }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
   get fixtureBase() { if (!this.state.demoBase && !this.props.fixture) { const pb = typeof location !== 'undefined' ? LayersCore.projectBase(location.search) : null; if (pb) return pb; } const p = this.state.demoBase || this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
@@ -1816,6 +1838,7 @@ class Component extends DCLogic {
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
+    this.resetUndo();
     this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [] }));
   }
   async rollback(h) {
@@ -2180,7 +2203,7 @@ class Component extends DCLogic {
           histClear: () => { hist.filter(x => !x.pinned).forEach(x => idbDel(x.id)); this.saveHist(hist.filter(x => x.pinned)); },
           histAdding: !!s.histAdding, histRepoQ: s.histRepoQ || '', histRepoBdr: 'rgba(var(--selRgb),.6)', histRepoStart: () => this.setState({ histAdding: true }), histRepoCancel: () => this.setState({ histAdding: false, histRepoQ: '' }),
           histRepoInput: e => this.setState({ histRepoQ: e.target.value }), histRepoKey: e => { e.stopPropagation(); if (e.key === 'Enter') this.addRepo(); if (e.key === 'Escape') this.setState({ histAdding: false, histRepoQ: '' }); }, histRepoAdd: () => this.addRepo() }; })(),
-      cancelAll: () => { s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
+      cancelAll: () => { if (s.changes.length) this.pushUndo(); s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
       openSave: () => { if (!s.changes.length) return; this.setState({ menuOpen: false, modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
       modalOpen: !!m, modalTitle: m && m.stage === 'confirm' ? m.title : m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos',
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
