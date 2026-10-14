@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 80,
+    "progress": 83,
     "docs": [],
     "children": [
       {
@@ -487,12 +487,12 @@
         "name": "Persistência de changes pendentes",
         "start": "2026-10-15",
         "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist B; exige decisão própria",
         "is_branch": false,
