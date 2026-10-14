@@ -31,7 +31,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.12 | 2 | S2 | Aviso de interactions mortas | checklist B; ver spike superficies-latentes (docs/superpowers/reports) | — | — | [](../changelog.d/feature-261013-0-s2-12-dead-interactions.md) | — | done |
 | S2.13 | 2 | S2 | Undo/redo global | checklist B | [](superpowers/specs/2026-10-14-s2-13-undo-redo-design.md) | [](superpowers/plans/2026-10-14-s2-13-undo-redo.md) | [](../changelog.d/feature-261014-0-s2-13-undo-redo.md) | — | done |
 | S2.14 | 2 | S2 | Persistência de changes pendentes | checklist B; exige decisão própria | [](superpowers/specs/2026-10-14-s2-14-pending-persist-design.md) | [](superpowers/plans/2026-10-14-s2-14-pending-persist.md) | [](../changelog.d/feature-261014-0-s2-14-pending-persist.md) | — | done |
-| S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B | — | — | — | — | registered |
+| S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B | — | — | — | — | in-progress |
 | S2.16 | 2 | S2 | Fechar findings adiados da revisão do reload | Issue #19 | — | — | [](../changelog.d/fix-261013-19-s2-16-reload-deferred-findings.md) | #19 | done |
 | S2.17 | 2 | S2 | Achados restantes da revisão do reload | Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px) | — | — | [](../changelog.d/fix-261013-32-s2-17-reload-residuals.md) | #32 | done |
 | S2.18 | 2 | S2 | Verificação manual da gravação real do template dc | Checkpoint 2026-09-18: gravar via `dcSource` nunca foi verificado à mão (conectar pasta → editar → aprovar → diff) | — | — | — | — | registered |
