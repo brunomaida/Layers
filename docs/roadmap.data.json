@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 70,
+    "progress": 73,
     "docs": [],
     "children": [
       {
@@ -429,12 +429,12 @@
         "name": "Aviso de interactions mortas",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist B; ver spike superficies-latentes (docs/superpowers/reports)",
         "is_branch": false,
