@@ -1274,7 +1274,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 62,
+    "progress": 70,
     "docs": [],
     "children": [
       {
@@ -1283,13 +1283,13 @@
         "name": "README atualizado",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "docs",
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist G",
         "is_branch": false,
