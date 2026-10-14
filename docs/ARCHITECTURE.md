@@ -52,7 +52,7 @@ Regras:
 |---|---|
 | `THEMES / ACCENTS / SELECTS`, `applyTheme()` | Paletas; grava variáveis `--*` em `documentElement`. |
 | `scan()` / `walk()` | Percorre o DOM alvo, extrai geometria e estilo computado, monta `nodes`/`byId`/`els`. |
-| `cam()`, `scene()`, `Plane` | Câmera, projeção e renderização dos planos. Handlers estáveis em `this.H` mantêm o `memo`. |
+| `cam()`, `scene()`, `Plane` | Câmera, projeção e renderização dos planos. Handlers estáveis em `this.H` mantêm o `memo`. Durante o arrasto, `LayersCore.viewCuller` esconde (`display:none`) os planos cuja projeção cai inteira fora do palco. |
 | `flushMove()` | Orbit/pan/focus por `requestAnimationFrame`. |
 | `codeFor()`, `patchCss()`, `LayersCore.lineDiff()` (dados puros; `index.html` só pinta) | Leitura do código da regra, patch preservando formatação, diff para revisão. |
 | `setProp()`, `applyCode()`, `revert()` | Mutação de estilo, registro de `changes`, escopo. |
@@ -122,7 +122,7 @@ Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 
 ## Limites conhecidos
 
-- DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações em v2.22: `contain`, `will-change` só durante drag, transições desligadas no drag. Próximo passo: culling por viewport/opacidade e agrupamento de folhas.
+- DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações: `contain`, `will-change` só durante drag, transições desligadas no drag (v2.22) e culling por viewport durante o arrasto (S4.5; selecionado e hover nunca cortam; opacidade não é critério, ver comentário v2.7-b no `Plane`). Próximo passo: cache de `getComputedStyle` (S4.6), árvore virtualizada (S4.7) e agrupamento de folhas.
 - Fonte de camadas fixa (mock). Ver `RELEASE-CHECKLIST.md` → "Loader de projeto".
 - Regras vindas de TS/JS/JSX são exibidas e registradas, mas não reescritas; o cabeçalho do painel de propriedades e a lista de Ajustes as marcam como "manual" (`LayersCore.isManualSource`).
 
@@ -193,3 +193,10 @@ Uma carga superada (`seq !== loadSeq`) não descarrega nem marca `loadedSeq` por
 **recusa** a gravação se o arquivo mudou fora do LAYERS desde a leitura (o erro pede para recarregar o projeto (`R`)
 ou reconectar a pasta e refazer o ajuste). Sem leitura prévia (`mtimes[path]` indefinido) não há recusa. Antes de sobrescrever,
 faz `.bak` uma vez por arquivo por sessão e grava via `.tmp` + `move`.
+Depois de gravar, cada gravação entra em `this.writeLog` com tamanho em bytes UTF-8 e SHA-256 (`LayersCore.contentHash`)
+do conteúdo antes e depois; se o digest falhar, só os hashes saem como `-` (os tamanhos ficam) e a gravação segue. `exportFull` grava o registro
+como `layers-export.log` no formato v2 (`LayersCore.writeLogText`, cabeçalho `# layers-export.log v2`). O hash "depois"
+confere com `sha256sum` do arquivo gravado. O "antes" confere com o `.bak` só na primeira gravação do caminho na sessão com
+conteúdo anterior não vazio, e apenas se a gravação do `.bak` teve sucesso. O caminho sai com caracteres de controle e
+espaços duplos escapados (`\xNN`), então não forja nem quebra linha do log. "Antes" e `.bak` são o texto decodificado (`f.text()`)
+regravado em UTF-8: BOM e bytes não UTF-8 do original não se preservam.

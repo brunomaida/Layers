@@ -1,0 +1,115 @@
+{
+  "schemaVersion": 1,
+  "suite": "layers-ui",
+  "tag": "latency",
+  "timestampUtc": "2026-10-14T18:31:39.461Z",
+  "env": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+    "cores": 20,
+    "os": "win32 10.0.26200",
+    "runtime": "chromium 153.0.8010.12 (playwright)",
+    "gc": "V8",
+    "tool": "playwright"
+  },
+  "git": {
+    "sha": "e62e9656649ca0568ce7ad0849c69a8b0e7d4517",
+    "dirty": false
+  },
+  "benchmarks": [
+    {
+      "benchId": "load/traval/first-scan-ms",
+      "unit": "ms",
+      "value": 12.100000001490116,
+      "stddev": 0,
+      "extra": {
+        "gcsCalls": 416
+      }
+    },
+    {
+      "benchId": "load/traval/first-scan-end-ms",
+      "unit": "ms",
+      "value": 587.8000000044703,
+      "stddev": 0,
+      "extra": {}
+    },
+    {
+      "benchId": "scan/1500-tags-ms",
+      "unit": "ms",
+      "value": 44.80000000447035,
+      "stddev": 0,
+      "extra": {
+        "gcsCalls": 1660,
+        "tags": 1712
+      }
+    },
+    {
+      "benchId": "orbit/traval/mean-frame-ms",
+      "unit": "ms",
+      "value": 23.530882352941177,
+      "stddev": 0,
+      "extra": {
+        "fps": 42.49734391600525,
+        "p95FrameMs": 50,
+        "frames": 68,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-zoom/mean-frame-ms",
+      "unit": "ms",
+      "value": 16.668817204301078,
+      "stddev": 0,
+      "extra": {
+        "fps": 59.99225906334666,
+        "p95FrameMs": 16.800000000000182,
+        "frames": 93,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "zoomSteps": 12,
+        "census": {
+          "total": 414,
+          "offscreen": 254,
+          "partial": 81,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-zoom-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 16.666425531914896,
+      "stddev": 0,
+      "extra": {
+        "fps": 60.000868097666086,
+        "p95FrameMs": 17,
+        "frames": 94,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "zoomSteps": 12,
+        "census": {
+          "total": 414,
+          "offscreen": 254,
+          "partial": 81,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "benchId": "explode/traval/toggle-ms",
+      "unit": "ms",
+      "value": 68.19999999552965,
+      "stddev": 0,
+      "extra": {}
+    }
+  ]
+}
