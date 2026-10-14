@@ -894,6 +894,7 @@ const SHORT = { paddingTop: ['padding'], paddingRight: ['padding'], paddingBotto
 const INHERITABLE = new Set(['color', 'fontFamily', 'fontSize', 'fontWeight', 'fontStyle', 'letterSpacing', 'lineHeight', 'textTransform', 'textAlign', 'whiteSpace', 'wordBreak', 'visibility', 'pointerEvents']);
 // props declaradas dentro de um bloco CSS (nomes kebab)
 
+const compound = sel => (sel || '').trim().split(/\s*>\s*|\s+/).pop();
 const sliderBounds = (unit, x) => unit === 'px' ? [x.min, x.max, x.step] : unit === '%' ? [0, 200, 1] : unit === '' ? [0, 4, .05] : [+(x.min / 16).toFixed(3), +(x.max / 16).toFixed(3), .05];
 const DIFF_PAINT = { '-': ['var(--err)', 'rgba(var(--errRgb),.08)'], '+': ['var(--ok)', 'rgba(var(--okRgb),.08)'], ' ': ['var(--fg2)', 'transparent'] };
 const lineDiff = (a, b) => LayersCore.lineDiff(a, b).map(l => ({ no: l.no, text: l.text, color: DIFF_PAINT[l.kind][0], bg: DIFF_PAINT[l.kind][1] }));
