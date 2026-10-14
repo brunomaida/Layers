@@ -362,7 +362,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <span title="{{ c.warnTitle }}" style="color:var(--warn);cursor:help">{{ c.warn }}</span>
               <button onClick="{{ c.revert }}" title="Reverter" style="all:unset;cursor:pointer;color:var(--fg2)">↺</button>
               <div style="grid-column:1 / -1;display:flex;gap:6px;overflow:hidden;white-space:nowrap"><span style="color:var(--err);text-decoration:line-through;overflow:hidden;text-overflow:ellipsis">{{ c.from }}</span><span style="color:var(--fg3)">→</span><span style="color:var(--ok);overflow:hidden;text-overflow:ellipsis">{{ c.to }}</span></div>
-              <div style="grid-column:1 / -1;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.file }} › {{ c.selector }} · L{{ c.line }}<span data-manual-mark style="color:var(--warn)">{{ c.manual }}</span></div>
+              <div style="grid-column:1 / -1;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span data-manual-mark="aj" style="color:var(--warn)">{{ c.manual }}</span>{{ c.file }} › {{ c.selector }} · L{{ c.line }}</div>
             </div>
           </sc-for>
           <sc-for list="{{ history }}" as="h" hint-placeholder-count="0">
@@ -469,7 +469,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </div>
       <div style="margin-top:6px;font:600 calc(15px*var(--fs))/1.25 'Inter',sans-serif;color:var(--fg0);overflow-wrap:anywhere;text-wrap:pretty">{{ selName }}</div>
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin-top:5px;font:500 calc(10px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg2)">
-        <span style="color:var(--sel);overflow-wrap:anywhere">{{ selFile }}</span><span style="color:var(--line2)">›</span><span style="color:var(--fg1);overflow-wrap:anywhere">{{ selLine }}</span><span style="color:var(--line2)">·</span><span style="color:var(--fg3)">{{ selSize }}</span>
+        <span style="color:var(--sel);overflow-wrap:anywhere">{{ selFile }}</span><span style="color:var(--line2)">›</span><span style="color:var(--fg1);overflow-wrap:anywhere">{{ selLine }}</span><span style="color:var(--line2)">·</span><span style="color:var(--fg3)">{{ selSize }}</span><span data-manual-mark="sel" style="color:var(--warn)">{{ selManual }}</span>
       </div>
     </div>
     <div style="display:flex;flex-direction:column;gap:6px;padding:6px 12px 8px;border-bottom:1px solid var(--line1)">
@@ -2127,7 +2127,7 @@ class Component extends DCLogic {
     const m = s.modal; const sibs = this.sharedIds(s.selId); const hasSibs = sibs.length > 1;
     const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }) }; });
     const changes = s.changes.map(c => { const [file, , line] = ruleOf(c); const n = this.sharedIds(c.id).length; const warn = c.scope === 'one' && n > 1; const psel = this.patchSel(c);
-      return { ...c, cssProp: kebab(c.prop), file, selector: psel, line: line || '?', manual: LayersCore.isManualSource(file) ? ' · patch manual' : '', countLabel: c.ids.length > 1 ? '×' + c.ids.length + ' ' : '', warn: warn ? '⚠' : '', warnTitle: warn ? 'Regra compartilhada por ' + n + ' elementos — o patch fica restrito a este via ' + psel + '. Confira o seletor gerado.' : '', select: () => this.select(c.id), revert: () => this.revert(c) }; });
+      return { ...c, cssProp: kebab(c.prop), file, selector: psel, line: line || '?', manual: LayersCore.isManualSource(file) ? 'patch manual · ' : '', countLabel: c.ids.length > 1 ? '×' + c.ids.length + ' ' : '', warn: warn ? '⚠' : '', warnTitle: warn ? 'Regra compartilhada por ' + n + ' elementos — o patch fica restrito a este via ' + psel + '. Confira o seletor gerado.' : '', select: () => this.select(c.id), revert: () => this.revert(c) }; });
     const history = s.history.map(h => ({ label: h.branch + ' · ' + h.changes.length + ' ajuste(s) · ' + h.ts, rollback: () => this.rollback(h) }));
     const flip = key => () => this.setState(st => ({ [key]: !st[key] }), () => this.scanSoon());
     const p = s.pending; const stageRect = () => { const st = this.stageRef.current; return st ? st.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 }; };
@@ -2222,7 +2222,7 @@ class Component extends DCLogic {
       propModeHl: () => this.setState({ propMode: 'hl' }), propModeFilter: () => this.setState({ propMode: 'filter' }), propHlBg: s.propMode === 'hl' ? 'rgba(var(--accRgb),.15)' : 'transparent', propHlColor: s.propMode === 'hl' ? 'var(--acc)' : 'var(--fg2)', propFlBg: s.propMode === 'filter' ? 'rgba(var(--accRgb),.15)' : 'transparent', propFlColor: s.propMode === 'filter' ? 'var(--acc)' : 'var(--fg2)',
       originChips: [['declared', 'declarada', 'var(--oD)', nDecl, 'Declarada na regra do elemento'], ['inherited', 'herdada', 'var(--oH)', nInh, 'Herdada de uma regra acima'], ['edited', 'editada', 'var(--oE)', nEdit, 'Editada nesta sessão']].map(([k, label, dot, count, title]) => { const on = !!s.originSel[k];
         return { label, dot, count, title: title + ' — clique para mostrar só estas (combinável)', bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'rgba(var(--accRgb),.55)' : 'var(--line1)', color: on ? 'var(--fg0)' : 'var(--fg2)', pick: () => this.setState(st => ({ originSel: { ...st.originSel, [k]: !st.originSel[k] } })) }; }),
-      originShort: s.dir && /\.css$/.test(selFile) ? '.css real' : LayersCore.isManualSource(selFile) ? selFile.slice(selFile.lastIndexOf('.')) + ' · manual' : 'mock',
+      originShort: s.dir && /\.css$/.test(selFile) ? '.css real' : 'mock', selManual: LayersCore.isManualSource(selFile) ? '· patch manual' : '',
       allGroupsGlyph: Object.values(s.grpClosed).filter(Boolean).length >= GROUPS.length ? '⊞' : '⊟', allGroupsTitle: Object.values(s.grpClosed).filter(Boolean).length >= GROUPS.length ? 'Expandir todas as seções' : 'Recolher todas as seções',
       toggleAllGroups: () => this.setState(st => { const allClosed = Object.values(st.grpClosed).filter(Boolean).length >= GROUPS.length; const g = {}; if (!allClosed) GROUPS.forEach(([t]) => { g[t] = true; }); return { grpClosed: g }; }),
       treeScrollRef: this.treeScrollRef, declaredCount: nDecl, inheritedCount: nInh, originSource: s.dir && /\.css$/.test(selFile) ? 'origem: ' + selFile : LayersCore.isManualSource(selFile) ? 'origem: ' + selFile + ' — patch manual (a fonte não é .css)' : 'origem: estilos do mock (conecte a pasta para ler o .css)',
