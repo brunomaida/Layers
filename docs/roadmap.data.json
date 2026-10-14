@@ -909,7 +909,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 29,
+    "progress": 37,
     "docs": [],
     "children": [
       {
@@ -938,13 +938,13 @@
         "name": "Snapshot de árvore por fixture",
         "start": "2026-10-15",
         "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "bug",
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist E",
         "is_branch": false,
