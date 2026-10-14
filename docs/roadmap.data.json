@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-21",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 73,
+    "progress": 75,
     "docs": [],
     "children": [
       {
@@ -427,27 +427,34 @@
         "id": "S2.12",
         "type": "spec",
         "name": "Aviso de interactions mortas",
-        "start": "2026-10-14",
-        "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-261013-0-s2-12-dead-interactions.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261013-0-s2-12-dead-interactions.md)",
+            "title": "feature-261013-0-s2-12-dead-interactions.md)"
+          }
+        ],
         "reason": "checklist B; ver spike superficies-latentes (docs/superpowers/reports)",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S2.13",
         "type": "spec",
         "name": "Undo/redo global",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -465,8 +472,8 @@
         "id": "S2.14",
         "type": "spec",
         "name": "Persistência de changes pendentes",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -484,8 +491,8 @@
         "id": "S2.15",
         "type": "spec",
         "name": "Marcador manual para TS/JS",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -564,8 +571,8 @@
         "id": "S2.18",
         "type": "spec",
         "name": "Verificação manual da gravação real do template dc",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -583,8 +590,8 @@
         "id": "S2.19",
         "type": "spec",
         "name": "Limpar códigos dc reservados e avisos do hoistFaces",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
