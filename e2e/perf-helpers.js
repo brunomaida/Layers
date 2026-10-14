@@ -108,6 +108,53 @@ export async function orbitDrag(page, durationMs = 1500) {
   });
 }
 
+// Plane census from the DOM (inline styles only per plane): planes are the stage divs with an
+// inline translateZ transform and a pointer/crosshair cursor (overlays have no cursor). Off-screen is
+// measured against the stage grown by 15 % of its larger side (the culler's CULL_MARGIN).
+// hide = true sets display:none on the off-screen planes (Task 1 upper-bound spike).
+export async function planeCensus(page, hide = false) {
+  return page.evaluate((hide) => {
+    const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
+      getComputedStyle(el).backgroundImage.includes('radial-gradient'),
+    );
+    if (!stage) throw new Error('stage element not found');
+    const s = stage.getBoundingClientRect();
+    const m = 0.15 * Math.max(s.width, s.height);
+    const sb = { left: s.left - m, right: s.right + m, top: s.top - m, bottom: s.bottom + m };
+    const planes = [...stage.querySelectorAll('div')].filter(
+      (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+    );
+    const c = { total: planes.length, offscreen: 0, partial: 0, opBelow005: 0, opZero: 0 };
+    for (const el of planes) {
+      const r = el.getBoundingClientRect();
+      const out = r.right < sb.left || r.left > sb.right || r.bottom < sb.top || r.top > sb.bottom;
+      const inside = r.left >= sb.left && r.right <= sb.right && r.top >= sb.top && r.bottom <= sb.bottom;
+      if (out) {
+        c.offscreen++;
+        if (hide) el.style.display = 'none';
+      } else if (!inside) c.partial++;
+      const op = el.style.opacity === '' ? 1 : +el.style.opacity;
+      if (op < 0.05) c.opBelow005++;
+      if (op === 0) c.opZero++;
+    }
+    return c;
+  }, hide);
+}
+
+// Wheel zoom at the stage centre (zoomBy 1.1 per event), then wait out the 0.35 s world transition.
+export async function zoomIn(page, steps) {
+  const r = await page.evaluate(() => {
+    const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
+      getComputedStyle(el).backgroundImage.includes('radial-gradient'),
+    );
+    const b = stage.getBoundingClientRect();
+    return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+  });
+  await page.mouse.move(r.x, r.y);
+  for (let i = 0; i < steps; i++) await page.mouse.wheel(0, -100);
+  await page.waitForTimeout(600);
+}
+
 export function writeBench(benchmarks, runtime) {
   const sha = execSync('git rev-parse HEAD').toString().trim();
   const dirty = execSync('git status --porcelain').toString().trim().length > 0;

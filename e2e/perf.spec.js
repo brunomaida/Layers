@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn } from './perf-helpers.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
   'load/traval/first-scan-end-ms',
   'scan/1500-tags-ms',
   'orbit/traval/mean-frame-ms',
+  'orbit/traval-zoom/mean-frame-ms',
+  'orbit/traval-zoom-ideal/mean-frame-ms',
   'explode/traval/toggle-ms',
 ];
 const results = [];
@@ -54,6 +56,7 @@ test('Orbit_Drag_RecordsFrameInterval', async ({ page }) => {
   await instrument(page);
   await page.goto('/?layers=fixtures/traval/');
   await waitForScan(page);
+  const census = await planeCensus(page);
   orbit = await orbitDrag(page, 1500);
   rec('orbit/traval/mean-frame-ms', orbit.meanFrameMs, {
     fps: orbit.fps,
@@ -61,8 +64,48 @@ test('Orbit_Drag_RecordsFrameInterval', async ({ page }) => {
     frames: orbit.frames,
     loafCount: orbit.loafCount,
     loafScriptShare: orbit.loafScriptShare,
+    census,
   });
   expect(orbit.frames).toBeGreaterThanOrEqual(30);
+});
+
+test('Orbit_Zoomed_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/?layers=fixtures/traval/');
+  await waitForScan(page);
+  await zoomIn(page, 12);
+  const census = await planeCensus(page);
+  const z = await orbitDrag(page, 1500);
+  rec('orbit/traval-zoom/mean-frame-ms', z.meanFrameMs, {
+    fps: z.fps,
+    p95FrameMs: z.p95FrameMs,
+    frames: z.frames,
+    loafCount: z.loafCount,
+    loafScriptShare: z.loafScriptShare,
+    zoomSteps: 12,
+    census,
+  });
+  expect(z.frames).toBeGreaterThanOrEqual(30);
+});
+
+// Upper bound for the go/no-go: the planes off the grown stage before the drag are hidden by hand.
+test('Orbit_ZoomedIdeal_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/?layers=fixtures/traval/');
+  await waitForScan(page);
+  await zoomIn(page, 12);
+  const census = await planeCensus(page, true);
+  const z = await orbitDrag(page, 1500);
+  rec('orbit/traval-zoom-ideal/mean-frame-ms', z.meanFrameMs, {
+    fps: z.fps,
+    p95FrameMs: z.p95FrameMs,
+    frames: z.frames,
+    loafCount: z.loafCount,
+    loafScriptShare: z.loafScriptShare,
+    zoomSteps: 12,
+    census,
+  });
+  expect(z.frames).toBeGreaterThanOrEqual(30);
 });
 
 test('Orbit_Budget_Above50Fps', async () => {
