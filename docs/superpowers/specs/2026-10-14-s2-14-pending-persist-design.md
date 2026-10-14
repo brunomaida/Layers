@@ -98,6 +98,9 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 - Hash diferente: toast `warn` com a contagem descartada; a entrada é removida pela assinatura (`changes` vazio, `dirty`).
 - Restaurar mid-pergunta de escopo: o change volta `decided: true`, `scope: 'one'` com os ids que tinha, o mesmo efeito do Escape em `decide(false)`. `loadProject` zera `state.pending` para que uma pergunta aberta não atravesse a troca de projeto.
 - Leitura transitória falha (css 404 em repositório, rede): o hash mudaria sem que a fonte tenha mudado; por isso a entrada é preservada e a sessão não grava (ver ciclo de vida).
+  O toast do loader diz o que aconteceu: `ajustes salvos mantidos: fonte não lida` quando havia entrada, `ajustes desta sessão não serão salvos: fonte não lida` quando não havia.
+- Falha ao reler as fontes depois de "Aplicar"/rollback (`refreshPendingHash`): toast `warn` de que os ajustes desta sessão não serão salvos; a entrada antiga permanece e a próxima carga a descarta.
+- Acima do teto de 200 changes o toast `warn` sai uma vez por travessia do teto, não a cada rajada.
 - Depois de "Aplicar", ajustes feitos no mesmo projeto têm `fromInline` capturado do DOM que ainda carrega o valor aprovado inline; no reload o DOM novo traz o valor pelo `.css`. Reverter esse ajuste restaura o valor aprovado, não o `''` anterior ao "Aplicar". Efeito visual idêntico.
 - Troca de projeto menos de 400 ms depois de editar: o `writeConfig()` do início de `loadProject` grava a última edição na chave antiga antes de recalcular a chave.
 - Duas abas no mesmo projeto: o último a gravar vence, mas só aba com `pendingDirty` grava. Aprovar na aba A remove a entrada; a aba B só a regrava se tiver editado depois, caso em que os ajustes dela voltam como pendentes na próxima abertura.
