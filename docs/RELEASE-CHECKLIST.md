@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 28 concluídos, 4 parciais, 15 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 29 concluídos, 4 parciais, 14 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -56,7 +56,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] Snapshot da árvore de nós por fixture (contagem, profundidade máxima, nós com `src`, arquivos de origem e caixa da raiz): `e2e/tree-snapshot.spec.js` contra `e2e/__snapshots__/tree.json` (16 fixtures; `results` fica de fora, pendente de snapshot). Regenerar com `UPDATE_SNAPSHOT=1 npx playwright test e2e/tree-snapshot.spec.js`. Gate manual (E2E).
 - [~] Origem: para até 30 nós amostrados por fixture, `src` aponta para arquivo/linha que mostra o seletor (`e2e/origin-sample.spec.js`, 16 fixtures; gate manual). Origens derivadas das folhas passam em todas. No Traval todas as origens são `data-src` autorais do mock e 31 de 199 nós apontam para linha que não mostra mais o seletor (19 apontam para `.ts` do app real, não vendorizado) — S2.20.
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
-- [ ] Escopo "todos iguais": afeta todos os usos e nenhum outro.
+- [x] Escopo "todos iguais": afeta todos os usos e nenhum outro (`e2e/scope-all-equal.spec.js`, via UI no `axai`: `.sum-stat` com 6 usos; contraste "Só este" = 1 elemento). Gate manual (E2E).
 - [x] `lineDiff` (`LayersCore.lineDiff`): contexto de 3 linhas, sem alterações, arquivo novo — 6 casos em `test/layers-core.test.js`.
 - [ ] E2E (Playwright; infra e specs de performance prontos em `e2e/`, faltam os specs funcionais): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.
 - [ ] Compatibilidade: Chrome/Edge completos; Firefox/Safari em somente leitura com mensagem.
