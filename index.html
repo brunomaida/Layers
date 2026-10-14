@@ -902,13 +902,12 @@ const DIFF_PAINT = { '-': ['var(--err)', 'rgba(var(--errRgb),.08)'], '+': ['var(
 const lineDiff = (a, b) => LayersCore.lineDiff(a, b).map(l => ({ no: l.no, text: l.text, color: DIFF_PAINT[l.kind][0], bg: DIFF_PAINT[l.kind][1] }));
 async function writeInto(dir, path, text) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); const h = await d.getFileHandle(parts[parts.length - 1], { create: true }); const w = await h.createWritable(); await w.write(text); await w.close(); }
 
-// v2.7-b: culling por opacidade NÃO implementado — a cena não tem população invisível.
-// Medido: no default os planos esmaecidos ficam em 0.30, e na seleção profunda em 0.35 — ambos claramente
-// visíveis. O patamar de 0.08 do modo solo é inalcançável (o estado 'solo' nunca é ligado; as pastilhas de
-// camada chamam isolate()). Qualquer limiar útil mudaria o visual, então o item foi descartado aqui.
+// S4.5: durante o arrasto, plano cuja projeção cai inteira fora do palco (+ CULL_MARGIN) fica display:none (LayersCore.viewCuller).
+// Opacidade não corta (v2.7-b): esmaecidos ficam em 0.30/0.35, visíveis; o solo (0.08) é inalcançável: as pastilhas chamam isolate().
+const CULL_MARGIN = 0.15; // fraction of the larger stage side kept around the viewport (outline); flat-mode shadows are exempt
 // plano memoizado: só re-renderiza quando a geometria/estado derivado dele muda
 const Plane = React.memo(function Plane(p) {
-  const { n, z, dim, op, sel, hov, onLayer, showWire, soloOff, tr, interact, fs, wa, spacing, H, dragging } = p;
+  const { n, z, dim, op, sel, hov, onLayer, showWire, soloOff, tr, interact, fs, wa, spacing, H, dragging, culled } = p;
       const st = { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: 'translateZ(' + z + 'px)', transition: tr, contain: 'layout paint', willChange: dragging ? 'transform' : 'auto',
         background: n.hasBg ? n.bg : 'transparent', backgroundImage: n.bgImg !== 'none' ? n.bgImg : undefined,
         borderTop: n.borders[0], borderRight: n.borders[1], borderBottom: n.borders[2], borderLeft: n.borders[3], borderRadius: n.radius, boxShadow: n.shadow !== 'none' && spacing === 0 ? n.shadow : 'none',
@@ -917,6 +916,7 @@ const Plane = React.memo(function Plane(p) {
       let content = n.svg ? undefined : (n.text || null);
       if (n.text) { st.display = 'flex'; st.alignItems = 'center'; st.justifyContent = n.jc !== 'normal' ? n.jc : (n.ta === 'right' ? 'flex-end' : n.ta === 'center' ? 'center' : 'flex-start'); st.padding = n.pad; }
       if (n.isCheck) { st.border = '1px solid #8b949e'; st.borderRadius = n.radio ? '50%' : 2; st.display = 'flex'; st.alignItems = 'center'; st.justifyContent = 'center'; st.font = '700 9px/1 "JetBrains Mono", monospace'; st.color = '#60a5fa'; if (n.checked) content = n.radio ? '●' : '✓'; }
+      if (culled) st.display = 'none';
       const props = { style: st,
         onClick: e => H.click(n.id, e),
         onDoubleClick: e => H.dbl(n.id, e),
@@ -1952,6 +1952,7 @@ class Component extends DCLogic {
     const scopeId = isoId || (selId !== '0' ? selId : null); let layerSet = null;
     if (hL != null) { layerSet = new Set(); const all = []; nodes.forEach(n => { if (n.depth !== hL || (isoId && !(n.id === isoId || n.id.startsWith(isoId + '.')))) return; all.push(n.id); if (!scopeId || n.id === scopeId || n.id.startsWith(scopeId + '.')) layerSet.add(n.id); }); if (!layerSet.size) all.forEach(i => layerSet.add(i)); }
     const fx = focus ? focus.x - s.pageW / 2 : 0, fy = focus ? focus.y - s.pageH / 2 : 0, fz = focus && focus.zd != null ? focus.zd * spacing : active * spacing;
+    const cull = dragging ? LayersCore.viewCuller({ pageW: s.pageW, pageH: s.pageH, stageW: s.stageW, stageH: s.stageH, persp: P, S: fit * zoom, yaw: yawT, tilt: tilt, tx: shiftX + panX, ty: panY, fx: fx, fy: fy, fz: fz, margin: CULL_MARGIN * Math.max(s.stageW, s.stageH) }) : null;
     const onPath = id => selId === id || selId.startsWith(id + '.'); const inBranch = id => id === selId || id.startsWith(selId + '.');
     const activeZ = active * spacing; const tr = dragging ? 'none' : 'transform .35s ease, opacity .3s ease';
     const prev = this._prev || {}; const nextPrev = {};
@@ -1963,11 +1964,12 @@ class Component extends DCLogic {
       else if (onPath(n.id) || inBranch(n.id) || (solo && n.depth === active)) z = n.depth * spacing;
       else { const parts = n.id.split('.'); let a = null; for (let i = parts.length - 1; i > 0; i--) { const pid = parts.slice(0, i).join('.'); if (onPath(pid)) { a = byId[pid]; break; } } const ad = a ? a.depth : 0; z = ad * spacing + (n.depth - ad) * 0.5; dim = true; }
       const sel = n.id === selId, hov = n.id === hoverId, soloOff = solo && n.depth !== active;
+      const culled = !!cull && !sel && !hov && !(spacing === 0 && n.shadow !== 'none') && cull(n.x, n.y, n.w, n.h, z);
       let op = n.opacity; if (hL != null) { if (dim) op *= oo; } else { if (dim && dimOthers && spacing > 0) op *= 0.35; if (spacing > 0 && z > activeZ + spacing * 0.5) op *= 0.3; if (soloOff) op = Math.min(op, 0.08); }
       const onLayer = hL != null && layerSet.has(n.id); const showWire = wire && wa > 0 && !n.hasBg && !n.hasBorder && !n.text && !n.svg && !dim && spacing > 0 && !soloOff;
       const pv = prev[n.id]; const dz = !pv || pv.z !== z; const dop = !pv || pv.op !== op; nextPrev[n.id] = { z: z, op: op };
       const ptr = (dragging || (!dz && !dop)) ? 'none' : (dz && dop) ? tr : dz ? 'transform .35s ease' : 'opacity .3s ease';
-      zOf[n.id] = z; planes.push(React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H }));
+      zOf[n.id] = z; planes.push(React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, culled: culled, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H }));
       if (sel) label = React.createElement('div', { key: 'lbl', style: { position: 'absolute', left: n.x, top: n.y - 24, transform: 'translateZ(' + (z + 2) + 'px)', padding: '3px 7px', background: 'var(--sel)', color: 'var(--onSel)', font: '700 11px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', transition: dragging ? 'none' : 'transform .35s ease' } }, n.name + '  ·  L' + n.depth);
     });
     this._prev = nextPrev;
