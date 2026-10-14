@@ -1009,6 +1009,12 @@
             "type": "report",
             "path": "/[](../changelog.d/refactor-261013-35-s5-5-linediff-core.md)",
             "title": "refactor-261013-35-s5-5-linediff-core.md)"
+          },
+          {
+            "name": "2026-10-13-s5-5-linediff-core.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-13-s5-5-linediff-core.md",
+            "title": "Implementation Report — s5-5-linediff-core"
           }
         ],
         "reason": "checklist E; extrair de index.html",
