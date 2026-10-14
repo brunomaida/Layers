@@ -46,7 +46,8 @@ completo do arquivo: [docs/layers-json.md](docs/layers-json.md).
 - **GitHub** pede confirmação a cada carga, nomeando `api.github.com` e
   `raw.githubusercontent.com`. Só repositórios públicos, branch padrão, sem token
   (limite de 60 requisições por hora).
-- Origem somente leitura recusa a gravação com um aviso que nomeia a origem.
+- Origem somente leitura recusa a gravação com um aviso que nomeia a origem (.zip,
+  repositório ou modo fixture, que inclui `?project=`).
 
 ### layers.json
 Pasta local sem `layers.json`: ao conectar por clique, o LAYERS varre os `.html`/`.css`,
@@ -68,17 +69,19 @@ Só com pasta local conectada. No painel **Ajustes**, menu **Ações ▾**:
   e, se houve gravações na sessão, o `layers-export.log` (ver
   [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) § F).
 
-Toda gravação guarda um `.bak` da primeira versão da sessão, grava via `.tmp` + `move`
-e é recusada se o arquivo mudou fora do LAYERS desde a leitura (recarregue com `R`).
-Só regras em `.css` e o template dc são reescritas; origem TS/JS fica como "manual".
+Ao sobrescrever um arquivo do projeto, o LAYERS guarda um `.bak` (uma vez por arquivo por
+sessão), tenta `.tmp` + `move` e recusa se o arquivo mudou fora do LAYERS desde a leitura
+(recarregue com `R`). Só regras em `.css` e o template dc são reescritas; outras origens
+(TS/JS, `<style>` do snapshot) ficam como "manual". Projeto com folha de classes
+utilitárias (ex.: Tailwind) tem rascunho, aprovação e exportação recusados por inteiro.
 Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 
 ## Estrutura
 - index.html — o editor (CHANGELOG 0.25.0)
 - support.js — runtime gerado (não editar)
-- lib/layers-core.js — lógica pura do loader (sem DOM/React), carregada pelo index.html
+- lib/layers-core.js — lógica pura, sem DOM/React, carregada pelo index.html
 - vendor/ — React + ReactDOM UMD + csstree versionados (sem CDN)
-- fonts/ — fontes do editor (15 .woff2, fonts.css) e dos projetos carregados (17 .woff2, projects.css), geradas (ver fonts/README.md)
+- fonts/ — fontes do editor (15 .woff2, fonts.css) e dos projetos carregados (17 .woff2, projects.css), geradas; fontes do editor em fonts/README.md, projects.css em [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) § F
 - run.bat — sobe o dev server (duplo clique)
 - test/ — testes unitários (Vitest): `npm test`
 - e2e/ — testes E2E e de performance de UI (Playwright, playwright.config.js): `npm run test:e2e`
@@ -117,5 +120,5 @@ cores de origem Mono · cabeçalho B · sliderScale 85 · fontScale 1
 ## Sem rede
 Todo recurso de runtime está no repositório — fontes e React inclusos. Nada é buscado na
 rede ao carregar. A única saída é o loader de repositório GitHub, iniciado por você e
-confirmado a cada carga (CSP `connect-src` só com api.github.com e
+confirmado a cada carga (CSP `connect-src`: além da própria origem, só api.github.com e
 raw.githubusercontent.com). Detalhes e como verificar: docs/LOCAL-SETUP.md.
