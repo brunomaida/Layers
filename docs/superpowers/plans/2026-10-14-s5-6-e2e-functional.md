@@ -16,7 +16,7 @@ Add `e2e/folder-helpers.js` and `e2e/apply-flow.spec.js`: a Playwright spec that
 
 Checklist E still has one open functional item: "conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado" (`docs/RELEASE-CHECKLIST.md`, section E). The E2E infra exists (`playwright.config.js`, nine specs in `e2e/`), but no spec drives the write path end to end.
 
-`e2e/stale-banner.spec.js` already proves the mechanism: it copies a fixture into the origin-private file system (OPFS), stubs `window.showDirectoryPicker` to return that real `FileSystemDirectoryHandle`, and clicks "Conectar pasta". On an OPFS handle the app's real write path runs unchanged: `ensureWrite()` (`queryPermission` returns `granted`), `writeText()` (mtime guard, `.bak` once per file per session, `.tmp` + `FileSystemFileHandle.move`), `makeDraft()` (`style.design-draft.css`) and `approve()` (`.design-history/style.css.<stamp>` + rewrite + draft removal). The UI steps are reachable with the selectors the existing specs already use: tree row click, "Só este", the "Sombra" text field, "Ações ▾ › Ver diff", "Ações ▾ › Aplicar nos arquivos…", "1 · Gerar rascunho paralelo", "2 · Aprovar, substituir e commitar", and the "Rollback" button of the history row in Ajustes.
+`e2e/stale-banner.spec.js` copies a fixture into the origin-private file system (OPFS), stubs `window.showDirectoryPicker` to return that real `FileSystemDirectoryHandle`, and clicks "Conectar pasta". The read path is proven there (it only reads and observes mtime); the write path is proven by this spec. On an OPFS handle the app's real write path runs unchanged: `ensureWrite()` (`queryPermission` returns `granted`), `writeText()` (mtime guard, `.bak` once per file per session, `.tmp` + `FileSystemFileHandle.move`), `makeDraft()` (`style.design-draft.css`) and `approve()` (`.design-history/style.css.<stamp>` + rewrite + draft removal). The UI steps are reachable with the selectors the existing specs already use: tree row click, the "Sombra" text field, "Ações ▾ › Ver diff", "Ações ▾ › Aplicar nos arquivos…", "1 · Gerar rascunho paralelo", "2 · Aprovar, substituir e commitar", and the "Rollback" button of the history row in Ajustes. No scope chip is clicked: `.card` has a single use, so the editor shows "elemento único — sem irmãos na regra" instead of the scope chips ("Perguntar", "Só este", "Todos iguais") (`hasSibs` false, `index.html:2127`, `:431-438`) and the change is auto-decided (`c.decided = true`, `:1729`).
 
 No testability hook in `index.html` is needed, so this plan carries no hook decision. If execution proves otherwise (for example `queryPermission` missing on the OPFS handle in the installed Chromium), the fallback is test-side only: patch `queryPermission`/`requestPermission` onto `window.__proj` inside the helper. `index.html` is never edited.
 
@@ -27,7 +27,7 @@ Flows worth covering, in priority order (this plan takes 1-3):
 | # | Flow | Plan |
 |---|---|---|
 | 1 | connect → select → edit → diff → draft → approve → file changed; `.bak` = original, history copy = original, no draft or `.tmp` left | this plan, Task 2 |
-| 2 | Rollback after approve restores the original file | this plan, Task 3 (see `[!DECISION] rollback-spec`) |
+| 2 | Rollback after approve restores the original file | this plan, Task 3 (`[!DECISION] rollback-spec` resolved: A) |
 | 3 | Rollback refused when the file changed outside LAYERS after approve | this plan, Task 3 |
 | 4 | "Descartar rascunho" removes the draft and leaves the original untouched | later |
 | 5 | Approve refused when the file changed outside after load (`writeText` mtime guard) | later |
@@ -44,10 +44,11 @@ Global constraints for every task:
 - Assertions read the connected folder (OPFS) or visible UI state; they never assert the modal log text nor the write-log line format (S6.2 adds a hash to it).
 - Test titles follow the existing specs: `Metodo_Cenario_Esperado` in English (`StaleBanner_At1024_DoesNotCoverColumnOrRightPanel`).
 - E2E is a manual gate (no CI): run with `npx playwright test e2e/apply-flow.spec.js` or the whole suite with `npm run test:e2e`. The commit gate stays `npm test`.
+- Before every Playwright run: no dev server from another worktree on 5180 (stop it, or confirm the process on 5180 has cwd = this worktree). `playwright.config.js` sets `reuseExistingServer: true`, so another branch's server would be tested silently.
 - Conventional Commits in English with the `(S5.6)` suffix; never `Co-Authored-By` nor any AI attribution.
 
-Reuses: OPFS + stubbed picker pattern and menu-open workaround from `e2e/stale-banner.spec.js`; `readNodes` from `e2e/tree-helpers.js`; the "Sombra" field locator and `Só este` / `Ações` / `Ver diff` steps from `e2e/undo-redo.spec.js`; `fixtures/plain-css`; `playwright.config.js` (`webServer` on port 5180).
-Out of scope: flows 4-9 above; migrating `stale-banner.spec.js` to the new helper; moving `selectLayer` into `e2e/tree-helpers.js` (see `[!DECISION] select-helper-home`); new Playwright projects (S5.7); tree virtualization (S4.7); write-log hash (S6.2).
+Reuses: OPFS + stubbed picker pattern and menu-open workaround from `e2e/stale-banner.spec.js`; `readNodes` from `e2e/tree-helpers.js`; the "Sombra" field locator and `Ações` / `Ver diff` steps from `e2e/undo-redo.spec.js`; `fixtures/plain-css`; `playwright.config.js` (`webServer` on port 5180).
+Out of scope: flows 4-9 above; migrating `stale-banner.spec.js` to the new helper; moving `selectLayer` into `e2e/tree-helpers.js` (`[!DECISION] select-helper-home` resolved: A, helper file); new Playwright projects (S5.7); tree virtualization (S4.7); write-log hash (S6.2); the counter line of `docs/RELEASE-CHECKLIST.md` (counter recounted by the integration task).
 
 ## Design: Architecture & Flows
 
@@ -81,7 +82,7 @@ The test owns both ends: it seeds a real folder in OPFS and reads it back after 
 ```
 test            app (index.html)                 OPFS proj/
  │ connect ───▶ useDir(dir) → loadProject ──────▶ read layers.json, index.html, style.css
- │ select .card, "Só este", Sombra = VALUE
+ │ select .card (single use: no scope chip), Sombra = VALUE
  │              changes[] += box-shadow           (nothing written)
  │ Ver diff ──▶ openDiff → lineDiff(orig, patched)
  │ Gerar ─────▶ makeDraft → writeText(draft) ───▶ style.design-draft.css
@@ -97,7 +98,7 @@ test            app (index.html)                 OPFS proj/
 |---|---|
 | `e2e/folder-helpers.js` | `connectFixture`, `selectLayer`, `readDisk`, `listDisk` |
 | `e2e/apply-flow.spec.js` | flows 1-3 |
-| `docs/RELEASE-CHECKLIST.md` | E item closed, counter line |
+| `docs/RELEASE-CHECKLIST.md` | E item closed (counter recounted by the integration task) |
 | `changelog.d/feature-261014-0-s5-6-e2e-functional.md` | fragment with `### Perf` |
 
 ---
@@ -234,7 +235,8 @@ import { connectFixture, selectLayer, readDisk, listDisk } from './folder-helper
 // edit, view the diff, draft, approve, and read the file back. `.card` has one use and no
 // box-shadow, so the patch appends one declaration to that rule. Assertions read the folder, never
 // the modal log (its wording and the write-log format are not a contract).
-const ORIGINAL = fs.readFileSync(path.resolve('fixtures/plain-css/style.css'), 'utf8');
+const fixture = (rel) => fs.readFileSync(path.resolve('fixtures/plain-css', rel), 'utf8');
+const ORIGINAL = fixture('style.css');
 const VALUE = '0 0 0 3px rgb(1, 2, 3)';
 const DECL = /box-shadow:\s*0 0 0 3px rgb\(1, 2, 3\)/;
 
@@ -243,7 +245,8 @@ const field = (page) => page.locator('xpath=//*[normalize-space(text())="Sombra"
 async function editCard(page) {
   await connectFixture(page, 'plain-css');
   await selectLayer(page, '.card');
-  await page.getByText('Só este', { exact: false }).first().click();
+  // single use: no scope chips ("Só este" etc.), the change is auto-decided
+  await expect(page.getByText('elemento único — sem irmãos na regra').first()).toBeVisible();
   await field(page).click({ clickCount: 3 });
   await page.keyboard.type(VALUE);
   await page.keyboard.press('Tab');
@@ -273,7 +276,12 @@ test('Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory', a
   await page.getByText('Ações', { exact: false }).first().click();
   await page.getByText('Ver diff', { exact: false }).first().click();
   await expect(page.getByText('1 arquivo(s) · 1 ajuste(s)')).toBeVisible();
-  await expect(page.getByText(DECL).first()).toBeVisible();
+  // innermost div holding both the summary and the patched line = the diff modal, not the editor
+  const diffModal = page.locator('div')
+    .filter({ has: page.getByText('1 arquivo(s) · 1 ajuste(s)') })
+    .filter({ hasText: DECL })
+    .last();
+  await expect(diffModal.getByText(DECL).first()).toBeVisible();
   await page.getByRole('button', { name: 'Fechar' }).first().click();
 
   await approveAll(page);
@@ -290,22 +298,26 @@ test('Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory', a
   expect(hist[0]).toMatch(/^style\.css\./);
   expect(await readDisk(page, '.design-history/' + hist[0])).toBe(ORIGINAL);
 
-  const root = await listDisk(page);
-  expect(root, 'draft removed after approval').not.toContain('style.design-draft.css');
-  expect(root.filter((n) => n.endsWith('.tmp')), 'atomic write leaves no .tmp').toEqual([]);
+  expect(await listDisk(page), 'only .bak and history added; no draft, no .tmp').toEqual(
+    ['.design-history', 'index.html', 'layers.json', 'style.css', 'style.css.bak']);
+  expect(await readDisk(page, 'index.html'), 'mock untouched').toBe(fixture('index.html'));
+  expect(await readDisk(page, 'layers.json'), 'manifest untouched').toBe(fixture('layers.json'));
 });
 ```
 
 - [ ] **Step 2: Run it**
 
+Before running: no dev server from another worktree on 5180 (stop it, or confirm the process on 5180 has cwd = this worktree).
 Run: `npx playwright test e2e/apply-flow.spec.js`
 Expected: PASS. The app is not changed by this leaf, so a failure is a selector or setup issue, or a real bug:
 - `.card` row not found: inspect the tree row `title` for `.card` in plain-css and adjust only the `selectLayer` prefix.
 - Draft never appears / toast "permissão de escrita não concedida": `queryPermission` is missing on the OPFS handle; in `connectFixture`, after `window.__proj = dir;`, add `dir.queryPermission ??= async () => 'granted'; dir.requestPermission ??= async () => 'granted';`.
-- A failure that the app causes (wrong bytes on disk, `.tmp` left behind) is a finding: stop, record it in the report, open a separate leaf. Do not touch `index.html`.
+- `.tmp` left in the root listing while `style.css` has the correct content: `move()` onto an existing target threw and `writeText` fell back to `rawWrite` (`index.html:1839-1841`). This is an app finding: stop and report it.
+- Any other failure that the app causes (wrong bytes on disk) is a finding: stop, record it in the report, open a separate leaf. Do not touch `index.html`.
 
 - [ ] **Step 3: Regression of the sibling spec**
 
+Before running: no dev server from another worktree on 5180 (stop it, or confirm the process on 5180 has cwd = this worktree).
 Run: `npx playwright test e2e/stale-banner.spec.js e2e/apply-flow.spec.js`
 Expected: PASS (both use OPFS `proj`; each test gets a fresh context).
 
@@ -316,11 +328,16 @@ git add e2e/apply-flow.spec.js
 git commit -m "test(e2e): cover connect, edit, diff, approve and file on disk (S5.6)"
 ```
 
+- [ ] **Step 5: Negative check (uncommitted)**
+
+Proves the `DECL` assertions bite. Nothing from this step is committed.
+1. Temporarily change `DECL` to `/box-shadow:\s*0 0 0 3px rgb\(9, 9, 9\)/`. Before running: no dev server from another worktree on 5180 (stop it, or confirm the process on 5180 has cwd = this worktree). Run `npx playwright test e2e/apply-flow.spec.js`. Expected: FAIL at the first `DECL` assertion, the diff-modal check (the draft poll and `now.block` are not reached in this run).
+2. Keep the changed `DECL` and also comment out the "Ver diff" block (from the `Ações` click to the `Fechar` click). Run again. Expected: FAIL at the draft poll (`expect.poll(...).toMatch(DECL)`). `now.block` shares the same regex after the poll, so no single run reaches it with a wrong `DECL`.
+3. Revert both edits. Run: `git diff --exit-code e2e/apply-flow.spec.js`. Expected: exit 0 (file equals the Step 4 commit).
+
 ---
 
 ### Task 3: Rollback specs
-
-Runs only when `[!DECISION] rollback-spec` is Option A.
 
 **Files:**
 - Modify: `e2e/apply-flow.spec.js` (append after the Task 2 test)
@@ -361,6 +378,7 @@ test('Rollback_FileChangedOutside_RefusesAndKeepsFile', async ({ page }) => {
 
 - [ ] **Step 2: Run it**
 
+Before running: no dev server from another worktree on 5180 (stop it, or confirm the process on 5180 has cwd = this worktree).
 Run: `npx playwright test e2e/apply-flow.spec.js`
 Expected: PASS (3 tests). If "Rollback" is not visible, the Ajustes list is collapsed: open it by clicking its header text `Ajustes` before the click, nothing else.
 
@@ -376,26 +394,29 @@ git commit -m "test(e2e): cover rollback and its external-change refusal (S5.6)"
 ### Task 4: Checklist and changelog
 
 **Files:**
-- Modify: `docs/RELEASE-CHECKLIST.md` (counter line under the title; section E item starting `- [ ] E2E (Playwright;`)
+- Modify: `docs/RELEASE-CHECKLIST.md` (only the section E item starting `- [ ] E2E (Playwright;`; line 8, the counter, stays untouched: counter recounted by the integration task)
 - Create: `changelog.d/feature-261014-0-s5-6-e2e-functional.md`
 
 **Interfaces:**
-- Consumes: Tasks 1-2 (and 3 when run) committed and green.
+- Consumes: Tasks 1-3 committed and green.
 - Produces: closing docs; the roadmap row closes later in `phase-close-gate`.
+
+**Executor contract** (this task is dispatched to the `executor` subagent, no `model`):
+- Output format: `DONE <commit sha>`, then the raw `exit_code` of `npm test` and the last 15 lines of its output.
+- Refusal tokens: `NOT FOUND` (the anchor line of Step 1 is absent), `AMBIGUOUS` (the anchor matches more than one line), `COULD NOT RUN` (`npm test` did not start), `OUT OF SCOPE` (any edit beyond the two files or beyond the anchor line).
+- Caller validates: `git show --stat HEAD` lists exactly the two files; the checklist diff is one line (the anchor) and line 8 is unchanged; `exit_code` is 0. Any deviation: redo the task at Workhorse, never re-dispatch the executor.
 
 - [ ] **Step 1: Close the checklist item**
 
-Replace the line `- [ ] E2E (Playwright; infra e specs de performance prontos em `e2e/`, faltam os specs funcionais): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.` with (drop the rollback clause if Task 3 was skipped):
+Replace the line `- [ ] E2E (Playwright; infra e specs de performance prontos em `e2e/`, faltam os specs funcionais): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.` with:
 
 ```md
 - [x] E2E funcional (Playwright): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado, numa cópia real do `plain-css` no OPFS (`e2e/apply-flow.spec.js`, helper `e2e/folder-helpers.js`); confere `.bak`, histórico e ausência de rascunho/`.tmp`, mais rollback e sua recusa. Gate manual (E2E): `npm run test:e2e`.
 ```
 
-In the counter line `Hoje: N concluídos, P parciais, M abertos.`, add 1 to concluídos and subtract 1 from abertos, starting from the values present at execution time (parallel leaves may have moved them).
-
 - [ ] **Step 2: Write the changelog fragment**
 
-Create `changelog.d/feature-261014-0-s5-6-e2e-functional.md` (drop the rollback clause if Task 3 was skipped):
+Create `changelog.d/feature-261014-0-s5-6-e2e-functional.md`:
 
 ```md
 ### Added
@@ -427,17 +448,14 @@ git commit -m "docs: close checklist E functional E2E with changelog fragment (S
 | No `index.html` edit, no hook | all (global constraints) |
 | No raw `[data-node-id]` in specs | 1 (`selectLayer`) |
 | No write-log format assertion (S6.2) | 2, 3 |
-| Checklist E + counter, changelog with `### Perf` | 4 |
+| Checklist E item (counter recounted by the integration task), changelog with `### Perf` | 4 |
+| Write assertions fail on a wrong value (negative check) | 2 (Step 5) |
 
 > [!DECISION] rollback-spec
-> Rollback is outside the literal checklist line but costs two short tests on the same helper and covers a second write path (`rollback` + `movedSince` guard).
-> - **Option A**: run Task 3 in this leaf (recommended: cheap, no new helper, no app change).
-> - **Option B**: skip Task 3; flows 2-3 move to "later" and the checklist/changelog text drops the rollback clause.
+> Resolved: **Option A** (approved). Task 3 runs in this leaf: rollback is outside the literal checklist line but costs two short tests on the same helper and covers a second write path (`rollback` + `movedSince` guard). The checklist and changelog text include the rollback clause.
 
 > [!DECISION] select-helper-home
-> `selectLayer` wraps the only raw `[data-node-id]` query so S4.7 has one place to fix.
-> - **Option A**: keep it in the new `e2e/folder-helpers.js` (recommended: this leaf touches no shared file, disjoint from parallel leaves).
-> - **Option B**: put it in `e2e/tree-helpers.js` next to `readNodes`, the natural home S4.7 will rewrite anyway.
+> Resolved: **Option A** (approved). `selectLayer` wraps the only raw `[data-node-id]` query so S4.7 has one place to fix, and it lives in the new `e2e/folder-helpers.js`: this leaf touches no shared file and stays disjoint from parallel leaves.
 
 ## Model Routing
 
@@ -446,7 +464,7 @@ git commit -m "docs: close checklist E functional E2E with changelog fragment (S
 | 1. Folder helper | gen | Standard | Workhorse | test authoring (rule 7: never Executor) |
 | 2. Apply flow spec | gen | Standard | Workhorse | test authoring, selector judgment on failure |
 | 3. Rollback specs | gen | Standard | Workhorse | test authoring |
-| 4. Checklist and changelog | gen | Mechanical | Executor | text given verbatim; caller checks diff and `npm test` exit_code |
+| 4. Checklist and changelog | gen | Mechanical | Executor | text given verbatim, no counter edit; caller validates format, refusal tokens, diff and `npm test` exit_code (Task 4 contract) |
 | Pre-merge review | review | Architectural | Architect | verifier ≥ generator, via `adversarial-reviewer` |
 
 > [!DECISION] gh-issue-gate
@@ -455,7 +473,7 @@ git commit -m "docs: close checklist E functional E2E with changelog fragment (S
 > - **Title**: `test: functional E2E for connect, edit, diff, approve (S5.6)`
 > - **Labels**: enhancement
 > - **Milestone**: (none)
-> - **Body**: Context: checklist E still lacks a functional E2E; the perf specs and the OPFS picker stub of `stale-banner.spec.js` exist. Proposal: `e2e/folder-helpers.js` (OPFS-connected fixture, disk readers, single tree-row selector) and `e2e/apply-flow.spec.js` driving connect → select → edit → diff → draft → approve on `plain-css`, asserting the file on disk, `.bak`, history and no leftovers; optional rollback and refusal. Acceptance criteria: `npx playwright test e2e/apply-flow.spec.js` passes; no edit to `index.html`, `lib/`, `playwright.config.js`; no assertion on log wording; checklist E item closed.
+> - **Body**: Context: checklist E still lacks a functional E2E; the perf specs and the OPFS picker stub of `stale-banner.spec.js` exist. Proposal: `e2e/folder-helpers.js` (OPFS-connected fixture, disk readers, single tree-row selector) and `e2e/apply-flow.spec.js` driving connect → select → edit → diff → draft → approve on `plain-css`, asserting the file on disk, `.bak`, history and no leftovers; rollback and its refusal. Acceptance criteria: `npx playwright test e2e/apply-flow.spec.js` passes; no edit to `index.html`, `lib/`, `playwright.config.js`; no assertion on log wording; checklist E item closed.
 
 > [!DECISION] phase-intake
 > Classification: **meso** `S5.6` under **S5 Testes**, target **Unreleased** (v1 gate).
