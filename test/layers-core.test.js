@@ -1198,6 +1198,76 @@ describe('StaleBannerBox', () => {
   });
 });
 
+describe('ViewCuller', () => {
+  const base = { pageW: 1000, pageH: 600, stageW: 800, stageH: 600, persp: 1600, S: 1, yaw: 0, tilt: 0, tx: 0, ty: 0, fx: 0, fy: 0, fz: 0, margin: 0 };
+  const cull = (o) => core.viewCuller({ ...base, ...o });
+
+  it('PlanoNoCentro_NaoCorta', () => {
+    expect(cull({})(450, 250, 100, 100, 0)).toBe(false);
+  });
+
+  it('PlanoInteiroADireita_Corta', () => {
+    expect(cull({})(950, 250, 50, 50, 0)).toBe(true);
+  });
+
+  it('MargemCobreBorda_NaoCorta', () => {
+    expect(cull({ margin: 120 })(950, 250, 50, 50, 0)).toBe(false);
+  });
+
+  it('PlanoAtravessaOPalco_NaoCorta', () => {
+    expect(cull({})(-1000, 250, 3000, 50, 0)).toBe(false);
+  });
+
+  it('ZoomEmpurraParaFora_Corta', () => {
+    expect(cull({})(700, 250, 50, 50, 0)).toBe(false);
+    expect(cull({ S: 4 })(700, 250, 50, 50, 0)).toBe(true);
+  });
+
+  it('PanParaEsquerda_Corta', () => {
+    expect(cull({ tx: -500 })(450, 250, 100, 100, 0)).toBe(true);
+  });
+
+  it('PerspectivaAmpliaPlanoProximo_Corta', () => {
+    expect(cull({})(800, 250, 50, 50, 0)).toBe(false);
+    expect(cull({})(800, 250, 50, 50, 800)).toBe(true);
+  });
+
+  it('CantoAtrasDoOlho_NaoCorta', () => {
+    expect(cull({})(950, 250, 50, 50, 2000)).toBe(false);
+  });
+
+  it('Yaw90_ProfundidadeViraX', () => {
+    // rotateY(90deg): x' = z, so a plane at the page centre pushed to z = 1000 lands right of the stage
+    expect(cull({ yaw: 90 })(450, 250, 100, 100, 0)).toBe(false);
+    expect(cull({ yaw: 90, persp: 100000 })(450, 250, 100, 100, 1000)).toBe(true);
+  });
+
+  it('Yaw90_PanCompensaX_NaoCorta', () => {
+    // sign check: x' = +1000 and tx = -1000 bring it back to the centre; x' = -z would give -2000 (culled)
+    expect(cull({ yaw: 90, persp: 100000, tx: -1000 })(450, 250, 100, 100, 1000)).toBe(false);
+  });
+
+  it('Tilt90_ProfundidadeViraY', () => {
+    // rotateX(90deg): y' = -z, so z = 1000 lands above the stage
+    expect(cull({ tilt: 90, persp: 100000 })(450, 250, 100, 100, 1000)).toBe(true);
+  });
+
+  it('Tilt90_PanCompensaY_NaoCorta', () => {
+    // sign check: y' = -1000 and ty = +1000 bring it back to the centre; y' = +z would give +2000 (culled)
+    expect(cull({ tilt: 90, persp: 100000, ty: 1000 })(450, 250, 100, 100, 1000)).toBe(false);
+  });
+
+  it('YawTiltCombinados_OrdemRotateXRotateY', () => {
+    // corners (231.2,-506) (354.1,-551.2) (237.7,-396.3) (364.6,-438.2); reversed rotation order: max y -326.8, kept at 60
+    expect(cull({ yaw: -32, tilt: 20, margin: 60 })(900, 50, 100, 100, 300)).toBe(true);
+    expect(cull({ yaw: -32, tilt: 20, margin: 110 })(900, 50, 100, 100, 300)).toBe(false);
+  });
+
+  it('FocoDesloca_Corta', () => {
+    expect(cull({ fx: 900 })(450, 250, 100, 100, 0)).toBe(true);
+  });
+});
+
 describe('MovedSince', () => {
   it('Rollback_ExternalChangeAfterApprove_ListsPath', () => {
     expect(core.movedSince({ 'a.css': 10, 'b.css': 20 }, { 'a.css': 10, 'b.css': 25 })).toEqual(['b.css']);
