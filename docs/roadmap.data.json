@@ -1313,7 +1313,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 75,
+    "progress": 78,
     "docs": [],
     "children": [
       {
@@ -1539,6 +1539,38 @@
           }
         ],
         "reason": "Varredura 2026-10-13: contador do checklist, S5.1, package.json, S7.2 e S4.4a fora do tracker",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.8a",
+        "type": "spec",
+        "name": "Recontar o contador do checklist após a Onda 1",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "docs-261014-0-s7-8a-counter-recount.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261014-0-s7-8a-counter-recount.md)",
+            "title": "docs-261014-0-s7-8a-counter-recount.md)"
+          },
+          {
+            "name": "2026-10-14-s7-8a-counter-recount.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s7-8a-counter-recount.md",
+            "title": "Implementation Report — s7-8a-counter-recount"
+          }
+        ],
+        "reason": "Linha 8 dizia 31/3/13; os itens contam 38/1/8 depois de S2.19, S4.5, S5.6, S6.2 e S7.1",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
