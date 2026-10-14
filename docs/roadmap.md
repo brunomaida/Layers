@@ -63,7 +63,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S6.1 | 2 | S6 | Superfície de gravação e ingestão | checklist F, 9 itens | — | — | — | — | done |
 | S6.2 | 2 | S6 | Hash no log de gravação | checklist F | — | — | — | — | registered |
 | S7 | 1 | — | Release e governança | Checklist G e docs do projeto | — | — | — | — | in-progress |
-| S7.1 | 2 | S7 | README atualizado | checklist G | — | — | — | — | in-progress |
+| S7.1 | 2 | S7 | README atualizado | checklist G | — | [](superpowers/plans/2026-10-14-s7-1-readme.md) | — | — | in-progress |
 | S7.2 | 2 | S7 | CHANGELOG por versão | checklist G | — | — | [](../changelog.d/docs-261013-23-s7-2-changelog-checklist.md) | #23 | done |
 | S7.3 | 2 | S7 | Matriz de suporte | checklist G | — | — | — | — | registered |
 | S7.4 | 2 | S7 | docs/shortcuts.md | checklist G | — | — | — | — | registered |
