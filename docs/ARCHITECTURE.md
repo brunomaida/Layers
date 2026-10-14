@@ -122,7 +122,7 @@ requisições, todas em `localhost:5180`. Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 
 - DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações em v2.22: `contain`, `will-change` só durante drag, transições desligadas no drag. Próximo passo: culling por viewport/opacidade e agrupamento de folhas.
 - Fonte de camadas fixa (mock). Ver `RELEASE-CHECKLIST.md` → "Loader de projeto".
-- Regras vindas de TS/JS/JSX são exibidas e registradas, mas não reescritas.
+- Regras vindas de TS/JS/JSX são exibidas e registradas, mas não reescritas; o cabeçalho do painel de propriedades e a lista de Ajustes as marcam como "manual" (`LayersCore.isManualSource`).
 
 ### Camadas de gravação
 

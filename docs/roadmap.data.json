@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-19",
+    "end": "2026-10-18",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 85,
+    "progress": 90,
     "docs": [],
     "children": [
       {
@@ -517,20 +517,33 @@
         "id": "S2.15",
         "type": "spec",
         "name": "Marcador manual para TS/JS",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "analysis",
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s2-15-manual-marker-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-14-s2-15-manual-marker-design.md)",
+            "title": "2026-10-14-s2-15-manual-marker-design.md)"
+          },
+          {
+            "name": "feature-261014-0-s2-15-manual-marker.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s2-15-manual-marker.md)",
+            "title": "feature-261014-0-s2-15-manual-marker.md)"
+          }
+        ],
         "reason": "checklist B",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
@@ -597,8 +610,8 @@
         "id": "S2.18",
         "type": "spec",
         "name": "Verificação manual da gravação real do template dc",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -616,8 +629,8 @@
         "id": "S2.19",
         "type": "spec",
         "name": "Limpar códigos dc reservados e avisos do hoistFaces",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
