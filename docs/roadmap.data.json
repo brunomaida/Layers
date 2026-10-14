@@ -900,8 +900,8 @@
     "id": "S5",
     "type": "phase",
     "name": "Testes",
-    "start": "2026-10-14",
-    "end": "2026-10-22",
+    "start": "2026-10-13",
+    "end": "2026-10-21",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -909,7 +909,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 14,
+    "progress": 29,
     "docs": [],
     "children": [
       {
@@ -994,28 +994,41 @@
         "id": "S5.5",
         "type": "spec",
         "name": "lineDiff testável",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold",
           "tests"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "refactor-261013-35-s5-5-linediff-core.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/refactor-261013-35-s5-5-linediff-core.md)",
+            "title": "refactor-261013-35-s5-5-linediff-core.md)"
+          },
+          {
+            "name": "2026-10-13-s5-5-linediff-core.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-13-s5-5-linediff-core.md",
+            "title": "Implementation Report — s5-5-linediff-core"
+          }
+        ],
         "reason": "checklist E; extrair de index.html",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S5.6",
         "type": "spec",
         "name": "E2E Playwright funcional",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1033,8 +1046,8 @@
         "id": "S5.7",
         "type": "spec",
         "name": "Compatibilidade de navegadores",
-        "start": "2026-10-20",
-        "end": "2026-10-22",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
