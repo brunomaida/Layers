@@ -1111,7 +1111,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-19",
+    "end": "2026-10-18",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1120,7 +1120,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 58,
+    "progress": 62,
     "docs": [],
     "children": [
       {
@@ -1304,19 +1304,26 @@
         "id": "S7.8",
         "type": "spec",
         "name": "Reconciliar contadores, versão e colunas do tracker",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "docs-261013-0-s7-8-tracker-reconcile.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261013-0-s7-8-tracker-reconcile.md)",
+            "title": "docs-261013-0-s7-8-tracker-reconcile.md)"
+          }
+        ],
         "reason": "Varredura 2026-10-13: contador do checklist, S5.1, package.json, S7.2 e S4.4a fora do tracker",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
