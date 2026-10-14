@@ -1103,7 +1103,10 @@ class Component extends DCLogic {
   // Espelha a origem que readBytes realmente le; calculada uma vez em loadProject e guardada em
   // this.pendingKey, nunca relida na hora de escrever (projectId pode ja ser o do proximo projeto).
   pendingKeyNow() { if (this.state.dir || this.zip || this.repo) return this.projectId || null; const b = this.fixtureBase; return b ? 'fx:' + b.replace(/\/$/, '') : null; }
-  srcHash(man, mockPath, html, css, dcFile, dcText) { const parts = [JSON.stringify(man), mockPath, html]; css.forEach(c => { parts.push(c.file, c.text); }); parts.push(dcFile, dcText); return LayersCore.sourceHash(parts); }
+  // Hash por parte: approve/rollback so trocam as partes que reescreveram; uma fonte mudada fora do
+  // LAYERS depois da carga nao entra, porque os ids posicionais seguem descrevendo o DOM que foi lido.
+  partHash(text) { return text === null ? null : LayersCore.sourceHash([text]); }
+  srcHash(hs) { const parts = [JSON.stringify(hs.man), hs.mockPath, hs.ph.html]; hs.cssFiles.forEach(f => { parts.push(f, hs.ph.css[f]); }); parts.push(hs.dcFile, hs.ph.dc); return LayersCore.sourceHash(parts); }
   // Desce mockRoot pelo caminho do id: no de tamanho zero fica fora de this.els, o caminho segue valido.
   elAtPath(id) { let el = this.mockRoot; if (!el) return null; const p = String(id).split('.'); for (let k = 1; k < p.length && el; k++) el = el.children[+p[k]]; return el || null; }
   writePending() {
@@ -1115,16 +1118,22 @@ class Component extends DCLogic {
   }
   // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
   dropPending() { if (this.pendingReady && this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); this.pendingDirty = false; this.pendingReady = false; }
-  // approve/rollback reescrevem os .css sem recarregar: o hash da sessao passa a descrever os arquivos novos.
-  async refreshPendingHash() {
+  // approve/rollback reescrevem arquivos sem recarregar: so as partes gravadas (`paths`) entram no hash novo.
+  // Durante a releitura a sessao nao grava, para que uma edicao logo apos "Aplicar" nao saia com o hash antigo.
+  async refreshPendingHash(paths) {
     const hs = this.hashSpec; if (!hs || !this.pendingReady) return; const seq = this.loadSeq;
+    this.pendingReady = false;
     try {
-      const html = await this.readText(hs.mockPath); const css = [];
-      for (const f of hs.cssFiles) css.push({ file: f, text: await this.readText(f) });
-      const dcText = hs.dcFile ? await this.readText(hs.dcFile) : null;
+      const ph = { html: hs.ph.html, css: { ...hs.ph.css }, dc: hs.ph.dc };
+      for (const p of new Set(paths)) {
+        if (p === hs.mockPath) ph.html = this.partHash(await this.readText(p));
+        else if (p === hs.dcFile) ph.dc = this.partHash(await this.readText(p));
+        else if (p in ph.css) ph.css[p] = this.partHash(await this.readText(p));
+      }
       if (seq !== this.loadSeq) return;
-      this.pendingHash = this.srcHash(hs.man, hs.mockPath, html, css, hs.dcFile, dcText); this.pendingDirty = true; this.persistSoon();
-    } catch (e) { this.pendingReady = false; }
+      this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec);
+      this.pendingSeen = this.state.changes; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
+    } catch (e) { /* pendingReady fica falso: a entrada antiga permanece e a proxima carga a descarta */ }
   }
   // sessionStorage vence o session ao restaurar: N abas, N projetos.
   markTab() { try { SS_STORE.setItem(TAB_LS, JSON.stringify({ projectId: this.projectId || null })); } catch (e) {} }
@@ -1284,13 +1293,15 @@ class Component extends DCLogic {
     // S2.14: so a carga vencedora chega aqui. Fonte que falhou na leitura torna o hash nao confiavel:
     // nada e restaurado, a sessao nao grava e a entrada salva fica intacta.
     const incomplete = warn.some(w => /^(css não encontrado|dcSource não lido)/.test(w));
-    const hash = this.srcHash(man, mockPath, html, css, dcText !== null ? dcFile : null, dcText);
+    const phCss = {}; css.forEach(c => { phCss[c.file] = this.partHash(c.text); });
+    const hs = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null, ph: { html: this.partHash(html), css: phCss, dc: this.partHash(dcText) } };
+    const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
     const plan = incomplete ? { keep: [], dropped: 0 } : LayersCore.restorePlan(saved, hash);
     plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
     const restored = plan.keep, dropped = plan.dropped;
     const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete && saved ? ' · ajustes salvos mantidos: fonte não lida' : '';
-    this.hashSpec = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null };
+    this.hashSpec = hs;
     this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
@@ -1533,10 +1544,10 @@ class Component extends DCLogic {
     const s = this.state; if (!s.dir) return;
     if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de recarregar'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
-    if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', label: 'Recarregar', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => this.doReload() } }); return; }
+    if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', label: 'Recarregar', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => { this.dropPending(); this.doReload(); } } }); return; }
     this.doReload();
   }
-  doReload() { const s = this.state; this.dropPending(); this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
+  doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
   componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
@@ -1887,7 +1898,7 @@ class Component extends DCLogic {
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
     this.resetUndo();
-    if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash();
+    if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
     this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [] }));
   }
   async rollback(h) {
@@ -1900,7 +1911,7 @@ class Component extends DCLogic {
     }
     h.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }));
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
-    if (this.state.dir) this.refreshPendingHash();
+    if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));
     this.setState(s => ({ history: s.history.filter(x => x !== h) })); this.scanSoon();
   }
   async openDiff() {

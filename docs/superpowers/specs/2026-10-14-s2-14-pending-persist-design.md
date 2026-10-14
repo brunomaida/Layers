@@ -53,7 +53,7 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 | Campo | Regra |
 |---|---|
 | `<chave>` | calculada uma vez no início síncrono de `loadProject`, espelhando a origem que `readBytes` realmente lê: `state.dir`, `this.zip` ou `this.repo` → `projectId` (`folder:`, `zip:`, `repo:`); senão `fx:` + `fixtureBase` sem barra final (demo, `?layers=`, `?project=`). Guardada em `this.pendingKey` e usada em toda gravação: nunca se lê `projectId` na hora de escrever |
-| `hash` | `LayersCore.sourceHash` sobre `[JSON.stringify(man), mockPath, html, …(arquivo, texto) de cada .css, dcFile, dcText]`. `man` entra porque `rules`, `root.src` e `viewport` mudam `data-src` (portanto `c.src`, que o "Aplicar" usa para escolher arquivo e seletor) e o tamanho dos nós |
+| `hash` | `LayersCore.sourceHash` sobre `[JSON.stringify(man), mockPath, hash(html), …(arquivo, hash(texto)) de cada .css, dcFile, hash(dcText)]`: cada fonte entra pelo próprio hash, para que `approve`/`rollback` troquem só as partes que gravaram. `man` entra porque `rules`, `root.src` e `viewport` mudam `data-src` (portanto `c.src`, que o "Aplicar" usa para escolher arquivo e seletor) e o tamanho dos nós |
 | `changes` | o registro completo de cada change; só valores CSS e metadados, nunca conteúdo de arquivo (regra de [ARCHITECTURE § Persistência](../../ARCHITECTURE.md)) |
 | teto | 200 changes: acima disso a entrada é removida e um toast `warn` avisa que o ajuste não será restaurado |
 | expiração | entradas com `savedAt` de mais de 30 dias são removidas na escrita |
@@ -64,11 +64,11 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 |---|---|---|
 | `LayersCore.sourceHash(parts)` | Pura, síncrona. Hash não criptográfico de 53 bits (cyrb53, base 36) sobre a lista de partes; cada parte entra com tipo e comprimento, e `null` difere de `''`. | `lib/layers-core.js` |
 | `LayersCore.restorePlan(entry, hash)` | Pura. `entry` nulo → `{ keep: [], dropped: 0 }`; `entry.hash === hash` → `{ keep: changes com decided:true, dropped: 0 }`; senão `{ keep: [], dropped: changes.length }`. | `lib/layers-core.js` |
-| `LayersCore.getPending(storage, chave)` | Lê e sanitiza a entrada: `schema`, `hash` string, e em cada change `key`/`id`/`prop`/`to` strings, `ids` array de strings, `fromInline` objeto, `prop !== 'cssText'`. Qualquer violação devolve `null` (entrada inteira): um registro malformado nunca chega a `cloneChanges`. | `lib/layers-core.js` |
+| `LayersCore.getPending(storage, chave)` | Lê e sanitiza a entrada: `schema`, `hash` string, e em cada change `key`/`id`/`prop`/`to` strings, `ids` array de strings, `fromInline` objeto, `prop` com forma de nome de propriedade (`/^[a-zA-Z][a-zA-Z0-9-]*$/`) e fora de `cssText`, `length` e `parentRule`. Qualquer violação devolve `null` (entrada inteira): um registro malformado nunca chega a `cloneChanges`. | `lib/layers-core.js` |
 | `LayersCore.setPending(storage, chave, entry, now)` | Lê a chave, troca ou remove a entrada (`entry === null` remove), aplica teto e expiração, grava. | `lib/layers-core.js` |
 | `elAtPath(id)` | Desce `this.mockRoot.children` pelo caminho `0.i.j…`. Não usa `this.els`: nó de tamanho zero (`display:none`, `width:0`) fica fora de `els` mas o caminho segue válido. | `index.html`, junto de `scan` |
 | `restorePending(entry, hash)` | Aplica `restorePlan`: para cada change, em ordem, `elAtPath(i).style[prop] = c.to` por id; devolve `{ changes, dropped }`. Roda em `loadProject` antes do `setState`, só na carga vencedora (depois do guard `seq !== this.loadSeq` de `index.html:1253`). | `index.html`, junto de `loadProject` |
-| `refreshPendingHash()` | Assíncrona. Relê as mesmas fontes da lista do hash e atualiza `this.pendingHash`, marcando `pendingDirty`. Chamada depois de `approve` e `rollback` que gravaram arquivo, porque eles reescrevem os `.css` sem recarregar o projeto. | `index.html`, junto de `approve` |
+| `refreshPendingHash(paths)` | Assíncrona. Relê só os arquivos gravados (`paths`), troca essas partes no hash da sessão e marca `pendingDirty`. Fonte mudada fora do LAYERS depois da carga não entra: os ids posicionais seguem descrevendo o DOM lido. Durante a releitura `pendingReady` fica falso, para que uma edição logo após "Aplicar" não saia com o hash antigo. Chamada depois de `approve` e `rollback` que gravaram arquivo. | `index.html`, junto de `approve` |
 
 `scan()` já roda no callback do `setState` de `loadProject` (`index.html:1257`), depois do DOM reestilizado: os nós refletem os valores restaurados sem `scanSoon()` extra.
 
@@ -81,7 +81,7 @@ Quinta chave `localStorage`, `layers/v1/pending`:
 | `loadProject` com fonte que falhou na leitura (`warn` de `css não encontrado` ou `dcSource não lido`) | O hash não é confiável: nada é restaurado, `pendingReady` fica falso nesta sessão e a entrada permanece; toast `warn` informa que os ajustes salvos foram mantidos |
 | edição (`applyEdit`, `applyCodeText`, `revert`, undo/redo) | `state.changes` troca de identidade → `persistSoon()` → entrada reescrita com o `hash` corrente |
 | `approve` / `cancelAll` | `changes` vira `[]` → entrada removida |
-| `doReload` após confirmar "recarregar descarta todas" | `pendingReady = false`, `pendingDirty = false` e só então `setPending(this.pendingKey, null)`, antes de `loadProject`: sem isso o drain do início de `loadProject` regravaria a edição ainda no trailing de 400 ms e a restauração a ressuscitaria |
+| `reloadProject` com edição não salva, após o usuário confirmar "recarregar descarta todas" | `dropPending()` no `onYes`: `pendingReady = false`, `pendingDirty = false` e só então `setPending(this.pendingKey, null)`, antes de `loadProject`: sem isso o drain do início de `loadProject` regravaria a edição ainda no trailing de 400 ms e a restauração a ressuscitaria. Recarregar sem edição não confirma nada e não toca a entrada (pode ser de outra aba) |
 | `approve` / `rollback` com arquivo gravado | `refreshPendingHash()`: o hash da sessão passa a descrever os arquivos recém-gravados, senão toda edição seguinte seria descartada no próximo reload |
 | `resetUI` | remove a entrada do projeto atual, mas só se `pendingReady` for verdadeiro (durante uma carga em andamento `pendingKey` já aponta para outro projeto) |
 | `unloadProject(why)` por erro de carga | `pendingReady` fica falso; a entrada permanece (projeto que falhou ao abrir não perde ajustes) |
