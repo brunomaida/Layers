@@ -1304,7 +1304,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-19",
+    "end": "2026-10-18",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1313,7 +1313,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 73,
+    "progress": 78,
     "docs": [],
     "children": [
       {
@@ -1548,19 +1548,32 @@
         "id": "S7.8a",
         "type": "spec",
         "name": "Recontar o contador do checklist após a Onda 1",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "docs-261014-0-s7-8a-counter-recount.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261014-0-s7-8a-counter-recount.md)",
+            "title": "docs-261014-0-s7-8a-counter-recount.md)"
+          },
+          {
+            "name": "2026-10-14-s7-8a-counter-recount.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s7-8a-counter-recount.md",
+            "title": "Implementation Report — s7-8a-counter-recount"
+          }
+        ],
         "reason": "Linha 8 dizia 31/3/13; os itens contam 38/1/8 depois de S2.19, S4.5, S5.6, S6.2 e S7.1",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
