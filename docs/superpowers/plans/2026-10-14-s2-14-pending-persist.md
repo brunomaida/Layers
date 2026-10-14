@@ -696,3 +696,13 @@ Executor: none — todas as tarefas exigem julgamento (código novo, teste ou pr
 
 > [!DECISION] execution
 > Method: **Native** recomendado (4 tarefas encadeadas por nomes de interface, mudança concentrada em um arquivo), com a revisão Architect da Task B e a revisão pré-merge. Alternativa: **Subagent-driven**, um subagente por tarefa.
+
+---
+
+## Desvios registrados na execução
+
+A revisão Architect da Task B (2026-10-14) reprovou dois pontos, corrigidos no commit seguinte à Task D; o código de `index.html` neste plano é o da primeira versão.
+
+- `dropPending()` saiu de `doReload` e foi para o `onYes` da confirmação de `reloadProject`: recarregar sem edição apagava a entrada de outra aba.
+- O hash da sessão passou a ser composto por hashes de parte (`partHash`, `srcHash(hs)`); `refreshPendingHash(paths)` relê só os arquivos gravados e fica `pendingReady = false` durante a releitura.
+- `validPendingChange` rejeita `prop` fora de `/^[a-zA-Z][a-zA-Z0-9-]*$/`, além de `cssText`, `length` e `parentRule` (caso novo `PropSomenteLeitura_DevolveNull`, 210 testes no total).

@@ -1384,6 +1384,14 @@ describe('SetPending / GetPending', () => {
     expect(core.getPending(st, 'fx:a')).toBeNull();
   });
 
+  it('PropSomenteLeitura_DevolveNull', () => {
+    const st = memStorage();
+    ['length', 'parentRule', '0'].forEach((prop) => {
+      st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop })] } } }));
+      expect(core.getPending(st, 'fx:a')).toBeNull();
+    });
+  });
+
   it('PropCssText_DevolveNull', () => {
     const st = memStorage();
     st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop: 'cssText' })] } } }));
