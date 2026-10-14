@@ -1022,3 +1022,47 @@ describe('StaleFilesAfterMissingDismiss', () => {
     expect(core.staleFiles({ 'a.css': 'missing' }, { 'a.css': 123 })).toEqual(['a.css']);
   });
 });
+
+describe('LineDiff', () => {
+  const lines = (n, from = 1) => Array.from({ length: n }, (_, i) => 'l' + (from + i)).join('\n');
+  const kinds = (d) => d.map((l) => l.kind).join('');
+
+  it('MudancaNoMeio_ContextoDeTresLinhas', () => {
+    const a = lines(12);
+    const b = a.replace('l6', 'L6');
+    const d = core.lineDiff(a, b);
+    expect(kinds(d)).toBe('   -+   ');
+    expect(d.map((l) => l.no)).toEqual(['3', '4', '5', '6', '6', '7', '8', '9']);
+    expect(d[3]).toEqual({ no: '6', text: 'l6', kind: '-' });
+    expect(d[4]).toEqual({ no: '6', text: 'L6', kind: '+' });
+  });
+
+  it('MudancaNaPrimeiraLinha_SemContextoAntes', () => {
+    const d = core.lineDiff(lines(6), lines(6).replace('l1', 'L1'));
+    expect(kinds(d)).toBe('-+   ');
+    expect(d[0].no).toBe('1');
+  });
+
+  it('MudancaNaUltimaLinha_SemContextoDepois', () => {
+    const d = core.lineDiff(lines(6), lines(6).replace('l6', 'L6'));
+    expect(kinds(d)).toBe('   -+');
+  });
+
+  it('Identicos_RetornaLinhaSemAlteracoes', () => {
+    const d = core.lineDiff(lines(5), lines(5));
+    expect(kinds(d)).toBe('    ');
+    expect(d[d.length - 1]).toEqual({ no: '', text: '(sem alterações)', kind: ' ' });
+  });
+
+  it('ArquivoNovo_TodasLinhasAdicionadas', () => {
+    const d = core.lineDiff('', 'a\nb');
+    expect(d.filter((l) => l.kind === '+').map((l) => l.text)).toEqual(['a', 'b']);
+    expect(d.some((l) => l.kind === '-' && l.text !== '')).toBe(false);
+  });
+
+  it('LinhaRemovida_ApenasMenos', () => {
+    const d = core.lineDiff('a\nb\nc', 'a\nc');
+    expect(kinds(d)).toBe(' - ');
+    expect(d[1]).toEqual({ no: '2', text: 'b', kind: '-' });
+  });
+});
