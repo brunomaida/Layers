@@ -1087,6 +1087,9 @@ class Component extends DCLogic {
   interDdDown = () => {};
   cbToggle = k => () => this.setState(st => ({ cbOpen: st.cbOpen === k ? null : k }));
   histRef = React.createRef();
+  // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
+  // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
+  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingDirty = false; hashSpec = null;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1096,7 +1099,33 @@ class Component extends DCLogic {
   // Uma escrita por rajada, não uma por evento: orbitar a câmera dispara ~60 setState por
   // segundo e todos caem no mesmo trailing de 400 ms.
   persistSoon() { clearTimeout(this.persistT); this.persistT = setTimeout(() => this.writeConfig(), 400); }
-  writeConfig() { clearTimeout(this.persistT); LayersCore.writeConfig(LS_STORE, { ui: this.uiSnapshot(), projects: this.state.hist || [], session: this.sessionSnapshot() }); }
+  writeConfig() { clearTimeout(this.persistT); LayersCore.writeConfig(LS_STORE, { ui: this.uiSnapshot(), projects: this.state.hist || [], session: this.sessionSnapshot() }); this.writePending(); }
+  // Espelha a origem que readBytes realmente le; calculada uma vez em loadProject e guardada em
+  // this.pendingKey, nunca relida na hora de escrever (projectId pode ja ser o do proximo projeto).
+  pendingKeyNow() { if (this.state.dir || this.zip || this.repo) return this.projectId || null; const b = this.fixtureBase; return b ? 'fx:' + b.replace(/\/$/, '') : null; }
+  srcHash(man, mockPath, html, css, dcFile, dcText) { const parts = [JSON.stringify(man), mockPath, html]; css.forEach(c => { parts.push(c.file, c.text); }); parts.push(dcFile, dcText); return LayersCore.sourceHash(parts); }
+  // Desce mockRoot pelo caminho do id: no de tamanho zero fica fora de this.els, o caminho segue valido.
+  elAtPath(id) { let el = this.mockRoot; if (!el) return null; const p = String(id).split('.'); for (let k = 1; k < p.length && el; k++) el = el.children[+p[k]]; return el || null; }
+  writePending() {
+    if (!this.pendingReady || !this.pendingKey || !this.pendingDirty) return;
+    const ch = this.state.changes;
+    if (ch.length > LayersCore.PENDING_CAP) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' ajustes pendentes: não serão restaurados ao reabrir.', 'warn');
+    LayersCore.setPending(LS_STORE, this.pendingKey, ch.length ? { hash: this.pendingHash, changes: ch } : null, Date.now());
+    this.pendingDirty = false;
+  }
+  // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
+  dropPending() { if (this.pendingReady && this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); this.pendingDirty = false; this.pendingReady = false; }
+  // approve/rollback reescrevem os .css sem recarregar: o hash da sessao passa a descrever os arquivos novos.
+  async refreshPendingHash() {
+    const hs = this.hashSpec; if (!hs || !this.pendingReady) return; const seq = this.loadSeq;
+    try {
+      const html = await this.readText(hs.mockPath); const css = [];
+      for (const f of hs.cssFiles) css.push({ file: f, text: await this.readText(f) });
+      const dcText = hs.dcFile ? await this.readText(hs.dcFile) : null;
+      if (seq !== this.loadSeq) return;
+      this.pendingHash = this.srcHash(hs.man, hs.mockPath, html, css, hs.dcFile, dcText); this.pendingDirty = true; this.persistSoon();
+    } catch (e) { this.pendingReady = false; }
+  }
   // sessionStorage vence o session ao restaurar: N abas, N projetos.
   markTab() { try { SS_STORE.setItem(TAB_LS, JSON.stringify({ projectId: this.projectId || null })); } catch (e) {} }
   // Sem ativação do usuário, requestPermission() recusa — por isso aqui é query: pasta já
@@ -1190,9 +1219,10 @@ class Component extends DCLogic {
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
   openDemo(d) { this.setState({ dir: null, demoBase: d.base, dirName: d.name + ' (exemplo)', cbOpen: null, cssRules: {}, fileText: {} }, () => this.loadProject()); }
-  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
+  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
+    this.writeConfig(); this.pendingReady = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
     this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
     this.mtimes = {}; // mtimes sao por projeto: sem isto o watch herda os da pasta anterior e o 1o foco acusa um aviso falso
     // F:66 — capturado JA AQUI, antes do primeiro await: se lido de novo depois de
@@ -1251,14 +1281,26 @@ class Component extends DCLogic {
     const keep = this.pendingSel && this.pendingSel.id === this.projectId ? this.pendingSel : null; this.pendingSel = null;
     if (autoNote) warn.unshift(autoNote); // warn[0] e o unico aviso que entra no toast final
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
+    // S2.14: so a carga vencedora chega aqui. Fonte que falhou na leitura torna o hash nao confiavel:
+    // nada e restaurado, a sessao nao grava e a entrada salva fica intacta.
+    const incomplete = warn.some(w => /^(css não encontrado|dcSource não lido)/.test(w));
+    const hash = this.srcHash(man, mockPath, html, css, dcText !== null ? dcFile : null, dcText);
+    const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
+    const plan = incomplete ? { keep: [], dropped: 0 } : LayersCore.restorePlan(saved, hash);
+    plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
+    const restored = plan.keep, dropped = plan.dropped;
+    const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete && saved ? ' · ajustes salvos mantidos: fonte não lida' : '';
+    this.hashSpec = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null };
+    this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.resetUndo();
-    this.setState({ stale: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: [], buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
-    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + '.', warn.length ? 'warn' : 'ok');
+    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + '.', warn.length || dropped ? 'warn' : 'ok');
+    if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
   }
-  unloadProject(why) { this.resetUndo(); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1440,6 +1482,7 @@ class Component extends DCLogic {
     // Um ponto de gravação em vez de um por editor: a assinatura do que é persistido decide.
     const sig = JSON.stringify([this.uiSnapshot(), this.state.hist, this.sessionSnapshot()]);
     if (sig !== this.persistSig) { this.persistSig = sig; this.persistSoon(); }
+    if (this.pendingReady && this.state.changes !== this.pendingSeen) { this.pendingSeen = this.state.changes; this.pendingDirty = true; this.persistSoon(); }
   }
   componentDidMount() {
     this.applyTheme();
@@ -1493,7 +1536,7 @@ class Component extends DCLogic {
     if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', label: 'Recarregar', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => this.doReload() } }); return; }
     this.doReload();
   }
-  doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
+  doReload() { const s = this.state; this.dropPending(); this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
   componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
@@ -1844,6 +1887,7 @@ class Component extends DCLogic {
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
     this.resetUndo();
+    if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash();
     this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [] }));
   }
   async rollback(h) {
@@ -1856,6 +1900,7 @@ class Component extends DCLogic {
     }
     h.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }));
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
+    if (this.state.dir) this.refreshPendingHash();
     this.setState(s => ({ history: s.history.filter(x => x !== h) })); this.scanSoon();
   }
   async openDiff() {
