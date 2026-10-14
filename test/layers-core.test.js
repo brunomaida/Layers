@@ -1372,6 +1372,15 @@ describe('SetPending / GetPending', () => {
     expect(core.getPending(st, 'fx:new')).not.toBeNull();
   });
 
+  it('GravacaoFalha_NaoDeixaEntradaAntigaRessuscitar', () => {
+    const m = new Map(); let full = false;
+    const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (full) throw new Error('quota'); m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    full = true;
+    expect(core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({ to: 'green' })] }, 2000)).toBe(false);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
   it('JsonCorrompido_DevolveNull', () => {
     const st = memStorage();
     st.setItem('layers/v1/pending', '{nao e json');
