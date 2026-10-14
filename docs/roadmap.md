@@ -34,6 +34,8 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.15 | 2 | S2 | Marcador manual para TS/JS | checklist B | — | — | — | — | registered |
 | S2.16 | 2 | S2 | Fechar findings adiados da revisão do reload | Issue #19 | — | — | [](../changelog.d/fix-261013-19-s2-16-reload-deferred-findings.md) | #19 | done |
 | S2.17 | 2 | S2 | Achados restantes da revisão do reload | Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px) | — | — | — | #32 | registered |
+| S2.18 | 2 | S2 | Verificação manual da gravação real do template dc | Checkpoint 2026-09-18: gravar via `dcSource` nunca foi verificado à mão (conectar pasta → editar → aprovar → diff) | — | — | — | — | registered |
+| S2.19 | 2 | S2 | Limpar códigos dc reservados e avisos do hoistFaces | `UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames` | — | — | — | — | registered |
 | S3 | 1 | — | Ferramentas e UI | Checklist C e ferramentas 0.25 | — | — | — | — | in-progress |
 | S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md) | — | done |
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | — | — | — | registered |
@@ -49,7 +51,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.6 | 2 | S4 | Cache de getComputedStyle por nó | checklist D | — | — | — | — | registered |
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |
 | S5 | 1 | — | Testes | Checklist E | — | — | — | — | in-progress |
-| S5.1 | 2 | S5 | Unit do core (Vitest, 138 casos) | patchCssAt, parseSheet, scopeAst, zip e dc | — | — | — | — | done |
+| S5.1 | 2 | S5 | Unit do core (Vitest) | patchCssAt, parseSheet, scopeAst, zip e dc | — | — | — | — | done |
 | S5.2 | 2 | S5 | Snapshot de árvore por fixture | checklist E | — | — | — | — | registered |
 | S5.3 | 2 | S5 | Origem de 30 nós amostrados | checklist E | — | — | — | — | registered |
 | S5.4 | 2 | S5 | Escopo todos iguais | checklist E | — | — | — | — | registered |
@@ -61,14 +63,17 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S6.2 | 2 | S6 | Hash no log de gravação | checklist F | — | — | — | — | registered |
 | S7 | 1 | — | Release e governança | Checklist G e docs do projeto | — | — | — | — | in-progress |
 | S7.1 | 2 | S7 | README atualizado | checklist G | — | — | — | — | registered |
-| S7.2 | 2 | S7 | CHANGELOG por versão | checklist G | — | — | — | [](../changelog.d/docs-261013-23-s7-2-changelog-checklist.md) | — | done |
+| S7.2 | 2 | S7 | CHANGELOG por versão | checklist G | — | — | [](../changelog.d/docs-261013-23-s7-2-changelog-checklist.md) | #23 | done |
 | S7.3 | 2 | S7 | Matriz de suporte | checklist G | — | — | — | — | registered |
 | S7.4 | 2 | S7 | docs/shortcuts.md | checklist G | — | — | — | — | registered |
 | S7.5 | 2 | S7 | Bootstrap do roadmap | Este tracker | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/docs-261013-23-s7-5-roadmap-bootstrap.md) | #23 | done |
 | S7.6 | 2 | S7 | CLAUDE.md enxuto | Revisão de duplicatas e fatos stale | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/docs-261013-23-s7-6-claude-md-lean.md) | #23 | done |
 | S7.7 | 2 | S7 | Hook pre-push valida o ref de destino | Review S7.6: push HEAD:develop passa; delete de branch estando em develop é recusado | — | — | [](../changelog.d/fix-261013-23-s7-7-pre-push-dest-ref.md) | #23 | done |
+| S7.8 | 2 | S7 | Reconciliar contadores, versão e colunas do tracker | Varredura 2026-10-13: contador do checklist, S5.1, package.json, S7.2 e S4.4a fora do tracker | — | — | [](../changelog.d/docs-261013-0-s7-8-tracker-reconcile.md) | — | done |
 | S8 | 1 | — | Trilha MCP e plugin | Ideia gravada no checkpoint de 2026-09-18 | [](superpowers/reports/2026-09-18-wnext-checkpoint-mcp-plugin-track.md) | — | — | — | registered |
 | S8.1 | 2 | S8 | Spike de servidor MCP stdio sobre o core | find_rule, get_rule_text, propose_css_patch | — | — | — | — | registered |
 | S8.2 | 2 | S8 | Spike Playwright: data-vite-dev-id sobrevive | Apps Vite com React | — | — | — | — | registered |
 | S8.3 | 2 | S8 | Snapshot headless (slice 3) | Depende de S8.1 e S8.2 | — | — | — | — | registered |
 | S8.4 | 2 | S8 | apply_patch e porta Node de writeText | Modelo de confiança primeiro | — | — | — | — | registered |
+| S8.5 | 2 | S8 | Proveniência SPA via data-vite-dev-id | Slice 4 do plano dc; depende de S8.2 | — | — | — | — | registered |
+| S8.6 | 2 | S8 | Re-snapshot sem renovar mtimes com changes pendentes | Slice 5 do plano dc; medir antes; depende de S8.3 | — | — | — | — | registered |
