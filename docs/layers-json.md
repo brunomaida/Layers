@@ -51,14 +51,15 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 
 ## Origens
 
-O loader lê de quatro origens, todas pela mesma porta (`readText`/`readBytes`), nesta ordem:
+O loader lê de cinco origens, todas pela mesma porta (`readText`/`readBytes`), nesta ordem:
 
 | origem | como | grava? |
 |---|---|---|
 | pasta local | File System Access, conectada em `mode: 'read'` | sim, após `ensureWrite()` escalar para `readwrite` |
 | `.zip` | `showOpenFilePicker` + diretório central + `DecompressionStream('deflate-raw')` | não |
 | repositório GitHub público | `api.github.com` para o branch padrão, `raw.githubusercontent.com` para os arquivos | não |
-| fixture HTTP | `#layers=<pasta>/`, usado nos testes | não |
+| fixture HTTP | `?layers=<pasta>/` (também aceita `#layers=<pasta>/`), usado nos testes | não |
+| pasta via Atlas | `?project=<pasta absoluta>`, servida pelo dev server em `/@project/…`; exige `layers.json` na raiz | não |
 
 Todo caminho passa por `safePath` antes de virar arquivo: vazio, `/` inicial, `C:`, esquema de URL e segmento `.`/`..` são recusados. Num `.zip` isso não é teoria — é o único caminho por onde uma entrada `../../evil.css` chegaria ao loader.
 
@@ -74,7 +75,7 @@ Reconexão automática sem clique (reload de uma pasta já autorizada) **nunca**
 
 ## Modo fixture (dev)
 
-Sem pasta conectada, `index.html#layers=<pasta-servida>/` (ou tweak `fixture`) lê `layers.json` por HTTP — usado nos testes de `fixtures/`.
+Sem pasta conectada, `index.html?layers=<pasta-servida>/` (ou tweak `fixture`) lê `layers.json` por HTTP — usado nos testes de `fixtures/`.
 
 `vite.config.js` serve `/fixtures/**` sem transformação e devolve 404 para arquivo ausente. Sem isso o Vite responderia os `.css` como módulo JS de HMR (o loader leria JavaScript em vez de CSS) e o fallback de SPA devolveria o próprio `index.html` do editor no lugar de um `mock` inexistente.
 
