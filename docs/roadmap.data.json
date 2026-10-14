@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 93,
+    "progress": 95,
     "docs": [],
     "children": [
       {
@@ -631,18 +631,31 @@
         "name": "Limpar códigos dc reservados e avisos do hoistFaces",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
+          "bug",
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s2-19-dc-reserved-codes.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-14-s2-19-dc-reserved-codes.md)",
             "title": "2026-10-14-s2-19-dc-reserved-codes.md)"
+          },
+          {
+            "name": "fix-261014-0-s2-19-dc-reserved-codes.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261014-0-s2-19-dc-reserved-codes.md)",
+            "title": "fix-261014-0-s2-19-dc-reserved-codes.md)"
+          },
+          {
+            "name": "2026-10-14-s2-19-dc-reserved-codes.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s2-19-dc-reserved-codes.md",
+            "title": "Implementation Report — s2-19-dc-reserved-codes"
           }
         ],
         "reason": "`UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames`",
