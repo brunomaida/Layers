@@ -139,3 +139,43 @@ test.afterAll(() => {
   const sorted = Object.fromEntries(Object.keys(cur).sort().map((k) => [k, cur[k]]));
   fs.writeFileSync(SNAP, JSON.stringify(sorted, null, 2) + '\n');
 });
+
+const HINT_NO_FS = 'Este navegador não grava em disco — use Chrome ou Edge.';
+const HINT_FS = 'Conecte a pasta local para gravar.';
+const hasFs = (page) => page.evaluate(() => 'showDirectoryPicker' in window);
+
+async function draftAndExport(page) {
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+}
+
+test('Compat_NoFsAccess_WriteEntryPointsNameTheBrowser', async ({ page }) => {
+  await page.goto('/');
+  test.skip(await hasFs(page), 'File System Access present: write path covered by apply-flow.spec.js');
+  await expect(page.getByText('Este navegador não tem a File System Access API', { exact: false })).toBeVisible();
+  await openProjects(page, /Conectar pasta local/);
+  await expect(page.getByText('File System Access API indisponível — use Chrome ou Edge', { exact: false })).toBeVisible();
+  await openProjects(page, /Abrir arquivo \.zip/);
+  await expect(page.getByText('Abrir .zip usa a File System Access API', { exact: false })).toBeVisible();
+
+  await editCard(page);
+  await draftAndExport(page);
+  await expect(page.getByText(HINT_NO_FS, { exact: false })).toBeVisible();
+  await expect(page.getByText(HINT_FS, { exact: false })).toHaveCount(0);
+  // the toast lives 4.2 s: close it so the export assertion cannot pass on the draft's toast
+  await page.getByTitle('Fechar').click();
+  await expect(page.getByText(HINT_NO_FS, { exact: false })).toHaveCount(0);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Exportar versões completas', { exact: false }).first().click();
+  await expect(page.getByText(HINT_NO_FS, { exact: false })).toBeVisible();
+});
+
+test('Compat_FsAccess_FixtureDraftAsksToConnectFolder', async ({ page }) => {
+  await page.goto('/');
+  test.skip(!(await hasFs(page)), 'no File System Access: covered by the NoFsAccess test');
+  await editCard(page);
+  await draftAndExport(page);
+  await expect(page.getByText(HINT_FS, { exact: false })).toBeVisible();
+});
