@@ -1841,8 +1841,7 @@ class Component extends DCLogic {
       else { await this.rawWrite(path, text); const dir = await this.dirOf(tmp); await dir.removeEntry(tmp.split('/').pop()); moved = true; }
     } catch (e) { if (!moved) await this.rawWrite(path, text); }
     try { this.mtimes[path] = (await (await this.fileHandle(path, false)).getFile()).lastModified; if (this.watch && path in this.watch) this.watch[path] = this.mtimes[path]; } catch (e) {}
-    let a = { sha256: null, bytes: null }, b = a;
-    try { [a, b] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]); } catch (e) {}
+    const [a, b] = await Promise.all([LayersCore.contentHash(before), LayersCore.contentHash(text)]);
     this.writeLog = (this.writeLog || []).concat({ path, at: new Date().toISOString(), from: a.bytes, to: b.bytes, fromHash: a.sha256, toHash: b.sha256, bak: !!this.baks[path] });
   }
   async rawWrite(path, text) { const h = await this.fileHandle(path, true); const w = await h.createWritable(); await w.write(text); await w.close(); }
