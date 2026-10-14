@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 90,
+    "progress": 93,
     "docs": [],
     "children": [
       {
@@ -631,12 +631,12 @@
         "name": "Limpar códigos dc reservados e avisos do hoistFaces",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "`UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames`",
         "is_branch": false,
