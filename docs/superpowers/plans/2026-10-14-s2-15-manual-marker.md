@@ -39,9 +39,9 @@ created: 2026-10-14
 
 | Task | Tier | Executor |
 |---|---|---|
-| Task A: predicate + unit tests | Standard | Workhorse (`claude-sonnet-5-5`) |
-| Task B: UI markers + e2e | Standard | Workhorse (`claude-sonnet-5-5`) |
-| Task C: docs + changelog fragment | Mechanical | `executor` |
+| Task 1: predicate + unit tests | Standard | Workhorse (`claude-sonnet-5-5`) |
+| Task 2: UI markers + e2e | Standard | Workhorse (`claude-sonnet-5-5`) |
+| Task 3: docs + changelog fragment | Mechanical | `executor` |
 | Whole-branch review | Architectural | `adversarial-reviewer` |
 
 > [!DECISION] gh-issue-gate
@@ -64,7 +64,7 @@ created: 2026-10-14
 
 ---
 
-### Task A: Predicate `isManualSource`
+### Task 1: Predicate `isManualSource`
 
 **Files:**
 - Modify: `lib/layers-core.js` (add function before `checkOrigin`, line ~430; export next to `checkOrigin:` at line ~1139)
@@ -145,14 +145,14 @@ git commit -m "feat(core): add isManualSource predicate for TS/JS origins (S2.15
 
 ---
 
-### Task B: UI markers and e2e
+### Task 2: UI markers and e2e
 
 **Files:**
 - Modify: `index.html:2225` (`originShort`), `index.html:2228` (`originSource`), `index.html:2129-2130` (`changes` builder), `index.html:365` (Ajustes row template)
 - Create: `e2e/manual-marker.spec.js`
 
 **Interfaces:**
-- Consumes: `LayersCore.isManualSource(file)` from Task A.
+- Consumes: `LayersCore.isManualSource(file)` from Task 1.
 - Produces: chip text `<ext> · manual`; tooltip `origem: <file> — patch manual`; Ajustes row suffix element `[data-manual-mark]` with text ` · patch manual`.
 
 - [ ] **Step 1: Write the failing e2e**
@@ -250,14 +250,14 @@ git commit -m "feat(editor): mark TS/JS origins as manual in the origin chip and
 
 ---
 
-### Task C: Docs and changelog
+### Task 3: Docs and changelog
 
 **Files:**
 - Modify: `docs/RELEASE-CHECKLIST.md:29`, `docs/ARCHITECTURE.md:125`
 - Create: `changelog.d/feature-261014-0-s2-15-manual-marker.md`
 
 **Interfaces:**
-- Consumes: Tasks A and B merged on the branch.
+- Consumes: Tasks 1 and 2 merged on the branch.
 - Produces: docs consistent with the feature; roadmap row closes later in `phase-close-gate`.
 
 - [ ] **Step 1: Update the checklist**
