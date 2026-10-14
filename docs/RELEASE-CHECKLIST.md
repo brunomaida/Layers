@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 27 concluídos, 3 parciais, 17 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 28 concluídos, 3 parciais, 16 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -53,7 +53,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT, `NOTICE.md` por pa
 
 Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma extensão do batch 1 mas casos diferentes (`.html`/`.css`/`.js`/`.ts`/`.jsx`): `vcard-portfolio` (página única densa, HTML estático com sidebar/formulário/layout, vendor direto, de codewithsadee/vcard-personal-portfolio), `pico-css` (classless + dark-mode + custom-properties, vendor separado de demo HTML + CSS minificado, de picocss/examples + picocss/pico), `slick-carousel` (carousel via snapshot do DOM renderizado, JS snapshot do exemplo básico, de kenwheeler/slick), `mobile-select` (TS app em light DOM sem Shadow DOM, snapshot da demo ao vivo + referência `.ts` pura, de onlyhom/mobile-select — contraste com coffee-masters Custom Elements), `ecommerce-jsx` (React + CSS Modules com classname hash, snapshot hand-assembled da seção hero+flash-sales, vendor da demo ao vivo, de Moamal-2000/e-commerce).
 
-- [ ] Snapshot da árvore de nós por fixture (contagem, profundidade, bbox, `src`).
+- [x] Snapshot da árvore de nós por fixture (contagem, profundidade máxima, nós com `src`, arquivos de origem e caixa da raiz): `e2e/tree-snapshot.spec.js` contra `e2e/__snapshots__/tree.json` (16 fixtures; `results` fica de fora, pendente de snapshot). Regenerar com `UPDATE_SNAPSHOT=1 npx playwright test e2e/tree-snapshot.spec.js`. Gate manual (E2E).
 - [ ] Origem: para 30 nós amostrados por fixture, `src` aponta para arquivo/linha que contém o seletor.
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
 - [ ] Escopo "todos iguais": afeta todos os usos e nenhum outro.
