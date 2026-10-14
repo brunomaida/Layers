@@ -895,18 +895,8 @@ const INHERITABLE = new Set(['color', 'fontFamily', 'fontSize', 'fontWeight', 'f
 // props declaradas dentro de um bloco CSS (nomes kebab)
 
 const sliderBounds = (unit, x) => unit === 'px' ? [x.min, x.max, x.step] : unit === '%' ? [0, 200, 1] : unit === '' ? [0, 4, .05] : [+(x.min / 16).toFixed(3), +(x.max / 16).toFixed(3), .05];
-function lineDiff(a, b) {
-  const A = a.split('\n'), B = b.split('\n'); let p = 0; while (p < A.length && p < B.length && A[p] === B[p]) p++;
-  let q = 0; while (q < A.length - p && q < B.length - p && A[A.length - 1 - q] === B[B.length - 1 - q]) q++;
-  const out = []; const ctx = 3;
-  const push = (no, text, k) => out.push({ no: String(no), text, color: k === '-' ? 'var(--err)' : k === '+' ? 'var(--ok)' : 'var(--fg2)', bg: k === '-' ? 'rgba(var(--errRgb),.08)' : k === '+' ? 'rgba(var(--okRgb),.08)' : 'transparent' });
-  for (let i = Math.max(0, p - ctx); i < p; i++) push(i + 1, A[i], ' ');
-  for (let i = p; i < A.length - q; i++) push(i + 1, A[i], '-');
-  for (let i = p; i < B.length - q; i++) push(i + 1, B[i], '+');
-  for (let i = A.length - q; i < Math.min(A.length, A.length - q + ctx); i++) push(i + 1, A[i], ' ');
-  if (!out.some(l => l.color !== 'var(--fg2)')) push('', '(sem alterações)', ' ');
-  return out;
-}
+const DIFF_PAINT = { '-': ['var(--err)', 'rgba(var(--errRgb),.08)'], '+': ['var(--ok)', 'rgba(var(--okRgb),.08)'], ' ': ['var(--fg2)', 'transparent'] };
+const lineDiff = (a, b) => LayersCore.lineDiff(a, b).map(l => ({ no: l.no, text: l.text, color: DIFF_PAINT[l.kind][0], bg: DIFF_PAINT[l.kind][1] }));
 async function writeInto(dir, path, text) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create: true }); const h = await d.getFileHandle(parts[parts.length - 1], { create: true }); const w = await h.createWritable(); await w.write(text); await w.close(); }
 
 // v2.7-b: culling por opacidade NÃO implementado — a cena não tem população invisível.
