@@ -58,7 +58,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] `patchCssAt`: round-trip preserva formatação; casos com shorthand (`padding`, `font`, `border`), `!important`, regra inexistente (append), regra dentro de `@media`.
 - [x] Escopo "todos iguais": afeta todos os usos e nenhum outro (`e2e/scope-all-equal.spec.js`, via UI no `axai`: `.sum-stat` com 6 usos; contraste "Só este" = 1 elemento). Gate manual (E2E).
 - [x] `lineDiff` (`LayersCore.lineDiff`): contexto de 3 linhas, sem alterações, arquivo novo — 6 casos em `test/layers-core.test.js`.
-- [ ] E2E (Playwright; infra e specs de performance prontos em `e2e/`, faltam os specs funcionais): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado.
+- [x] E2E funcional (Playwright): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado, numa cópia real do `plain-css` no OPFS (`e2e/apply-flow.spec.js`, helper `e2e/folder-helpers.js`); confere `.bak`, histórico e ausência de rascunho/`.tmp`, mais rollback e sua recusa. Gate manual (E2E): `npm run test:e2e`.
 - [ ] Compatibilidade: Chrome/Edge completos; Firefox/Safari em somente leitura com mensagem.
 
 ## F. Segurança
@@ -71,7 +71,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] Não aplicável desde a v2.24: não há iframe. O mock vive num shadow root do próprio documento e nenhum script do projeto é executado — o isolamento vem da sanitização (item acima), não de `sandbox=`.
 - [x] Sem chamadas de rede em runtime, incluindo as fontes que o projeto carregado pede: `fonts/projects.css` versiona Newsreader e Geist, `@font-face` do projeto sobe para o documento com `blob:`, e a meta CSP (`default-src 'self'`, `connect-src` só com a allowlist do GitHub) é a guarda. Medido com os 4 projetos: 18/18 requisições em `localhost:5180`, zero externas.
 - [x] `localStorage` só com preferências de UI, histórico de projetos e ponteiros de sessão; o handle da pasta fica no IndexedDB `layers-hist` e conteúdo de arquivo não sai do disco.
-- [~] Log de gravações: `layers-export.log` sai na exportação com caminho, timestamp, tamanho antes/depois e se houve `.bak`. Falta o hash.
+- [x] Log de gravações: `layers-export.log` sai na exportação com cabeçalho de versão (`v2`), caminho, timestamp, tamanho antes/depois em bytes UTF-8, SHA-256 do conteúdo antes e depois e se houve `.bak` (`LayersCore.contentHash`/`writeLogText`; `e2e/write-log-hash.spec.js`).
 - [x] Dependências de dev fixadas (`package-lock.json`, lockfileVersion 3) e auditadas: `npm audit` reporta 0 vulnerabilidades. Requer npm 11+.
 
 ## G. Documentação de release
