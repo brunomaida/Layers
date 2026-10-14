@@ -909,7 +909,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 14,
+    "progress": 23,
     "docs": [],
     "children": [
       {
@@ -996,13 +996,13 @@
         "name": "lineDiff testável",
         "start": "2026-10-18",
         "end": "2026-10-20",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold",
           "tests"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [],
         "reason": "checklist E; extrair de index.html",
         "is_branch": false,
