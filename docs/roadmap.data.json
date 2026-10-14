@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-20",
+    "end": "2026-10-22",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 71,
+    "progress": 63,
     "docs": [],
     "children": [
       {
@@ -545,6 +545,44 @@
         "start_synthetic": true,
         "end_synthetic": true,
         "version": "Unreleased"
+      },
+      {
+        "id": "S2.18",
+        "type": "spec",
+        "name": "Verificação manual da gravação real do template dc",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Checkpoint 2026-09-18: gravar via `dcSource` nunca foi verificado à mão (conectar pasta → editar → aprovar → diff)",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.19",
+        "type": "spec",
+        "name": "Limpar códigos dc reservados e avisos do hoistFaces",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "`UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames`",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
       }
     ]
   },
@@ -657,19 +695,13 @@
     "statusLabel": "In Progress",
     "tags": [
       "bdn",
+      "bug",
       "perf",
       "scaffold",
       "tests"
     ],
-    "progress": 57,
-    "docs": [
-      {
-        "name": "fix-261013-23-s4-4a-vitest-exclude-e2e.md",
-        "type": "report",
-        "path": "/changelog.d/fix-261013-23-s4-4a-vitest-exclude-e2e.md",
-        "title": "Fixed"
-      }
-    ],
+    "progress": 62,
+    "docs": [],
     "children": [
       {
         "id": "S4.1",
@@ -778,6 +810,34 @@
         "version": "Unreleased"
       },
       {
+        "id": "S4.4a",
+        "type": "spec",
+        "name": "Vitest ignora e2e/",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold",
+          "tests"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "fix-261013-23-s4-4a-vitest-exclude-e2e.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261013-23-s4-4a-vitest-exclude-e2e.md)",
+            "title": "fix-261013-23-s4-4a-vitest-exclude-e2e.md)"
+          }
+        ],
+        "reason": "npm test falhava ao coletar o spec do Playwright",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
         "id": "S4.5",
         "type": "spec",
         "name": "Culling de planos fora do viewport",
@@ -855,7 +915,7 @@
       {
         "id": "S5.1",
         "type": "spec",
-        "name": "Unit do core (Vitest, 138 casos)",
+        "name": "Unit do core (Vitest)",
         "start": "2026-10-14",
         "end": "2026-10-16",
         "status": "done",
@@ -1051,7 +1111,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-18",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1060,7 +1120,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 43,
+    "progress": 58,
     "docs": [],
     "children": [
       {
@@ -1089,18 +1149,18 @@
         "name": "CHANGELOG por versão",
         "start": "2026-10-13",
         "end": "2026-10-15",
-        "status": "—",
-        "statusLabel": "—",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 100,
         "docs": [
           {
-            "name": "docs-261013-23-s7-2-changelog-checklist.md",
+            "name": "docs-261013-23-s7-2-changelog-checklist.md)",
             "type": "report",
-            "path": "/changelog.d/docs-261013-23-s7-2-changelog-checklist.md",
-            "title": "Changed"
+            "path": "/[](../changelog.d/docs-261013-23-s7-2-changelog-checklist.md)",
+            "title": "docs-261013-23-s7-2-changelog-checklist.md)"
           }
         ],
         "reason": "checklist G",
@@ -1239,6 +1299,25 @@
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
+      },
+      {
+        "id": "S7.8",
+        "type": "spec",
+        "name": "Reconciliar contadores, versão e colunas do tracker",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [],
+        "reason": "Varredura 2026-10-13: contador do checklist, S5.1, package.json, S7.2 e S4.4a fora do tracker",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
       }
     ]
   },
@@ -1247,7 +1326,7 @@
     "type": "phase",
     "name": "Trilha MCP e plugin",
     "start": "2026-10-14",
-    "end": "2026-10-19",
+    "end": "2026-10-21",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -1334,6 +1413,44 @@
         "progress": 0,
         "docs": [],
         "reason": "Modelo de confiança primeiro",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S8.5",
+        "type": "spec",
+        "name": "Proveniência SPA via data-vite-dev-id",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Slice 4 do plano dc; depende de S8.2",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S8.6",
+        "type": "spec",
+        "name": "Re-snapshot sem renovar mtimes com changes pendentes",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Slice 5 do plano dc; medir antes; depende de S8.3",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
