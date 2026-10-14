@@ -24,6 +24,55 @@ deixa a janela aberta em caso de erro.
 
 Não abrir via file:// — FS Access e fontes exigem origem HTTP.
 
+## Conectar um projeto
+Tudo começa no botão do canto superior esquerdo (**Conectar pasta** ou o nome do projeto
+aberto), que abre a lista **Projetos recentes**. O editor lê o `layers.json` na raiz do
+projeto, monta o mock fora da tela e mostra cada elemento como uma camada. Contrato
+completo do arquivo: [docs/layers-json.md](docs/layers-json.md).
+
+### Origens
+| Origem | Como abrir | Grava? |
+|---|---|---|
+| Pasta local | Projetos recentes › **Conectar pasta local…** (Chrome/Edge) | sim |
+| `.zip` | Projetos recentes › **Abrir arquivo .zip…** (Chrome/Edge) | não |
+| Repositório GitHub público | Projetos recentes › **Registrar repositório GitHub…** (`github.com/usuario/repo`), depois clique no item | não |
+| Fixture HTTP | `http://localhost:5180/?layers=fixtures/<nome>/` ou Projetos recentes › Exemplos › Traval | não |
+| Pasta via Atlas | `http://localhost:5180/?project=<pasta absoluta>` (só com `npm run dev`; a pasta precisa ter `layers.json`) | não |
+
+- **Pasta local** conecta em modo leitura; a permissão de escrita só é pedida quando você
+  grava ou quando o LAYERS cria o `layers.json`, sempre a partir de um clique. Uma pasta
+  já autorizada reabre sozinha no reload; se o navegador não manteve a permissão, clique
+  nela em Projetos recentes.
+- **GitHub** pede confirmação a cada carga, nomeando `api.github.com` e
+  `raw.githubusercontent.com`. Só repositórios públicos, branch padrão, sem token
+  (limite de 60 requisições por hora).
+- Origem somente leitura recusa a gravação com um aviso que nomeia a origem.
+
+### layers.json
+Pasta local sem `layers.json`: ao conectar por clique, o LAYERS varre os `.html`/`.css`,
+escolhe o mock e grava um manifesto mínimo. Reconexão automática nunca grava — o painel
+mostra o botão **Criar layers.json**. Um `layers.json` existente nunca é sobrescrito.
+Revise `mock`, `base` e `styles` se a heurística errar. Apps renderizados por JS precisam
+de snapshot: `tools/layers-snapshot.js` (ver [docs/layers-json.md](docs/layers-json.md)).
+
+### Gravar alterações
+Só com pasta local conectada. No painel **Ajustes**, menu **Ações ▾**:
+1. **Ver diff** — revisa o patch de cada arquivo.
+2. **Aplicar nos arquivos…** › **1 · Gerar rascunho paralelo** — grava
+   `<arquivo>.design-draft.<ext>` ao lado do original.
+3. **2 · Aprovar, substituir e commitar** — o original vai para `.design-history/` e o
+   rascunho o substitui. Os comandos git aparecem no log para você rodar; o navegador
+   não executa git.
+
+- **Exportar versões completas…** grava as versões alteradas numa pasta que você escolhe
+  e, se houve gravações na sessão, o `layers-export.log` (ver
+  [docs/RELEASE-CHECKLIST.md](docs/RELEASE-CHECKLIST.md) § F).
+
+Toda gravação guarda um `.bak` da primeira versão da sessão, grava via `.tmp` + `move`
+e é recusada se o arquivo mudou fora do LAYERS desde a leitura (recarregue com `R`).
+Só regras em `.css` e o template dc são reescritas; origem TS/JS fica como "manual".
+Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
+
 ## Estrutura
 - index.html — o editor (CHANGELOG 0.25.0)
 - support.js — runtime gerado (não editar)
