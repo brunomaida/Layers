@@ -19,7 +19,7 @@ Leftovers recorded by the 2026-09-18 dc writer review (`docs/superpowers/reports
 - `DC_CODES` (`lib/layers-core.js:859-872`) reserves `UTILITY_SHEET` (:864) and `READONLY_ORIGIN` (:867). No code emits them; `dcWhy` (`index.html:847-860`) has no entry for them. The two refusals they name already exist as toasts: `readOnlyBlock` (`index.html:1439-1444`) and `utilityBlock` (`index.html:1869-1874`), plus the load warning `index.html:1034-1035`. The 2026-09-18 plan kept those toasts on purpose ("existing toasts unchanged"). Only the contract test `test/layers-core.test.js:853-859` (codes at :855-856) and `docs/ARCHITECTURE.md:133,136` mention them.
 - `mapDcTemplate` builds `attrNames` per element (`lib/layers-core.js:911,921,938`). The only reader is `test/layers-core.test.js:751-754`; `checkDcMap`, `dcStyleMismatch` and `patchDc` read `tplId`, `tag`, `line`, `styleRange` only. `styleRange` detection uses the local `name`, not the array.
 - `hoistFaces` (`index.html:1792-1810`, pushes at :1802/:1804) runs after `buildProjectFromHtml` (`index.html:1277,1280`) since `3e47cdf`. Before that commit it ran right after scoping, so face warnings preceded the data-src, utility-sheet, dc-map and `rules` warnings. The load toast shows only `warn[0]` (`index.html:1313`). The swap is noted in `changelog.d/feature-260918-15-dc-template-writer.md:9`; no test pins the order (`e2e/dead-interactions.spec.js:11` only matches `/aviso\(s\)/`).
-- Parallel leaves: S4.5 (scene/Plane), S5.6 (new e2e spec files), S6.2 (`writeText`/`exportFull`), S7.1 (README). This plan edits none of their regions; the guard call sites `index.html:1876,1892,1933` stay as they are (1933 is the first line of `exportFull`). Later leaf S5.7 (browser compatibility, read-only Firefox/Safari message) will touch `readOnlyBlock`; under the recommended delete option this plan leaves `readOnlyBlock` untouched.
+- Parallel leaves: S4.5 (scene/Plane), S5.6 (new e2e spec files), S6.2 (`writeText`/`exportFull`), S7.1 (README). This plan edits none of their regions; the guard call sites `index.html:1876,1892,1933` stay as they are (1933 is the guard on the first body line of `exportFull` (:1932)). Merging this leaf first shifts S4.5/S6.2 line anchors by ≤5 (one line added in `index.html`, four removed in `lib/layers-core.js`). Later leaf S5.7 (browser compatibility, read-only Firefox/Safari message) will touch `readOnlyBlock`; under the recommended delete option this plan leaves `readOnlyBlock` untouched.
 
 Reuses: `LayersCore.DC_CODES`, `mapDcTemplate`, existing `DcCodes_EnumCongelado` and `MapDcTemplate` describes in `test/layers-core.test.js`, `bench/alloc.mjs` (`mapDcTemplate/dc-template/index` probe), `docs/bench-methodology.md`.
 Out of scope: `HELMET_PLACEHOLDER` (`lib/layers-core.js:865`) is also reserved and never emitted, but the leaf names only two codes; it stays and is flagged for a follow-up. Load warning text at `index.html:1035`, guard call sites, `writeText`/`exportFull`, `docs/architecture-decisions.md` (it describes behavior, not codes).
@@ -73,7 +73,7 @@ toast(... warn.length + ' aviso(s): ' + warn[0])
 
 > [!DECISION] hoistfaces-order
 > Face warnings moved behind the build's warnings in `3e47cdf`; only `warn[0]` reaches the load toast.
-> - **Option A — keep current order and document (recommended)**: a write-disabling warning (utility sheet, misaligned dc map) is more actionable than a missing project font, so it should win `warn[0]`. One-line comment at the call site plus one sentence in `docs/ARCHITECTURE.md` § Loader de projeto. No behavior change.
+> - **Option A — keep current order and document (recommended)**: a write-disabling warning (utility sheet, misaligned dc map) is more actionable than a missing project font, so it should outrank it for `warn[0]`. It does not always win `warn[0]`: other pre-hoist warnings (remote URLs, CSS/`dcSource` reads, data-src, external CSS, unversioned fonts; `index.html:982,995,1010,1030,1062,1065,1273,1275-1276`, vs utility/dc map at :1035,1046) can still precede it, and `autoNote` is unshifted into `warn[0]` (:1293). One-line comment at the call site plus one sentence in `docs/ARCHITECTURE.md` § Loader de projeto. No behavior change.
 > - **Option B — restore pre-`3e47cdf` order**: `buildProjectFromHtml` returns `faceWarnAt: warn.length` recorded after scoping (after `index.html:1012`); `loadProject` calls `hoistFaces(built.faces, fw)` with a local `fw = []` and then `warn.splice(built.faceWarnAt, 0, ...fw)`. Verification is manual: no fixture combines a project `@font-face` 404 with a utility-sheet, dc-map or `rules` warning.
 
 ## File Structure
@@ -85,7 +85,7 @@ toast(... warn.length + ' aviso(s): ' + warn[0])
 | `index.html` | 3 | one comment line above `index.html:1280` |
 | `docs/ARCHITECTURE.md`, `changelog.d/fix-261014-0-s2-19-dc-reserved-codes.md` | 4 | closing docs |
 
-`docs/RELEASE-CHECKLIST.md` is not touched: no item covers these codes or the warning order.
+`docs/RELEASE-CHECKLIST.md` is not touched: no item covers these codes or the warning order, and the counter on its line 8 is never edited here (an integration task recounts it once). The roadmap row closes in `phase-close-gate`, not in this plan.
 
 ---
 
@@ -103,14 +103,11 @@ toast(... warn.length + ' aviso(s): ' + warn[0])
     expect(Object.keys(core.DC_CODES).sort()).toEqual([...codes].sort());
     for (const c of codes) expect(core.DC_CODES[c]).toBe(c);
   });
-
-  it('DcCodes_ReservadosSemUso_Ausentes', () => {
-    expect(core.DC_CODES.UTILITY_SHEET).toBeUndefined();
-    expect(core.DC_CODES.READONLY_ORIGIN).toBeUndefined();
-  });
 ```
 
-- [ ] **Step 2: Verify it fails.** Run `npx vitest run test/layers-core.test.js -t DcCodes`. Expected: FAIL in both tests (keys list has 12 entries; `UTILITY_SHEET` is defined).
+The sorted-keys equality already proves both removed codes are absent, so no separate absence test is added (it would also break the Step 4 grep).
+
+- [ ] **Step 2: Verify it fails.** Run `npx vitest run test/layers-core.test.js -t DcCodes`. Expected: FAIL only in `DcCodes_EnumCongelado` (keys list has 12 entries).
 - [ ] **Step 3: Implement.** In `lib/layers-core.js` delete the lines `    UTILITY_SHEET: 'UTILITY_SHEET',` (:864) and `    READONLY_ORIGIN: 'READONLY_ORIGIN',` (:867). Confirm each anchor matches once before deleting (`grep -c`).
 - [ ] **Step 4: Verify.** `grep -rn "UTILITY_SHEET\|READONLY_ORIGIN" lib index.html test bench e2e` returns nothing. `npm test` passes.
 - [ ] **Step 5: Commit.** `git add lib/layers-core.js test/layers-core.test.js` then `git commit -m "fix(core): drop unused UTILITY_SHEET and READONLY_ORIGIN from DC_CODES (S2.19)"`.
@@ -151,10 +148,10 @@ toast(... warn.length + ' aviso(s): ' + warn[0])
 - [ ] **Step 1: Implement.** Confirm `grep -c "await this.hoistFaces(built.faces, warn);" index.html` is `1`. Insert directly above that line, same indentation (4 spaces):
 
 ```js
-    // face warnings land after the build's (utility sheet, dc map, rules) so a write-disabling one keeps warn[0]
+    // face warnings land after the build's (utility sheet, dc map, rules): a write-disabling one outranks a missing project font for warn[0]
 ```
 
-- [ ] **Step 2: Verify.** `npm test` passes. `npx playwright test e2e/dead-interactions.spec.js` passes (load toast unchanged). Manual: `npm run dev`, open `http://localhost:5180/?layers=fixtures/slick-carousel/`; the load toast still lists its warnings; DevTools → Network shows no request outside `localhost:5180`.
+- [ ] **Step 2: Verify.** `grep -c "a write-disabling one outranks a missing project font for warn\[0\]" index.html` is `1`. `npm test` passes. No e2e run: a comment-only insert cannot change the load toast.
 - [ ] **Step 3: Commit.** `git add index.html` then `git commit -m "docs(loader): state the intended hoistFaces warning order (S2.19)"`.
 
 ---
@@ -189,10 +186,16 @@ adr: none
 - `mapDcTemplate` não devolve mais `attrNames` por elemento; nenhum código o lia.
 
 ### Changed
-- A ordem dos avisos de carga passa a ser documentada: os do hoist de `@font-face` vêm depois dos do build, então um aviso que desabilita gravação ocupa o `warn[0]` do toast.
+- A ordem dos avisos de carga passa a ser documentada: os do hoist de `@font-face` vêm depois dos do build (folha de utilitários, mapa dc, `rules`), então um aviso que desabilita gravação ganha de uma fonte do projeto ausente pelo `warn[0]` do toast.
 
 ### Perf
-- measured — `mapDcTemplate/dc-template/index`: <antes> → <depois> B/op (`bench/alloc.mjs`), um array a menos por elemento do template.
+- measured — `mapDcTemplate/dc-template/index`: <antes> → <depois> B/op (`bench/alloc.mjs`).
+```
+
+If the Task 2 delta is within probe noise (baseline 10.64 KB/op on ~15 tags, `docs/reports/bench-history/bench-history.md:51`; heapUsed-delta median, `bench/alloc.mjs:9-25`), write the `### Perf` bullet instead as:
+
+```md
+- measured — `mapDcTemplate/dc-template/index`: sem diferença acima do ruído do probe (<antes> vs <depois> B/op, `bench/alloc.mjs`).
 ```
 
 - [ ] **Step 4: Verify and commit.** `npm test` passes; `grep -n "reservado no enum" docs/ARCHITECTURE.md` returns nothing. `git add docs/ARCHITECTURE.md changelog.d/fix-261014-0-s2-19-dc-reserved-codes.md` then `git commit -m "docs: close S2.19 with architecture note and changelog fragment (S2.19)"`.
@@ -204,7 +207,7 @@ adr: none
 | Step | Role | Tier | Model | Rationale |
 |---|---|---|---|---|
 | 1, 2 | gen | Standard | Workhorse | test authoring (rule 7 exclusion) plus alloc measurement |
-| 3 | gen | Standard | Workhorse | edits `index.html` under the unique-anchor rule; manual network check |
+| 3 | gen | Standard | Workhorse | edits `index.html` under the unique-anchor rule |
 | 4 | gen | Mechanical | Executor | verbatim text from the plan; caller fills the measured numbers and checks the grep |
 | Pre-merge review | review | Architectural | Architect | verifier ≥ generator, via `adversarial-reviewer` |
 
