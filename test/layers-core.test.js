@@ -748,9 +748,10 @@ describe('MapDcTemplate', () => {
     expect(map.map((e) => e.line)).toEqual([3, 4, 6]);
   });
 
-  it('AttrNames_ListaNomesEmMinusculas', () => {
-    const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" style="a:b"></div>'));
-    expect(d.attrNames).toEqual(['class', 'data-x', 'style']);
+  it('Entrada_SoCamposConsumidos_StyleAindaDetectado', () => {
+    const [d] = core.mapDcTemplate(dcSrc('<div CLASS="a" data-X="1" STYLE="a:b"></div>'));
+    expect(Object.keys(d).sort()).toEqual(['line', 'styleRange', 'tag', 'tplId']);
+    expect(d.styleRange).not.toBeNull();
   });
 });
 
