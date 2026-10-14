@@ -63,6 +63,17 @@ export function readDisk(page, rel) {
   }, rel);
 }
 
+// lastModified (ms) of a root-level file in the connected folder, or null when it does not exist.
+export function mtimeDisk(page, rel) {
+  return page.evaluate(async (rel) => {
+    try {
+      return (await (await window.__proj.getFileHandle(rel)).getFile()).lastModified;
+    } catch (e) {
+      return null;
+    }
+  }, rel);
+}
+
 // Sorted entry names of a folder in the connected folder ('' = root); [] when it does not exist.
 export function listDisk(page, dirRel = '') {
   return page.evaluate(async (rel) => {
