@@ -75,3 +75,27 @@ test('Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory', a
   expect(await readDisk(page, 'index.html'), 'mock untouched').toBe(fixture('index.html'));
   expect(await readDisk(page, 'layers.json'), 'manifest untouched').toBe(fixture('layers.json'));
 });
+
+test('Rollback_AfterApply_RestoresOriginalFile', async ({ page }) => {
+  await editCard(page);
+  await approveAll(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => readDisk(page, 'style.css')).toBe(ORIGINAL);
+});
+
+test('Rollback_FileChangedOutside_RefusesAndKeepsFile', async ({ page }) => {
+  await editCard(page);
+  await approveAll(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.waitForTimeout(50); // a later mtime than the one approve recorded
+  const outside = (await readDisk(page, 'style.css')) + '\n/* changed outside LAYERS */\n';
+  await page.evaluate(async (text) => {
+    const w = await (await window.__proj.getFileHandle('style.css')).createWritable();
+    await w.write(text);
+    await w.close();
+  }, outside);
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect(page.getByText(/Reverter recusado/)).toBeVisible();
+  expect(await readDisk(page, 'style.css')).toBe(outside);
+});
