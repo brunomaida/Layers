@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-22",
+    "end": "2026-10-23",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 63,
+    "progress": 60,
     "docs": [],
     "children": [
       {
@@ -583,6 +583,25 @@
         "start_synthetic": true,
         "end_synthetic": true,
         "version": "Unreleased"
+      },
+      {
+        "id": "S2.20",
+        "type": "spec",
+        "name": "Origem autoral em data-src obsoleta vence a derivada",
+        "start": "2026-10-21",
+        "end": "2026-10-23",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
       }
     ]
   },
@@ -901,7 +920,7 @@
     "type": "phase",
     "name": "Testes",
     "start": "2026-10-13",
-    "end": "2026-10-20",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -909,7 +928,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 43,
+    "progress": 57,
     "docs": [],
     "children": [
       {
@@ -963,27 +982,34 @@
         "id": "S5.3",
         "type": "spec",
         "name": "Origem de 30 nós amostrados",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-13",
+        "end": "2026-10-15",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-261013-35-s5-3-origin-sample.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261013-35-s5-3-origin-sample.md)",
+            "title": "feature-261013-35-s5-3-origin-sample.md)"
+          }
+        ],
         "reason": "checklist E",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S5.4",
         "type": "spec",
         "name": "Escopo todos iguais",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1034,8 +1060,8 @@
         "id": "S5.6",
         "type": "spec",
         "name": "E2E Playwright funcional",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1053,8 +1079,8 @@
         "id": "S5.7",
         "type": "spec",
         "name": "Compatibilidade de navegadores",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1496,7 +1522,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-22",
+    "end": "2026-10-23",
     "statusLabel": "Reference",
     "tags": [
       "bdn",

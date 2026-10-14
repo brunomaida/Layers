@@ -36,6 +36,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S2.17 | 2 | S2 | Achados restantes da revisão do reload | Follow-up da S2.16 (rollback, retry, dismiss, banner a 1024px) | — | — | — | #32 | registered |
 | S2.18 | 2 | S2 | Verificação manual da gravação real do template dc | Checkpoint 2026-09-18: gravar via `dcSource` nunca foi verificado à mão (conectar pasta → editar → aprovar → diff) | — | — | — | — | registered |
 | S2.19 | 2 | S2 | Limpar códigos dc reservados e avisos do hoistFaces | `UTILITY_SHEET` e `READONLY_ORIGIN` reservados sem uso; ordem dos avisos do `hoistFaces`; `attrNames` | — | — | — | — | registered |
+| S2.20 | 2 | S2 | Origem autoral em data-src obsoleta vence a derivada | Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice | — | — | — | — | registered |
 | S3 | 1 | — | Ferramentas e UI | Checklist C e ferramentas 0.25 | — | — | — | — | in-progress |
 | S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md) | — | done |
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | — | — | — | registered |
@@ -53,7 +54,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S5 | 1 | — | Testes | Checklist E | — | — | — | — | in-progress |
 | S5.1 | 2 | S5 | Unit do core (Vitest) | patchCssAt, parseSheet, scopeAst, zip e dc | — | — | — | — | done |
 | S5.2 | 2 | S5 | Snapshot de árvore por fixture | checklist E | — | — | [](../changelog.d/feature-261013-35-s5-2-tree-snapshot.md) | #35 | done |
-| S5.3 | 2 | S5 | Origem de 30 nós amostrados | checklist E | — | — | — | #35 | registered |
+| S5.3 | 2 | S5 | Origem de 30 nós amostrados | checklist E | — | — | [](../changelog.d/feature-261013-35-s5-3-origin-sample.md) | #35 | done |
 | S5.4 | 2 | S5 | Escopo todos iguais | checklist E | — | — | — | #35 | registered |
 | S5.5 | 2 | S5 | lineDiff testável | checklist E; extrair de index.html | — | — | [](../changelog.d/refactor-261013-35-s5-5-linediff-core.md) | #35 | done |
 | S5.6 | 2 | S5 | E2E Playwright funcional | checklist E; infra nasce em S4.4 | — | — | — | — | registered |
