@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 78,
+    "progress": 80,
     "docs": [],
     "children": [
       {
@@ -455,18 +455,24 @@
         "name": "Undo/redo global",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s2-13-undo-redo-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-14-s2-13-undo-redo-design.md)",
             "title": "2026-10-14-s2-13-undo-redo-design.md)"
+          },
+          {
+            "name": "feature-261014-0-s2-13-undo-redo.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s2-13-undo-redo.md)",
+            "title": "feature-261014-0-s2-13-undo-redo.md)"
           }
         ],
         "reason": "checklist B",
