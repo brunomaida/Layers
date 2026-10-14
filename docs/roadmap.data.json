@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 83,
+    "progress": 85,
     "docs": [],
     "children": [
       {
@@ -487,18 +487,24 @@
         "name": "Persistência de changes pendentes",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s2-14-pending-persist-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-14-s2-14-pending-persist-design.md)",
             "title": "2026-10-14-s2-14-pending-persist-design.md)"
+          },
+          {
+            "name": "feature-261014-0-s2-14-pending-persist.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s2-14-pending-persist.md)",
+            "title": "feature-261014-0-s2-14-pending-persist.md)"
           }
         ],
         "reason": "checklist B; exige decisão própria",

@@ -17,7 +17,7 @@ Versão de referência: `index.html` (CHANGELOG 0.25.0).
 | 3D | CSS 3D transforms | `perspective` no palco, `rotateX/rotateY/scale` no "mundo", `translateZ` por plano. Sem WebGL/canvas. |
 | Fontes | Inter, JetBrains Mono, Michroma | 15 `.woff2` versionados em `fonts/`, subsetados por `unicode-range`, via `fonts/fonts.css` gerado. Sem Google Fonts. |
 | Disco | File System Access API | `showDirectoryPicker` (leitura da pasta do projeto e gravação de patches). Chrome/Edge apenas. |
-| Persistência | `localStorage` + `sessionStorage` + IndexedDB | Quatro chaves `layers/v1/*` (meta, ui, projects, session), `layers/v1/tab` por aba e o handle da pasta no IndexedDB `layers-hist`. Ver § Persistência. |
+| Persistência | `localStorage` + `sessionStorage` + IndexedDB | Cinco chaves `layers/v1/*` (meta, ui, projects, session, pending), `layers/v1/tab` por aba e o handle da pasta no IndexedDB `layers-hist`. Ver § Persistência. |
 
 ## Fluxo de dados
 
@@ -67,7 +67,7 @@ Regras:
 
 - Câmera: `yaw, tilt, zoom, panX, panY, focus, spacing, persp, flat`.
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
-- Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`.
+- Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
 - Recarga: `stale` (paths que mudaram no disco, ou `null`); `this.watch` (mtimes vigiados, fora do state) e `this.loadedSeq` (geração do `loadSeq` a que o watch pertence).
 - Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
@@ -81,6 +81,7 @@ Regras:
 | `localStorage` | `layers/v1/ui` | Preferência de interface: `cfg` (tema, seleção, cores de origem, cabeçalho, escala de fonte, degradê) + `UI_KEYS` (painéis, navegação, árvore, escopo, `interSize`). |
 | `localStorage` | `layers/v1/projects` | Histórico de projetos: `{id,kind,name,path,label,last,pinned}`. |
 | `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera}`. `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. |
+| `localStorage` | `layers/v1/pending` | `{schema:1, byProject:{<chave>:{savedAt, hash, changes[]}}}`. `<chave>` = `projectId` (`folder:`/`zip:`/`repo:`) ou `fx:<fixtureBase>`. `hash` cobre `layers.json`, mock, folhas `.css` e `dcSource` lidos em `loadProject`; hash igual restaura tudo na ordem, hash diferente descarta tudo com toast `warn`. Teto de 200 changes e expiração de 30 dias. |
 | `sessionStorage` | `layers/v1/tab` | `{projectId}` da aba. Vence o `session` ao restaurar: cada aba reabre o **seu** projeto. Câmera e seleção não: moram no `session` compartilhado e só são restauradas quando `lastProjectId` é o projeto daquela aba. |
 | IndexedDB `layers-hist` | store `h`, chave = `id` do histórico | `FileSystemDirectoryHandle` da pasta conectada. É o único lugar onde handle é guardado. |
 
@@ -89,6 +90,11 @@ Escrita: `persistSoon()` com trailing de 400 ms, disparado de `componentDidUpdat
 assinatura de `ui` + `projects` + `session` muda — uma gravação por rajada, não uma por evento.
 Recarregar não desmonta o componente, então o `pagehide` drena o trailing pendente; sem isso a
 preferência mudada nos últimos 400 ms morreria com a página.
+Ajustes pendentes: a gravação segue a identidade de `state.changes` (não a assinatura de `ui`),
+com `pendingDirty`, para que uma aba ociosa nunca regrave a entrada de outra. `loadProject`
+drena a rajada pendente antes de recalcular `pendingKey`, restaura só na carga vencedora e, se
+uma fonte falhou na leitura, preserva a entrada sem restaurar. `doReload` e `resetUI` limpam a
+entrada; `approve`/`rollback` recalculam o hash da sessão (`refreshPendingHash`).
 Migração (`LayersCore.migrateConfig`) converte `layers-cfg`, `layers-hist` e
 `layers-inter-size` e **não** as apaga; a remoção fica para a v2.26.
 
