@@ -1229,3 +1229,55 @@ describe('DeadInteractions', () => {
     expect(core.deadInteractions([{ label: 'A', show: '::bad(' }], boom)).toEqual([{ label: 'A', sel: '::bad(' }]);
   });
 });
+
+const ch = (prop, to, fromInline) => ({ key: 'k|' + prop, prop, to, ids: Object.keys(fromInline), fromInline });
+
+describe('InlineDelta', () => {
+  it('TargetComValor_EscreveTo', () => {
+    const target = [ch('color', 'red', { a: 'blue' })];
+    expect(core.inlineDelta([], target)).toEqual([{ id: 'a', prop: 'color', value: 'red' }]);
+  });
+
+  it('SoNoCur_RestauraFromInline', () => {
+    const cur = [ch('color', 'red', { a: 'blue' })];
+    expect(core.inlineDelta(cur, [])).toEqual([{ id: 'a', prop: 'color', value: 'blue' }]);
+  });
+
+  it('SoNoCurSemInlineOriginal_LimpaOValor', () => {
+    const cur = [ch('color', 'red', { a: undefined })];
+    expect(core.inlineDelta(cur, [])).toEqual([{ id: 'a', prop: 'color', value: '' }]);
+  });
+
+  it('EscopoAll_RestauraTodosOsIds', () => {
+    const cur = [ch('color', 'red', { a: '1', b: '', c: '3' })];
+    expect(core.inlineDelta(cur, [])).toEqual([
+      { id: 'a', prop: 'color', value: '1' },
+      { id: 'b', prop: 'color', value: '' },
+      { id: 'c', prop: 'color', value: '3' },
+    ]);
+  });
+
+  it('ValorDiferente_PrevaleceOTarget', () => {
+    const cur = [ch('color', 'red', { a: 'blue' })];
+    const target = [ch('color', 'green', { a: 'blue' })];
+    expect(core.inlineDelta(cur, target)).toEqual([{ id: 'a', prop: 'color', value: 'green' }]);
+  });
+
+  it('AmbosVazios_SemEscrita', () => {
+    expect(core.inlineDelta([], [])).toEqual([]);
+    expect(core.inlineDelta(null, undefined)).toEqual([]);
+  });
+});
+
+describe('PushSnapshot', () => {
+  it('AcimaDoCap_DescartaMaisAntigo', () => {
+    expect(core.pushSnapshot([1, 2, 3], 4, 3)).toEqual([2, 3, 4]);
+  });
+
+  it('AbaixoDoCap_AcrescentaSemMutarAOriginal', () => {
+    const stack = [1, 2];
+    expect(core.pushSnapshot(stack, 3, 5)).toEqual([1, 2, 3]);
+    expect(stack).toEqual([1, 2]);
+    expect(core.pushSnapshot(undefined, 1, 5)).toEqual([1]);
+  });
+});

@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 75,
+    "progress": 80,
     "docs": [],
     "children": [
       {
@@ -455,17 +455,30 @@
         "name": "Undo/redo global",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s2-13-undo-redo-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-14-s2-13-undo-redo-design.md)",
+            "title": "2026-10-14-s2-13-undo-redo-design.md)"
+          },
+          {
+            "name": "feature-261014-0-s2-13-undo-redo.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s2-13-undo-redo.md)",
+            "title": "feature-261014-0-s2-13-undo-redo.md)"
+          }
+        ],
         "reason": "checklist B",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
@@ -1149,8 +1162,8 @@
     "id": "S6",
     "type": "phase",
     "name": "Segurança",
-    "start": "2026-10-14",
-    "end": "2026-10-17",
+    "start": "2026-10-15",
+    "end": "2026-10-18",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1164,8 +1177,8 @@
         "id": "S6.1",
         "type": "spec",
         "name": "Superfície de gravação e ingestão",
-        "start": "2026-10-14",
-        "end": "2026-10-16",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "done",
         "statusLabel": "Completed",
         "tags": [
@@ -1184,8 +1197,8 @@
         "id": "S6.2",
         "type": "spec",
         "name": "Hash no log de gravação",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1433,8 +1446,8 @@
     "id": "S8",
     "type": "phase",
     "name": "Trilha MCP e plugin",
-    "start": "2026-10-14",
-    "end": "2026-10-21",
+    "start": "2026-10-15",
+    "end": "2026-10-22",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -1454,8 +1467,8 @@
         "id": "S8.1",
         "type": "spec",
         "name": "Spike de servidor MCP stdio sobre o core",
-        "start": "2026-10-14",
-        "end": "2026-10-16",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1473,8 +1486,8 @@
         "id": "S8.2",
         "type": "spec",
         "name": "Spike Playwright: data-vite-dev-id sobrevive",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1492,8 +1505,8 @@
         "id": "S8.3",
         "type": "spec",
         "name": "Snapshot headless (slice 3)",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1511,8 +1524,8 @@
         "id": "S8.4",
         "type": "spec",
         "name": "apply_patch e porta Node de writeText",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1530,8 +1543,8 @@
         "id": "S8.5",
         "type": "spec",
         "name": "Proveniência SPA via data-vite-dev-id",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1549,8 +1562,8 @@
         "id": "S8.6",
         "type": "spec",
         "name": "Re-snapshot sem renovar mtimes com changes pendentes",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1571,7 +1584,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-21",
+    "end": "2026-10-22",
     "statusLabel": "Reference",
     "tags": [
       "bdn",
