@@ -1,18 +1,49 @@
----
-title: "Benchmark History"
-type: bench-history
-solution: Layers
-created: 2026-10-13
----
-
 # Benchmark History
 
-_generated 2026-10-13T22:44:32Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
+_generated 2026-10-14T18:13:52Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
 
 _Methodology: `docs/bench-methodology.md` (v1)_
 
 > Derived file — **do not edit by hand**. Regenerate with `/bench-report ingest`.
 > Interactive view: Atlas Bench tab (`http://127.0.0.1:5190/`), reads `bench-history.json`.
+
+## 2026-10-14
+
+### layers-ui — 18:13:40Z  ·  _latency · env 61c971a2 · 63f137d9f4a0c488785583156b8cfe5688078710_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 7.90 ns | 0.00 ns | — | — | ▼ -26.2% |
+| `load/traval/first-scan-end-ms` | 537.20 ns | 0.00 ns | — | — | ≈ -4.2% |
+| `scan/1500-tags-ms` | 45.90 ns | 0.00 ns | — | — | ▼ -24.6% |
+| `orbit/traval/mean-frame-ms` | 25.02 ns | 0.00 ns | — | — | ≈ +0.1% |
+| `orbit/traval-zoom/mean-frame-ms` | 27.69 ns | 0.00 ns | — | — | ▲ +12.5% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 16.84 ns | 0.00 ns | — | — | ▼ -7.4% |
+| `explode/traval/toggle-ms` | 65.70 ns | 0.00 ns | — | — | ≈ -4.4% |
+
+### layers-ui — 18:13:17Z  ·  _latency · env 61c971a2 · 63f137d9f4a0c488785583156b8cfe5688078710_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 10.70 ns | 0.00 ns | — | — | ▲ +30.5% |
+| `load/traval/first-scan-end-ms` | 561.00 ns | 0.00 ns | — | — | ≈ +3.9% |
+| `scan/1500-tags-ms` | 60.90 ns | 0.00 ns | — | — | ▲ +37.8% |
+| `orbit/traval/mean-frame-ms` | 25.00 ns | 0.00 ns | — | — | ≈ -1.1% |
+| `orbit/traval-zoom/mean-frame-ms` | 24.62 ns | 0.00 ns | — | — | ▲ +12.3% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 18.18 ns | 0.00 ns | — | — | ≈ +4.5% |
+| `explode/traval/toggle-ms` | 68.70 ns | 0.00 ns | — | — | ≈ -4.1% |
+
+### layers-ui — 18:12:54Z  ·  _latency · env 61c971a2 · 63f137d9f4a0c488785583156b8cfe5688078710_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 8.20 ns | 0.00 ns | — | — | ▼ -6.8% |
+| `load/traval/first-scan-end-ms` | 540.20 ns | 0.00 ns | — | — | ▼ -15.5% |
+| `scan/1500-tags-ms` | 44.20 ns | 0.00 ns | — | — | ▼ -21.1% |
+| `orbit/traval/mean-frame-ms` | 25.28 ns | 0.00 ns | — | — | ▲ +5.2% |
+| `orbit/traval-zoom/mean-frame-ms` | 21.92 ns | 0.00 ns | — | — | new |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 17.40 ns | 0.00 ns | — | — | new |
+| `explode/traval/toggle-ms` | 71.60 ns | 0.00 ns | — | — | ▼ -28.3% |
 
 ## 2026-10-13
 
@@ -52,8 +83,3 @@ _Methodology: `docs/bench-methodology.md` (v1)_
 | `patchDc/dc-template/one-item` | 12.46 µs | 11.45 µs | — | — | new |
 | `deriveManifest/plain-admin/html+css` | 165.04 µs | 40.18 µs | — | — | new |
 | `openZip/zip/evil` | 416.72 µs | 380.29 µs | — | — | new |
-
-<!-- doc-links:auto -->
-## Related
-
-- [Bench methodology](../../bench-methodology.md)
