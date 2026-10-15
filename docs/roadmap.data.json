@@ -704,13 +704,13 @@
     "type": "phase",
     "name": "Ferramentas e UI",
     "start": "2026-09-16",
-    "end": "2026-09-21",
+    "end": "2026-10-18",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
       "scaffold"
     ],
-    "progress": 25,
+    "progress": 50,
     "docs": [],
     "children": [
       {
@@ -743,27 +743,40 @@
         "id": "S3.2",
         "type": "spec",
         "name": "Padrão único de abertura de menus",
-        "start": "2026-09-17",
-        "end": "2026-09-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s3-2-menu-open-pattern.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s3-2-menu-open-pattern.md)",
+            "title": "2026-10-14-s3-2-menu-open-pattern.md)"
+          },
+          {
+            "name": "feature-261014-0-s3-2-menu-open-pattern.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s3-2-menu-open-pattern.md)",
+            "title": "feature-261014-0-s3-2-menu-open-pattern.md)"
+          }
+        ],
         "reason": "checklist C; decisão de produto",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S3.3",
         "type": "spec",
         "name": "Tooltips ação e atalho",
-        "start": "2026-09-18",
-        "end": "2026-09-20",
+        "start": "2026-10-15",
+        "end": "2026-10-17",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -781,8 +794,8 @@
         "id": "S3.4",
         "type": "spec",
         "name": "Fonte única de aparência",
-        "start": "2026-09-19",
-        "end": "2026-09-21",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
