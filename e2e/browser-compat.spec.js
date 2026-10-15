@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { test, expect } from '@playwright/test';
 import { readNodes, readTree } from './tree-helpers.js';
 import { selectLayer } from './folder-helpers.js';
@@ -60,7 +61,7 @@ async function guardEgress(page) {
   return seen;
 }
 
-// the menu opens on hover and pins on click, so a click can close what hover just opened
+// a click toggles the menu (hover-and-pin after S3.2): reopen when hidden
 async function openProjects(page, itemText) {
   const trigger = page.getByText('Nenhum projeto').first();
   const item = page.getByText(itemText).first();
@@ -88,6 +89,7 @@ test('Compat_Probes_ReadPathEverywhereWriteTierAllOrNothing', async ({ page, bro
   for (const k of READ_PATH) expect(p[k], `${info.project.name}: read path needs ${k}`).toBe(true);
   // the app never half-enables writing: with the folder picker present, the whole tier must be there
   if (p.showDirectoryPicker) for (const k of WRITE_TIER) expect(p[k], `${info.project.name}: write tier needs ${k}`).toBe(true);
+  else for (const k of ['showOpenFilePicker', 'showSaveFilePicker', 'handlePermissions']) expect(p[k], `${info.project.name}: no folder picker, so no ${k}`).toBe(false);
   fresh[info.project.name] = p;
   const want = stored[info.project.name];
   if (!update && want) {
@@ -98,8 +100,8 @@ test('Compat_Probes_ReadPathEverywhereWriteTierAllOrNothing', async ({ page, bro
 
 // same DOM as the Chromium snapshot; rootBox is layout (fonts, text metrics), so it is left out
 for (const name of Object.keys(TREE)) {
-  test(`Compat_${name}_TreeMatchesChromiumSnapshot`, async ({ page, browserName }) => {
-    test.skip(browserName === 'chromium', 'Chromium engine (chromium, chrome, msedge): covered by tree-snapshot.spec.js');
+  test(`Compat_${name}_TreeMatchesChromiumSnapshot`, async ({ page }, info) => {
+    test.skip(info.project.name === 'chromium', 'project chromium: tree-snapshot.spec.js compares the same snapshot');
     await page.goto(`/?layers=fixtures/${name}/`);
     const { rootBox, ...tree } = await readTree(page);
     const { rootBox: _, ...want } = TREE[name];
@@ -134,7 +136,7 @@ test('Compat_FixtureEdit_DiffShowsSimulatedPatch', async ({ page }) => {
 test.afterAll(() => {
   const keys = Object.keys(fresh).filter((k) => update || !stored[k]);
   if (!keys.length) return;
-  // one worker per project: merge with what other projects already wrote this run
+  // workers: 1 → sequential; do not regenerate with --workers>1 (read-modify-write is unlocked)
   const cur = fs.existsSync(SNAP) ? JSON.parse(fs.readFileSync(SNAP, 'utf8')) : {};
   for (const k of keys) cur[k] = fresh[k];
   const sorted = Object.fromEntries(Object.keys(cur).sort().map((k) => [k, cur[k]]));
@@ -183,7 +185,7 @@ test('Compat_FsAccess_FixtureDraftAsksToConnectFolder', async ({ page }) => {
 
 // serves github.com/acme/demo from a fixture: API for default_branch, raw for the files
 async function mockRepo(page, fixture) {
-  const root = path.resolve('fixtures', fixture);
+  const root = path.resolve(fileURLToPath(new URL(`../fixtures/${fixture}/`, import.meta.url)));
   const cors = { 'access-control-allow-origin': '*' };
   await page.route('https://api.github.com/repos/acme/demo', (r) => r.fulfill({ json: { default_branch: 'main' }, headers: cors }));
   await page.route('https://raw.githubusercontent.com/acme/demo/main/**', (r) => {
