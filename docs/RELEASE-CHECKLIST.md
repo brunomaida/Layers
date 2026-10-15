@@ -59,7 +59,7 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] Escopo "todos iguais": afeta todos os usos e nenhum outro (`e2e/scope-all-equal.spec.js`, via UI no `axai`: `.sum-stat` com 6 usos; contraste "Só este" = 1 elemento). Gate manual (E2E).
 - [x] `lineDiff` (`LayersCore.lineDiff`): contexto de 3 linhas, sem alterações, arquivo novo — 6 casos em `test/layers-core.test.js`.
 - [x] E2E funcional (Playwright): conectar pasta → selecionar → editar → ver diff → aplicar → arquivo alterado, numa cópia real do `plain-css` no OPFS (`e2e/apply-flow.spec.js`, helper `e2e/folder-helpers.js`); confere `.bak`, histórico e ausência de rascunho/`.tmp`, mais rollback e sua recusa. Gate manual (E2E): `npm run test:e2e`.
-- [ ] Compatibilidade: Chrome/Edge completos; Firefox/Safari em somente leitura com mensagem.
+- [~] Compatibilidade: Chrome/Edge completos; Firefox/Safari em somente leitura com mensagem. Projetos Playwright `chromium`, `chrome`, `msedge`, `firefox` e `webkit` (proxy do Safari): leitura de fixtures e de repositório GitHub (simulado), edição em memória e diff simulado nos cinco; gravação (OPFS, seletor simulado) em Chrome/Edge (`e2e/apply-flow.spec.js` nos canais instalados) + manual M1/M2 com seletor nativo e permissões; sem File System Access, cada entrada de gravação recusa nomeando o navegador (`e2e/browser-compat.spec.js`, sondas em `e2e/__snapshots__/compat-probes.json`). Versões, verificação manual (M1-M5, Safari real) e lacunas no [relatório de evidência](superpowers/reports/2026-10-14-s5-7-compat-evidence.md). Gate manual (E2E).
 
 ## F. Segurança
 
