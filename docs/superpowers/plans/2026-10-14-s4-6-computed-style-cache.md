@@ -28,7 +28,8 @@ Verified `getComputedStyle` call sites (develop @ `53b271c`, `grep -n getCompute
 | `scene()` box-model hover: `const c = getComputedStyle(el)` | `index.html:1996` | every render while `bmHover` is set | no: `bmHover` needs the pointer on the panel's box-model diagram and `bmOut` clears it before the pointer can reach the stage | untouched |
 | `renderVals()`: `const cs = el ? getComputedStyle(el) : null` | `index.html:2013` | **every render** (support.js calls `renderVals()` per render, `support.js:1085`), including every drag render | **yes** | **cached while dragging** |
 | ↳ reads of that `cs` | `index.html:2030` (`cur = el.style[prop] \|\| cs[prop]` for each visible property row: 78 props in 9 `GROUPS`, all open by default, `grpClosed: {}`), `:2112` (`cs[prop]` again for every non-default row of the same groups), `:2192` (`cs.getPropertyValue(--token)` per token), `:2194-2196` (`bmF`: 12 margin/border/padding reads at `:2195` plus 4 padding reads at `:2196`), `:2200`/`:2201` (`cs.boxSizing`) | every render | yes: up to ~170 property reads per render | through the cache |
-| interactions `vis` / `showEl` | `index.html:2150-2151` | on an ⚡ Interagir click | no | untouched: must read live `display` |
+| interactions `vis` (via `isShown`, `actOn`, `INTER`) | `index.html:2177` (anchor: `const vis = e =>`) | **every render**, drag renders included: `INTER` is rebuilt per render and calls `isShown`/`vis` for each surface with a `show`/`toggle` target (Traval: 1 call per render, measured 0.30 calls/frame, equal to `renderVals`) | yes, minor: one `display` read per surface, no layout dependency | untouched: must read live `display`; not reachable by the `renderVals` cache |
+| interactions `showEl` | `index.html:2178` | on an ⚡ Interagir click | no | untouched |
 
 Findings that shape the design:
 
