@@ -1,11 +1,55 @@
 # Benchmark History
 
-_generated 2026-10-14T18:32:36Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
+_generated 2026-10-15T01:06:50Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
 
 _Methodology: `docs/bench-methodology.md` (v1)_
 
 > Derived file — **do not edit by hand**. Regenerate with `/bench-report ingest`.
 > Interactive view: Atlas Bench tab (`http://127.0.0.1:5190/`), reads `bench-history.json`.
+
+## 2026-10-15
+
+### layers-ui — 01:06:00Z  ·  _latency · env 61c971a2 · d1135bec7b34a564059e20122ad2dc0216d034b9_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 7.80 ns | 0.00 ns | — | — | ≈ -1.3% |
+| `load/traval/first-scan-end-ms` | 466.10 ns | 0.00 ns | — | — | ≈ +4.0% |
+| `scan/1500-tags-ms` | 42.20 ns | 0.00 ns | — | — | ≈ -0.2% |
+| `orbit/traval/mean-frame-ms` | 23.83 ns | 0.00 ns | — | — | ≈ -1.0% |
+| `orbit/traval-gcs-ideal/mean-frame-ms` | 23.81 ns | 0.00 ns | — | — | ≈ -1.2% |
+| `orbit/traval-panel-ideal/mean-frame-ms` | 24.03 ns | 0.00 ns | — | — | ≈ +0.9% |
+| `orbit/traval-zoom/mean-frame-ms` | 18.26 ns | 0.00 ns | — | — | ≈ +0.4% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 18.03 ns | 0.00 ns | — | — | ≈ +0.2% |
+| `explode/traval/toggle-ms` | 65.00 ns | 0.00 ns | — | — | ▲ +8.5% |
+
+### layers-ui — 01:05:32Z  ·  _latency · env 61c971a2 · d1135bec7b34a564059e20122ad2dc0216d034b9_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 7.90 ns | 0.00 ns | — | — | ≈ +3.9% |
+| `load/traval/first-scan-end-ms` | 448.00 ns | 0.00 ns | — | — | ≈ -0.2% |
+| `scan/1500-tags-ms` | 42.30 ns | 0.00 ns | — | — | ≈ +0.0% |
+| `orbit/traval/mean-frame-ms` | 24.07 ns | 0.00 ns | — | — | ≈ +1.4% |
+| `orbit/traval-gcs-ideal/mean-frame-ms` | 24.10 ns | 0.00 ns | — | — | ≈ -0.1% |
+| `orbit/traval-panel-ideal/mean-frame-ms` | 23.83 ns | 0.00 ns | — | — | ≈ -0.4% |
+| `orbit/traval-zoom/mean-frame-ms` | 18.19 ns | 0.00 ns | — | — | ≈ +1.4% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 17.99 ns | 0.00 ns | — | — | ≈ -0.3% |
+| `explode/traval/toggle-ms` | 59.90 ns | 0.00 ns | — | — | ≈ -0.3% |
+
+### layers-ui — 01:05:03Z  ·  _latency · env 61c971a2 · d1135bec7b34a564059e20122ad2dc0216d034b9_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 7.60 ns | 0.00 ns | — | — | ▼ -37.2% |
+| `load/traval/first-scan-end-ms` | 448.70 ns | 0.00 ns | — | — | ▼ -23.7% |
+| `scan/1500-tags-ms` | 42.30 ns | 0.00 ns | — | — | ▼ -5.6% |
+| `orbit/traval/mean-frame-ms` | 23.75 ns | 0.00 ns | — | — | ≈ +0.9% |
+| `orbit/traval-gcs-ideal/mean-frame-ms` | 24.13 ns | 0.00 ns | — | — | new |
+| `orbit/traval-panel-ideal/mean-frame-ms` | 23.93 ns | 0.00 ns | — | — | new |
+| `orbit/traval-zoom/mean-frame-ms` | 17.94 ns | 0.00 ns | — | — | ▲ +7.6% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 18.04 ns | 0.00 ns | — | — | ▲ +8.3% |
+| `explode/traval/toggle-ms` | 60.10 ns | 0.00 ns | — | — | ▼ -11.9% |
 
 ## 2026-10-14
 
