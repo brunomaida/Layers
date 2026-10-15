@@ -96,7 +96,7 @@ verifica a ordem das tags.
 
 | Fronteira | Como atravessa | Estado |
 |---|---|---|
-| App → disco | File System Access API (`showDirectoryPicker`, `writeInto`/`writeText`) | Chrome/Edge apenas |
+| App → disco | File System Access API (`showDirectoryPicker`, `writeInto`/`writeText`) | Chrome/Edge apenas ([matriz de suporte](support-matrix.md)) |
 | App → app alvo | DOM sanitizado num shadow root fora da tela; nenhum script do projeto roda na origem do editor | Definitivo. Iframe descartado (ADR 2026-09-18); o snapshot headless de apps JS é um processo separado, ainda não implementado |
 | App → rede | Nenhuma | Verificado: 12/12 requisições em `localhost` |
 
