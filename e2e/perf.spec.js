@@ -145,10 +145,10 @@ test('Orbit_ZoomedIdeal_RecordsFrameInterval', async ({ page }) => {
 
 test('Orbit_Budget_Above50Fps', async () => {
   test.skip(!orbit, 'orbit measurement missing');
-  // Known gap (checklist D, S4.6-S4.7): about 42.5 fps on the Traval mock after S4.5 culling.
+  // Known gap (checklist D, S4.7 and S4.8): about 42 fps on the Traval mock; S4.6 measured getComputedStyle off the critical path.
   // Flips to a hard failure once it passes, which is the signal to drop this line and keep the
   // budget enforced.
-  test.fail(true, 'orbit budget not met yet: getComputedStyle cache and virtual tree are open');
+  test.fail(true, 'orbit budget not met yet: S4.7 (virtual tree) and S4.8 (plane cost) are open');
   expect(orbit.fps, `mean frame ${orbit.meanFrameMs.toFixed(1)} ms, p95 ${orbit.p95FrameMs.toFixed(1)} ms`).toBeGreaterThan(50);
 });
 
