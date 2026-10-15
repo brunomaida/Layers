@@ -1440,7 +1440,8 @@ class Component extends DCLogic {
   readOnlyBlock() {
     if (this.state.dir) return false;
     const what = this.zip ? 'um .zip' : this.repo ? 'um repositório remoto' : 'o modo fixture';
-    this.toast('Projeto carregado de ' + what + ', que é somente leitura. Conecte a pasta local para gravar.', 'warn');
+    // no File System Access (Firefox, Safari): no folder can be connected, so name the browser
+    this.toast('Projeto carregado de ' + what + ', que é somente leitura. ' + (window.showDirectoryPicker ? 'Conecte a pasta local para gravar.' : 'Este navegador não grava em disco — use Chrome ou Edge.'), 'warn');
     return true;
   }
   addRepo() {
