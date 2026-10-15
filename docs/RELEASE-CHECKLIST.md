@@ -33,7 +33,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 38 concluídos
 - [x] `alert()` → toast (v2.22).
 - [x] Emojis removidos das strings de UI (v2.22).
 - [x] Dock: piso de 360 px em telas estreitas (v2.22).
-- [ ] Padrão único de abertura de menus (decidir: hover+fixar em todos ou clique em todos).
+- [x] Padrão único de abertura de menus: hover abre e clique fixa em Projetos, Aparência, Interagir e Ações (decisão de 2026-10-14); clique fora, Esc e item de ação fecham, toque abre fixado (`LayersCore.menuStep`; `e2e/menu-open.spec.js`, visual inalterado em `e2e/menu-visual.spec.js`).
 - [ ] Tooltips "ação · atalho" no dock e na árvore.
 - [ ] Uma só fonte de verdade para aparência no desktop (menu Aparência; tweaks do host saem).
 
