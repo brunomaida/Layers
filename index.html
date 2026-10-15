@@ -343,7 +343,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <div ref="{{ acoesRef }}" onPointerEnter="{{ acoesEnter }}" onPointerLeave="{{ acoesLeave }}" onBlur="{{ acoesBlur }}" onClick="{{ stop }}" style="position:relative">
           <button onClick="{{ toggleMenu }}" data-menu="acoes" aria-haspopup="menu" aria-expanded="{{ menuOpen }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Ações ▾</button>
           <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
-            <div style="position:absolute;right:0;bottom:26px;min-width:250px;display:flex;flex-direction:column;padding:4px;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 12px 32px var(--shadow2);z-index:5">
+            <div onPointerDown="{{ acoesInside }}" style="position:absolute;right:0;bottom:26px;min-width:250px;display:flex;flex-direction:column;padding:4px;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 12px 32px var(--shadow2);z-index:5">
               <button onClick="{{ openDiff }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Ver diff <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· por arquivo, com contexto</span></button>
               <button onClick="{{ openSave }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Aplicar nos arquivos… <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· rascunho → aprovar</span></button>
               <button onClick="{{ exportFull }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Exportar versões completas… <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· escolher pasta</span></button>
@@ -1449,8 +1449,7 @@ class Component extends DCLogic {
   }
   cbBlur = () => { this.cbBlurT = setTimeout(() => this.setState({ cbOpen: null }), 120); };
   preventBlur = e => e.preventDefault();
-  // S3.2: every menu (Projetos 'hist', Aparência 'apar', Interagir 'inter', Ações 'acoes') goes through
-  // LayersCore.menuStep. menuCur mirrors state.menu/menuPin synchronously: React batches pointer events.
+  // S3.2: every menu goes through LayersCore.menuStep; menuCur mirrors state.menu/menuPin synchronously (React batches pointer events).
   menuCur = { menu: null, pin: false, pending: null };
   acoesRef = React.createRef();
   // gearRef is never in the render model (ref unattached, gearAnchorNow inert); attaching it would move the popover, so the root has its own ref
@@ -1460,6 +1459,9 @@ class Component extends DCLogic {
   menuGo = ev => {
     const r = LayersCore.menuStep(this.menuCur, ev); if (!r) return;
     clearTimeout(this.menuT);
+    const was = this.menuCur.menu; // state owned by the menu that closes (or yields) is reset here, whatever the close path
+    if (was === 'hist' && r.menu !== 'hist') this.setState({ histAdding: false });
+    if (was === 'apar' && r.menu !== 'apar' && String(this.state.cbOpen).startsWith('cfg:')) this.setState({ cbOpen: null });
     if (r.menu === 'inter') this.interAnchorNow(); else if (r.menu === 'apar') this.gearAnchorNow();
     const changed = r.menu !== this.menuCur.menu || r.pin !== this.menuCur.pin;
     this.menuCur = { menu: r.menu, pin: r.pin, pending: r.timer && r.timer.kind === 'open' ? r.timer.key : null };
@@ -1469,6 +1471,7 @@ class Component extends DCLogic {
   menuEv = k => ({ enter: e => this.menuGo({ type: 'enter', key: k, pointer: e.pointerType, buttons: e.buttons }), leave: e => this.menuGo({ type: 'leave', key: k, pointer: e.pointerType }),
     click: () => this.menuGo({ type: 'click', key: k }), inside: () => this.menuGo({ type: 'inside', key: k }),
     blur: e => { if (this.menuCur.menu === k && e.relatedTarget && !this.menuHas(k, e.relatedTarget)) this.menuGo({ type: 'close' }); } });
+  menuH = { hist: this.menuEv('hist'), apar: this.menuEv('apar'), inter: this.menuEv('inter'), acoes: this.menuEv('acoes') }; // built once: render runs every orbit frame
   menuAct = fn => (...a) => { this.menuGo({ type: 'close' }); return fn(...a); };
   menuEscape = () => { const k = this.menuCur.menu, back = this.menuHas(k, document.activeElement); this.menuGo({ type: 'close' }); const root = back && this.menuRoots(k)[0].current; const t = root && root.querySelector('[data-menu]'); if (t) t.focus(); };
   interTrigRef = React.createRef();
@@ -1542,7 +1545,7 @@ class Component extends DCLogic {
     // 400 ms morre com a pagina
     this.onHide = () => this.writeConfig(); window.addEventListener('pagehide', this.onHide);
     // capture: the top bar stops mousedown propagation, a bubbling listener would miss it
-    this.onDocDown = e => { const k = this.menuCur.menu; if (!k || this.menuHas(k, e.target)) return; this.menuGo({ type: 'close' }); if (k === 'hist') this.setState({ histAdding: false }); };
+    this.onDocDown = e => { const k = this.menuCur.menu; if (!k || this.menuHas(k, e.target)) return; this.menuGo({ type: 'close' }); };
     document.addEventListener('pointerdown', this.onDocDown, true);
     this.onFocus = () => { if (document.visibilityState === 'hidden') return; clearTimeout(this.staleT); this.staleT = setTimeout(() => this.checkStale(), 300); };
     window.addEventListener('focus', this.onFocus); document.addEventListener('visibilitychange', this.onFocus);
@@ -2161,8 +2164,8 @@ class Component extends DCLogic {
     const hs = 'B', ph = String(this.cfg('panelHeader') ?? 'B')[0];
     const menuOn = { apar: Object.keys(s.cfg).length > 0 };
     const mk = (k, on) => { const open = s.menu === k; return { [k+'Open']: open, [k+'Chev']: open ? '▴' : '▾', [k+'Dot']: open ? 'var(--sel)' : (on ? 'var(--fg1)' : 'var(--line2)'), [k+'Bg']: open ? 'var(--bg2)' : 'rgba(var(--bg1Rgb),.7)', [k+'Color']: open ? 'var(--fg0)' : 'var(--fg2)',
-      [k+'Enter']: this.menuEv(k).enter, [k+'Leave']: this.menuEv(k).leave, [k+'Blur']: this.menuEv(k).blur,
-      [k+'Pin']: this.menuEv(k).click }; };
+      [k+'Enter']: this.menuH[k].enter, [k+'Leave']: this.menuH[k].leave, [k+'Blur']: this.menuH[k].blur,
+      [k+'Pin']: this.menuH[k].click }; };
     const pickChip = (label, cur, go) => ({ label, pick: go, bg: cur ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: cur ? 'rgba(var(--accRgb),.45)' : 'var(--line1)', color: cur ? 'var(--acc)' : 'var(--fg2)' });
     const topMenus = { ...mk('inter', s.interact),
       dirPath: s.project ? s.project.name : s.dirName ? s.dirName + ' · sem layers.json' : 'Nenhum projeto', dirColor: s.project ? 'var(--sel)' : s.dirName ? 'var(--warn)' : 'var(--fg3)',
@@ -2195,8 +2198,8 @@ class Component extends DCLogic {
       interCount: INTER.filter(i => !i.sep).length };
     const gearOpen = s.menu === 'apar';
     const gear = { gearOpen, aparRef: this.aparRef, gearBg: gearOpen ? 'var(--bg2)' : 'transparent', gearColor: gearOpen ? 'var(--fg0)' : (menuOn.apar ? 'var(--fg1)' : 'var(--fg2)'),
-      gearEnter: this.menuEv('apar').enter, gearTop: (s.gearAnchor || {}).top || '31px', gearRight: (s.gearAnchor || {}).right || '12px', gearLeave: this.menuEv('apar').leave, gearBlur: this.menuEv('apar').blur, gearInside: this.menuEv('apar').inside,
-      gearPin: this.menuEv('apar').click };
+      gearEnter: this.menuH.apar.enter, gearTop: (s.gearAnchor || {}).top || '31px', gearRight: (s.gearAnchor || {}).right || '12px', gearLeave: this.menuH.apar.leave, gearBlur: this.menuH.apar.blur, gearInside: this.menuH.apar.inside,
+      gearPin: this.menuH.apar.click };
     const light = /Light|Claro/i.test(this.cfg('theme') || '');
     const opts = (list, key, colorOf) => list.map(v => { const cur = (this.cfg(key) || ({ theme: 'Dark', panelHeader: 'B · Faixas rotuladas' })[key] || list[0]) === v; const c = colorOf ? colorOf(v) : null; const hv = s.cbHover === key + ':' + v; return { v, label: v, color: hv ? (c || 'var(--fg0)') : cur ? (c || 'var(--sel)') : 'var(--fg1)', hoverIn: () => this.setState({ cbHover: key + ':' + v }), hoverOut: () => this.setState({ cbHover: null }), bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', pick: () => { this.setCfg(key, v); this.setState({ cbOpen: null }); } }; });
     const cfgSet = k => e => this.setCfg(k, e.target.value);
@@ -2271,7 +2274,7 @@ class Component extends DCLogic {
       isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
       hasSibs, noSibs: !hasSibs, scopeOpts,
       propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '',
-      ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuEv('acoes').click, acoesRef: this.acoesRef, acoesEnter: this.menuEv('acoes').enter, acoesLeave: this.menuEv('acoes').leave, acoesBlur: this.menuEv('acoes').blur,
+      ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,
       openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
       promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' : '',
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
@@ -2282,7 +2285,7 @@ class Component extends DCLogic {
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
       connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
       demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: this.menuAct(() => this.openDemo(d)) }; }),
-      ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuEv('hist'); const curId = s.dirName ? 'folder:' + s.dirName : null;
+      ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuH.hist; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
         return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: he.click, histEnter: he.enter, histLeave: he.leave, histBlur: he.blur, histInside: he.inside, histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
           histEmpty: !hist.length, histHasItems: hist.length > 0, histCountLabel: hist.length + ' / ' + this.histMax(),

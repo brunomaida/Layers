@@ -47,6 +47,8 @@ for (const m of MENUS) {
     await trig(page, m.key).hover();
     await isOpen(page, m, true);
     await park(page);
+    await page.waitForTimeout(100);
+    await expect(trig(page, m.key)).toHaveAttribute('aria-expanded', 'true', { timeout: 150 }); // inside the grace
     await isOpen(page, m, false);
   });
 
@@ -78,6 +80,26 @@ for (const m of MENUS) {
     await isOpen(page, m, false);
     await expect(trig(page, m.key)).toBeFocused();
   });
+
+  test(`Escape_${m.key}_FocusInsidePopover_ReturnsFocusToTrigger`, async ({ page }) => {
+    await load(page);
+    await trig(page, m.key).focus();
+    await page.keyboard.press('Enter');
+    await isOpen(page, m, true);
+    // Projetos has no focusable row: "Registrar" focuses the repo input, the next Tab reaches its button
+    if (m.key === 'hist') await page.getByText(/Registrar repositório GitHub/).click();
+    const onButtonInside = () => page.evaluate(() => {
+      const a = document.activeElement;
+      return !!a && a.tagName === 'BUTTON' && !a.hasAttribute('data-menu');
+    });
+    for (let i = 0; i < 12 && !(await onButtonInside()); i++) await page.keyboard.press('Tab');
+    expect(await onButtonInside(), 'focus is on a button inside the popover').toBe(true);
+    await isOpen(page, m, true);
+    await expect(trig(page, m.key)).not.toBeFocused();
+    await page.keyboard.press('Escape');
+    await isOpen(page, m, false);
+    await expect(trig(page, m.key)).toBeFocused();
+  });
 }
 
 test('HoverOther_WhilePinned_DoesNotSteal', async ({ page }) => {
@@ -94,8 +116,9 @@ test('HoverOther_WhileUnpinned_SwitchesAtOnce', async ({ page }) => {
   await trig(page, 'apar').hover();
   await isOpen(page, APAR, true);
   await trig(page, 'inter').hover();
+  await expect(trig(page, 'inter')).toHaveAttribute('aria-expanded', 'true', { timeout: 200 });
+  await expect(trig(page, 'apar')).toHaveAttribute('aria-expanded', 'false', { timeout: 200 });
   await isOpen(page, INTER, true);
-  await expect(trig(page, 'apar')).toHaveAttribute('aria-expanded', 'false');
 });
 
 test('ClickOther_OneMenuOpenAtATime', async ({ page }) => {
@@ -203,6 +226,49 @@ test('PinnedMenu_StageDrag_ClosesAndOrbits', async ({ page }) => {
   await page.mouse.up();
   expect(dragging, 'the orbit starts on the same pointerdown that closes the menu').toBe(true);
   await isOpen(page, INTER, false);
+});
+
+test('PointerDownInside_Acoes_PinsAgainstLeave', async ({ page }) => {
+  await load(page);
+  await trig(page, 'acoes').hover();
+  await isOpen(page, ACOES, true);
+  const b = await item(page, ACOES).boundingBox();
+  await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
+  await page.mouse.down(); // pointerdown on an item pins; the click never lands on it (button released outside)
+  await park(page);
+  await page.mouse.up();
+  await page.waitForTimeout(GRACE + 300);
+  await isOpen(page, ACOES, true);
+});
+
+test('Escape_HistAddingOpen_ReopenShowsNoRepoInput', async ({ page }) => {
+  await load(page);
+  const input = page.getByPlaceholder('github.com/usuario/repo');
+  await trig(page, 'hist').click();
+  await page.getByText(/Registrar repositório GitHub/).click();
+  await expect(input).toBeVisible();
+  await page.keyboard.press('Tab'); // the input swallows Escape: move to its button first
+  await page.keyboard.press('Escape');
+  await isOpen(page, HIST, false);
+  await trig(page, 'hist').click();
+  await isOpen(page, HIST, true);
+  await expect(input).toBeHidden();
+});
+
+test('OutsideClick_AparWithNestedComboboxOpen_ReopenHasNoStaleCombobox', async ({ page }) => {
+  await load(page);
+  await trig(page, 'apar').click();
+  await page.getByText('Tema', { exact: true }).first().locator('xpath=following-sibling::div//button').click();
+  const opt = page.getByText('Gray · 2 Ardósia', { exact: true });
+  await expect(opt).toBeVisible();
+  const c = await stageCentre(page);
+  await page.mouse.click(c.x, c.y);
+  await isOpen(page, APAR, false);
+  await trig(page, 'apar').click();
+  await isOpen(page, APAR, true);
+  await expect(opt).toBeHidden();
+  await page.keyboard.press('Escape');
+  await isOpen(page, APAR, false);
 });
 
 test.describe('touch', () => {
