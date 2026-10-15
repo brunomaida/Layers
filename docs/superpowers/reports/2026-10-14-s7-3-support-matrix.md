@@ -1,10 +1,10 @@
 # Implementation Report — s7-3-support-matrix
 
 - **Branch:** `docs/261014-0-s7-3-support-matrix`
-- **Range:** `develop..HEAD`
-- **Período:** 2026-10-14 22:36 → 2026-10-14 22:49
+- **Range:** `39ca4ac8076d..HEAD`
+- **Período:** 2026-10-14 22:36 → 2026-10-14 23:06
 - **Status:** `final`
-- **Gerado em:** 2026-10-14 22:49
+- **Gerado em:** 2026-10-14 23:06
 
 ## Resumo
 
@@ -12,20 +12,22 @@ Nova `docs/support-matrix.md`: navegadores × funcionalidades (carga, leitura po
 
 ## Mudanças
 
-### Added (4)
+### Added (6)
 
 - `changelog.d/docs-261014-0-s7-3-support-matrix.md` (+16/-0, doc)
 - `docs/superpowers/plans/2026-10-14-s7-3-support-matrix.md` (+738/-0, doc)
-- `docs/support-matrix.md` (+127/-0, doc)
-- `test/support-matrix.test.js` (+65/-0, test)
+- `docs/superpowers/reports/2026-10-14-s7-3-support-matrix.html` (+705/-0, doc)
+- `docs/superpowers/reports/2026-10-14-s7-3-support-matrix.md` (+132/-0, doc)
+- `docs/support-matrix.md` (+129/-0, doc)
+- `test/support-matrix.test.js` (+97/-0, test)
 
 ### Changed (6)
 
 - `README.md` (+2/-1, doc)
 - `docs/RELEASE-CHECKLIST.md` (+1/-1, doc)
 - `docs/TOPOLOGY.md` (+1/-1, doc)
-- `docs/_index.md` (+3/-2, doc)
-- `docs/roadmap.data.json` (+19/-12, doc)
+- `docs/_index.md` (+5/-4, doc)
+- `docs/roadmap.data.json` (+31/-12, doc)
 - `docs/roadmap.md` (+1/-1, doc)
 
 ### Changelog fragment
@@ -44,19 +46,21 @@ Nova `docs/support-matrix.md`: navegadores × funcionalidades (carga, leitura po
 
 ### test (1)
 
-- [`test/support-matrix.test.js`](../../../test/support-matrix.test.js) — A (+65/-0)
+- [`test/support-matrix.test.js`](../../../test/support-matrix.test.js) — A (+97/-0)
 
-### doc (9)
+### doc (11)
 
 - [`README.md`](../../../README.md) — M (+2/-1)
 - [`changelog.d/docs-261014-0-s7-3-support-matrix.md`](../../../changelog.d/docs-261014-0-s7-3-support-matrix.md) — A (+16/-0)
 - [`docs/RELEASE-CHECKLIST.md`](../../RELEASE-CHECKLIST.md) — M (+1/-1)
 - [`docs/TOPOLOGY.md`](../../TOPOLOGY.md) — M (+1/-1)
-- [`docs/_index.md`](../../_index.md) — M (+3/-2)
-- [`docs/roadmap.data.json`](../../roadmap.data.json) — M (+19/-12)
+- [`docs/_index.md`](../../_index.md) — M (+5/-4)
+- [`docs/roadmap.data.json`](../../roadmap.data.json) — M (+31/-12)
 - [`docs/roadmap.md`](../../roadmap.md) — M (+1/-1)
 - [`docs/superpowers/plans/2026-10-14-s7-3-support-matrix.md`](../plans/2026-10-14-s7-3-support-matrix.md) — A (+738/-0)
-- [`docs/support-matrix.md`](../../support-matrix.md) — A (+127/-0)
+- [`docs/superpowers/reports/2026-10-14-s7-3-support-matrix.html`](2026-10-14-s7-3-support-matrix.html) — A (+705/-0)
+- [`docs/superpowers/reports/2026-10-14-s7-3-support-matrix.md`](2026-10-14-s7-3-support-matrix.md) — A (+132/-0)
+- [`docs/support-matrix.md`](../../support-matrix.md) — A (+129/-0)
 
 ## Arquitetura impactada
 
@@ -94,6 +98,10 @@ index 728ef67..f3ca21f 100644
   - [`c36e10e`](https://github.com/brunomaida/Layers/commit/c36e10edb212ffb40dd423f2d5d1cd2dc25a3b8d) test: guard the support matrix against probes, e2e titles, messages and checklist E (S7.3 Task 3)
   - [`be25cf3`](https://github.com/brunomaida/Layers/commit/be25cf3c0f768c75e49c427d313633b7159975f2) docs: link the support matrix from README and topology (S7.3 Task 4)
   - [`ef0e398`](https://github.com/brunomaida/Layers/commit/ef0e398771cc5e6eb2386d7dd12b0ed66409ee66) docs: close checklist G support matrix item with changelog fragment (S7.3 Task 5)
+  - [`141b956`](https://github.com/brunomaida/Layers/commit/141b95687759de6e806e3258d059c489e7f5592b) docs: close S7.3 in the tracker with its implementation report (S7.3)
+  - [`0965628`](https://github.com/brunomaida/Layers/commit/0965628ecd9079c6024c3350a357c4fb32fb5044) docs: rebuild the tracker data after closing S7.3 (S7.3)
+  - [`b71c3ef`](https://github.com/brunomaida/Layers/commit/b71c3ef4ccb0b38623266cf00000710c45a3d7c7) test: harden the support matrix guard against false cells (S7.3 Task 3)
+  - [`3b3e8c4`](https://github.com/brunomaida/Layers/commit/3b3e8c430a557541dcee6edb6496cc8573c5779a) docs: tighten the support matrix wording (S7.3 Task 2)
 - **Docs:** README (Requisitos, Estrutura) e docs/TOPOLOGY.md (fronteira App → disco) apontam para a matriz; checklist G "Matriz de suporte" fechado.
   - [`523c8e0`](https://github.com/brunomaida/Layers/commit/523c8e025cc8cf63e0d17350b99f11e90fe2c1cd) docs: start S7.3 in the tracker (S7.3)
   - [`b37c875`](https://github.com/brunomaida/Layers/commit/b37c87594f12e2b51f0d47458423f1de975e8f5a) docs: add S7.3 support matrix plan (S7.3)
@@ -102,12 +110,17 @@ index 728ef67..f3ca21f 100644
   - [`c36e10e`](https://github.com/brunomaida/Layers/commit/c36e10edb212ffb40dd423f2d5d1cd2dc25a3b8d) test: guard the support matrix against probes, e2e titles, messages and checklist E (S7.3 Task 3)
   - [`be25cf3`](https://github.com/brunomaida/Layers/commit/be25cf3c0f768c75e49c427d313633b7159975f2) docs: link the support matrix from README and topology (S7.3 Task 4)
   - [`ef0e398`](https://github.com/brunomaida/Layers/commit/ef0e398771cc5e6eb2386d7dd12b0ed66409ee66) docs: close checklist G support matrix item with changelog fragment (S7.3 Task 5)
+  - [`141b956`](https://github.com/brunomaida/Layers/commit/141b95687759de6e806e3258d059c489e7f5592b) docs: close S7.3 in the tracker with its implementation report (S7.3)
+  - [`0965628`](https://github.com/brunomaida/Layers/commit/0965628ecd9079c6024c3350a357c4fb32fb5044) docs: rebuild the tracker data after closing S7.3 (S7.3)
+  - [`3b3e8c4`](https://github.com/brunomaida/Layers/commit/3b3e8c430a557541dcee6edb6496cc8573c5779a) docs: tighten the support matrix wording (S7.3 Task 2)
 - **Tests:** `test/support-matrix.test.js`: `npm test` falha se a matriz divergir de `e2e/__snapshots__/compat-probes.json`, citar teste inexistente em `e2e/`, citar mensagem ausente do `index.html` ou ainda citar M1/M2 com a compatibilidade do checklist E fechada.
   - [`b37c875`](https://github.com/brunomaida/Layers/commit/b37c87594f12e2b51f0d47458423f1de975e8f5a) docs: add S7.3 support matrix plan (S7.3)
   - [`0a8c9d4`](https://github.com/brunomaida/Layers/commit/0a8c9d4783d5de7c9d9018b79db2c01088b2e351) docs: add the browser support matrix (S7.3 Task 2)
   - [`c36e10e`](https://github.com/brunomaida/Layers/commit/c36e10edb212ffb40dd423f2d5d1cd2dc25a3b8d) test: guard the support matrix against probes, e2e titles, messages and checklist E (S7.3 Task 3)
   - [`be25cf3`](https://github.com/brunomaida/Layers/commit/be25cf3c0f768c75e49c427d313633b7159975f2) docs: link the support matrix from README and topology (S7.3 Task 4)
   - [`ef0e398`](https://github.com/brunomaida/Layers/commit/ef0e398771cc5e6eb2386d7dd12b0ed66409ee66) docs: close checklist G support matrix item with changelog fragment (S7.3 Task 5)
+  - [`b71c3ef`](https://github.com/brunomaida/Layers/commit/b71c3ef4ccb0b38623266cf00000710c45a3d7c7) test: harden the support matrix guard against false cells (S7.3 Task 3)
+  - [`3b3e8c4`](https://github.com/brunomaida/Layers/commit/3b3e8c430a557541dcee6edb6496cc8573c5779a) docs: tighten the support matrix wording (S7.3 Task 2)
 - **Perf:** N/A — documentação e um teste unitário de consistência; nenhum código de runtime mudou.
   - [`523c8e0`](https://github.com/brunomaida/Layers/commit/523c8e025cc8cf63e0d17350b99f11e90fe2c1cd) docs: start S7.3 in the tracker (S7.3)
   - [`b37c875`](https://github.com/brunomaida/Layers/commit/b37c87594f12e2b51f0d47458423f1de975e8f5a) docs: add S7.3 support matrix plan (S7.3)
@@ -116,6 +129,10 @@ index 728ef67..f3ca21f 100644
   - [`c36e10e`](https://github.com/brunomaida/Layers/commit/c36e10edb212ffb40dd423f2d5d1cd2dc25a3b8d) test: guard the support matrix against probes, e2e titles, messages and checklist E (S7.3 Task 3)
   - [`be25cf3`](https://github.com/brunomaida/Layers/commit/be25cf3c0f768c75e49c427d313633b7159975f2) docs: link the support matrix from README and topology (S7.3 Task 4)
   - [`ef0e398`](https://github.com/brunomaida/Layers/commit/ef0e398771cc5e6eb2386d7dd12b0ed66409ee66) docs: close checklist G support matrix item with changelog fragment (S7.3 Task 5)
+  - [`141b956`](https://github.com/brunomaida/Layers/commit/141b95687759de6e806e3258d059c489e7f5592b) docs: close S7.3 in the tracker with its implementation report (S7.3)
+  - [`0965628`](https://github.com/brunomaida/Layers/commit/0965628ecd9079c6024c3350a357c4fb32fb5044) docs: rebuild the tracker data after closing S7.3 (S7.3)
+  - [`b71c3ef`](https://github.com/brunomaida/Layers/commit/b71c3ef4ccb0b38623266cf00000710c45a3d7c7) test: harden the support matrix guard against false cells (S7.3 Task 3)
+  - [`3b3e8c4`](https://github.com/brunomaida/Layers/commit/3b3e8c430a557541dcee6edb6496cc8573c5779a) docs: tighten the support matrix wording (S7.3 Task 2)
 
 ### Todos os commits
 
@@ -126,6 +143,10 @@ index 728ef67..f3ca21f 100644
 - [`c36e10e`](https://github.com/brunomaida/Layers/commit/c36e10edb212ffb40dd423f2d5d1cd2dc25a3b8d) test: guard the support matrix against probes, e2e titles, messages and checklist E (S7.3 Task 3)
 - [`be25cf3`](https://github.com/brunomaida/Layers/commit/be25cf3c0f768c75e49c427d313633b7159975f2) docs: link the support matrix from README and topology (S7.3 Task 4)
 - [`ef0e398`](https://github.com/brunomaida/Layers/commit/ef0e398771cc5e6eb2386d7dd12b0ed66409ee66) docs: close checklist G support matrix item with changelog fragment (S7.3 Task 5)
+- [`141b956`](https://github.com/brunomaida/Layers/commit/141b95687759de6e806e3258d059c489e7f5592b) docs: close S7.3 in the tracker with its implementation report (S7.3)
+- [`0965628`](https://github.com/brunomaida/Layers/commit/0965628ecd9079c6024c3350a357c4fb32fb5044) docs: rebuild the tracker data after closing S7.3 (S7.3)
+- [`b71c3ef`](https://github.com/brunomaida/Layers/commit/b71c3ef4ccb0b38623266cf00000710c45a3d7c7) test: harden the support matrix guard against false cells (S7.3 Task 3)
+- [`3b3e8c4`](https://github.com/brunomaida/Layers/commit/3b3e8c430a557541dcee6edb6496cc8573c5779a) docs: tighten the support matrix wording (S7.3 Task 2)
 
 ## Custo (tokens + tempo)
 
