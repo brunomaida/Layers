@@ -1028,14 +1028,14 @@
     "name": "Testes",
     "start": "2026-10-13",
     "end": "2026-10-17",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "bug",
       "scaffold",
       "tests"
     ],
-    "progress": 94,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -1215,12 +1215,12 @@
         "name": "Compatibilidade de navegadores",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s5-7-browser-compat.md)",
@@ -1229,16 +1229,16 @@
             "title": "2026-10-14-s5-7-browser-compat.md)"
           },
           {
+            "name": "feature-261014-0-s5-7-browser-compat.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s5-7-browser-compat.md)",
+            "title": "feature-261014-0-s5-7-browser-compat.md)"
+          },
+          {
             "name": "2026-10-14-s5-7-compat-evidence.md",
             "type": "report",
             "path": "/docs/superpowers/reports/2026-10-14-s5-7-compat-evidence.md",
             "title": "S5.7 — Evidência de compatibilidade de navegadores"
-          },
-          {
-            "name": "feature-261014-0-s5-7-browser-compat.md",
-            "type": "report",
-            "path": "/changelog.d/feature-261014-0-s5-7-browser-compat.md",
-            "title": "Added"
           }
         ],
         "reason": "checklist E",
