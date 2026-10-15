@@ -1,11 +1,13 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox } from './perf-helpers.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
   'load/traval/first-scan-end-ms',
   'scan/1500-tags-ms',
   'orbit/traval/mean-frame-ms',
+  'orbit/traval-gcs-ideal/mean-frame-ms',
+  'orbit/traval-panel-ideal/mean-frame-ms',
   'orbit/traval-zoom/mean-frame-ms',
   'orbit/traval-zoom-ideal/mean-frame-ms',
   'explode/traval/toggle-ms',
@@ -64,10 +66,39 @@ test('Orbit_Drag_RecordsFrameInterval', async ({ page }) => {
     frames: orbit.frames,
     loafCount: orbit.loafCount,
     loafScriptShare: orbit.loafScriptShare,
+    gcsPerFrame: orbit.gcsPerFrame,
+    main: orbit.main,
     census,
   });
   expect(orbit.frames).toBeGreaterThanOrEqual(30);
 });
+
+// Upper bounds for the S4.6 go/no-go: after the scan every computed-style read (and, for the panel
+// bound, every mock clientWidth/clientHeight read) is memoized per element and never refreshed.
+for (const [name, id, box] of [
+  ['Orbit_GcsIdeal_RecordsFrameInterval', 'orbit/traval-gcs-ideal/mean-frame-ms', false],
+  ['Orbit_PanelIdeal_RecordsFrameInterval', 'orbit/traval-panel-ideal/mean-frame-ms', true],
+]) {
+  test(name, async ({ page }) => {
+    await instrument(page);
+    await page.goto('/?layers=fixtures/traval/');
+    await waitForScan(page);
+    await memoComputedStyle(page);
+    if (box) await memoClientBox(page);
+    const o = await orbitDrag(page, 1500);
+    rec(id, o.meanFrameMs, {
+      fps: o.fps,
+      p95FrameMs: o.p95FrameMs,
+      frames: o.frames,
+      loafCount: o.loafCount,
+      loafScriptShare: o.loafScriptShare,
+      gcsPerFrame: o.gcsPerFrame,
+      main: o.main,
+    });
+    expect(o.frames).toBeGreaterThanOrEqual(30);
+    expect(o.gcsPerFrame, 'the memo stub must remove live reads during the drag').toBeLessThanOrEqual(0.05);
+  });
+}
 
 test('Orbit_Zoomed_RecordsFrameInterval', async ({ page }) => {
   await instrument(page);
@@ -82,6 +113,8 @@ test('Orbit_Zoomed_RecordsFrameInterval', async ({ page }) => {
     frames: z.frames,
     loafCount: z.loafCount,
     loafScriptShare: z.loafScriptShare,
+    gcsPerFrame: z.gcsPerFrame,
+    main: z.main,
     zoomSteps: 12,
     census,
   });
@@ -102,6 +135,8 @@ test('Orbit_ZoomedIdeal_RecordsFrameInterval', async ({ page }) => {
     frames: z.frames,
     loafCount: z.loafCount,
     loafScriptShare: z.loafScriptShare,
+    gcsPerFrame: z.gcsPerFrame,
+    main: z.main,
     zoomSteps: 12,
     census,
   });
