@@ -1227,6 +1227,18 @@
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-14-s5-7-browser-compat.md)",
             "title": "2026-10-14-s5-7-browser-compat.md)"
+          },
+          {
+            "name": "2026-10-14-s5-7-compat-evidence.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s5-7-compat-evidence.md",
+            "title": "S5.7 — Evidência de compatibilidade de navegadores"
+          },
+          {
+            "name": "feature-261014-0-s5-7-browser-compat.md",
+            "type": "report",
+            "path": "/changelog.d/feature-261014-0-s5-7-browser-compat.md",
+            "title": "Added"
           }
         ],
         "reason": "checklist E",
