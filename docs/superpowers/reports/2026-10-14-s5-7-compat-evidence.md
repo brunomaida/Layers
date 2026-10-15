@@ -62,7 +62,7 @@ Fonte: `e2e/__snapshots__/compat-probes.json`; a tabela abaixo é uma cópia. De
 | `accentColor` | sim | sim | sim | sim | sim |
 | `textWrapPretty` | sim | sim | sim | não | sim |
 
-Leitura da tabela: o corte de capacidade é exatamente o File System Access (seletores e permissões de handle). `createWritable` e `handleMove` existem em Firefox/WebKit porque pertencem ao OPFS, que não grava na pasta do usuário; o app só chega neles com um handle de pasta, que nesses motores nunca existe. O trio de sondas `show*Picker` + `handlePermissions` é "tudo ou nada" em todos os cinco projetos (asserção do spec).
+Leitura da tabela: o corte de capacidade é exatamente o File System Access (seletores e permissões de handle). `createWritable` e `handleMove` existem em Firefox/WebKit porque pertencem ao OPFS, que não grava na pasta do usuário; o app só chega neles com um handle de pasta, que nesses motores nunca existe. Presença do seletor de pasta implica o tier de gravação completo (asserção do spec); ausência é afirmada pelo spec (`showOpenFilePicker`, `showSaveFilePicker` e `handlePermissions` falsos) e congelada pelo snapshot `compat-probes.json`.
 
 ## 3. Comportamento
 
@@ -70,12 +70,12 @@ Legenda: `ok (spec)` = coberto por teste automatizado; `ok (manual Mx)` = verifi
 
 | Capacidade | chromium | chrome | msedge | firefox | webkit | Safari real | Firefox real |
 |---|---|---|---|---|---|---|---|
-| Leitura (fixture) | ok (spec) `tree-snapshot.spec.js`, `Compat_TravalLoad_NoPageErrorNoEgress` | ok (spec) `Compat_TravalLoad_NoPageErrorNoEgress` | ok (spec) `Compat_TravalLoad_NoPageErrorNoEgress` | ok (spec) `Compat_<fixture>_TreeMatchesChromiumSnapshot` ×16 | ok (spec) `Compat_<fixture>_TreeMatchesChromiumSnapshot` ×16 | não verificado (M4) | não verificado (M5) |
+| Leitura (fixture) | ok (spec) `tree-snapshot.spec.js`, `Compat_TravalLoad_NoPageErrorNoEgress` | ok (spec) `Compat_<fixture>_TreeMatchesChromiumSnapshot` ×16, `Compat_TravalLoad_NoPageErrorNoEgress` | ok (spec) `Compat_<fixture>_TreeMatchesChromiumSnapshot` ×16, `Compat_TravalLoad_NoPageErrorNoEgress` | ok (spec) `Compat_<fixture>_TreeMatchesChromiumSnapshot` ×16 | ok (spec) `Compat_<fixture>_TreeMatchesChromiumSnapshot` ×16 | não verificado (M4) | não verificado (M5) |
 | Leitura (GitHub) | ok (spec) `Compat_GithubRepoMocked_LoadsReadOnlyAndRefusesWrite` | ok (spec) idem | ok (spec) idem | ok (spec) idem | ok (spec) idem | não verificado (M4) | não verificado (M5) |
 | Leitura (pasta local) | ok (spec) `apply-flow.spec.js` (OPFS, seletor simulado) | ok (spec) idem | ok (spec) idem | recusa com mensagem `Compat_NoFsAccess_WriteEntryPointsNameTheBrowser` | recusa com mensagem idem | não verificado (M4) | não verificado (M5) |
 | Leitura (`.zip`) | não verificado (M1) | não verificado (M1) | não verificado (M2) | recusa com mensagem `Compat_NoFsAccess_…` | recusa com mensagem idem | não verificado (M4) | não verificado (M5) |
 | Edição em memória + diff simulado | ok (spec) `Compat_FixtureEdit_DiffShowsSimulatedPatch` | ok (spec) idem | ok (spec) idem | ok (spec) idem | ok (spec) idem | não verificado (M4) | não verificado (M5) |
-| Gravação (rascunho, aprovar, rollback) | ok (spec) `apply-flow.spec.js`, `write-log-hash.spec.js`; seletor nativo e prompt de permissão: não verificado (M1) | ok (spec) `apply-flow.spec.js`; nativo: não verificado (M1) | ok (spec) `apply-flow.spec.js`; nativo: não verificado (M2) | recusa com mensagem `Compat_NoFsAccess_WriteEntryPointsNameTheBrowser` | recusa com mensagem idem | não verificado (M4) | não verificado (M5) |
+| Gravação (rascunho, aprovar, rollback) | ok (spec) `apply-flow.spec.js`, `write-log-hash.spec.js`; seletor nativo e prompt de permissão: não verificado (M1) | ok (spec) `apply-flow.spec.js`; nativo: não verificado (M1) | ok (spec) `apply-flow.spec.js`; nativo: não verificado (M2) | rascunho: recusa com mensagem (spec `Compat_NoFsAccess_WriteEntryPointsNameTheBrowser`); aprovar/rollback: inalcançáveis sem pasta | rascunho: recusa com mensagem (spec idem); aprovar/rollback: inalcançáveis sem pasta | não verificado (M4) | não verificado (M5) |
 | Exportação (versões completas) | não verificado (M1) | não verificado (M1) | não verificado (M2) | recusa com mensagem `Compat_NoFsAccess_…` | recusa com mensagem idem | não verificado (M4) | não verificado (M5) |
 | Config export/import | não verificado | não verificado | não verificado | recusa no código (`index.html:1199`, `:1207`), sem teste | recusa no código, sem teste | não verificado | não verificado |
 
@@ -113,7 +113,7 @@ Registradas, não corrigidas (visual congelado).
 | 1 | Recusa de rascunho, aprovação e exportação sem File System Access dizia "Conecte a pasta local para gravar.", impossível em Firefox/Safari | Corrigido nesta folha (`index.html:1443-1444`, `[!DECISION] readonly-message` A) |
 | 2 | Config export/import não tem teste de recusa (`index.html:1199`, `:1207`) | Lacuna registrada; candidata a teste na S7.3 ou em folha própria |
 | 3 | Exportação "versões completas" e `.zip` em Chrome/Edge sem teste automatizado (dependem do seletor nativo) | Cobertas somente por M1/M2, pendentes |
-| 4 | Nenhuma falha de árvore, erro de página ou requisição externa em Firefox/WebKit nas 16 fixtures | Sem ação |
+| 4 | Nenhuma falha de árvore (16 fixtures, em chrome, msedge, firefox e webkit), erro de página ou requisição externa | Sem ação |
 
 ## 7. Como reproduzir
 
@@ -137,7 +137,7 @@ Passos manuais (humano), com o dev server sob a mesma trava:
 |---|---|---|---|
 | M1 | Chrome 155 instalado | Conectar pasta local (seletor nativo) numa cópia de `fixtures/plain-css`; selecionar `.card`, Sombra = `0 0 0 3px rgb(1, 2, 3)`; Aplicar, Gerar rascunho, aceitar o prompt readwrite, Aprovar; recarregar; Exportar versões completas noutra pasta; Abrir arquivo .zip | `style.css` alterado em disco, `style.css.bak` e `.design-history/` existem; a pasta reabre ou o aviso de reconexão aparece; exportação com `layers-export.log` e sha256; o .zip carrega somente leitura |
 | M2 | Edge 155 instalado | Igual ao M1 | Igual ao M1 |
-| M3 | — | Abrir os 10 PNGs de `test-results/` lado a lado (par `chromium` como referência) | Planos com profundidade após o orbit em firefox/webkit; Inter/JetBrains Mono renderizadas; sem painéis sobrepostos |
+| M3 | — | Abrir os 10 PNGs de `test-results/` lado a lado (par `chromium` como referência); rodar `-g Screenshots` imediatamente antes da revisão, sem outra execução entre os dois (o Playwright limpa `test-results/` a cada run) | Planos com profundidade após o orbit em firefox/webkit; Inter/JetBrains Mono renderizadas; sem painéis sobrepostos |
 | M4 | Safari no macOS | Rodar o repositório no Mac (`npm ci && npm run dev`), abrir `localhost:5180/?layers=fixtures/plain-css/`, editar `.card`, Ver diff, Aplicar, Gerar rascunho | Carrega, edita, mostra o diff simulado e o toast com a dica sem File System Access. Sem Mac: "Safari real: não verificado" |
 | M5 | Firefox estável (opcional) | Igual ao M4 | Igual ao M4. Se pulado: "Firefox real: não verificado; evidência = build Playwright 155.0" |
 
