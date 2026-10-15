@@ -816,7 +816,7 @@
     "type": "phase",
     "name": "Performance",
     "start": "2026-10-13",
-    "end": "2026-10-20",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -826,7 +826,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 78,
+    "progress": 84,
     "docs": [],
     "children": [
       {
@@ -1032,27 +1032,34 @@
         "id": "S4.6",
         "type": "spec",
         "name": "Cache de getComputedStyle por nó",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "2026-10-14-s4-6-computed-style-cache.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s4-6-computed-style-cache.md)",
+            "title": "2026-10-14-s4-6-computed-style-cache.md)"
+          }
+        ],
         "reason": "checklist D",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
         "id": "S4.7",
         "type": "spec",
         "name": "Árvore virtualizada",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
