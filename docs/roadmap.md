@@ -48,6 +48,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.3 | 2 | S4 | Suite de benchmark do core | Disciplina BDN em JS | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/feature-261013-23-s4-3-bench-suite.md) | #23 | done |
 | S4.4 | 2 | S4 | Testes de performance de UI | Playwright: scan, orbit e explode | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/feature-261013-23-s4-4-ui-perf-tests.md) | #23 | done |
 | S4.4a | 3 | S4.4 | Vitest ignora e2e/ | npm test falhava ao coletar o spec do Playwright | — | — | [](../changelog.d/fix-261013-23-s4-4a-vitest-exclude-e2e.md) | #23 | done |
+| S4.4b | 3 | S4.4 | waitForScan ignora rajadas pequenas | Só a última rajada de getComputedStyle era conferida; 40-50 % das execuções completas de perf.spec.js estouravam o timeout | — | — | [](../changelog.d/fix-261014-0-s4-4b-wait-for-scan.md) | — | done |
 | S4.5 | 2 | S4 | Culling de planos fora do viewport | checklist D | — | [](superpowers/plans/2026-10-14-s4-5-viewport-culling.md) | [](../changelog.d/feature-261014-0-s4-5-viewport-culling.md) | — | done |
 | S4.6 | 2 | S4 | Cache de getComputedStyle por nó | checklist D | — | — | — | — | registered |
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |
@@ -58,7 +59,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S5.4 | 2 | S5 | Escopo todos iguais | checklist E; achou regressão em scopedSelector | — | — | [](../changelog.d/fix-261013-35-s5-4-scope-all-equal.md) | #35 | done |
 | S5.5 | 2 | S5 | lineDiff testável | checklist E; extrair de index.html | — | — | [](../changelog.d/refactor-261013-35-s5-5-linediff-core.md) | #35 | done |
 | S5.6 | 2 | S5 | E2E Playwright funcional | checklist E; infra nasce em S4.4 | — | [](superpowers/plans/2026-10-14-s5-6-e2e-functional.md) | [](../changelog.d/feature-261014-0-s5-6-e2e-functional.md) | — | done |
-| S5.7 | 2 | S5 | Compatibilidade de navegadores | checklist E | — | — | — | — | registered |
+| S5.7 | 2 | S5 | Compatibilidade de navegadores | checklist E | — | [](superpowers/plans/2026-10-14-s5-7-browser-compat.md) | [](../changelog.d/feature-261014-0-s5-7-browser-compat.md) | — | done |
 | S6 | 1 | — | Segurança | Checklist F | — | — | — | — | in-progress |
 | S6.1 | 2 | S6 | Superfície de gravação e ingestão | checklist F, 9 itens | — | — | — | — | done |
 | S6.2 | 2 | S6 | Hash no log de gravação | checklist F | — | [](superpowers/plans/2026-10-14-s6-2-write-log-hash.md) | [](../changelog.d/feature-261014-0-s6-2-write-log-hash.md) | — | done |
