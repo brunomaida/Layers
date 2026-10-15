@@ -12,8 +12,8 @@ O que funciona em cada navegador e qual teste prova cada célula. Vale só para 
 ## Resumo
 
 - **Chrome e Edge:** leitura, edição e gravação. A gravação é testada com o seletor de pasta simulado (pasta no OPFS); o seletor nativo, o prompt de permissão, o `.zip` e a exportação completa aguardam a verificação manual M1 e M2.
-- **Firefox e Safari:** somente leitura (fixture e repositório GitHub público), edição em memória e diff simulado. Toda entrada de gravação recusa com uma mensagem que indica Chrome ou Edge. Provado nos builds do Playwright (Firefox 155.0, WebKit 26.6). No Safari real e no Firefox estável, nada foi verificado: M4 e M5 cobrem só leitura de fixture, edição, diff e recusa do rascunho.
-- O app decide por detecção de recurso (`window.showDirectoryPicker`), nunca por user-agent. Um navegador que ganhe a File System Access API passa a gravar sem mudança no app, mas só entra nesta matriz depois de testado.
+- **Firefox e Safari:** somente leitura (fixture e repositório GitHub público), edição em memória e diff simulado. Toda entrada de gravação testada (pasta, `.zip`, rascunho, exportação completa) recusa com uma mensagem que indica Chrome ou Edge; exportar configuração recusa no código, sem teste (L1). Provado nos builds do Playwright (Firefox 155.0, WebKit 26.6). No Safari real e no Firefox estável, nada foi verificado: M4 e M5 cobrem só leitura de fixture, edição, diff e recusa do rascunho.
+- O app decide por detecção de recurso (`window.showDirectoryPicker`, `window.showOpenFilePicker`, `window.showSaveFilePicker`), nunca por user-agent. Um navegador que ganhe a File System Access API passa a gravar sem mudança no app, mas só entra nesta matriz depois de testado.
 
 ## Versões testadas
 
@@ -39,7 +39,7 @@ Legenda: `sim · E<n>` = coberto pelo teste automatizado E<n> (ver Evidências);
 |---|---|---|---|---|---|---|---|
 | Carregar sem erro de página nem requisição externa | sim · E1 | sim · E1 | sim · E1 | sim · E1 | sim · E1 | não verificado · L2 | não verificado · L2 |
 | Leitura: fixture HTTP (`?layers=`) | sim · E2 | sim · E3 | sim · E3 | sim · E3 | sim · E3 | não verificado · M4 | não verificado · M5 |
-| Leitura: repositório GitHub público | sim · E4 | sim · E4 | sim · E4 | sim · E4 | sim · E4 | não verificado · L2 | não verificado · L2 |
+| Leitura: repositório GitHub (simulado) | sim · E4 | sim · E4 | sim · E4 | sim · E4 | sim · E4 | não verificado · L2 | não verificado · L2 |
 | Leitura: pasta local | sim · E6 | sim · E6 | sim · E6 | recusa · E7 | recusa · E7 | não verificado · L2 | não verificado · L2 |
 | Leitura: arquivo `.zip` | não verificado · L3 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · L2 | não verificado · L2 |
 | Edição em memória | sim · E5 | sim · E5 | sim · E5 | sim · E5 | sim · E5 | não verificado · M4 | não verificado · M5 |
@@ -121,7 +121,9 @@ Só para servir e testar; o app em si roda no navegador.
 
 ## Como manter
 
-- `npm test` falha em `test/support-matrix.test.js` nestes casos: a matriz diverge de `e2e/__snapshots__/compat-probes.json` (uma coluna por motor; gravação `sim` só onde há `showDirectoryPicker`, recusa só onde não há); cita um teste que não existe em `e2e/`; cita uma mensagem ausente do `index.html`; ou ainda cita M1/M2 depois que a linha "Compatibilidade" do checklist E for fechada.
+- `npm test` falha em `test/support-matrix.test.js` nestes casos: a matriz diverge de `e2e/__snapshots__/compat-probes.json` (uma coluna por motor; gravação `sim` só onde há `showDirectoryPicker`, recusa só onde não há); uma célula foge do formato da legenda ou cita um E, M ou L inexistente; cita um teste que não existe em `e2e/`; cita uma mensagem ausente do `index.html`; ou ainda cita M1/M2 depois que a linha "Compatibilidade" do checklist E for fechada.
 - Mudar um texto de recusa ou um título citado exige atualizar a matriz no mesmo commit (o `npm test` reprova). Outras branches que mexam nos 6 toasts ou renomeiem testes citados (ex.: S3.4) devem cuidar disso.
 - Ao concluir um passo M1-M5, troque as células `não verificado · M<n>` pela evidência e registre a data aqui e no relatório.
+- Ao fechar M1/M2, revise: Resumo, Verificação pendente, L3, README:13 e G:81 do checklist. Após M4/M5, revise README:13 e as células M4/M5.
+- Todo token entre crases no formato `Maiúscula_..._...` é tratado como título de teste pelo guard: cite outros tokens fora desse formato.
 - Navegador atualizado: rode de novo `e2e/browser-compat.spec.js` (comandos no relatório, § 7) e atualize Versões testadas.
