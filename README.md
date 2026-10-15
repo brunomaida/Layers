@@ -10,7 +10,7 @@ created: 2026-09-12
 Editor visual de camadas para projetos web. Mostra o DOM de um app como planos em profundidade e permite ajustar CSS com gravação de volta nos arquivos.
 
 ## Requisitos
-- Chrome ou Edge (File System Access API). Firefox/Safari: somente leitura.
+- Chrome ou Edge (File System Access API). Firefox/Safari: somente leitura, testados nos builds do Playwright; Safari real e Firefox estável ainda não verificados. Versões testadas e a prova de cada recurso: [docs/support-matrix.md](docs/support-matrix.md).
 - Node 22.22.2+ ou 24.15.0+ e npm 12+ (só para servir e testar). Verificado em Node 24.19.0 LTS + npm 12.0.2.
 
 ## Rodar
@@ -94,6 +94,7 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 - docs/LOCAL-SETUP.md — rodar local com visual idêntico
 - docs/layers-json.md — contrato do layers.json e das origens
 - docs/shortcuts.md — atalhos de teclado e mouse do painel ? e contextos (campos de texto, Esc, menus)
+- docs/support-matrix.md — navegadores × funcionalidades, versões testadas e verificação pendente
 - docs/ARCHITECTURE.md — arquitetura e fluxo de dados
 - docs/RELEASE-CHECKLIST.md — pendências para a v1 (funcional, testes, segurança)
 - docs/roadmap.md — tracker de fases; docs/TOPOLOGY.md — mapa dos docs
