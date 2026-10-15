@@ -813,7 +813,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 73,
+    "progress": 78,
     "docs": [],
     "children": [
       {
@@ -956,19 +956,25 @@
         "name": "waitForScan ignora rajadas pequenas",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "bug",
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "fix-261014-0-s4-4b-wait-for-scan.md)",
             "type": "report",
             "path": "/[](../changelog.d/fix-261014-0-s4-4b-wait-for-scan.md)",
             "title": "fix-261014-0-s4-4b-wait-for-scan.md)"
+          },
+          {
+            "name": "2026-10-14-s4-4b-wait-for-scan.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s4-4b-wait-for-scan.md",
+            "title": "Implementation Report — s4-4b-wait-for-scan"
           }
         ],
         "reason": "Só a última rajada de getComputedStyle era conferida; 40-50 % das execuções completas de perf.spec.js estouravam o timeout",
