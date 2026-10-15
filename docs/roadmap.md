@@ -52,6 +52,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.5 | 2 | S4 | Culling de planos fora do viewport | checklist D | — | [](superpowers/plans/2026-10-14-s4-5-viewport-culling.md) | [](../changelog.d/feature-261014-0-s4-5-viewport-culling.md) | — | done |
 | S4.6 | 2 | S4 | Cache de getComputedStyle por nó | checklist D | — | [](superpowers/plans/2026-10-14-s4-6-computed-style-cache.md) | — | — | in-progress |
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |
+| S4.8 | 2 | S4 | Custo dos planos no orbit | otherMs 12,3 ms (61 % da tarefa) no orbit padrão; escala com o número de planos visíveis; S4.6 mediu o teto do cache de getComputedStyle em +1,3 % | — | — | — | — | registered |
 | S5 | 1 | — | Testes | Checklist E | — | — | — | — | in-progress |
 | S5.1 | 2 | S5 | Unit do core (Vitest) | patchCssAt, parseSheet, scopeAst, zip e dc | — | — | — | — | done |
 | S5.2 | 2 | S5 | Snapshot de árvore por fixture | checklist E | — | — | [](../changelog.d/feature-261013-35-s5-2-tree-snapshot.md) | #35 | done |
