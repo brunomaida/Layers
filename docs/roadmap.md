@@ -50,7 +50,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.4a | 3 | S4.4 | Vitest ignora e2e/ | npm test falhava ao coletar o spec do Playwright | — | — | [](../changelog.d/fix-261013-23-s4-4a-vitest-exclude-e2e.md) | #23 | done |
 | S4.4b | 3 | S4.4 | waitForScan ignora rajadas pequenas | Só a última rajada de getComputedStyle era conferida; 40-50 % das execuções completas de perf.spec.js estouravam o timeout | — | — | [](../changelog.d/fix-261014-0-s4-4b-wait-for-scan.md) | — | done |
 | S4.5 | 2 | S4 | Culling de planos fora do viewport | checklist D | — | [](superpowers/plans/2026-10-14-s4-5-viewport-culling.md) | [](../changelog.d/feature-261014-0-s4-5-viewport-culling.md) | — | done |
-| S4.6 | 2 | S4 | Cache de getComputedStyle por nó | checklist D | — | [](superpowers/plans/2026-10-14-s4-6-computed-style-cache.md) | — | — | in-progress |
+| S4.6 | 2 | S4 | Cache de getComputedStyle por nó | medido-negativo: teto do cache +1,3 %; ver S4.8 | — | [](superpowers/plans/2026-10-14-s4-6-computed-style-cache.md) | [](../changelog.d/feature-261014-0-s4-6-computed-style-cache.md) | — | done |
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |
 | S4.8 | 2 | S4 | Custo dos planos no orbit | otherMs 12,3 ms (61 % da tarefa) no orbit padrão; escala com o número de planos visíveis; S4.6 mediu o teto do cache de getComputedStyle em +1,3 % | — | — | — | — | registered |
 | S5 | 1 | — | Testes | Checklist E | — | — | — | — | in-progress |
