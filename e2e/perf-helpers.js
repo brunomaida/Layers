@@ -8,7 +8,7 @@ import { execSync } from 'node:child_process';
 export async function instrument(page) {
   await page.addInitScript(() => {
     const w = window;
-    w.__perf = { bursts: [], loaf: [], obs: null };
+    w.__perf = { bursts: [], loaf: [], obs: null, calls: 0 };
     const orig = w.getComputedStyle.bind(w);
     let cur = null;
     w.getComputedStyle = function (...a) {
@@ -19,6 +19,7 @@ export async function instrument(page) {
       }
       cur.last = t;
       cur.count++;
+      w.__perf.calls++;
       return orig(...a);
     };
     try {
@@ -55,7 +56,9 @@ export async function waitForScan(page, minNodes = 5, timeout = 20_000) {
 }
 
 // Orbit drag with real input events (CDP mouse: hit-testing, mouseenter/leave on the planes under
-// the cursor) for `durationMs`, while an in-page rAF loop records the frame intervals.
+// the cursor) for `durationMs`, while an in-page rAF loop records the frame intervals. CDP
+// Performance metrics split the main-thread time per frame (task, script, style recalc, layout);
+// gcsPerFrame counts getComputedStyle calls between mousedown and mouseup.
 export async function orbitDrag(page, durationMs = 1500) {
   const r = await page.evaluate(() => {
     const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
@@ -65,6 +68,10 @@ export async function orbitDrag(page, durationMs = 1500) {
     const b = stage.getBoundingClientRect();
     return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
   });
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Performance.enable');
+  const metrics = async () =>
+    Object.fromEntries((await cdp.send('Performance.getMetrics')).metrics.map((m) => [m.name, m.value]));
   await page.evaluate(() => {
     const rec = (window.__orbit = { times: [], stop: false });
     let last = performance.now();
@@ -76,16 +83,22 @@ export async function orbitDrag(page, durationMs = 1500) {
     requestAnimationFrame(step);
     window.__perf.loaf.length = 0;
   });
+  const m0 = await metrics();
   await page.mouse.move(r.x, r.y);
   await page.mouse.down();
+  // after mousedown: hover renders before the press read live style and are not part of the drag
+  await page.evaluate(() => (window.__perf.calls0 = window.__perf.calls));
   const t0 = Date.now();
   let i = 0;
   while (Date.now() - t0 < durationMs) {
     await page.mouse.move(r.x + (i % 60) * 2, r.y + Math.sin(i / 8) * 40);
     i++;
   }
+  const gcsCalls = await page.evaluate(() => window.__perf.calls - window.__perf.calls0);
   await page.mouse.up();
-  return page.evaluate(() => {
+  const m1 = await metrics();
+  await cdp.detach();
+  const res = await page.evaluate(() => {
     window.__orbit.stop = true;
     const p = window.__perf;
     if (p.obs) {
@@ -108,6 +121,13 @@ export async function orbitDrag(page, durationMs = 1500) {
       loafScriptShare: loafTotal ? loafScript / loafTotal : 0,
     };
   });
+  const per = (k) => ((m1[k] - m0[k]) * 1000) / res.frames;
+  return {
+    ...res,
+    gcsCalls,
+    gcsPerFrame: gcsCalls / res.frames,
+    main: { taskMs: per('TaskDuration'), scriptMs: per('ScriptDuration'), styleMs: per('RecalcStyleDuration'), layoutMs: per('LayoutDuration') },
+  };
 }
 
 // Plane census from the DOM (inline styles only per plane): planes are the stage divs with an
@@ -155,6 +175,51 @@ export async function zoomIn(page, steps) {
   await page.mouse.move(r.x, r.y);
   for (let i = 0; i < steps; i++) await page.mouse.wheel(0, -100);
   await page.waitForTimeout(600);
+}
+
+// S4.6 upper bound: from now on getComputedStyle(el) returns, per element, a memo that reads each
+// property once and never refreshes. Valid only while nothing mutates the mock (an orbit drag); call
+// after waitForScan so the scan itself stays live and counted.
+export async function memoComputedStyle(page) {
+  await page.evaluate(() => {
+    const live = window.getComputedStyle;
+    const memo = new WeakMap();
+    window.getComputedStyle = function (el, pseudo) {
+      if (pseudo) return live(el, pseudo);
+      let p = memo.get(el);
+      if (!p) {
+        const cs = live(el);
+        const vals = Object.create(null);
+        const vars = Object.create(null);
+        const gpv = (n) => (n in vars ? vars[n] : (vars[n] = cs.getPropertyValue(n)));
+        p = new Proxy(cs, {
+          get: (t, k) => (k === 'getPropertyValue' ? gpv : typeof k !== 'string' ? t[k] : k in vals ? vals[k] : (vals[k] = t[k])),
+        });
+        memo.set(el, p);
+      }
+      return p;
+    };
+  });
+}
+
+// S4.6 second upper bound, on top of memoComputedStyle: clientWidth/clientHeight of mock elements
+// (renderVals box model) are memoized per element through WeakMap-backed getters and never
+// refresh. App elements (outside the mock's shadow root) keep the live getters.
+export async function memoClientBox(page) {
+  await page.evaluate(() => {
+    for (const k of ['clientWidth', 'clientHeight']) {
+      const d = Object.getOwnPropertyDescriptor(Element.prototype, k);
+      const memo = new WeakMap();
+      Object.defineProperty(Element.prototype, k, {
+        configurable: true,
+        get() {
+          if (!(this.getRootNode() instanceof ShadowRoot)) return d.get.call(this);
+          if (!memo.has(this)) memo.set(this, d.get.call(this));
+          return memo.get(this);
+        },
+      });
+    }
+  });
 }
 
 export function writeBench(benchmarks, runtime) {
