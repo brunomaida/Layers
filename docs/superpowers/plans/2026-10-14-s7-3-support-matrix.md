@@ -8,13 +8,13 @@ created: 2026-10-14
 
 # S7.3 Support Matrix Implementation Plan
 
-Publish the browser support matrix that checklist G asks for. It goes in a new `docs/support-matrix.md` (PT-BR, `type: reference`). Every cell either cites an automated test from the S5.7 evidence or says `não verificado` and names the pending manual step or gap. `README.md` and `docs/TOPOLOGY.md` link to it. A small Vitest guard (`test/support-matrix.test.js`) makes `npm test` fail when the matrix drifts from `e2e/__snapshots__/compat-probes.json`, cites a test that no longer exists, or quotes a refusal message that is no longer in `index.html`. This plan closes checklist G item "Matriz de suporte" and adds `changelog.d/docs-261014-0-s7-3-support-matrix.md`.
+Publish the browser support matrix that checklist G asks for. It goes in a new `docs/support-matrix.md` (PT-BR, `type: reference`). Every cell either cites an automated test from the S5.7 evidence, re-run at the branch tip before the matrix is written, or says `não verificado` and names the pending manual step or gap. `README.md` and `docs/TOPOLOGY.md` link to it. A small Vitest guard (`test/support-matrix.test.js`) makes `npm test` fail in four cases: the matrix drifts from `e2e/__snapshots__/compat-probes.json`; it cites a test that no longer exists; it quotes a refusal message that is no longer in `index.html`; or it still waits on M1/M2 after checklist E closes. This plan closes checklist G item "Matriz de suporte" and adds `changelog.d/docs-261014-0-s7-3-support-matrix.md`.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans (Native, see `[!DECISION] execution`). Steps use checkbox (`- [ ]`) syntax for tracking.
 
 ## Context
 
-Checklist G item, verbatim (`docs/RELEASE-CHECKLIST.md:81`): `- [ ] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação).` Roadmap row S7.3 (`docs/roadmap.md:69`) has status `registered` and no plan link. Its prerequisite S5.7 is merged on `develop` (`5ae19c8`, tip `aac342f`). S5.7 produced the inputs this leaf consumes. Its plan lists them in § Outputs for S7.3, and they live in these files:
+Checklist G item, verbatim (`docs/RELEASE-CHECKLIST.md:81`): `- [ ] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação).` Roadmap row S7.3 (`docs/roadmap.md:70` on `develop` 39ca4ac) has status `registered` and no plan link. Its prerequisite S5.7 is merged on `develop` (`5ae19c8`). S5.7 produced the inputs this leaf consumes. Its plan lists them in § Outputs for S7.3, and they live in these files:
 
 | Input | File |
 |---|---|
@@ -28,46 +28,53 @@ Checklist G item, verbatim (`docs/RELEASE-CHECKLIST.md:81`): `- [ ] Matriz de su
 
 Inherited constraint: S5.7 `[!DECISION] version-claims` was resolved as **Option A** (approved). The matrix claims the **tested versions only**: no "Firefox ≥ X" ranges and no versions from memory. Option B (ranges from MDN browser-compat-data, one citation per probed feature) was left for S7.3 to take up. This plan does not take it up (see Non-goals). Re-opening it is listed as an open question in the hand-off, not as a task.
 
-### Facts re-verified on `aac342f` for this plan
+### Facts re-verified for this plan
+
+Base `aac342f`, re-checked on `develop` 39ca4ac. Since `aac342f`, only `docs/RELEASE-CHECKLIST.md` (§ D lines 44/46), `docs/_index.md`, `e2e/perf-helpers.js` and `e2e/perf.spec.js` changed among the files this plan reads or edits. `index.html`, `README.md`, `docs/TOPOLOGY.md`, `playwright.config.js`, `vite.config.js` and the cited specs are identical.
 
 | Fact | Evidence |
 |---|---|
 | Which test runs on which Playwright project | `npx playwright test --list e2e/browser-compat.spec.js e2e/apply-flow.spec.js e2e/write-log-hash.spec.js` → 127 tests in 3 files. `apply-flow` runs on `chromium`, `chrome`, `msedge`. `write-log-hash` runs on `chromium` only, because `playwright.config.js` `WRITE` matches only `browser-compat\|apply-flow`. `browser-compat` runs on all five. The full suite lists 232 tests in 16 files. |
-| `Compat_TravalLoad_NoPageErrorNoEgress` also runs on `firefox` and `webkit` | same `--list`. The test has no `test.skip`. Report § 3 cites it only in the Chromium columns, but report § 6 #4 says no page error or egress on any engine. |
-| "Exportar versões completas" **is** automated on `chromium` | `e2e/write-log-hash.spec.js` `ExportLog_AfterDraft_HasSha256MatchingDisk` points the stubbed `showDirectoryPicker` at an OPFS `export` folder and asserts `layers-export.log`. Report § 3 marks this cell `não verificado (M1)`, which understates the evidence. The matrix uses `sim · E8` for `chromium` and keeps M1/M2 for `chrome`/`msedge`. |
+| `Compat_TravalLoad_NoPageErrorNoEgress` also runs on `firefox` and `webkit` | same `--list`. The test has no `test.skip`. Report § 3 cites it only in the Chromium columns, and report § 6 #4 says no page error or egress on any engine. The matrix cites it (E1) on all five. |
+| Full export on `chromium` is only partly automated | `e2e/write-log-hash.spec.js` `ExportLog_AfterDraft_HasSha256MatchingDisk` runs "Exportar versões completas" into an OPFS folder through the stubbed `showDirectoryPicker`. It checks only `layers-export.log` (the draft's hash). It does not check the exported files or `layers-changes.json`. The matrix keeps the cell `não verificado` (L3) and lists E8 as partial evidence. |
 | Refusal messages are literal strings in `index.html` | `index.html:1199`, `:1207`, `:1387`, `:1400`, `:1444` (fragment `Este navegador não grava em disco — use Chrome ou Edge.`), `:2230`. Report § 4 cites `:1938`, `:2204`, `:1931`, which moved after the S3.2 merge to `:1964`, `:2230`, `:1957`. The matrix quotes text, not line numbers. |
-| Toolchain | `docs/LOCAL-SETUP.md` § Toolchain: floor Node 22.22.2+ or 24.15.0+ with npm 12+ (from npm 12's own `engines`); verified on Node 24.19.0 LTS + npm 12.0.2. This machine prints `v24.19.0` / `12.0.2` today. `package.json` has no `engines`. `package-lock.json` pins `@playwright/test` and `playwright` 1.63.0. |
+| Toolchain | `docs/LOCAL-SETUP.md` § Rodar, paragraph **Toolchain**: floor Node 22.22.2+ or 24.15.0+ with npm 12+ (from npm 12's own `engines`); verified on Node 24.19.0 LTS + npm 12.0.2. The failing npm 10.9.2 case is in § Problemas conhecidos. This machine prints `v24.19.0` / `12.0.2` today. `package.json` has no `engines`. `package-lock.json` pins `@playwright/test` and `playwright` 1.63.0. |
 | Manual evidence still pending | report § 7: "Resultados de M1-M5 nesta data: **nenhum executado**". Checklist E line 62 is `[~]` for that reason. |
 
-Pending manual evidence, which the matrix must show as `não verificado`:
+Pending manual evidence, and the matrix cells each step would prove. Only these cells carry `não verificado · M<n>`:
 
 | # | Browser | Cells it would prove |
 |---|---|---|
-| M1 | Chrome 155, real native picker | native folder picker and readwrite prompt, approve on a real folder, reopen after reload, `.zip` open, full export |
-| M2 | Edge 155, real native picker | same as M1 |
-| M3 | all five (PNG review) | 3D depth, Inter/JetBrains Mono rendering, no overlapping panels |
-| M4 | real Safari on macOS | every Safari cell (load, read, edit, simulated diff, draft refusal) |
-| M5 | real Firefox stable | every "Firefox estável" cell |
+| M1 | Chrome 155, real native picker | `chrome`: `.zip` read, native folder picker and readwrite prompt, full export (approve on a real folder and reopen after reload are part of the step) |
+| M2 | Edge 155, real native picker | `msedge`: same cells as M1 |
+| M3 | all five Playwright projects (PNG review) | visual row (3D depth, Inter/JetBrains Mono rendering, no overlapping panels) |
+| M4 | real Safari on macOS | Safari: fixture read, edit in memory, simulated diff, draft refusal (the procedure in report § 7 covers only these) |
+| M5 | real Firefox stable | Firefox estável: same cells as M4 |
+
+Cells that no test and no manual step covers get a gap id, so the legend stays true:
+- L1: config export/import, every engine (S5.7 finding #2).
+- L2: every Safari / Firefox estável cell outside the four rows M4/M5 cover.
+- L3: the `chromium` cells that only M1 would cover (`.zip`, native picker, full export). The Playwright build is never driven by hand, so M1, which runs on Chrome, is the engine-level evidence.
 
 Findings that are out of scope. Record them in the hand-off and do not fix them here:
 - `docs/TOPOLOGY.md:101` (`App → rede | Nenhuma`) predates the GitHub loader. S7.1 fixed the same claim in `docs/ARCHITECTURE.md` § Rede but not in TOPOLOGY.
 - `docs/RELEASE-CHECKLIST.md:75` says "Requer npm 11+". `docs/LOCAL-SETUP.md` and `README.md` say npm 12+. The matrix follows LOCAL-SETUP because it states where the floor comes from.
 
-Reuses: report §§ 1-8 (transcribed, not re-measured, except the freshness run of Task 5); the fragment shape of `changelog.d/docs-261014-0-s7-1-readme.md`; the root/`readFileSync` style of `test/pre-push.test.js`; the lock/port wrapper from the S5.7 plan § Global Constraints (also in `docs/LOCAL-SETUP.md`); the Task 0 tracker pattern from the S5.7 plan.
+Reuses: report §§ 1-8, transcribed after the Task 1 freshness run; the fragment shape of `changelog.d/docs-261014-0-s7-1-readme.md`; the root/`readFileSync` style of `test/pre-push.test.js`; the lock/port wrapper from the S5.7 plan § Global Constraints (also in `docs/LOCAL-SETUP.md`); the Task 0 tracker pattern from the S5.7 plan.
 
 ### Goal
 
 - One document answers "what works in which browser, and how do we know" for the v1 release: browser engine × capability, tested versions and date, OS, dev toolchain, refusal messages, pending verification.
-- Every cell is sourced. Either a test title (with spec file and projects) or `não verificado` plus the reason: a manual step M1-M5 or a gap L1.
+- Every cell is sourced. Either a test title (with spec file and projects) re-run at the branch tip, or `não verificado` plus the reason: a manual step M1-M5 that actually covers that cell, or a gap L1-L3.
 - The matrix stays true without a human remembering to update it, at least for the coupling that can be checked cheaply. Details in "How it stays true".
 
 ### Non-goals
 
 - No change to `index.html`, `support.js`, `lib/`, `vendor/`, `fonts/`, `playwright.config.js` or any `e2e/` file. Visual frozen.
-- No new E2E coverage. The config export/import gap (S5.7 finding #2) and the chrome/msedge export cells stay as recorded (`[!DECISION] coverage-gaps`).
+- No new E2E coverage. The gaps L1-L3 and the chrome/msedge export cells stay as recorded (`[!DECISION] coverage-gaps`).
 - No version ranges (inherited `version-claims` A). No `engines` field in `package.json`.
-- No edit to the S5.7 evidence report. It is a dated record. The matrix states where it deviates from it (export on `chromium`, `TravalLoad` on Gecko/WebKit).
-- No `CHANGELOG.md` edit (release only). No edit to `docs/RELEASE-CHECKLIST.md:8` (`Hoje: …`): a dedicated integration step recounts it once.
+- No edit to the S5.7 evidence report. It is a dated record. The matrix cites E1 on all five engines (the report lists it only for the Chromium columns) and quotes messages by text instead of the report's line numbers.
+- No `CHANGELOG.md` edit (release only). No edit to `docs/RELEASE-CHECKLIST.md:8` (`Hoje: …`): the recount is left to the wave integration (S7.8a pattern, a micro leaf under S7.8).
 - No fix for the two out-of-scope findings above.
 
 ## Design: Architecture & Flows
@@ -80,18 +87,19 @@ README.md ── § Requisitos ── link ──┐        docs/TOPOLOGY.md § 
                                     ▼                                                              ▼
                          docs/support-matrix.md [NEW, PT-BR, type: reference] ◀──────────────────────┘
                            ├─ Resumo · Versões testadas · Matriz · Evidências (E1-E8)
-                           ├─ Verificação pendente (M1-M5) · Lacunas (L1) · Mensagens
-                           ├─ Sistema operacional · Ambiente de desenvolvimento
+                           ├─ Verificação pendente (M1-M5) · Lacunas (L1-L3) · Mensagens
+                           ├─ Sistema operacional · Ambiente de desenvolvimento · Como manter
                            └─ links ─▶ S5.7 report (procedures, probe table, cosmetics) · compat-probes.json
                                     ▲
-           test/support-matrix.test.js [NEW] reads it + compat-probes.json + e2e/*.spec.js + index.html
+           test/support-matrix.test.js [NEW] reads it + compat-probes.json + e2e/*.spec.js
+                                              + index.html + docs/RELEASE-CHECKLIST.md
                                     │
                                npm test (commit gate) fails on drift
 ```
 
 > [!DECISION] matrix-location
 > The checklist item asks for a matrix of browsers × features. It does not say where.
-> - **Option A (recommended)**: `docs/support-matrix.md`, kebab-case, undated, frontmatter `type: reference` (same pattern as `docs/layers-json.md`), indexed under Reference in `docs/_index.md` by the doc hook. The content (7 engine columns, 11 capability rows, evidence/manual/gap/message/OS/toolchain tables) is wider than the README can hold readably. S7.1 `[!DECISION] readme-structure` kept the README a short landing page that links to `docs/` for depth. A dedicated file is also what the guard test parses. The README gets a one-line link.
+> - **Option A (recommended)**: `docs/support-matrix.md`, kebab-case, undated, frontmatter `type: reference` (same pattern as `docs/layers-json.md`), indexed under Reference in `docs/_index.md` by the doc hook. The content (7 engine columns, 12 capability rows, evidence/manual/gap/message/OS/toolchain tables) is wider than the README can hold readably. S7.1 `[!DECISION] readme-structure` kept the README a short landing page that links to `docs/` for depth. A dedicated file is also what the guard test parses. The README gets a one-line link.
 > - **Option B**: a `## Suporte` section in `README.md`. One fewer file, but the README roughly doubles, citations make the table unreadable on GitHub, and the guard test has to parse the README.
 
 ### Matrix dimensions
@@ -106,46 +114,49 @@ How each column/row maps to evidence:
 
 ```
 row \ column        chromium   chrome    msedge    firefox   webkit    Safari   Firefox estável
-load                E1         E1        E1        E1        E1        M4       M5
+load                E1         E1        E1        E1        E1        L2       L2
 read fixture        E2         E3        E3        E3        E3        M4       M5
-read GitHub         E4         E4        E4        E4        E4        M4       M5
-read folder         E6         E6        E6        E7 (rec)  E7 (rec)  M4       M5
-read .zip           M1         M1        M2        E7 (rec)  E7 (rec)  M4       M5
+read GitHub         E4         E4        E4        E4        E4        L2       L2
+read folder         E6         E6        E6        E7 (rec)  E7 (rec)  L2       L2
+read .zip           L3         M1        M2        E7 (rec)  E7 (rec)  L2       L2
 edit in memory      E5         E5        E5        E5        E5        M4       M5
 simulated diff      E5         E5        E5        E5        E5        M4       M5
 write flow          E6         E6        E6        E7 (rec)  E7 (rec)  M4       M5   ◀ guard: sim iff showDirectoryPicker
-native picker       M1         M1        M2        E7 (rec)  E7 (rec)  M4       M5
-full export         E8         M1        M2        E7 (rec)  E7 (rec)  M4       M5
-config export/imp.  L1         L1        L1        L1        L1        M4       M5
-visual 3D/fonts     M3         M3        M3        M3        M3        M4       M5
-```
+native picker       L3         M1        M2        E7 (rec)  E7 (rec)  L2       L2
+full export         L3 (E8)    M1        M2        E7 (rec)  E7 (rec)  L2       L2
+config export/imp.  L1         L1        L1        L1        L1        L2       L2
+visual 3D/fonts     M3         M3        M3        M3        M3        L2       L2
 
-The `chromium` column keeps M1 for `.zip` and the native picker. M1 runs on Chrome, the same engine. The Playwright Chromium build itself is never driven by hand.
+guard, every probe column: showDirectoryPicker true ─▶ no "recusa · E7"; false ─▶ no "sim · E6" / "sim · E8"
+```
 
 ## How it stays true
 
-The matrix can drift in three ways. The guard covers each with a cheap, browser-free check that runs in `npm test`, the commit gate:
+The matrix can drift in four ways. The guard covers each with a cheap, browser-free check that runs in `npm test`, the commit gate:
 
 | Drift | Example | Check in `test/support-matrix.test.js` |
 |---|---|---|
-| Probe snapshot changes | someone regenerates `compat-probes.json` after Firefox ships `showDirectoryPicker`, or adds an engine | every key of `compat-probes.json` has exactly one matrix column, and the write-flow row is `sim` iff `showDirectoryPicker` is `true` for that engine, else `recusa` |
-| Cited test renamed or removed | `Compat_FixtureEdit_DiffShowsSimulatedPatch` renamed | every backticked test title in the matrix exists in some `e2e/*.spec.js` (`<fixture>` maps to the template literal `${name}`), and at least 9 titles are found, so the check can never pass vacuously |
+| Probe snapshot changes | someone regenerates `compat-probes.json` after Firefox ships `showDirectoryPicker`, or adds an engine | every key of `compat-probes.json` has exactly one matrix column. The write-flow row is `sim` iff `showDirectoryPicker` is `true` for that engine, else `recusa`. In every probe column, no cell is `recusa · E7` when the picker exists, and no cell is `sim · E6` or `sim · E8` when it does not. |
+| Cited test renamed or removed | `Compat_FixtureEdit_DiffShowsSimulatedPatch` renamed | every backticked token that starts like a test title must parse as one, or the test fails and names it. Each title must appear quoted (`'`, `"` or a backtick on both sides) in some `e2e/*.spec.js`; `<fixture>` maps to the template placeholder `${name}`. At least 9 titles must be found, so the check can never pass vacuously. |
 | Refusal text changes | a toast is reworded | every literal in the Mensagens table is a substring of `index.html` |
+| Manual evidence lands | checklist E line 62 becomes `- [x] Compatibilidade` | the matrix must no longer cite `· M1` or `· M2` |
 
-Cost: one ~45-line Vitest file. It reads 4 inputs from disk, runs in milliseconds, and needs no browser, server or lock. Precedent for unit-testing a non-JS artifact: `test/pre-push.test.js`. Two things are not guarded. (a) Whether a cited test still **passes**: E2E is a manual gate (no CI), and the matrix records the run date. (b) Which projects run a test: that needs Playwright, so Task 5 checks it once with `--list`. When M1-M5 are done, a human replaces the `não verificado · M<n>` cells. The guard does not force that, by design: the checklist E line 62 tracks it.
+Cost: one ~60-line Vitest file. It reads 5 inputs from disk, runs in milliseconds, and needs no browser, server or lock. Precedent for unit-testing a non-JS artifact: `test/pre-push.test.js`. Two things are not guarded. (a) Whether a cited test still **passes**: E2E is a manual gate (no CI). Task 1 re-runs the cited specs before the matrix is written, and the matrix records that run date. (b) Which projects run a test: that needs Playwright, so Task 1 checks it once with `--list`.
+
+Coupling this creates: changing one of the six refusal texts or renaming a cited test now requires updating the matrix in the same commit, because `npm test` fails otherwise. Other branches that touch those toasts or rename cited tests (e.g. S3.4) must do the same. See Hand-off notes.
 
 > [!DECISION] matrix-guard
-> - **Option A (recommended)**: add `test/support-matrix.test.js` as above (Task 2). It is cheap, it runs on every commit, and it turns the three silent drifts into a failing commit gate.
+> - **Option A (recommended)**: add `test/support-matrix.test.js` as above (Task 3). It is cheap, it runs on every commit, and it turns the four silent drifts into a failing commit gate.
 > - **Option B**: no test. Re-read the matrix by hand at each release (`release-1-checklist`). Zero code, but a regenerated probe snapshot or a renamed test leaves the matrix lying until someone notices.
 
 > [!DECISION] coverage-gaps
-> Two cells are `não verificado` only because no test runs there. Neither needs a manual step.
-> - **Option A (recommended)**: keep S7.3 docs + guard only. L1 (config export/import, S5.7 finding #2) and the chrome/msedge full-export cells stay recorded, as a candidate follow-up leaf.
-> - **Option B**: also add `write-log-hash` to the `WRITE` regex in `playwright.config.js` (one line). `chrome`/`msedge` full export become `sim · E8`. This needs an E2E run on the installed channels under the lock wrapper, and it touches a file this plan otherwise leaves alone.
-> - **Option C**: B plus a refusal test for config export/import on `firefox`/`webkit` (closes L1 for those columns). This is test authoring in `e2e/browser-compat.spec.js`. It is its own leaf in all but name.
+> Some cells are `não verificado` only because no test asserts them. No manual step is planned for them either.
+> - **Option A (recommended)**: keep S7.3 to docs plus the guard. L1 (config export/import, S5.7 finding #2), L3 and the chrome/msedge full-export cells stay recorded, as a candidate follow-up leaf.
+> - **Option B**: add full-export assertions (the exported files and `layers-changes.json`, not only `layers-export.log`). Run them on `chromium`, `chrome` and `msedge`, which needs a spec change plus the `WRITE` regex in `playwright.config.js`. That is test authoring across two files this plan otherwise leaves alone.
+> - **Option C**: B plus a refusal test for config export/import on `firefox`/`webkit`, which closes L1 for those columns. It is its own leaf in all but name.
 
 > [!DECISION] checklist-g-state
-> - **Option A (recommended)**: mark G line 81 `[x]`. The artifact the item asks for exists, every cell is sourced, and the pending manual evidence is visible in the matrix and tracked by E line 62 (`[~]`).
+> - **Option A (recommended)**: mark G line 81 `[x]`. The artifact the item asks for exists, and every cell is sourced: M4/M5 only where they apply, gaps L1-L3 elsewhere, cited tests re-run at the tip (Task 1). The pending manual evidence is visible in the matrix and tracked by E line 62 (`[~]`).
 > - **Option B**: mark it `[~]` until M1/M2 run. This double-counts the same pending work in two checklist sections.
 
 ## File Structure
@@ -153,22 +164,22 @@ Cost: one ~45-line Vitest file. It reads 4 inputs from disk, runs in millisecond
 | File | Change |
 |---|---|
 | `docs/roadmap.md`, `docs/roadmap.data.json` | S7.3 row: plan link, `in-progress` (Task 0); `.data.json` rebuilt by the `roadmap` skill, never by hand |
-| `docs/support-matrix.md` | new, PT-BR (Task 1) |
-| `docs/_index.md` | regenerated by the doc hook (Task 1), never hand-edited |
-| `test/support-matrix.test.js` | new guard (Task 2) |
-| `README.md` | § Requisitos line 13, § Estrutura one new line (Task 3) |
-| `docs/TOPOLOGY.md` | line 99 only (Task 3) |
-| `docs/RELEASE-CHECKLIST.md` | line 81 only; line 8 untouched (Task 4) |
-| `changelog.d/docs-261014-0-s7-3-support-matrix.md` | new fragment (Task 4) |
+| `docs/support-matrix.md` | new, PT-BR (Task 2) |
+| `docs/_index.md` | regenerated by the doc hook (Task 2), never hand-edited |
+| `test/support-matrix.test.js` | new guard (Task 3) |
+| `README.md` | § Requisitos line 13, § Estrutura one new line (Task 4) |
+| `docs/TOPOLOGY.md` | line 99 only (Task 4) |
+| `docs/RELEASE-CHECKLIST.md` | line 81 only; line 8 untouched (Task 5) |
+| `changelog.d/docs-261014-0-s7-3-support-matrix.md` | new fragment (Task 5) |
 
 ## Global Constraints
 
-- Leaf branch `docs/261014-0-s7-3-support-matrix` (stem = this plan's `s7-3-support-matrix`), from an up-to-date `develop`. Never commit on `develop` or `master`. Task 0 is the first commit, then the plan commit is cherry-picked (Task 0 Step 4).
+- Leaf branch `docs/261014-0-s7-3-support-matrix` (stem = this plan's `s7-3-support-matrix`), created from an up-to-date `develop`. Never commit on `develop` or `master`. The Task 0 tracker commit comes first, then the plan commits are cherry-picked (Task 0 Step 4).
 - `index.html` is not modified. Visual frozen. `support.js` is never edited.
 - Docs prose PT-BR (all text quoted for `docs/`, `README.md` and `changelog.d/` below is final PT-BR); this plan, code comments, test titles and commits EN. Test titles follow `Metodo_Cenario_Esperado`.
 - Markdown tables: no `|` inside a cell (write "ou" instead of `||`). The guard splits rows on `|`.
 - Worktree setup: if `node_modules/` is missing, run `npm ci` first (lockfile v3).
-- Every Playwright command that **runs** tests (Task 5 Step 2) goes through the S5.7 lock/port wrapper, in one Bash call with `timeout: 600000`:
+- Every Playwright command that **runs** tests (Task 1 Step 2) goes through the S5.7 lock/port wrapper, in one Bash call with `timeout: 600000`:
 
   ```bash
   n=0; until mkdir /tmp/layers-e2e.lock 2>/dev/null; do n=$((n+1)); [ "$n" -ge 60 ] && { echo 'COULD NOT RUN: stale lock'; exit 1; }; sleep 10; done
@@ -188,10 +199,14 @@ Cost: one ~45-line Vitest file. It reads 4 inputs from disk, runs in millisecond
 **Files:**
 - Modify: `docs/roadmap.md` (S7.3 row only), `docs/roadmap.data.json` (rebuilt)
 
-- [ ] **Step 0: Name the leaf branch**
+- [ ] **Step 0: Create the leaf branch**
 
-`git checkout -b docs/261014-0-s7-3-support-matrix develop`. If execution starts inside a `worktree-agent-*` branch that points at `develop`, rename it: `git branch -m docs/261014-0-s7-3-support-matrix`.
-Verify: `git branch --show-current` prints `docs/261014-0-s7-3-support-matrix`, and `git log -1 --format=%H` equals `git rev-parse develop`.
+```bash
+git fetch origin
+git checkout -b docs/261014-0-s7-3-support-matrix develop
+```
+
+Verify before any commit: `git branch --show-current` prints `docs/261014-0-s7-3-support-matrix`, and `git rev-parse HEAD` equals `git rev-parse develop`. If `develop` is behind `origin/develop`, fast-forward it first. Never commit on it.
 
 - [ ] **Step 1: Link the plan and mark in progress**
 
@@ -221,39 +236,68 @@ git commit -m "docs: start S7.3 in the tracker (S7.3)"
 
 - [ ] **Step 4: Bring the plan onto the leaf branch**
 
-The row now links the plan, so the plan must exist on this branch. Cherry-pick the plan commit, then repeat for each later review-edit commit of this plan, oldest first:
+The row now links the plan, so the plan must exist on this branch. Cherry-pick both plan commits, oldest first. Find them by subject, not by SHA:
 
 ```bash
-git cherry-pick "$(git log --all --format=%H -1 --grep='docs: add S7.3 support matrix plan (S7.3)')"
+for s in 'docs: add S7.3 support matrix plan (S7.3)' 'docs: apply review edits to S7.3 plan (S7.3)'; do
+  c="$(git log --all --format=%H -1 -F --grep="$s")"; [ -n "$c" ] || { echo "NOT FOUND: $s"; exit 1; }
+  git cherry-pick "$c" || exit 1
+done
 ```
 
-Verify: `test -f docs/superpowers/plans/2026-10-14-s7-3-support-matrix.md && git log --oneline -2` shows the plan commit above the tracker commit.
+Verify: `test -f docs/superpowers/plans/2026-10-14-s7-3-support-matrix.md && git log --oneline develop..HEAD` shows exactly three commits: the two plan commits above the tracker commit.
 
 ---
 
-### Task 1: Write docs/support-matrix.md
+### Task 1: Freshness check at the branch tip (before the matrix is written)
+
+The matrix transcribes the S5.7 run of 2026-10-14. S4.4b, S3.2 and S4.6 merged after it, and Chrome/Edge auto-update. This task proves that the cited tests run where the Evidências table will say and still pass. It also fixes the versions and run date that Task 2 writes, so G:81 is never closed on a stale cell. Nothing is committed here.
+
+**Files:** none modified.
+
+- [ ] **Step 1: Projects per cited test (no browser)**
+
+```bash
+npx playwright test --list e2e/browser-compat.spec.js e2e/apply-flow.spec.js e2e/write-log-hash.spec.js e2e/tree-snapshot.spec.js > /tmp/s7-3-list.txt; echo "exit_code $?"
+for t in Compat_TravalLoad_NoPageErrorNoEgress Compat_GithubRepoMocked_LoadsReadOnlyAndRefusesWrite Compat_FixtureEdit_DiffShowsSimulatedPatch Compat_NoFsAccess_WriteEntryPointsNameTheBrowser Compat_Probes_ReadPathEverywhereWriteTierAllOrNothing Compat_TravalOrbit_ScreenshotsForManualReview 'Compat_[a-z0-9-]*_TreeMatchesChromiumSnapshot' Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory Rollback_AfterApply_RestoresOriginalFile Rollback_FileChangedOutside_RefusesAndKeepsFile ExportLog_AfterDraft_HasSha256MatchingDisk 'Tree_[a-z0-9-]*_MatchesSnapshot'; do
+  echo "$t: $(grep -E "› $t\$" /tmp/s7-3-list.txt | sed -E 's/^ *\[([a-z]+)\].*/\1/' | sort -u | tr '\n' ' ')"
+done
+node -e "const p=require('./e2e/__snapshots__/compat-probes.json');for(const k of Object.keys(p).sort())console.log(k,p[k].showDirectoryPicker)"
+```
+
+Expected:
+- The six `Compat_` titles and `Compat_[a-z0-9-]*_TreeMatchesChromiumSnapshot`: `chrome chromium firefox msedge webkit`. `NoFsAccess` and the per-fixture tree tests are listed everywhere but skip at runtime, the first where `showDirectoryPicker` exists and the second on `chromium`.
+- `Apply_…` and both `Rollback_…`: `chrome chromium msedge`.
+- `ExportLog_…` and `Tree_[a-z0-9-]*_MatchesSnapshot`: `chromium`.
+- Probes: `chrome true`, `chromium true`, `firefox false`, `msedge true`, `webkit false`.
+
+Any other set: stop. The Evidências "Projetos" column and its matrix cells must change first, and that is a plan deviation to report.
+
+- [ ] **Step 2: Re-run the cited specs (lock wrapper)**
+
+Through the § Global Constraints wrapper, with `set -o pipefail` before the last line:
+
+```bash
+npx playwright test e2e/browser-compat.spec.js e2e/apply-flow.spec.js e2e/write-log-hash.spec.js e2e/tree-snapshot.spec.js 2>&1 | tee /tmp/s7-3-run.txt
+```
+
+Then `grep -o '\[compat\] .*' /tmp/s7-3-run.txt | sort -u` and `date +%F`.
+
+Expected: exit code `0` and no failure. Skips are expected for: `Compat_NoFsAccess_…` on the three Chromium projects, `Compat_FsAccess_…` on `firefox`/`webkit`, and the `Compat_<fixture>_…` set on `chromium`. Write down the five `[compat]` lines and the run date: Task 2 uses them. On any test failure, stop and report. A failing cited test means its matrix cell would be false, and fixing that is out of scope for this leaf.
+
+---
+
+### Task 2: Write docs/support-matrix.md
 
 **Files:**
 - Create: `docs/support-matrix.md`
 - Modify (hook-generated): `docs/_index.md`
 
-- [ ] **Step 1: Re-check the transcribed facts**
+- [ ] **Step 1: Create the file**
 
-Every count must be `1` or more. If any is `0`, stop: the matrix would cite something that no longer exists.
-
-```bash
-for t in Compat_TravalLoad_NoPageErrorNoEgress Compat_FixtureEdit_DiffShowsSimulatedPatch Compat_NoFsAccess_WriteEntryPointsNameTheBrowser Compat_GithubRepoMocked_LoadsReadOnlyAndRefusesWrite Compat_Probes_ReadPathEverywhereWriteTierAllOrNothing; do echo "$t $(grep -c "$t" e2e/browser-compat.spec.js)"; done
-for t in Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory Rollback_AfterApply_RestoresOriginalFile Rollback_FileChangedOutside_RefusesAndKeepsFile; do echo "$t $(grep -c "$t" e2e/apply-flow.spec.js)"; done
-echo "ExportLog $(grep -c 'ExportLog_AfterDraft_HasSha256MatchingDisk' e2e/write-log-hash.spec.js)"
-echo "tree $(grep -c 'Tree_${name}_MatchesSnapshot' e2e/tree-snapshot.spec.js) compat-tree $(grep -c 'Compat_${name}_TreeMatchesChromiumSnapshot' e2e/browser-compat.spec.js)"
-node -e "const p=require('./e2e/__snapshots__/compat-probes.json');for(const k of Object.keys(p).sort())console.log(k,p[k].showDirectoryPicker)"
-```
-
-Expected last block: `chrome true`, `chromium true`, `firefox false`, `msedge true`, `webkit false`.
-
-- [ ] **Step 2: Create the file**
-
-Set `created` to the execution date (`date +%F`). Write verbatim:
+Write the text below verbatim, with two substitutions from Task 1 Step 2:
+- **Run date:** replace `2026-10-14` in exactly four places with the run date: frontmatter `created`, "Data:" in Versões testadas, "Todas as execuções em" in Evidências, "até" in Verificação pendente. The S5.7 file links keep their date.
+- **Versions:** if a `[compat]` version differs from the Versão column below, use the new one.
 
 ````md
 ---
@@ -269,13 +313,13 @@ O que funciona em cada navegador e qual teste prova cada célula. Vale só para 
 
 ## Resumo
 
-- **Chrome e Edge:** leitura, edição e gravação. A gravação é testada com o seletor de pasta simulado (pasta no OPFS); o seletor nativo e o prompt de permissão aguardam a verificação manual M1 e M2.
-- **Firefox e Safari:** somente leitura (fixture e repositório GitHub público), edição em memória e diff simulado. Toda entrada de gravação recusa com uma mensagem que indica Chrome ou Edge. Provado nos builds do Playwright (Firefox 155.0, WebKit 26.6); Firefox estável e Safari real não verificados (M5, M4).
+- **Chrome e Edge:** leitura, edição e gravação. A gravação é testada com o seletor de pasta simulado (pasta no OPFS); o seletor nativo, o prompt de permissão, o `.zip` e a exportação completa aguardam a verificação manual M1 e M2.
+- **Firefox e Safari:** somente leitura (fixture e repositório GitHub público), edição em memória e diff simulado. Toda entrada de gravação recusa com uma mensagem que indica Chrome ou Edge. Provado nos builds do Playwright (Firefox 155.0, WebKit 26.6). No Safari real e no Firefox estável, nada foi verificado: M4 e M5 cobrem só leitura de fixture, edição, diff e recusa do rascunho.
 - O app decide por detecção de recurso (`window.showDirectoryPicker`), nunca por user-agent. Um navegador que ganhe a File System Access API passa a gravar sem mudança no app, mas só entra nesta matriz depois de testado.
 
 ## Versões testadas
 
-Data: 2026-10-14. Sistema: Windows 11 (i7-12700). Playwright 1.63.0. Fonte: linhas `[compat]` do relatório da S5.7, § 1.
+Data: 2026-10-14. Sistema: Windows 11 (i7-12700). Playwright 1.63.0. Fonte: linhas `[compat]` da execução de `e2e/browser-compat.spec.js`.
 
 | Coluna | Projeto Playwright | Motor | Versão | Origem |
 |---|---|---|---|---|
@@ -291,24 +335,22 @@ Chrome e Edge se atualizam sozinhos: a versão acima é a da execução, não um
 
 ## Matriz
 
-Legenda: `sim · E<n>` = coberto pelo teste automatizado E<n> (ver Evidências); `recusa · E<n>` = a entrada existe e recusa com mensagem que indica Chrome ou Edge, provado por E<n>; `não verificado · M<n>` = sem evidência, o passo manual M<n> a fornece; `não verificado · L<n>` = sem teste e sem passo manual (ver Lacunas).
+Legenda: `sim · E<n>` = coberto pelo teste automatizado E<n> (ver Evidências); `recusa · E<n>` = a entrada existe e recusa com mensagem que indica Chrome ou Edge, provado por E<n>; `não verificado · M<n>` = sem evidência, e o passo manual M<n> cobre exatamente esta célula; `não verificado · L<n>` = sem evidência e sem passo manual que a cubra (ver Lacunas).
 
 | Capacidade | Chromium (`chromium`) | Chrome (`chrome`) | Edge (`msedge`) | Firefox build (`firefox`) | WebKit build (`webkit`) | Safari | Firefox estável |
 |---|---|---|---|---|---|---|---|
-| Carregar sem erro de página nem requisição externa | sim · E1 | sim · E1 | sim · E1 | sim · E1 | sim · E1 | não verificado · M4 | não verificado · M5 |
+| Carregar sem erro de página nem requisição externa | sim · E1 | sim · E1 | sim · E1 | sim · E1 | sim · E1 | não verificado · L2 | não verificado · L2 |
 | Leitura: fixture HTTP (`?layers=`) | sim · E2 | sim · E3 | sim · E3 | sim · E3 | sim · E3 | não verificado · M4 | não verificado · M5 |
-| Leitura: repositório GitHub público | sim · E4 | sim · E4 | sim · E4 | sim · E4 | sim · E4 | não verificado · M4 | não verificado · M5 |
-| Leitura: pasta local | sim · E6 | sim · E6 | sim · E6 | recusa · E7 | recusa · E7 | não verificado · M4 | não verificado · M5 |
-| Leitura: arquivo `.zip` | não verificado · M1 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · M4 | não verificado · M5 |
+| Leitura: repositório GitHub público | sim · E4 | sim · E4 | sim · E4 | sim · E4 | sim · E4 | não verificado · L2 | não verificado · L2 |
+| Leitura: pasta local | sim · E6 | sim · E6 | sim · E6 | recusa · E7 | recusa · E7 | não verificado · L2 | não verificado · L2 |
+| Leitura: arquivo `.zip` | não verificado · L3 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · L2 | não verificado · L2 |
 | Edição em memória | sim · E5 | sim · E5 | sim · E5 | sim · E5 | sim · E5 | não verificado · M4 | não verificado · M5 |
 | Diff simulado | sim · E5 | sim · E5 | sim · E5 | sim · E5 | sim · E5 | não verificado · M4 | não verificado · M5 |
 | Gravação: rascunho, aprovar, rollback | sim · E6 | sim · E6 | sim · E6 | recusa · E7 | recusa · E7 | não verificado · M4 | não verificado · M5 |
-| Gravação: seletor nativo e prompt de permissão | não verificado · M1 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · M4 | não verificado · M5 |
-| Exportar versões completas | sim · E8 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · M4 | não verificado · M5 |
-| Exportar/importar configuração | não verificado · L1 | não verificado · L1 | não verificado · L1 | não verificado · L1 | não verificado · L1 | não verificado · M4 | não verificado · M5 |
-| Visual: profundidade 3D e fontes | não verificado · M3 | não verificado · M3 | não verificado · M3 | não verificado · M3 | não verificado · M3 | não verificado · M4 | não verificado · M5 |
-
-A coluna Chromium usa M1 para `.zip` e seletor nativo: o M1 roda no Chrome, mesmo motor; o build do Playwright não é usado à mão.
+| Gravação: seletor nativo e prompt de permissão | não verificado · L3 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · L2 | não verificado · L2 |
+| Exportar versões completas | não verificado · L3 | não verificado · M1 | não verificado · M2 | recusa · E7 | recusa · E7 | não verificado · L2 | não verificado · L2 |
+| Exportar/importar configuração | não verificado · L1 | não verificado · L1 | não verificado · L1 | não verificado · L1 | não verificado · L1 | não verificado · L2 | não verificado · L2 |
+| Visual: profundidade 3D e fontes | não verificado · M3 | não verificado · M3 | não verificado · M3 | não verificado · M3 | não verificado · M3 | não verificado · L2 | não verificado · L2 |
 
 ## Evidências
 
@@ -323,7 +365,7 @@ Todas as execuções em 2026-10-14, nas versões acima.
 | E5 | `Compat_FixtureEdit_DiffShowsSimulatedPatch` | `e2e/browser-compat.spec.js` | os cinco |
 | E6 | `Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory`, `Rollback_AfterApply_RestoresOriginalFile`, `Rollback_FileChangedOutside_RefusesAndKeepsFile` (pasta no OPFS entregue por `showDirectoryPicker` simulado) | `e2e/apply-flow.spec.js` | `chromium`, `chrome`, `msedge` |
 | E7 | `Compat_NoFsAccess_WriteEntryPointsNameTheBrowser` (conectar pasta, abrir `.zip`, rascunho e exportação recusam; aprovar e rollback são inalcançáveis sem pasta) | `e2e/browser-compat.spec.js` | `firefox`, `webkit` (pulado onde há File System Access) |
-| E8 | `ExportLog_AfterDraft_HasSha256MatchingDisk` (destino da exportação no OPFS, seletor simulado) | `e2e/write-log-hash.spec.js` | `chromium` |
+| E8 | `ExportLog_AfterDraft_HasSha256MatchingDisk` (evidência parcial da exportação: destino no OPFS, seletor simulado; afere só o `layers-export.log`, com o hash do rascunho; arquivos exportados e `layers-changes.json` não conferidos) | `e2e/write-log-hash.spec.js` | `chromium` |
 
 Sondas de API por motor: `Compat_Probes_ReadPathEverywhereWriteTierAllOrNothing` contra `e2e/__snapshots__/compat-probes.json` (tabela legível no relatório, § 2). O corte entre os motores é exatamente a File System Access API: seletores de pasta, de arquivo e de gravação, e permissões de handle.
 
@@ -333,10 +375,10 @@ Nenhum passo manual foi executado até 2026-10-14. Procedimento de cada um no re
 
 | Id | Navegador | O que falta provar |
 |---|---|---|
-| M1 | Chrome 155 instalado | seletor nativo e prompt `readwrite`, aprovar numa pasta real, reabrir após reload, exportação completa, abrir `.zip` |
-| M2 | Edge 155 instalado | igual ao M1 |
-| M3 | os cinco (PNGs de `Compat_TravalOrbit_ScreenshotsForManualReview`) | profundidade 3D após orbitar, Inter e JetBrains Mono renderizadas, painéis sem sobreposição |
-| M4 | Safari no macOS | carregar, editar, ver o diff simulado e a recusa do rascunho |
+| M1 | Chrome instalado | seletor nativo e prompt `readwrite`, aprovar numa pasta real, reabrir após reload, exportação completa, abrir `.zip` |
+| M2 | Edge instalado | igual ao M1 |
+| M3 | os cinco projetos Playwright (PNGs de `Compat_TravalOrbit_ScreenshotsForManualReview`) | profundidade 3D após orbitar, Inter e JetBrains Mono renderizadas, painéis sem sobreposição |
+| M4 | Safari no macOS | leitura de fixture, edição, diff simulado e recusa do rascunho |
 | M5 | Firefox estável | igual ao M4 |
 
 ## Lacunas
@@ -344,6 +386,8 @@ Nenhum passo manual foi executado até 2026-10-14. Procedimento de cada um no re
 | Id | Capacidade | Por que não verificado |
 |---|---|---|
 | L1 | Exportar/importar configuração (`layers-config.json`) | Nenhum teste em nenhum motor. A recusa sem File System Access existe no código (ver Mensagens), mas nenhum teste a exercita. Achado 2 do relatório da S5.7, candidato a folha própria. |
+| L2 | Safari real e Firefox estável, fora das linhas que M4/M5 cobrem | Safari real e Firefox estável fora do escopo de M4/M5: só carga de fixture, edição, diff e recusa do rascunho. As demais células não têm teste nem passo manual nesses navegadores. |
+| L3 | Coluna Chromium: `.zip`, seletor nativo e exportação completa | O build do Playwright não é usado à mão; ver M1 no Chrome, mesmo motor. Na exportação, E8 roda neste build mas é evidência parcial (ver Evidências). |
 
 ## Mensagens
 
@@ -353,7 +397,7 @@ Texto exibido quando falta a File System Access API (trecho literal do `index.ht
 |---|---|
 | Conectar pasta local… | `File System Access API indisponível — use Chrome ou Edge. Os ajustes seguem em modo simulado.` |
 | Abrir arquivo .zip… | `Abrir .zip usa a File System Access API — abra no Chrome ou Edge.` |
-| Gerar rascunho, Aprovar, Exportar versões completas | `Este navegador não grava em disco — use Chrome ou Edge.` |
+| Gerar rascunho, Exportar versões completas (Aprovar recusa igual, inalcançável sem pasta) | `Este navegador não grava em disco — use Chrome ou Edge.` |
 | Exportar configuração | `Exportar configuração usa a File System Access API — abra no Chrome ou Edge.` |
 | Importar configuração | `Importar configuração usa a File System Access API — abra no Chrome ou Edge.` |
 | Palco vazio | `Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta.` |
@@ -362,7 +406,7 @@ Texto exibido quando falta a File System Access API (trecho literal do `index.ht
 
 | Sistema | Estado | Fonte |
 |---|---|---|
-| Windows 11 | verificado: todas as execuções automatizadas | relatório da S5.7, § 1 |
+| Windows 11 | verificado: todas as execuções automatizadas | Versões testadas, acima |
 | macOS | não verificado · M4 | sem Mac na máquina de referência |
 | Linux | não verificado | nenhuma execução registrada |
 
@@ -372,44 +416,46 @@ Só para servir e testar; o app em si roda no navegador.
 
 | Item | Estado | Fonte |
 |---|---|---|
-| Node 24.19.0 LTS + npm 12.0.2 | verificado | [LOCAL-SETUP.md](LOCAL-SETUP.md) § Toolchain (install limpo, `npm audit` sem vulnerabilidades, app sem erro de console); `npm test` verde nesta matriz |
-| Node 22.22.2+ ou 24.15.0+ com npm 12+ | requisito; versões-piso não verificadas | o piso vem do `engines` do próprio npm 12 ([LOCAL-SETUP.md](LOCAL-SETUP.md) § Toolchain); `package.json` não declara `engines` |
-| npm 10.9.2 | não suportado | falha conhecida no `npm install` ([LOCAL-SETUP.md](LOCAL-SETUP.md), problemas comuns) |
+| Node 24.19.0 LTS + npm 12.0.2 | verificado | [LOCAL-SETUP.md](LOCAL-SETUP.md) § Rodar, Toolchain (install limpo, `npm audit` sem vulnerabilidades, app sem erro de console) |
+| Node 22.22.2+ ou 24.15.0+ com npm 12+ | requisito; versões-piso não verificadas | o piso vem do `engines` do próprio npm 12 ([LOCAL-SETUP.md](LOCAL-SETUP.md) § Rodar, Toolchain); `package.json` não declara `engines` |
+| npm 10.9.2 | não suportado | falha conhecida no `npm install` ([LOCAL-SETUP.md](LOCAL-SETUP.md) § Problemas conhecidos) |
 | Playwright 1.63.0 (E2E) | verificado | `package-lock.json`; precisa do Chrome e do Edge instalados e de `npx playwright install firefox webkit` |
 
 ## Como manter
 
-- `npm test` falha em `test/support-matrix.test.js` quando esta matriz diverge de `e2e/__snapshots__/compat-probes.json` (uma coluna por motor; a linha "Gravação: rascunho, aprovar, rollback" é `sim` só onde há `showDirectoryPicker`), cita um teste que não existe em `e2e/` ou cita uma mensagem ausente do `index.html`.
+- `npm test` falha em `test/support-matrix.test.js` nestes casos: a matriz diverge de `e2e/__snapshots__/compat-probes.json` (uma coluna por motor; gravação `sim` só onde há `showDirectoryPicker`, recusa só onde não há); cita um teste que não existe em `e2e/`; cita uma mensagem ausente do `index.html`; ou ainda cita M1/M2 depois que a linha "Compatibilidade" do checklist E for fechada.
+- Mudar um texto de recusa ou um título citado exige atualizar a matriz no mesmo commit (o `npm test` reprova). Outras branches que mexam nos 6 toasts ou renomeiem testes citados (ex.: S3.4) devem cuidar disso.
 - Ao concluir um passo M1-M5, troque as células `não verificado · M<n>` pela evidência e registre a data aqui e no relatório.
 - Navegador atualizado: rode de novo `e2e/browser-compat.spec.js` (comandos no relatório, § 7) e atualize Versões testadas.
 ````
 
-- [ ] **Step 3: Check the index and the links**
+- [ ] **Step 2: Check the index and the links**
 
 The doc hook regenerates `docs/_index.md` on write. Run:
 
 ```bash
-grep -c 'support-matrix.md' docs/_index.md            # expect 1
+grep -c '](support-matrix.md)' docs/_index.md          # expect 1
 head -6 docs/support-matrix.md                         # frontmatter as written (hook may add fields; keep them)
 for f in superpowers/plans/2026-10-14-s5-7-browser-compat.md superpowers/reports/2026-10-14-s5-7-compat-evidence.md ../README.md LOCAL-SETUP.md; do test -e "docs/$f" && echo "ok $f" || echo "MISSING $f"; done
 grep -c '||' docs/support-matrix.md                    # expect 0
+grep -c '^## Problemas conhecidos$' docs/LOCAL-SETUP.md   # expect 1
 ```
 
 If `_index.md` lacks the entry (hook not active in this session), run `python ~/.claude/scripts/retrofit_docs.py .`. Stage only `docs/_index.md` and `docs/support-matrix.md`, and revert any other file it touched (`git checkout -- <file>`).
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 3: Commit**
 
 ```bash
 npm test
 git add docs/support-matrix.md docs/_index.md
-git commit -m "docs: add the browser support matrix (S7.3 Task 1)"
+git commit -m "docs: add the browser support matrix (S7.3 Task 2)"
 ```
 
 ---
 
-### Task 2: Guard the matrix with a unit test
+### Task 3: Guard the matrix with a unit test
 
-Depends on `[!DECISION] matrix-guard` = A. With B, skip this task and remove the "Como manter" first bullet in Task 1.
+Depends on `[!DECISION] matrix-guard` = A. With B, skip this task and remove the first two "Como manter" bullets from Task 2.
 
 **Files:**
 - Create: `test/support-matrix.test.js`
@@ -421,7 +467,7 @@ import { describe, it, expect } from 'vitest';
 import fs from 'node:fs';
 import path from 'node:path';
 
-// S7.3: docs/support-matrix.md must agree with the probe snapshot, the e2e titles and index.html
+// S7.3: docs/support-matrix.md must agree with the probes, the e2e titles, index.html and checklist E
 const root = path.resolve(import.meta.dirname, '..');
 const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
 const md = read('docs/support-matrix.md');
@@ -430,6 +476,7 @@ const specs = fs.readdirSync(path.join(root, 'e2e')).filter((f) => f.endsWith('.
 
 const section = (title) => md.split(/^## /m).find((s) => s.startsWith(title + '\n')) || '';
 const rows = (title) => section(title).split('\n').filter((l) => l.startsWith('|')).map((l) => l.slice(1, -1).split('|').map((c) => c.trim()));
+const TITLE = /^[A-Z][A-Za-z0-9]*_[A-Za-z0-9<>]+_[A-Za-z0-9]+$/;
 
 describe('support matrix', () => {
   const [head = [], , ...body] = rows('Matriz');
@@ -450,10 +497,23 @@ describe('support matrix', () => {
     });
   });
 
-  it('SupportMatrix_CitedTests_ExistInE2eSpecs', () => {
-    const titles = [...new Set([...md.matchAll(/`([A-Z][A-Za-z0-9]*_[A-Za-z0-9<>]+_[A-Za-z0-9]+)`/g)].map((m) => m[1]))];
-    expect(titles.length).toBeGreaterThanOrEqual(9);
-    for (const t of titles) expect(specs.includes(t.replace('<fixture>', '${name}')), t).toBe(true);
+  it('SupportMatrix_WriteEvidence_MatchesFolderPickerProbe', () => {
+    for (const r of body) cols.forEach((k, i) => {
+      if (!k) return;
+      const bad = probes[k].showDirectoryPicker ? /^recusa · E7$/ : /^sim · E[68]$/;
+      expect(bad.test(r[i]), `${k} × ${r[0]}: "${r[i]}"`).toBe(false);
+    });
+  });
+
+  it('SupportMatrix_CitedTests_QuotedInE2eSpecs', () => {
+    // anything backticked that starts like a test title must parse as one: no silent skip
+    const cited = [...new Set([...md.matchAll(/`([A-Z][A-Za-z0-9<>]*_[^`]*)`/g)].map((m) => m[1]))];
+    expect(cited.length).toBeGreaterThanOrEqual(9);
+    for (const t of cited) {
+      expect(TITLE.test(t), `unparsed title: ${t}`).toBe(true);
+      const src = t.replace('<fixture>', '${name}');
+      expect(["'", '"', '`'].some((q) => specs.includes(q + src + q)), `not a test title in e2e/: ${t}`).toBe(true);
+    }
   });
 
   it('SupportMatrix_RefusalMessages_ExistInIndexHtml', () => {
@@ -462,47 +522,58 @@ describe('support matrix', () => {
     expect(msgs.length).toBeGreaterThanOrEqual(5);
     for (const m of msgs) expect(html.includes(m), m).toBe(true);
   });
+
+  it('SupportMatrix_ChecklistE62Closed_NoM1M2Cells', () => {
+    const closed = /^- \[x\] Compatibilidade/m.test(read('docs/RELEASE-CHECKLIST.md'));
+    expect(closed && /· M[12]\b/.test(md), 'checklist E closed but the matrix still waits on M1/M2').toBe(false);
+  });
 });
 ```
 
 - [ ] **Step 2: Run it green**
 
 Run: `npx vitest run test/support-matrix.test.js`
-Expected: `4 passed`. Then `npm test`: all files pass.
+Expected: `6 passed`. Then `npm test`: all files pass.
 
 - [ ] **Step 3: Prove each check bites (no commit)**
 
 Run each mutation on its own, confirm that exactly the named test fails, then restore. The comment above each command names the test that must fail:
 
 ```bash
-# M-a, write cell lies (Firefox write cell becomes sim) -> SupportMatrix_WriteRow_MatchesFolderPickerProbe
+# M-a, write row lies (Firefox write cell becomes sim) -> SupportMatrix_WriteRow_MatchesFolderPickerProbe
 sed -i 's/^| Gravação: rascunho, aprovar, rollback | sim · E6 | sim · E6 | sim · E6 | recusa · E7/| Gravação: rascunho, aprovar, rollback | sim · E6 | sim · E6 | sim · E6 | sim · E7/' docs/support-matrix.md
-# M-b, cited test renamed -> SupportMatrix_CitedTests_ExistInE2eSpecs
+# M-b, Firefox claims a local folder -> SupportMatrix_WriteEvidence_MatchesFolderPickerProbe
+sed -i 's/^| Leitura: pasta local | sim · E6 | sim · E6 | sim · E6 | recusa · E7/| Leitura: pasta local | sim · E6 | sim · E6 | sim · E6 | sim · E6/' docs/support-matrix.md
+# M-c, cited test renamed -> SupportMatrix_CitedTests_QuotedInE2eSpecs
 sed -i 's/Compat_FixtureEdit_DiffShowsSimulatedPatch/Compat_FixtureEdit_Renamed/' docs/support-matrix.md
-# M-c, toast reworded -> SupportMatrix_RefusalMessages_ExistInIndexHtml
+# M-d, title the regex cannot parse -> SupportMatrix_CitedTests_QuotedInE2eSpecs
+sed -i 's/Compat_FixtureEdit_DiffShowsSimulatedPatch/Compat_Fixture-Edit_DiffShowsSimulatedPatch/' docs/support-matrix.md
+# M-e, toast reworded -> SupportMatrix_RefusalMessages_ExistInIndexHtml
 sed -i 's/Abrir .zip usa a File System/Abrir .zip exige a File System/' docs/support-matrix.md
-# M-d, engine column lost its project key -> SupportMatrix_ProbeSnapshot_EveryEngineHasOneColumn
+# M-f, engine column lost its project key -> SupportMatrix_ProbeSnapshot_EveryEngineHasOneColumn
 sed -i 's/ (`webkit`)//' docs/support-matrix.md
+# M-g, checklist E closed while M1/M2 cells remain -> SupportMatrix_ChecklistE62Closed_NoM1M2Cells
+sed -i 's/^- \[~\] Compatibilidade/- [x] Compatibilidade/' docs/RELEASE-CHECKLIST.md
 ```
 
-After each one: `npx vitest run test/support-matrix.test.js` reports exactly the named test as failed, then `git checkout -- docs/support-matrix.md`. Finally, `npx vitest run test/support-matrix.test.js` reports `4 passed` and `git status --short` shows only `?? test/support-matrix.test.js`.
+After each one: `npx vitest run test/support-matrix.test.js` reports exactly the named test as failed, then `git checkout -- docs/support-matrix.md docs/RELEASE-CHECKLIST.md`. Finally, `npx vitest run test/support-matrix.test.js` reports `6 passed` and `git status --short` shows only `?? test/support-matrix.test.js`.
 
 - [ ] **Step 4: Commit**
 
 ```bash
 npm test
 git add test/support-matrix.test.js
-git commit -m "test: guard the support matrix against probes, e2e titles and messages (S7.3 Task 2)"
+git commit -m "test: guard the support matrix against probes, e2e titles, messages and checklist E (S7.3 Task 3)"
 ```
 
 ---
 
-### Task 3: Link the matrix from README and TOPOLOGY
+### Task 4: Link the matrix from README and TOPOLOGY
 
 `README.md:36` and `:37` ("Conectar pasta local… (Chrome/Edge)", "Abrir arquivo .zip… (Chrome/Edge)") already agree with the matrix: those entries refuse on `firefox`/`webkit` (E7). They stay unchanged. Only line 13 needs the qualifier and the link.
 
 **Files:**
-- Modify: `README.md` (line 13; one line added to § Estrutura)
+- Modify: `README.md` (line 13; one line added to § Estrutura after line 95)
 - Modify: `docs/TOPOLOGY.md` (line 99 only)
 
 Executor contract (paste into the prompt):
@@ -551,25 +622,25 @@ npm test
 
 ```bash
 git add README.md docs/TOPOLOGY.md
-git commit -m "docs: link the support matrix from README and topology (S7.3 Task 3)"
+git commit -m "docs: link the support matrix from README and topology (S7.3 Task 4)"
 ```
 
 ---
 
-### Task 4: Checklist G item and changelog fragment
+### Task 5: Checklist G item and changelog fragment
 
 **Files:**
-- Modify: `docs/RELEASE-CHECKLIST.md` (line 81 only; line 8 `Hoje: …` is not touched, a dedicated integration step recounts it)
+- Modify: `docs/RELEASE-CHECKLIST.md` (line 81 only). Line 8 `Hoje: …` is not touched: the recount is left to the wave integration (S7.8a pattern, a micro leaf under S7.8).
 - Create: `changelog.d/docs-261014-0-s7-3-support-matrix.md`
 
-Executor contract: same format, refusal tokens and acceptance rules as Task 3. Output `anchor 1 <count>`, `edited <file>` / `created <file>`, then `exit_code <n>` and the raw Step 3 output. The controller passes the checklist state from `[!DECISION] checklist-g-state` (`x` by default, `~` with Option B) and commits.
+Executor contract: same format, refusal tokens and acceptance rules as Task 4. Output `anchor 1 <count>`, `edited <file>` / `created <file>`, then `exit_code <n>` and the raw Step 3 output. The controller passes the checklist state from `[!DECISION] checklist-g-state` (`x` by default, `~` with Option B) and commits.
 
 - [ ] **Step 1: Close the G item**
 
 Confirm `grep -c '^- \[ \] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação).$' docs/RELEASE-CHECKLIST.md` prints `1`, then replace that line with (state `x` unless the controller passed `~`):
 
 ```md
-- [x] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação) em [docs/support-matrix.md](support-matrix.md); cada célula cita um teste ou fica "não verificado" com o passo manual (M1-M5) ou a lacuna, e `test/support-matrix.test.js` a mantém alinhada às sondas.
+- [x] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação) em [docs/support-matrix.md](support-matrix.md); cada célula cita um teste ou fica "não verificado" com o passo manual (M1-M5) ou a lacuna (L1-L3), e `test/support-matrix.test.js` a mantém alinhada às sondas.
 ```
 
 - [ ] **Step 2: Write the fragment**
@@ -583,12 +654,12 @@ adr: none
 
 ### Docs
 
-- Nova `docs/support-matrix.md`: navegadores × funcionalidades (carga, leitura por origem, edição, diff simulado, gravação, exportação, configuração, visual), versões testadas, sistema operacional e ambiente de desenvolvimento; cada célula cita um teste E2E ou fica "não verificado" com o passo manual pendente (M1-M5) ou a lacuna.
+- Nova `docs/support-matrix.md`: navegadores × funcionalidades (carga, leitura por origem, edição, diff simulado, gravação, exportação, configuração, visual), versões testadas, sistema operacional e ambiente de desenvolvimento; cada célula cita um teste E2E ou fica "não verificado" com o passo manual pendente (M1-M5) ou a lacuna (L1-L3).
 - README (Requisitos, Estrutura) e docs/TOPOLOGY.md (fronteira App → disco) apontam para a matriz; checklist G "Matriz de suporte" fechado.
 
 ### Tests
 
-- `test/support-matrix.test.js`: `npm test` falha se a matriz divergir de `e2e/__snapshots__/compat-probes.json`, citar teste inexistente em `e2e/` ou citar mensagem ausente do `index.html`.
+- `test/support-matrix.test.js`: `npm test` falha se a matriz divergir de `e2e/__snapshots__/compat-probes.json`, citar teste inexistente em `e2e/`, citar mensagem ausente do `index.html` ou ainda citar M1/M2 com a compatibilidade do checklist E fechada.
 
 ### Perf
 
@@ -610,77 +681,48 @@ npm test
 
 ```bash
 git add docs/RELEASE-CHECKLIST.md changelog.d/docs-261014-0-s7-3-support-matrix.md
-git commit -m "docs: close checklist G support matrix item with changelog fragment (S7.3 Task 4)"
+git commit -m "docs: close checklist G support matrix item with changelog fragment (S7.3 Task 5)"
 ```
 
 The roadmap row S7.3 moves to `done` (report column = fragment) in `phase-close-gate`, not here.
 
----
+## Hand-off notes
 
-### Task 5: Freshness check at the branch tip
-
-The matrix transcribes the S5.7 run of 2026-10-14. S4.4b and S3.2 merged after it, and Chrome/Edge auto-update. This task proves the cited tests still run where the Evidências table says, and still pass.
-
-**Files:**
-- Modify (only if Step 2 finds drift): `docs/support-matrix.md`
-
-- [ ] **Step 1: Projects per cited test (no browser)**
-
-```bash
-npx playwright test --list e2e/browser-compat.spec.js e2e/apply-flow.spec.js e2e/write-log-hash.spec.js > /tmp/s7-3-list.txt; echo "exit_code $?"
-for t in Compat_TravalLoad_NoPageErrorNoEgress Compat_GithubRepoMocked_LoadsReadOnlyAndRefusesWrite Compat_FixtureEdit_DiffShowsSimulatedPatch Compat_NoFsAccess_WriteEntryPointsNameTheBrowser Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory ExportLog_AfterDraft_HasSha256MatchingDisk; do echo "$t $(grep "$t" /tmp/s7-3-list.txt | sed -E 's/^ *\[([a-z]+)\].*/\1/' | sort | tr '\n' ' ')"; done
-```
-
-Expected (projects listed per title): `TravalLoad`, `GithubRepoMocked`, `FixtureEdit`, `NoFsAccess`: all five (`NoFsAccess` is listed everywhere but skips at runtime where `showDirectoryPicker` exists); `Apply_…`: `chrome chromium msedge`; `ExportLog_…`: `chromium`. Any other set: fix the Evidências "Projetos" cell and the matching matrix cells.
-
-- [ ] **Step 2: Re-run the cited specs (lock wrapper)**
-
-Through the § Global Constraints wrapper:
-
-```bash
-npx playwright test e2e/browser-compat.spec.js e2e/apply-flow.spec.js e2e/write-log-hash.spec.js e2e/tree-snapshot.spec.js
-```
-
-Expected: no failure. The skips are `Compat_NoFsAccess_…` on the three Chromium projects, `Compat_FsAccess_…` on `firefox`/`webkit`, and the `Compat_<fixture>_…` set on `chromium`. Copy the five `[compat]` lines. If a version differs from Versões testadas, update that row and the run date in Versões testadas and Evidências, and commit:
-
-```bash
-npm test
-git add docs/support-matrix.md
-git commit -m "docs: refresh tested versions in the support matrix (S7.3 Task 5)"
-```
-
-On any test failure: stop and report. A failing cited test means the matrix cell is false. Fixing that is out of scope for this leaf.
+- **Coupling created by the guard:** changing a refusal text or a cited title requires updating the matrix in the same commit, because `npm test` fails otherwise. Other branches that touch the six toasts or rename cited tests (e.g. S3.4) must do the same.
+- **Checklist counter:** closing G:81 changes the truth of line 8. The counters there are stale for several leaves (S3.2, S5.7, S4.6, and this one), so the wave integration must recount all of them (S7.8a pattern). This leaf does not edit line 8.
+- **Out-of-scope findings:** `docs/TOPOLOGY.md:101` network claim; npm 11+ vs 12+ in `docs/RELEASE-CHECKLIST.md:75`.
 
 ## Model Routing
 
 | Step | Role | Tier | Model | Rationale |
 |---|---|---|---|---|
 | 0. Tracker row + rebuild + cherry-pick | gen | Standard | Workhorse | needs the `roadmap` skill and git judgment |
-| 1. `docs/support-matrix.md` from verified facts | gen | Standard | Workhorse | PT-BR docs authoring; each cell re-checked against specs and the probe snapshot (Step 1) |
-| 2. Guard test + mutation proof | gen | Standard | Workhorse | test authoring never goes to the Executor |
-| 3. README/TOPOLOGY link hunks | gen | Mechanical | Executor (`executor` subagent, no `model`) | verbatim text with unique anchors and a fixed output contract; the controller validates counts, diff stat and `exit_code`, and commits |
-| 4. Checklist line + fragment | gen | Mechanical | Executor (`executor` subagent, no `model`) | verbatim text, state passed by the controller; same contract; the controller commits |
-| 5. `--list` cross-check + E2E rerun | gen | Standard | Workhorse | owns the lock and port; a version drift or failure needs judgment |
+| 1. `--list` cross-check + E2E rerun | gen | Standard | Workhorse | owns the lock and port; a project-set drift, version change or failure needs judgment |
+| 2. `docs/support-matrix.md` from verified facts | gen | Standard | Workhorse | PT-BR docs authoring with the Task 1 versions and date |
+| 3. Guard test + mutation proof | gen | Standard | Workhorse | test authoring never goes to the Executor |
+| 4. README/TOPOLOGY link hunks | gen | Mechanical | Executor (`executor` subagent, no `model`) | verbatim text with unique anchors and a fixed output contract; the controller validates counts, diff stat and `exit_code`, and commits |
+| 5. Checklist line + fragment | gen | Mechanical | Executor (`executor` subagent, no `model`) | verbatim text, state passed by the controller; same contract; the controller commits |
 | Pre-merge review | review | Architectural | Architect (`adversarial-reviewer`) | verifier ≥ generator; checks every matrix cell against the cited test and `compat-probes.json`, and the guard against its mutations |
 
 ## Self-Review
 
 | Requirement | Where |
 |---|---|
-| Exact artifact for checklist G:81 and where it lives | Context, `[!DECISION] matrix-location`, Task 1 |
-| S5.7 output 1, versions and date | Task 1 § Versões testadas |
-| S5.7 output 2, probe matrix | § Evidências note + guard (Task 2) |
-| S5.7 output 3, behavior matrix, every cell sourced | Task 1 § Matriz + § Evidências |
-| S5.7 output 4, refusal messages | Task 1 § Mensagens + guard |
+| Exact artifact for checklist G:81 and where it lives | Context, `[!DECISION] matrix-location`, Task 2 |
+| Cited evidence fresh at the tip before G:81 closes | Task 1 (before Task 2) |
+| S5.7 output 1, versions and date | Task 1 Step 2 → Task 2 § Versões testadas |
+| S5.7 output 2, probe matrix | § Evidências note + guard (Task 3) |
+| S5.7 output 3, behavior matrix, every cell sourced | Task 2 § Matriz + § Evidências; M-cells only where M1-M5 apply, L1-L3 elsewhere |
+| S5.7 output 4, refusal messages | Task 2 § Mensagens + guard |
 | S5.7 output 5, cosmetic differences | linked to report § 5 (not copied) |
-| S5.7 output 6, unverified cells named | § Verificação pendente (M1-M5), § Lacunas (L1) |
+| S5.7 output 6, unverified cells named | § Verificação pendente (M1-M5), § Lacunas (L1-L3) |
 | S5.7 output 7, re-run commands | linked to report § 7; § Como manter |
-| S5.7 output 8, README:13/:36/:37 and TOPOLOGY:99 | Task 3 (36/37 verified unchanged) |
-| Node/npm and OS dimensions | Task 1 § Sistema operacional, § Ambiente de desenvolvimento |
-| Matrix stays true | How it stays true, Task 2, Task 5 |
+| S5.7 output 8, README:13/:36/:37 and TOPOLOGY:99 | Task 4 (36/37 verified unchanged) |
+| Node/npm and OS dimensions | Task 2 § Sistema operacional, § Ambiente de desenvolvimento |
+| Matrix stays true | How it stays true, Task 3, Hand-off notes |
 | Tested versions only | Context (inherited `version-claims` A), Non-goals |
 | `index.html` untouched, visual frozen | Non-goals, Global Constraints |
-| Checklist line 8 untouched; fragment with `### Perf` N/A | Task 4 |
+| Checklist line 8 untouched; fragment with `### Perf` N/A | Task 5, Hand-off notes |
 | Leaf row first commit + plan link; task commits cite `S7.3 Task <id>` | Task 0, Global Constraints |
 
 > [!DECISION] gh-issue-gate
@@ -693,4 +735,4 @@ On any test failure: stop and report. A failing cited test means the matrix cell
 > - **Option A**: keep as `S7.3` (recommended)
 
 > [!DECISION] execution
-> Method: **Native** (recommended). Six small sequential tasks. Tasks 3 and 4 go to the `executor` subagent, and the pre-merge review goes to `adversarial-reviewer`. Subagent-driven adds dispatch cost with no parallelism to gain.
+> Method: **Native** (recommended). Six small sequential tasks. Tasks 4 and 5 go to the `executor` subagent, and the pre-merge review goes to `adversarial-reviewer`. Subagent-driven adds dispatch cost with no parallelism to gain.
