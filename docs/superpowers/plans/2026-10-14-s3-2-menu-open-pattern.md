@@ -130,7 +130,7 @@ All colors, sizes, borders and texts stay byte-identical; only attributes
 | Only one menu open | single `state.menu` key | Projetos and Ações move from `cbOpen`/`menuOpen` to `menu` |
 | Keyboard | triggers are native `<button>`s: Enter/Space = click (pins); Tab enters the popover (DOM order); `aria-expanded` on every trigger; `aria-haspopup="menu"` on Projetos/Ações (lists of actions), `aria-haspopup="dialog"` on Aparência/Interagir (panels of controls, not `role=menu`) | no new key bindings |
 | Touch (no hover) | `pointerType === 'touch'` enter/leave ignored; tap = click → open pinned; tap outside closes | touch `pointerleave` fires right after `pointerup`, before `click`; ignoring it avoids a race |
-| Nested | comboboxes inside Aparência live in the `gearRef` subtree, so they count as inside; Escape closes the combobox first | — |
+| Nested | comboboxes inside Aparência live in the `aparRef` subtree, so they count as inside; Escape closes the combobox first | — |
 | Canvas drag | `enter` with `e.buttons ≠ 0` ignored; a stage pointerdown closes the open menu and the orbit starts on the same pointerdown; Interagir resize pins via its popover pointerdown | — |
 
 > [!DECISION] combobox-scope
@@ -192,7 +192,7 @@ Overlap notes:
 - `e2e/menu-visual.spec.js` skips non-Chromium projects (built in), in case S5.7 adds Firefox/WebKit.
 
 Constraint on S3.4 (and S3.3):
-- (a) any new popup inside Aparência stays in the `gearRef` DOM subtree, or it counts as "outside" and closes the menu on pointerdown;
+- (a) any new popup inside Aparência stays in the `aparRef` DOM subtree, or it counts as "outside" and closes the menu on pointerdown; `gearRef`/`gearAnchorNow` are inert on develop (the ref is never in the render model): attaching them moves the popover and requires regenerating `menu-apar-open`;
 - (b) the ⚙ trigger keeps `data-menu="apar"`, and open/close stays in `menuEv('apar')` (`state.menu`/`menuPin` is the only open state); S3.4 changes the popover's contents, never its open logic;
 - (c) S3.4 regenerates `menu-apar-open` and `menu-closed` on purpose, with the reason, in its own PR;
 - S3.3 (tooltips) edits the trigger lines 43, 95, 169, 344 that S3.2 also edits: S3.3 comes after S3.2.
@@ -803,7 +803,7 @@ Insert after the line `  preventBlur = e => e.preventDefault();` (`:1451`; place
   // LayersCore.menuStep. menuCur mirrors state.menu/menuPin synchronously: React batches pointer events.
   menuCur = { menu: null, pin: false, pending: null };
   acoesRef = React.createRef();
-  menuRoots = k => k === 'hist' ? [this.histRef] : k === 'apar' ? [this.gearRef] : k === 'inter' ? [this.interTrigRef, this.interDdRef] : k === 'acoes' ? [this.acoesRef] : [];
+  menuRoots = k => k === 'hist' ? [this.histRef] : k === 'apar' ? [this.aparRef] : k === 'inter' ? [this.interTrigRef, this.interDdRef] : k === 'acoes' ? [this.acoesRef] : [];
   menuHas = (k, n) => !!n && this.menuRoots(k).some(r => r.current && r.current.contains(n));
   menuGo = ev => {
     const r = LayersCore.menuStep(this.menuCur, ev); if (!r) return;
