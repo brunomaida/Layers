@@ -32,6 +32,8 @@ renderizando sem erro de console.
 O piso vem do npm 12, que exige `^22.22.2 || ^24.15.0 || >=26.0.0`. O Vitest 4 também
 não suporta a linha 23 (`^20.0.0 || ^22.0.0 || >=24.0.0`).
 
+**E2E (Playwright):** `npm run test:e2e` roda cinco projetos e precisa do Chrome e do Edge instalados, mais `npx playwright install firefox webkit` uma vez. A porta 5180 é compartilhada entre worktrees (`reuseExistingServer: true`): cada execução pega a trava `/tmp/layers-e2e.lock` com `mkdir` (espera até 60 tentativas, depois desiste), recusa se a 5180 já responde (`curl` diferente de `000`) e remove a trava ao sair (`trap 'rmdir /tmp/layers-e2e.lock' EXIT`). Sessão manual no navegador: segure a trava do início ao fim e pare o dev server antes de soltá-la. Script completo no plano da S5.7, § Global Constraints.
+
 ## O que garante o visual idêntico
 
 Todo recurso de runtime está **versionado no repositório**. Nenhuma requisição sai
