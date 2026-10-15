@@ -5,7 +5,7 @@ import { readNodes } from './tree-helpers.js';
 // outside / Escape / focus leaving / an action item closes, touch taps open pinned. Open state is the
 // trigger's aria-expanded plus the popover's first item.
 const MENUS = [
-  { key: 'hist', probe: 'Conectar pasta local…' },
+  { key: 'hist', probe: /Conectar pasta local…/ }, // regex: the row text starts with a "+" span, an exact string never matches
   { key: 'apar', probe: 'Aparência' },
   { key: 'inter', probe: 'Modo interativo' },
   { key: 'acoes', probe: /^Ver diff/ },

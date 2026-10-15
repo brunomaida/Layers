@@ -39,10 +39,10 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
 
   <div style="grid-column:1 / -1;position:relative;z-index:{{ hdrZ }};display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;height:36px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--line1);white-space:nowrap">
     <div style="display:flex;align-items:center;gap:10px;min-width:0">
-      <div ref="{{ histRef }}" style="position:relative;display:flex;align-items:center;flex:0 0 auto">
-      <button onClick="{{ histToggle }}" title="{{ dirTitle }}" style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:1px solid {{ histBdr }};border-radius:4px;background:{{ histBg }};color:var(--fg2);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;max-width:260px" style-hover="background:var(--faint);color:var(--fg0);border-color:rgba(var(--selRgb),.55)"><span style="display:flex;color:{{ dirColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"/></svg></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ dirPath }}</span><span style="color:var(--fg3);font-size:9px">▾</span></button>
+      <div ref="{{ histRef }}" onPointerEnter="{{ histEnter }}" onPointerLeave="{{ histLeave }}" onBlur="{{ histBlur }}" style="position:relative;display:flex;align-items:center;flex:0 0 auto">
+      <button onClick="{{ histToggle }}" data-menu="hist" aria-haspopup="menu" aria-expanded="{{ histOpen }}" title="{{ dirTitle }}" style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:1px solid {{ histBdr }};border-radius:4px;background:{{ histBg }};color:var(--fg2);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;max-width:260px" style-hover="background:var(--faint);color:var(--fg0);border-color:rgba(var(--selRgb),.55)"><span style="display:flex;color:{{ dirColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"/></svg></span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ dirPath }}</span><span style="color:var(--fg3);font-size:9px">▾</span></button>
       <sc-if value="{{ histOpen }}" hint-placeholder-val="{{ false }}">
-        <div style="position:fixed;left:12px;top:31px;z-index:80;width:340px;max-width:calc(100vw - 24px);max-height:min(460px,calc(100vh - 60px));overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px;background:var(--bg1);border:1px solid rgba(var(--selRgb),.6);border-radius:4px;box-shadow:0 10px 26px var(--shadow2)">
+        <div onPointerDown="{{ histInside }}" style="position:fixed;left:12px;top:31px;z-index:80;width:340px;max-width:calc(100vw - 24px);max-height:min(460px,calc(100vh - 60px));overflow:auto;display:flex;flex-direction:column;gap:2px;padding:6px;background:var(--bg1);border:1px solid rgba(var(--selRgb),.6);border-radius:4px;box-shadow:0 10px 26px var(--shadow2)">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 5px"><span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Projetos recentes</span><span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ histCountLabel }}</span></div>
           <sc-if value="{{ histEmpty }}" hint-placeholder-val="{{ false }}"><span style="padding:6px 8px 10px;font:400 calc(10.5px*var(--fs))/1.45 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty">Nenhum projeto ainda. Conecte uma pasta ou registre um repositório abaixo.</span></sc-if>
           <sc-for list="{{ histItems }}" as="h" hint-placeholder-count="3">
@@ -91,10 +91,10 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     </div>
     <span style="font:400 calc(15.6px*var(--fs))/1 'Michroma',sans-serif;background:linear-gradient(95deg,var(--selLight),var(--sel),var(--selDark));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;justify-self:center">LAYERS</span>
     <div style="display:flex;align-items:center;justify-self:end;gap:6px;flex:0 0 auto;white-space:nowrap;height:36px">
-      <div ref="{{ gearRef }}" onMouseEnter="{{ gearEnter }}" onMouseLeave="{{ gearLeave }}" style="position:relative;height:36px;display:flex;align-items:center">
-        <button onClick="{{ gearPin }}" title="Aparência · Fonte — passe o mouse para abrir · clique para fixar" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:{{ gearBg }};color:{{ gearColor }};font:500 calc(14px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⚙</button>
+      <div ref="{{ aparRef }}" onPointerEnter="{{ gearEnter }}" onPointerLeave="{{ gearLeave }}" onBlur="{{ gearBlur }}" style="position:relative;height:36px;display:flex;align-items:center">
+        <button onClick="{{ gearPin }}" data-menu="apar" aria-haspopup="dialog" aria-expanded="{{ gearOpen }}" title="Aparência · Fonte — passe o mouse para abrir · clique para fixar" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:{{ gearBg }};color:{{ gearColor }};font:500 calc(14px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⚙</button>
         <sc-if value="{{ gearOpen }}" hint-placeholder-val="{{ false }}">
-          <div style="position:fixed;top:{{ gearTop }};right:{{ gearRight }};min-width:260px;max-width:calc(100vw - 24px);padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
+          <div onPointerDown="{{ gearInside }}" style="position:fixed;top:{{ gearTop }};right:{{ gearRight }};min-width:260px;max-width:calc(100vw - 24px);padding:8px 10px;display:flex;flex-direction:column;gap:6px;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
             <span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Aparência</span>
             <div style="display:grid;grid-template-columns:auto max-content;gap:4px 12px;align-items:center">
               <label style="display:contents"><span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">Tema</span><div style="position:relative;width:100%;min-width:0"><button onClick="{{ cb_theme_open }}" onBlur="{{ cbBlur }}" style="height:22px;width:100%;min-width:0;padding:0 22px 0 6px;border:1px solid {{ cb_theme_bdr }};border-radius:4px;background:var(--bg0);color:{{ cbFg }};font:500 11px/1 'Inter',sans-serif;text-align:left;cursor:pointer;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;position:relative" style-hover="border-color:rgba(var(--selRgb),.55)">{{ cfgTheme }}<span style="position:absolute;right:6px;top:0;height:22px;display:flex;align-items:center;color:var(--fg3);font-size:9px">▾</span></button><sc-if value="{{ cb_theme_is }}" hint-placeholder-val="{{ false }}"><div onMouseDown="{{ preventBlur }}" style="position:absolute;left:0;right:0;top:24px;z-index:80;max-height:220px;overflow:auto;padding:3px;background:var(--bg1);border:1px solid rgba(var(--selRgb),.6);border-radius:4px;box-shadow:0 10px 26px var(--shadow2)"><sc-for list="{{ themeOpts }}" as="o" hint-placeholder-count="2"><div onClick="{{ o.pick }}" onMouseEnter="{{ o.hoverIn }}" onMouseLeave="{{ o.hoverOut }}" style="padding:5px 7px;border-radius:3px;font:500 11px/1 'Inter',sans-serif;color:{{ o.color }};background:{{ o.bg }};cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" style-hover="background:rgba(var(--selRgb),.16)">{{ o.label }}</div></sc-for></div></sc-if></div></label>
@@ -165,13 +165,13 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         </span>
       </label>
       <span style="width:1px;height:18px;background:var(--line1);flex:0 0 auto;margin:0 2px"></span>
-      <div ref="{{ interTrigRef }}" onMouseEnter="{{ interEnter }}" onMouseLeave="{{ interLeave }}" style="position:relative;height:36px;display:flex;align-items:center;flex:0 0 auto">
-        <button onClick="{{ interPin }}" title="Superfícies e ações interativas do projeto carregado (layers.json › interactions) — passe o mouse para abrir · clique para fixar" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;border:0;font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;white-space:nowrap;background:{{ interBg }};color:{{ interColor }}"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>Interagir<span style="color:var(--fg3);font-size:calc(12px*var(--fs))">{{ interChev }}</span></button>
+      <div ref="{{ interTrigRef }}" onPointerEnter="{{ interEnter }}" onPointerLeave="{{ interLeave }}" onBlur="{{ interBlur }}" style="position:relative;height:36px;display:flex;align-items:center;flex:0 0 auto">
+        <button onClick="{{ interPin }}" data-menu="inter" aria-haspopup="dialog" aria-expanded="{{ interOpen }}" title="Superfícies e ações interativas do projeto carregado (layers.json › interactions) — passe o mouse para abrir · clique para fixar" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;border:0;font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;white-space:nowrap;background:{{ interBg }};color:{{ interColor }}"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor"><path d="M4 2.5v11l9-5.5z"/></svg>Interagir<span style="color:var(--fg3);font-size:calc(12px*var(--fs))">{{ interChev }}</span></button>
       </div>
     </div>
     </div>
         <sc-if value="{{ interOpen }}" hint-placeholder-val="{{ false }}">
-          <div ref="{{ interDdRef }}" onMouseDown="{{ interDdDown }}" onMouseEnter="{{ interEnter }}" onMouseLeave="{{ interLeave }}" style="position:fixed;z-index:60;top:{{ interDdTop }};left:{{ interDdLeft }};width:{{ interW }};height:{{ interH }};min-width:420px;min-height:160px;max-width:calc(100vw - 24px);max-height:calc(100vh - 120px);overflow:hidden;display:grid;grid-template-columns:{{ interSplit }} 5px minmax(0,1fr);align-items:stretch;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
+          <div ref="{{ interDdRef }}" onPointerDown="{{ interDdDown }}" onPointerEnter="{{ interEnter }}" onPointerLeave="{{ interLeave }}" onBlur="{{ interBlur }}" style="position:fixed;z-index:60;top:{{ interDdTop }};left:{{ interDdLeft }};width:{{ interW }};height:{{ interH }};min-width:420px;min-height:160px;max-width:calc(100vw - 24px);max-height:calc(100vh - 120px);overflow:hidden;display:grid;grid-template-columns:{{ interSplit }} 5px minmax(0,1fr);align-items:stretch;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
             <div style="display:flex;flex-direction:column;gap:1px;padding:6px;overflow:auto;min-width:0;background:var(--bg1)">
               <sc-for list="{{ interLeft }}" as="i" hint-placeholder-count="12">
                 <sc-if value="{{ i.isSep }}" hint-placeholder-val="{{ false }}"><span style="font:700 calc(8px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);padding:8px 6px 3px">{{ i.label }}</span></sc-if>
@@ -340,8 +340,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <button style="all:unset;cursor:pointer;color:var(--fg2);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;width:14px">{{ ajChevron }}</button>
         <span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Ajustes</span>
         <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 6px;border-radius:3px">{{ changeCount }}</span>
-        <div onClick="{{ stop }}" style="position:relative">
-          <button onClick="{{ toggleMenu }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Ações ▾</button>
+        <div ref="{{ acoesRef }}" onPointerEnter="{{ acoesEnter }}" onPointerLeave="{{ acoesLeave }}" onBlur="{{ acoesBlur }}" onClick="{{ stop }}" style="position:relative">
+          <button onClick="{{ toggleMenu }}" data-menu="acoes" aria-haspopup="menu" aria-expanded="{{ menuOpen }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Ações ▾</button>
           <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
             <div style="position:absolute;right:0;bottom:26px;min-width:250px;display:flex;flex-direction:column;padding:4px;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 12px 32px var(--shadow2);z-index:5">
               <button onClick="{{ openDiff }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Ver diff <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· por arquivo, com contexto</span></button>
@@ -1071,7 +1071,7 @@ class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null, demoBase: null,
-    buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, menuOpen: false, diff: null,
+    buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
@@ -1081,10 +1081,10 @@ class Component extends DCLogic {
   treeScrollRef = React.createRef(); colRef = React.createRef(); topBarRef = React.createRef(); gearRef = React.createRef();
   interDdRef = React.createRef();
   saveInter = sz => { this.setState({ interSize: sz }); };
-  interDrag = (e, onMove) => { e.preventDefault(); e.stopPropagation(); clearTimeout(this.menuT); const x0 = e.clientX, y0 = e.clientY, el = this.interDdRef.current, start = { ...this.state.interSize, h: this.state.interSize.h || (el ? el.offsetHeight : 300) }; this.setState({ interResizing: true, menuPin: true }); const mv = ev => this.setState({ interSize: onMove(start, ev.clientX - x0, ev.clientY - y0) }); const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); this.setState({ interResizing: false }); this.saveInter(this.state.interSize); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); };
+  interDrag = (e, onMove) => { e.preventDefault(); e.stopPropagation(); clearTimeout(this.menuT); const x0 = e.clientX, y0 = e.clientY, el = this.interDdRef.current, start = { ...this.state.interSize, h: this.state.interSize.h || (el ? el.offsetHeight : 300) }; this.setState({ interResizing: true }); const mv = ev => this.setState({ interSize: onMove(start, ev.clientX - x0, ev.clientY - y0) }); const up = () => { window.removeEventListener('mousemove', mv); window.removeEventListener('mouseup', up); this.setState({ interResizing: false }); this.saveInter(this.state.interSize); }; window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up); };
   interCornerDown = e => this.interDrag(e, (st, dx, dy) => ({ ...st, w: Math.max(420, Math.min(window.innerWidth - 24, st.w + dx)), h: Math.max(160, Math.min(window.innerHeight - 120, st.h + dy)) }));
   interSplitDown = e => this.interDrag(e, (st, dx) => ({ ...st, split: Math.max(140, Math.min(st.w - 200, st.split + dx)) }));
-  interDdDown = () => {};
+  interDdDown = () => this.menuGo({ type: 'inside', key: 'inter' });
   cbToggle = k => () => this.setState(st => ({ cbOpen: st.cbOpen === k ? null : k }));
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
@@ -1449,6 +1449,28 @@ class Component extends DCLogic {
   }
   cbBlur = () => { this.cbBlurT = setTimeout(() => this.setState({ cbOpen: null }), 120); };
   preventBlur = e => e.preventDefault();
+  // S3.2: every menu (Projetos 'hist', Aparência 'apar', Interagir 'inter', Ações 'acoes') goes through
+  // LayersCore.menuStep. menuCur mirrors state.menu/menuPin synchronously: React batches pointer events.
+  menuCur = { menu: null, pin: false, pending: null };
+  acoesRef = React.createRef();
+  // gearRef is never in the render model (ref unattached, gearAnchorNow inert); attaching it would move the popover, so the root has its own ref
+  aparRef = React.createRef();
+  menuRoots = k => k === 'hist' ? [this.histRef] : k === 'apar' ? [this.aparRef] : k === 'inter' ? [this.interTrigRef, this.interDdRef] : k === 'acoes' ? [this.acoesRef] : [];
+  menuHas = (k, n) => !!n && this.menuRoots(k).some(r => r.current && r.current.contains(n));
+  menuGo = ev => {
+    const r = LayersCore.menuStep(this.menuCur, ev); if (!r) return;
+    clearTimeout(this.menuT);
+    if (r.menu === 'inter') this.interAnchorNow(); else if (r.menu === 'apar') this.gearAnchorNow();
+    const changed = r.menu !== this.menuCur.menu || r.pin !== this.menuCur.pin;
+    this.menuCur = { menu: r.menu, pin: r.pin, pending: r.timer && r.timer.kind === 'open' ? r.timer.key : null };
+    if (changed) this.setState({ menu: r.menu, menuPin: r.pin });
+    if (r.timer) this.menuT = setTimeout(() => { this.menuCur = { ...this.menuCur, pending: null }; this.menuGo({ type: 'timer', kind: r.timer.kind, key: r.timer.key }); }, r.timer.ms);
+  };
+  menuEv = k => ({ enter: e => this.menuGo({ type: 'enter', key: k, pointer: e.pointerType, buttons: e.buttons }), leave: e => this.menuGo({ type: 'leave', key: k, pointer: e.pointerType }),
+    click: () => this.menuGo({ type: 'click', key: k }), inside: () => this.menuGo({ type: 'inside', key: k }),
+    blur: e => { if (this.menuCur.menu === k && e.relatedTarget && !this.menuHas(k, e.relatedTarget)) this.menuGo({ type: 'close' }); } });
+  menuAct = fn => (...a) => { this.menuGo({ type: 'close' }); return fn(...a); };
+  menuEscape = () => { const k = this.menuCur.menu, back = this.menuHas(k, document.activeElement); this.menuGo({ type: 'close' }); const root = back && this.menuRoots(k)[0].current; const t = root && root.querySelector('[data-menu]'); if (t) t.focus(); };
   interTrigRef = React.createRef();
   interAnchorNow = () => { const b = this.interTrigRef.current; if (!b) return; const r = b.getBoundingClientRect(); const a = { top: Math.round(r.bottom - 5), right: Math.round(r.right) }; const c = this.state.interAnchor; if (!c || c.top !== a.top || c.right !== a.right) this.setState({ interAnchor: a }); };
   gearAnchorNow = () => { const b = this.gearRef.current; if (!b) return; const r = b.getBoundingClientRect(); const a = { top: Math.round(r.bottom - 5) + 'px', right: Math.max(8, Math.round(window.innerWidth - r.right)) + 'px' }; const c = this.state.gearAnchor; if (!c || c.top !== a.top || c.right !== a.right) this.setState({ gearAnchor: a }); };
@@ -1519,8 +1541,9 @@ class Component extends DCLogic {
     // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
     // 400 ms morre com a pagina
     this.onHide = () => this.writeConfig(); window.addEventListener('pagehide', this.onHide);
-    this.onDocDown = e => { if (this.state.cbOpen === 'hist' && this.histRef.current && !this.histRef.current.contains(e.target)) this.setState({ cbOpen: null, histAdding: false }); };
-    document.addEventListener('mousedown', this.onDocDown);
+    // capture: the top bar stops mousedown propagation, a bubbling listener would miss it
+    this.onDocDown = e => { const k = this.menuCur.menu; if (!k || this.menuHas(k, e.target)) return; this.menuGo({ type: 'close' }); if (k === 'hist') this.setState({ histAdding: false }); };
+    document.addEventListener('pointerdown', this.onDocDown, true);
     this.onFocus = () => { if (document.visibilityState === 'hidden') return; clearTimeout(this.staleT); this.staleT = setTimeout(() => this.checkStale(), 300); };
     window.addEventListener('focus', this.onFocus); document.addEventListener('visibilitychange', this.onFocus);
   }
@@ -1551,7 +1574,7 @@ class Component extends DCLogic {
     this.doReload();
   }
   doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
-  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('mousedown', this.onDocDown); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
+  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('pointerdown', this.onDocDown, true); clearTimeout(this.menuT); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
     e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = this.state.rightPx;
@@ -1702,7 +1725,7 @@ class Component extends DCLogic {
   zoomBy(f, cx = 0, cy = 0) { const sx = this.cam().shiftX; this.setState(st => { const z = clamp(st.zoom * f, .2, 12); const r = z / st.zoom; const ex = sx + st.panX; return { zoom: z, panX: cx - (cx - ex) * r - sx, panY: cy - (cy - st.panY) * r }; }); }
   escape() {
     const s = this.state;
-    if (s.shortcuts) this.setState({ shortcuts: false }); else if (s.pending) this.decide(false); else if (s.diff) this.setState({ diff: null }); else if (s.modal) this.setState({ modal: null }); else if (s.menuOpen) this.setState({ menuOpen: false });
+    if (s.shortcuts) this.setState({ shortcuts: false }); else if (s.pending) this.decide(false); else if (s.diff) this.setState({ diff: null }); else if (s.modal) this.setState({ modal: null }); else if (s.cbOpen) this.setState({ cbOpen: null }); else if (this.menuCur.menu) this.menuEscape();
     else if (s.isoId) this.setState({ isoId: null }, () => this.resetView()); else if (s.solo) this.setState({ solo: false }); else this.setState({ selId: '0', active: 0 });
   }
   interactWith(id) { const el = this.els[id]; const n = this.state.byId[id]; if (!el || !n) return; this.setState({ selId: id, active: n.depth, buf: {}, units: {} }); try { el.click(); } catch (e) {} this.scanSoon(); }
@@ -1929,11 +1952,11 @@ class Component extends DCLogic {
           lines.push({ no: ln ? 'L' + ln : '', text: this.patchSel(c) + ' {', ...g }); lines.push({ no: '−', text: '  ' + kebab(c.prop) + ': ' + c.from + ';', color: 'var(--err)', bg: 'rgba(var(--errRgb),.08)' }); lines.push({ no: '+', text: '  ' + kebab(c.prop) + ': ' + c.to + ';', color: 'var(--ok)', bg: 'rgba(var(--okRgb),.08)' }); lines.push({ no: '', text: '}', ...g }); });
         out.push({ path: f.path, note: isCss || f.dc ? '(simulado — conecte a pasta para o diff real)' : '(fonte TS — só registro, patch manual)', lines }); }
     }
-    this.setState({ diff: out, menuOpen: false });
+    this.setState({ diff: out });
   }
   async exportFull() {
     if (this.readOnlyBlock() || this.utilityBlock()) return;
-    this.setState({ menuOpen: false }); if (!this.state.changes.length) return;
+    if (!this.state.changes.length) return;
     if (!window.showDirectoryPicker) { this.toast('A exportação usa a File System Access API — abra no Chrome ou Edge.'); return; }
     if (!this.state.dir) { this.toast('Conecte primeiro a pasta do projeto para ler os arquivos originais.'); return; }
     let target; try { target = await window.showDirectoryPicker({ mode: 'readwrite', id: 'layers-export' }); } catch (e) { return; }
@@ -2138,8 +2161,8 @@ class Component extends DCLogic {
     const hs = 'B', ph = String(this.cfg('panelHeader') ?? 'B')[0];
     const menuOn = { apar: Object.keys(s.cfg).length > 0 };
     const mk = (k, on) => { const open = s.menu === k; return { [k+'Open']: open, [k+'Chev']: open ? '▴' : '▾', [k+'Dot']: open ? 'var(--sel)' : (on ? 'var(--fg1)' : 'var(--line2)'), [k+'Bg']: open ? 'var(--bg2)' : 'rgba(var(--bg1Rgb),.7)', [k+'Color']: open ? 'var(--fg0)' : 'var(--fg2)',
-      [k+'Enter']: () => { clearTimeout(this.menuT); if (k === 'inter') this.interAnchorNow(); if (s.menu !== k) this.setState({ menu: k, menuPin: false }); }, [k+'Leave']: () => { clearTimeout(this.menuT); this.menuT = setTimeout(() => { if (!this.state.menuPin && !this.state.interResizing) this.setState({ menu: null }); }, 260); },
-      [k+'Pin']: () => { if (k === 'inter') this.interAnchorNow(); this.setState(st => st.menu === k && st.menuPin ? { menu: null, menuPin: false } : { menu: k, menuPin: true }); } }; };
+      [k+'Enter']: this.menuEv(k).enter, [k+'Leave']: this.menuEv(k).leave, [k+'Blur']: this.menuEv(k).blur,
+      [k+'Pin']: this.menuEv(k).click }; };
     const pickChip = (label, cur, go) => ({ label, pick: go, bg: cur ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: cur ? 'rgba(var(--accRgb),.45)' : 'var(--line1)', color: cur ? 'var(--acc)' : 'var(--fg2)' });
     const topMenus = { ...mk('inter', s.interact),
       dirPath: s.project ? s.project.name : s.dirName ? s.dirName + ' · sem layers.json' : 'Nenhum projeto', dirColor: s.project ? 'var(--sel)' : s.dirName ? 'var(--warn)' : 'var(--fg3)',
@@ -2171,9 +2194,9 @@ class Component extends DCLogic {
       interTitle: curInter.label, interDesc: curInter.desc || '', interGroups: curInter.groups || [],
       interCount: INTER.filter(i => !i.sep).length };
     const gearOpen = s.menu === 'apar';
-    const gear = { gearOpen, gearBg: gearOpen ? 'var(--bg2)' : 'transparent', gearColor: gearOpen ? 'var(--fg0)' : (menuOn.apar ? 'var(--fg1)' : 'var(--fg2)'),
-      gearEnter: () => { clearTimeout(this.menuT); if (s.menu !== 'apar') { this.gearAnchorNow(); this.setState({ menu: 'apar', menuPin: false }); } }, gearTop: (s.gearAnchor || {}).top || '31px', gearRight: (s.gearAnchor || {}).right || '12px', gearLeave: () => { clearTimeout(this.menuT); this.menuT = setTimeout(() => { if (!this.state.menuPin) this.setState({ menu: null }); }, 260); },
-      gearPin: () => { this.gearAnchorNow(); this.setState(st => st.menu === 'apar' && st.menuPin ? { menu: null, menuPin: false } : { menu: 'apar', menuPin: true }); } };
+    const gear = { gearOpen, aparRef: this.aparRef, gearBg: gearOpen ? 'var(--bg2)' : 'transparent', gearColor: gearOpen ? 'var(--fg0)' : (menuOn.apar ? 'var(--fg1)' : 'var(--fg2)'),
+      gearEnter: this.menuEv('apar').enter, gearTop: (s.gearAnchor || {}).top || '31px', gearRight: (s.gearAnchor || {}).right || '12px', gearLeave: this.menuEv('apar').leave, gearBlur: this.menuEv('apar').blur, gearInside: this.menuEv('apar').inside,
+      gearPin: this.menuEv('apar').click };
     const light = /Light|Claro/i.test(this.cfg('theme') || '');
     const opts = (list, key, colorOf) => list.map(v => { const cur = (this.cfg(key) || ({ theme: 'Dark', panelHeader: 'B · Faixas rotuladas' })[key] || list[0]) === v; const c = colorOf ? colorOf(v) : null; const hv = s.cbHover === key + ':' + v; return { v, label: v, color: hv ? (c || 'var(--fg0)') : cur ? (c || 'var(--sel)') : 'var(--fg1)', hoverIn: () => this.setState({ cbHover: key + ':' + v }), hoverOut: () => this.setState({ cbHover: null }), bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', pick: () => { this.setCfg(key, v); this.setState({ cbOpen: null }); } }; });
     const cfgSet = k => e => this.setCfg(k, e.target.value);
@@ -2248,8 +2271,8 @@ class Component extends DCLogic {
       isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
       hasSibs, noSibs: !hasSibs, scopeOpts,
       propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '',
-      ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menuOpen, toggleMenu: () => this.setState(st => ({ menuOpen: !st.menuOpen })),
-      openDiff: () => this.openDiff(), exportFull: () => this.exportFull(), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
+      ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuEv('acoes').click, acoesRef: this.acoesRef, acoesEnter: this.menuEv('acoes').enter, acoesLeave: this.menuEv('acoes').leave, acoesBlur: this.menuEv('acoes').blur,
+      openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
       promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' : '',
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
       toggleFlat: () => this.setState(st => ({ flat: !st.flat })), persp: s.persp, setPersp: e => this.setState({ persp: +e.target.value }), setSpacing: e => this.setState({ spacing: +e.target.value }), resetView: () => this.resetView(),
@@ -2257,21 +2280,21 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: () => this.pickDir(), openZip: () => this.pickZip(), exportCfg: () => this.exportCfg(), importCfg: () => this.importCfg(), histReset: () => this.resetUI(), hasDir: !!s.dir, reloadItem: () => { this.setState({ cbOpen: null }); this.reloadProject(); }, staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
-      demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: () => this.openDemo(d) }; }),
-      ...(() => { const hist = s.hist || []; const open = s.cbOpen === 'hist'; const curId = s.dirName ? 'folder:' + s.dirName : null;
+      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
+      demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: this.menuAct(() => this.openDemo(d)) }; }),
+      ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuEv('hist'); const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
-        return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: this.cbToggle('hist'), histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
+        return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: he.click, histEnter: he.enter, histLeave: he.leave, histBlur: he.blur, histInside: he.inside, histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
           histEmpty: !hist.length, histHasItems: hist.length > 0, histCountLabel: hist.length + ' / ' + this.histMax(),
           histItems: sorted.map(h => { const cur = h.id === curId; return { name: h.name, isFolder: h.kind !== 'repo', isRepo: h.kind === 'repo', origin: h.kind === 'repo' ? h.path : 'Pasta local · ' + h.path, last: relTime(h.last), lastFull: 'Último uso: ' + new Date(h.last).toLocaleString('pt-BR'),
             title: h.kind === 'repo' ? h.path : 'Reconectar ' + h.name, bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : (h.kind === 'repo' ? 'var(--violet)' : 'var(--fg3)'),
-            open: () => this.openHist(h), pin: e => { e.stopPropagation(); this.saveHist(hist.map(x => x.id === h.id ? { ...x, pinned: !x.pinned } : x)); }, pinTitle: h.pinned ? 'Desafixar' : 'Fixar no topo', pinColor: h.pinned ? 'var(--sel)' : 'var(--fg3)', pinFill: h.pinned ? 'currentColor' : 'none',
+            open: this.menuAct(() => this.openHist(h)), pin: e => { e.stopPropagation(); this.saveHist(hist.map(x => x.id === h.id ? { ...x, pinned: !x.pinned } : x)); }, pinTitle: h.pinned ? 'Desafixar' : 'Fixar no topo', pinColor: h.pinned ? 'var(--sel)' : 'var(--fg3)', pinFill: h.pinned ? 'currentColor' : 'none',
             remove: e => { e.stopPropagation(); idbDel(h.id); this.saveHist(hist.filter(x => x.id !== h.id)); } }; }),
           histClear: () => { hist.filter(x => !x.pinned).forEach(x => idbDel(x.id)); this.saveHist(hist.filter(x => x.pinned)); },
           histAdding: !!s.histAdding, histRepoQ: s.histRepoQ || '', histRepoBdr: 'rgba(var(--selRgb),.6)', histRepoStart: () => this.setState({ histAdding: true }), histRepoCancel: () => this.setState({ histAdding: false, histRepoQ: '' }),
           histRepoInput: e => this.setState({ histRepoQ: e.target.value }), histRepoKey: e => { e.stopPropagation(); if (e.key === 'Enter') this.addRepo(); if (e.key === 'Escape') this.setState({ histAdding: false, histRepoQ: '' }); }, histRepoAdd: () => this.addRepo() }; })(),
       cancelAll: () => { if (s.changes.length) this.pushUndo(); s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
-      openSave: () => { if (!s.changes.length) return; this.setState({ menuOpen: false, modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
+      openSave: () => { this.menuGo({ type: 'close' }); if (!s.changes.length) return; this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
       modalOpen: !!m, modalTitle: m && m.stage === 'confirm' ? m.title : m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos',
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
       isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',

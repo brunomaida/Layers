@@ -50,3 +50,13 @@ for (const m of MENUS) {
     await expect(page).toHaveScreenshot(`menu-${m.key}-open.png`, SHOT);
   });
 }
+
+for (const m of MENUS) {
+  test(`Visual_HoverOpen_${m.key}_MatchesClickBaseline`, async ({ page }) => {
+    await ready(page);
+    await m.trigger(page).hover();
+    await expect(m.probe(page)).toBeVisible();
+    await unfocus(page);
+    await expect(page).toHaveScreenshot(`menu-${m.key}-open.png`, SHOT);
+  });
+}
