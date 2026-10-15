@@ -1054,7 +1054,7 @@
             "title": "feature-261014-0-s4-6-computed-style-cache.md)"
           }
         ],
-        "reason": "medido-negativo: teto do cache +1,3 %; ver S4.8",
+        "reason": "medido-negativo: teto do cache +1,1 %; ver S4.8",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -1092,7 +1092,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "otherMs 12,3 ms (61 % da tarefa) no orbit padrão; escala com o número de planos visíveis; S4.6 mediu o teto do cache de getComputedStyle em +1,3 %",
+        "reason": "otherMs 12,3 ms (61 % da tarefa) no orbit padrão e 5,1 ms com zoom (254 de 414 planos cortados): sugere custo por plano visível (inferência de 2 cenários; CDP sem métrica de paint); S4.6 mediu o teto do cache de getComputedStyle em +1,1 %",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
