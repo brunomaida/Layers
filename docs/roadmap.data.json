@@ -710,7 +710,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 40,
+    "progress": 50,
     "docs": [],
     "children": [
       {
@@ -745,18 +745,24 @@
         "name": "Padrão único de abertura de menus",
         "start": "2026-10-14",
         "end": "2026-10-16",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-14-s3-2-menu-open-pattern.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-14-s3-2-menu-open-pattern.md)",
             "title": "2026-10-14-s3-2-menu-open-pattern.md)"
+          },
+          {
+            "name": "feature-261014-0-s3-2-menu-open-pattern.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261014-0-s3-2-menu-open-pattern.md)",
+            "title": "feature-261014-0-s3-2-menu-open-pattern.md)"
           }
         ],
         "reason": "checklist C; decisão de produto",
