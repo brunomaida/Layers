@@ -7,7 +7,7 @@ import { test, expect } from '@playwright/test';
 
 // S2.21c: tools/layers-snapshot-cli.mjs regenerates layers/mock.html from a running app, headless.
 const CLI = path.resolve('tools/layers-snapshot-cli.mjs');
-const APP = `<!doctype html><html><head><meta charset="utf-8"><title>Fake app</title><style>.card{padding:8px;background:#234}</style></head>
+const APP = `<!doctype html><html><head><meta charset="utf-8"><title>Fake app</title><link rel="stylesheet" href="/app.css"><style data-vite-dev-id="C:/p/src/styles/x.css">.v{color:red}</style><style>.card{padding:8px;background:#234}</style></head>
 <body><div id="root"></div><script>
   const root = document.getElementById('root');
   root.innerHTML = '<div class="card" id="rendered-by-js"><span>montado por JavaScript</span></div>';
@@ -17,7 +17,10 @@ const APP = `<!doctype html><html><head><meta charset="utf-8"><title>Fake app</t
 const run = (args) => new Promise((resolve) => execFile(process.execPath, [CLI, ...args], { encoding: 'utf8', timeout: 60000 }, (err, stdout, stderr) => resolve({ status: err ? (typeof err.code === 'number' ? err.code : 1) : 0, stdout, stderr })));
 
 test('Snapshot_LoopbackApp_WritesRenderedMock', async () => {
-  const server = http.createServer((req, res) => { res.setHeader('content-type', 'text/html'); res.end(APP); });
+  const server = http.createServer((req, res) => {
+    if (req.url === '/app.css') { res.setHeader('content-type', 'text/css'); res.end('.link{margin:1px}'); return; }
+    res.setHeader('content-type', 'text/html'); res.end(APP);
+  });
   await new Promise((r) => server.listen(0, '127.0.0.1', r));
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
   try {
@@ -30,6 +33,10 @@ test('Snapshot_LoopbackApp_WritesRenderedMock', async () => {
     expect(html).toContain('montado por JavaScript');
     expect(html).not.toContain('<script');
     expect(html).toContain('.card { padding: 8px');
+    // S2.22a: one <style> per sheet, tagged with its origin (link href or Vite dev id)
+    expect(html).toMatch(/data-layers-origin="http:\/\/127\.0\.0\.1:\d+\/app\.css"/);
+    expect(html).toContain('data-layers-origin="C:/p/src/styles/x.css"');
+    expect(html.split('</style>').length - 1).toBeGreaterThanOrEqual(3);
     expect(r.stdout).toContain('Reanalisar do 0');
   } finally {
     server.close();
