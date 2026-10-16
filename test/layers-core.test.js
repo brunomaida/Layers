@@ -251,6 +251,12 @@ describe('ScopeAst', () => {
     expect(core.scopeAst('html .x { x: 1 }').css).toBe('.__layers-root .x { x: 1 }');
   });
 
+  it('ScopeAst_RootComHas_MantemEscopoAntigo', () => {
+    expect(core.scopeAst(':root:has(.m) .a { x: 1 }').css).toContain(':host:has(.m) .a');
+    expect(core.scopeAst('html:has(dialog[open]) { overflow: hidden }').css).toContain('.__layers-root:has(dialog[open])');
+    expect(core.scopeAst('html:has(.m)[data-theme=x] { x: 1 }').css).not.toContain(':host(');
+  });
+
   it('Axai_ProduzCssValido', () => {
     const out = core.scopeAst(fixture('axai/wwwroot/painel.css'));
     expect(out.css).toContain(':host');
@@ -267,9 +273,9 @@ describe('HostAttrsFromHtml', () => {
   const at = (name, value) => ({ name, value });
 
   it('HostAttrsFromHtml_AllowlistDeAtributos_MantemDataLangDir', () => {
-    const r = core.hostAttrsFromHtml([at('data-theme', 'light'), at('lang', 'pt-BR'), at('dir', 'ltr'), at('class', 'x'),
+    const r = core.hostAttrsFromHtml([at('data-theme', 'light'), at('lang', 'pt-BR'), at('dir', 'ltr'), at('class', 'dark x-1'),
       at('onclick', 'a()'), at('data-src', 'y'), at('data-layers-frozen', 'z'), at('id', 'i')]);
-    expect(r.attrs).toEqual([at('data-theme', 'light'), at('lang', 'pt-BR'), at('dir', 'ltr')]);
+    expect(r.attrs).toEqual([at('data-theme', 'light'), at('lang', 'pt-BR'), at('dir', 'ltr'), at('class', 'dark x-1')]);
     expect(r.vars).toEqual([]);
   });
 
@@ -282,6 +288,11 @@ describe('HostAttrsFromHtml', () => {
   it('HostAttrsFromHtml_ValorQueFechaOuAbreBloco_DescartaADeclaracao', () => {
     const r = core.hostAttrsFromHtml([at('style', '--a:red}body{display:none;--b:1 !important;--c:<x;--ok:#000')]);
     expect(r.vars).toEqual([at('--ok', '#000')]);
+  });
+
+  it('HostAttrsFromHtml_ClassComCaractereFora_DescartaOAtributo', () => {
+    expect(core.hostAttrsFromHtml([at('class', 'a"b')]).attrs).toEqual([]);
+    expect(core.hostAttrsFromHtml([at('class', 'a<b')]).attrs).toEqual([]);
   });
 
   it('HostAttrsFromHtml_SemAtributos_DevolveListasVazias', () => {
