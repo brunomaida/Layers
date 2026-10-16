@@ -155,3 +155,18 @@ test('Snapshot_InvalidState_RefusedWithoutWriting', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+test('Snapshot_StateGalleryMissing_RefusedWithoutWriting', async () => {
+  const app = await listen((req, res) => { res.statusCode = req.url.startsWith('/gallery.html') ? 404 : 200; res.setHeader('content-type', 'text/html'); res.end('<!doctype html><html><body><div id="x">page</div></body></html>'); });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.html');
+    const r = await run([`http://127.0.0.1:${app.address().port}/`, out, '--state', 'nope', '--wait', '200']);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/404/);
+    expect(fs.existsSync(out)).toBe(false);
+  } finally {
+    app.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});

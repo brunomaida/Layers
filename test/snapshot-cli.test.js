@@ -89,6 +89,9 @@ describe('SnapshotTarget', () => {
   it('ComEstado_ApontaParaAGalleryComRotaDeHash', () => {
     expect(snapshotTarget('http://localhost:5173/', 'csv-loaded')).toBe('http://localhost:5173/gallery.html#/csv-loaded');
   });
+  it('AppEmSubcaminhoSemBarraFinal_PreservaOSubcaminho', () => {
+    expect(snapshotTarget('http://localhost:5173/app', 'x')).toBe('http://localhost:5173/app/gallery.html#/x');
+  });
   it('AppEmSubcaminho_ResolveRelativoAoCaminho', () => {
     expect(snapshotTarget('http://localhost:5173/app/', 'x')).toBe('http://localhost:5173/app/gallery.html#/x');
   });
