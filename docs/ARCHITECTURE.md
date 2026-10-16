@@ -243,9 +243,9 @@ devolve `layout` ("Reanalisar do 0") em vez de `style` quando uma delas muda. Nu
 sem origem (CSS do próprio app, CSS-in-JS) não mascara nada. `LayersCore.maskedSheets` decide isso.
 
 Limites: o casamento por sufixo de uma folha listada na raiz (ex.: `theme.css`) é frouxo e pode casar
-`/node_modules/x/theme.css`; snapshots antigos precisam de um novo para se beneficiar. Num snapshot rotulado, uma cópia cuja origem não
-casa com nenhuma folha listada (diferença de caixa no Windows, bundle com hash como `/assets/index-<hash>.css`)
-é mantida e continua vencendo, e o banner reporta `style`. O aviso de
+`/node_modules/x/theme.css`; snapshots antigos precisam de um novo para se beneficiar. Num snapshot
+rotulado, uma cópia cuja origem não casa com nenhuma folha listada (diferença de caixa no Windows, bundle com
+hash como `/assets/index-<hash>.css`) é mantida e continua vencendo, e o banner reporta `style`. O aviso de
 `interactions` sem alvo vai antes dos avisos de URL remota (`LayersCore.placeDeadWarning`), porque o toast da
 carga mostra só `warn[0]`; `css não encontrado` continua primeiro.
 
