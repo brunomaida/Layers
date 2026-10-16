@@ -208,6 +208,8 @@ fonte for editada de novo; numa sessão nova o aviso reaparece enquanto o mock c
 `layout` (mock, `layers.json` ou fonte citada) troca o botão "Recarregar" por "Reanalisar do 0";
 `style` (só folha CSS) mantém o banner de antes.
 
+S2.22d: `layers.json › watch` (globs de fontes, relativos à raiz da pasta) completa as fontes citadas. `walkWatch` percorre a pasta conectada só nas pastas que algum glob alcança (`LayersCore.globDirMayMatch`), pula `node_modules`, `.git`, `dist`, `build` e pastas de ponto e para em 5000 entradas; `LayersCore.globMatch` seleciona os arquivos e `citedSources(srcs, known, cap, extra)` os junta depois dos citados em `data-src`, com o mesmo teto de 50. Assim um mock de snapshot, que não traz `data-src`, também acusa deriva quando o código-fonte muda. O excedente do teto vira um toast `watch: N arquivos além do teto de 50 ignorados`.
+
 "Reanalisar do 0" (banner ou `Projetos ▾`) pede confirmação sempre. Se `layers.json` e o mock têm o mesmo
 mtime da carga (`layoutMoved`), o modal vira "O mock não mudou": explica que reler não traz UI nova, manda
 gerar o snapshot e só recarrega com "Reler mesmo assim". Ao confirmar, `backupLayout` grava o
