@@ -1779,6 +1779,37 @@ describe('GlobMatch', () => {
   });
 });
 
+describe('WatchGlobsLimits', () => {
+  it('WatchGlobs_GlobLongoOuComMuitosCuringas_Sai', () => {
+    expect(core.watchGlobs({ watch: ['a/' + 'b'.repeat(200) + '.ts'] })).toEqual([]);
+    expect(core.watchGlobs({ watch: ['a/'.repeat(100) + 'x.ts'] })).toEqual([]);
+    expect(core.watchGlobs({ watch: ['*a*a*a*a*a*a*a*a*b.ts'] })).toEqual([]);
+    expect(core.watchGlobs({ watch: ['**a**a**a**a**a**a**a**a**a**b'] })).toEqual([]);
+    expect(core.watchGlobs({ watch: ['*a*a*a*a*a*a*a*b.ts'] })).toEqual(['*a*a*a*a*a*a*a*b.ts']);
+    expect(core.watchGlobs({ watch: ['src/**/**/**/*.ts'] })).toEqual(['src/**/**/**/*.ts']);
+  });
+});
+
+describe('CompileGlob', () => {
+  it('CompileGlob_MesmoResultadoQueGlobMatchEGlobDirMayMatch', () => {
+    const globs = ['src/**/*.ts', 'src/a**/x.ts', 'src/*/x.ts', 'src/ui/*.ts', '**/*.ts', 'src/a?c/**', 'a/**/b/**/c.ts'];
+    const paths = ['src/a.ts', 'src/ab/cd/x.ts', 'src/q/x.ts', 'src/ui/o.ts', 'x/y/z.ts', 'src/abc/d/e.ts', 'a/q/b/r/c.ts'];
+    const dirs = ['', 'src', 'src/ui', 'src/ab', 'docs', 'a/q/b', 'src/a/b/c'];
+    for (const g of globs) {
+      const c = core.compileGlob(g);
+      for (const p of paths) expect(c.match(p), g + ' ' + p).toBe(core.globMatch(g, p));
+      for (const d of dirs) expect(c.dirMayMatch(d), g + ' dir ' + d).toBe(core.globDirMayMatch(g, d));
+    }
+  });
+
+  it('CompileGlob_UsaORegexJaCompilado_NaoRecompila', () => {
+    const c = core.compileGlob('src/**/*.ts');
+    const t0 = performance.now();
+    for (let i = 0; i < 20000; i++) { c.match('src/ui/f' + (i % 50) + '.ts'); c.dirMayMatch('src/ui'); }
+    expect(performance.now() - t0).toBeLessThan(500);
+  });
+});
+
 describe('GlobConsistency', () => {
   it('GlobMatch_DoubleStarDentroDeSegmento_ViraAsterisco', () => {
     expect(core.globMatch('src/a**/x.ts', 'src/ab/cd/x.ts')).toBe(false);
