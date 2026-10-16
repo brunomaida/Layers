@@ -1779,6 +1779,25 @@ describe('GlobMatch', () => {
   });
 });
 
+describe('GlobConsistency', () => {
+  it('GlobMatch_DoubleStarDentroDeSegmento_ViraAsterisco', () => {
+    expect(core.globMatch('src/a**/x.ts', 'src/ab/cd/x.ts')).toBe(false);
+    expect(core.globMatch('src/**.ts', 'src/a/b.ts')).toBe(false);
+    expect(core.globMatch('src/a**b/x.ts', 'src/aXXb/x.ts')).toBe(true);
+    expect(core.globMatch('src/**/x.ts', 'src/a/b/x.ts')).toBe(true);
+  });
+
+  it('GlobDirMayMatch_QuemCasaArquivo_NaoPodaNenhumAncestral', () => {
+    const globs = ['src/**/*.ts', 'src/a**/x.ts', 'src/**.ts', 'src/*/x.ts', 'src/ui/*.ts', '**/*.ts', 'src/a?c/**', 'a/**/b/**/c.ts'];
+    const paths = ['src/a.ts', 'src/ab/cd/x.ts', 'src/a/b.ts', 'src/q/x.ts', 'src/ui/o.ts', 'x/y/z.ts', 'src/abc/d/e.ts', 'a/q/b/r/c.ts', 'a/b/c.ts'];
+    for (const g of globs) for (const f of paths) {
+      if (!core.globMatch(g, f)) continue;
+      const segs = f.split('/').slice(0, -1);
+      for (let n = 0; n <= segs.length; n++) expect(core.globDirMayMatch(g, segs.slice(0, n).join('/')), g + ' vs dir of ' + f).toBe(true);
+    }
+  });
+});
+
 describe('GlobDirMayMatch', () => {
   it('GlobDirMayMatch_PodaPastasForaDoGlob', () => {
     for (const d of ['', 'src', 'src/ui']) expect(core.globDirMayMatch('src/ui/*.ts', d)).toBe(true);

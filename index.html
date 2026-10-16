@@ -1344,17 +1344,20 @@ class Component extends DCLogic {
     const MAX_ENTRIES = 5000, MAX_DEPTH = 8; let visited = 0, capped = false; const files = [];
     const walk = async (dirHandle, prefix, depth) => {
       if (depth > MAX_DEPTH || capped) return;
-      for await (const [name, handle] of dirHandle.entries()) {
-        if (capped) return;
-        if (++visited > MAX_ENTRIES) { capped = true; return; }
-        if (name.charAt(0) === '.') continue;
-        if (handle.kind === 'directory') {
-          if (SKIP.has(name.toLowerCase())) continue;
-          const sub = prefix + name; if (globs.some(g => LayersCore.globDirMayMatch(g, sub))) await walk(handle, sub + '/', depth + 1);
-          continue;
+      // pasta ilegivel ou sumida no meio da varredura: so ela sai, os achados anteriores ficam
+      try {
+        for await (const [name, handle] of dirHandle.entries()) {
+          if (capped) return;
+          if (++visited > MAX_ENTRIES) { capped = true; return; }
+          if (name.charAt(0) === '.') continue;
+          if (handle.kind === 'directory') {
+            if (SKIP.has(name.toLowerCase())) continue;
+            const sub = prefix + name; if (globs.some(g => LayersCore.globDirMayMatch(g, sub))) await walk(handle, sub + '/', depth + 1);
+            continue;
+          }
+          const rel = LayersCore.safePath(prefix + name); if (rel && globs.some(g => LayersCore.globMatch(g, rel))) files.push(rel);
         }
-        const rel = LayersCore.safePath(prefix + name); if (rel && globs.some(g => LayersCore.globMatch(g, rel))) files.push(rel);
-      }
+      } catch (e) { /* esta pasta fica de fora */ }
     };
     await walk(this.state.dir, '', 0);
     return { files: files.sort(), capped };
@@ -1365,10 +1368,13 @@ class Component extends DCLogic {
       if (d.queryPermission && await d.queryPermission({ mode: 'read' }) !== 'granted') return;
       const srcs = [...rootEl.querySelectorAll('[data-src]')].map(e => e.dataset.src); if (rootEl.dataset.src) srcs.push(rootEl.dataset.src);
       let extra = [], capped = false; if (globs && globs.length) { try { ({ files: extra, capped } = await this.walkWatch(globs)); } catch (e) { /* sem leitura: segue sem extras */ } }
-      const all = LayersCore.citedSources(srcs, known, 1e9, extra);
-      if (all.length > 50) this.toast('watch: ' + (all.length - 50) + ' arquivos além do teto de 50 ignorados'); else if (capped) this.toast('watch: varredura parou em 5000 entradas');
+      // so o excedente do watch avisa: citados em data-src acima do teto seguem silenciosos, como na S2.21
+      const nCited = LayersCore.citedSources(srcs, known, 1e9).length, nAll = LayersCore.citedSources(srcs, known, 1e9, extra).length;
+      const dropped = extra.length ? Math.max(0, nAll - Math.max(50, nCited)) : 0;
+      const watchNote = [dropped ? 'watch: ' + dropped + ' arquivos além do teto de 50 ignorados' : '', capped ? 'watch: varredura parou em 5000 entradas' : ''].filter(Boolean).join(' · ');
       const mt = {}; for (const f of LayersCore.citedSources(srcs, known, 50, extra)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
+      if (watchNote) { const cur = this.state.toast; this.toast(watchNote + (cur && cur.msg ? ' · ' + cur.msg : '')); }
       this.structural = ['layers.json', mockPath, ...(this.maskedCss || []), ...Object.keys(mt)]; Object.assign(this.watch, mt);
       const drift = LayersCore.layoutDrift(mockMt, mt, this.driftAck); this.setState({ drift: drift.length ? drift : null });
     } catch (e) {}
