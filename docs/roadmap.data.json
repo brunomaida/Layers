@@ -538,6 +538,12 @@
             "type": "report",
             "path": "/[](../changelog.d/feature-261014-0-s2-15-manual-marker.md)",
             "title": "feature-261014-0-s2-15-manual-marker.md)"
+          },
+          {
+            "name": "2026-10-14-layers-plano-geral-da-onda-1.md",
+            "type": "spec",
+            "path": "/docs/superpowers/plans/2026-10-14-layers-plano-geral-da-onda-1.md",
+            "title": "Layers — Plano geral da Onda 1 (S2.19, S4.5, S5.6, S6.2, S7.1)"
           }
         ],
         "reason": "checklist B",
