@@ -73,7 +73,7 @@ Resposta às notas da revisão r00 (seção Implementation Outline).
 |---|---|---|---|
 | S2.22a | rótulo de origem por bloco CSS | passo novo de dedupe antes de montar o CSS do snapshot; regra nova em `staleKind` | extensão |
 | S2.22b | `--state` / `--url` no CLI | leitura de `states` no manifesto e escolha do mock | extensão |
-| S2.22c | copia `<html>`, canvas → `<img data:>` | aplica os atributos de `<html>` ao host do shadow root | extensão pequena |
+| S2.22c | copia `<html>`, canvas → `<img data:>` | aplica os atributos de `<html>` ao host do shadow root; `scopeAst` passa a emitir `:host([data-theme='light'])` | extensão (ver § Decisões da S2.22c) |
 | S2.22d | — | `citedSources` lê `watch` | extensão |
 | S2.22e | — | ação `attr` no motor de interações | extensão |
 
@@ -89,6 +89,23 @@ Resposta às notas da revisão r00 (seção Implementation Outline).
 | Menus/diálogos criados sob demanda | Só se existirem como estado da gallery |
 
 Resultado: o objetivo "interface carrega dados e atualiza painéis" é atingido **visualmente** (estados reais capturados), não **comportamentalmente**. Para executar ações reais seria a Opção C (ponte headless viva): custo alto, exige revisar a ADR e as regras R1 de segurança; fica fora da S2.22 e pode virar leaf futura.
+
+## Decisões da S2.22c
+
+Mockup: canvas Design privado (https://claude.ai/artifact/YAjnzs8CsEDpSbwpn5CCuJ; quadros Main, Tema, Canvas, RotuloL0). Mapeamento confirmado: G7 = tema, G8 = canvas, G12 = rótulo de L0.
+
+| Id | Decisão | Efeito |
+|---|---|---|
+| D1 | Selo `IMG` no slot de badge da linha da árvore, mais `title` nativo | Nada é desenhado sobre o mock; o toast da carga não muda, para manter o aviso de interações mortas como `warn[0]` (S2.22a) |
+| D2 | Rótulo de L0 `#app · snapshot`; origem da captura (URL, data, viewport) no `title` | `root.name`/`root.src` passam para o `.shell` real em L1 |
+| D3 | Manter `SELECTS` como está | Sem cor de seleção alternativa para mock claro; atualizar o comentário de `index.html:942` ("o mock é sempre escuro") |
+
+Achados do repo que ampliam o escopo:
+
+- `scopeAst` (`lib/layers-core.js:271-272`) troca só o `:root` do seletor: `:root[data-theme='light']` vira `:host[data-theme='light']`, que nunca casa no shadow DOM. Deve emitir `:host([data-theme='light'])`. As variáveis inline no host funcionam sem essa mudança.
+- No mock do WAVE (`WAVE/src/ui/traval/layers/mock.html`) o único filho do `<body>` é `#app`, mas `index.html:1028` aplica a ele `root.name ".shell"`: `.shell` aparece em L0 e em L1 e `root.src` aponta para o elemento errado (causa da G12).
+- O mock tem 7 `<canvas>` de lightweight-charts (808×652, eixo 56 px, eixo 28 px) que viram 7 PNG em `data:` num arquivo de 170 KB. Definir teto de tamanho no plano.
+- Não há estado claro na gallery do Traval; a demo do tema claro depende de um estado novo fora deste repo.
 
 ## Critical Files
 

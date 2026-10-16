@@ -916,6 +916,44 @@
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
+      },
+      {
+        "id": "S2.22c",
+        "type": "spec",
+        "name": "Fidelidade do snapshot: tema, canvas e rótulo de L0",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "title": "2026-10-16-s2-22-loader-checkchanges-design.md)"
+          },
+          {
+            "name": "2026-10-16-s2-22c-snapshot-fidelity.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-16-s2-22c-snapshot-fidelity.md)",
+            "title": "2026-10-16-s2-22c-snapshot-fidelity.md)"
+          },
+          {
+            "name": "feature-261016-62-s2-22c-snapshot-fidelity.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-62-s2-22c-snapshot-fidelity.md)",
+            "title": "feature-261016-62-s2-22c-snapshot-fidelity.md)"
+          }
+        ],
+        "reason": "`<html>` copiado e `:host([data-theme])` no escopo, `<canvas>` vira `<img data:>` com selo `IMG`, L0 `#app · snapshot` sem `.shell` duplicado (G7, G8, G12); mockup no canvas Design",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
       }
     ]
   },

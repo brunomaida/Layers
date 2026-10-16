@@ -160,6 +160,10 @@ Ler um app renderizado por JS **sem** snapshot manual (Chromium headless em proc
 decidido e não implementado: ver a ADR de 2026-09-18 em `architecture-decisions.md`. Iframe de mesma
 origem foi descartado (alcançaria o handle de pasta gravável).
 
+### Fidelidade do snapshot (S2.22c)
+
+O snapshot copia os atributos do `<html>` (`data-theme`, `lang`, `dir`, variáveis `--*` do `style`) e troca cada `<canvas>` por `<img data:image/png>` marcado com `data-layers-frozen="canvas"` (acima de 4 Mpx ou 1,5 M caracteres o canvas fica vazio). O loader filtra os atributos por allowlist (`LayersCore.hostAttrsFromHtml`: `class` só com letras, dígitos, `_`, `-` e espaço; nada de `on*`, `data-src`, `data-layers-*`, nem valor com `url(`, `expression`, `@import`, `{`, `}`, `<`, `!`), aplica-os ao host do shadow root e acrescenta as variáveis como regra `:host{…!important}` no fim da folha. `scopeAst` reescreve `:root[data-theme='light']`, `html.dark` e `html[…]` como `:host(…)`; o composto com `:has()` fica no escopo antigo, porque `:has` dentro de `:host()` olha os filhos do host. Na árvore, a linha de um canvas congelado leva o selo `IMG` e o L0 de um snapshot leva o sufixo `· snapshot` com a origem da captura no `title`. O mock continua estático: o gráfico não atualiza com dados novos.
+
 ### Recarregar projeto e aviso de mudança no disco
 
 Recarregar relê do disco todos os arquivos do projeto: tecla `R` ou `Projetos ▾ › Recarregar projeto`

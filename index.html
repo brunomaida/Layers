@@ -939,9 +939,10 @@ const THEMES = {
 };
 // acentos suaves: [tema escuro/cinza, tema claro]
 const ACCENTS = { '1 · Aço': ['#7d9bc1', '#4e6f96'], '2 · Lavanda': ['#9b97c2', '#6b6799'], '3 · Sálvia': ['#7fa79b', '#4f7d70'], '4 · Cinza claro': ['#b8c0ca', '#6d7580'], '5 · Cinza médio': ['#8b96a3', '#59626d'], '6 · Cinza escuro': ['#66707c', '#3f4750'] };
-// cor de seleção / hover / foco de camada na cena (o mock é sempre escuro, então tons claros funcionam em todos os temas)
+// cor de seleção / hover / foco de camada na cena (o mock pode ser claro via data-theme no <html> do snapshot, S2.22c; estes tons seguem valendo)
 const SELECTS = { 'Azul': '#60a5fa', 'Teal': '#5ec9bc', 'Coral': '#f08c6c', 'Âmbar': '#f5a623', 'Violeta': '#a78bfa', 'Verde': '#26c281', 'Branco': '#f2f4f7' };
 const CFG_KEYS = LayersCore.CFG_KEYS;
+const FROZEN_TITLE = ' — Imagem congelada: o <canvas> do app virou PNG no snapshot';
 const DEFAULT_GRAD = 'linear-gradient(95deg,var(--pri),var(--violet))';
 // degradê aleatório com a cor de seleção como base + 2-3 cores extras (matiz/ângulo sorteados)
 const randGrad = base => { const k = 2 + Math.floor(Math.random() * 2); const cols = [base]; for (let i = 0; i < k; i++) cols.push('hsl(' + Math.floor(Math.random() * 360) + ' ' + (55 + Math.floor(Math.random() * 35)) + '% ' + (55 + Math.floor(Math.random() * 20)) + '%)'); if (Math.random() < .5) cols.reverse(); return 'linear-gradient(' + Math.floor(Math.random() * 360) + 'deg,' + cols.join(',') + ')'; };
@@ -1025,7 +1026,12 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   const kids = [...doc.body.children]; if (!kids.length) return { empty: true };
   // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
   let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
-  if (man.root && man.root.name) rootEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body'; if (man.root && man.root.src) rootEl.dataset.src = man.root.src;
+  // S2.22c: mock de snapshot rotula L0 como "<nome> · snapshot"; root.name/root.src (nomeados contra o app vivo) vao para o descendente que casa o seletor
+  const snapMock = /snapshot LAYERS/.test(html.slice(0, 400));
+  const autoName = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body';
+  let nameEl = rootEl; if (snapMock && man.root && man.root.name) { try { nameEl = rootEl.querySelector(man.root.name) || rootEl; } catch (e) { nameEl = rootEl; } }
+  if (man.root && man.root.name) nameEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = autoName; if (man.root && man.root.src) nameEl.dataset.src = man.root.src;
+  if (snapMock) { rootEl.dataset.name = (rootEl.dataset.name || autoName) + ' · snapshot'; const cap = /snapshot LAYERS · ([^\n]*?) -->/.exec(html.slice(0, 1000)); if (cap) rootEl.dataset.layersCapture = cap[1]; }
   // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
   // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
   const idx = LayersCore.buildIndex(css.concat(kept)).byClass;
@@ -1047,7 +1053,7 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   utility.forEach(f => warn.push('folha de utilitarios: ' + f + ' — Aplicar desabilitado'));
   // dcSource: elementos do template dc apontam para o arquivo-fonte (tpl:N), nao para uma regra CSS.
   // O mapa so vale se as tags batem com o render; senao nao se atribui src (nada de indice deslocado).
-  let dc = null; const snapMock = /snapshot LAYERS/.test(html.slice(0, 400));
+  let dc = null;
   if (dcFile) {
     if (dcText !== null) {
       const dcMap = LayersCore.mapDcTemplate(dcText); const dcEls = [rootEl, ...rootEl.querySelectorAll('[data-dc-tpl]')].filter(e => e.hasAttribute('data-dc-tpl'));
@@ -1062,7 +1068,7 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   }
   rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
   Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
-  return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc, maskedCss: LayersCore.maskedSheets(snapMock, inlineCss, css.map(x => x.file)) };
+  return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc, hostAttrs: LayersCore.hostAttrsFromHtml([...doc.documentElement.attributes].map(a => ({ name: a.name, value: a.value }))), maskedCss: LayersCore.maskedSheets(snapMock, inlineCss, css.map(x => x.file)) };
 };
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
@@ -1293,9 +1299,9 @@ class Component extends DCLogic {
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
     // warnings written by the hoist land after the build's (utility sheet, dc map, rules): a write-disabling one outranks a missing project font for warn[0]
     await this.hoistFaces(built.faces, warn); if (seq !== this.loadSeq) return; this.varIdx = built.varIdx;
-    const { rootEl, scoped, inlineScoped, utility, snapMock, dc } = built;
+    const { rootEl, scoped, inlineScoped, utility, snapMock, dc, hostAttrs } = built;
     const host = this.pageRef.current; if (!host) { if (seq === this.loadSeq) this.loadedSeq = seq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.mockRoot = rootEl;
+    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).concat(hostAttrs.vars.length ? [':host{' + hostAttrs.vars.map(v => v.name + ':' + v.value + ' !important').join(';') + '}'] : []).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.applyHostAttrs(host, hostAttrs); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     // interactions escritas contra o app real costumam mirar classes que o mock nao tem (S2.12)
     const dead = LayersCore.deadInteractions(man.interactions, q => sh.querySelectorAll(q).length + (rootEl.matches(q) ? 1 : 0));
@@ -1343,7 +1349,14 @@ class Component extends DCLogic {
       const drift = LayersCore.layoutDrift(mockMt, mt, this.driftAck); this.setState({ drift: drift.length ? drift : null });
     } catch (e) {}
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  // S2.22c: atributos de <html> do snapshot (allowlist de LayersCore.hostAttrsFromHtml) vivem no host; as variaveis --* entram como regra :host !important no fim da folha (o style inline do host e reescrito pelo runtime)
+  applyHostAttrs(host, hostAttrs) {
+    if (!host) return;
+    const prev = this.hostApplied || [];
+    prev.forEach(n => host.removeAttribute(n));
+    this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
+  }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1699,7 +1712,7 @@ class Component extends DCLogic {
       const isCheck = isInput && (el.type === 'checkbox' || el.type === 'radio');
       const text = kids.length === 0 && !isSvg ? (isInput ? (isCheck ? '' : el.value) : (el.textContent || '').trim()) : '';
       const bw = ['Top', 'Right', 'Bottom', 'Left'].map(k => parseFloat(cs['border' + k + 'Width']) || 0);
-      const n = { id, depth, parent, tag, name: el.dataset.name || (el.classList && el.classList.length ? '.' + el.classList[0] : isInput ? 'input[' + el.type + ']' : tag), src: s, x: r.left - rr.left, y: r.top - rr.top, w: r.width, h: r.height,
+      const n = { id, depth, parent, tag, frozen: el.dataset.layersFrozen === 'canvas', capture: el.dataset.layersCapture || '', name: el.dataset.name || (el.classList && el.classList.length ? '.' + el.classList[0] : isInput ? 'input[' + el.type + ']' : tag), src: s, x: r.left - rr.left, y: r.top - rr.top, w: r.width, h: r.height,
         bg: cs.backgroundColor, hasBg: cs.backgroundColor !== 'rgba(0, 0, 0, 0)', bgImg: cs.backgroundImage !== 'none' && !cs.backgroundClip.includes('text') ? cs.backgroundImage : 'none',
         borders: ['Top', 'Right', 'Bottom', 'Left'].map((k, i) => bw[i] ? bw[i] + 'px ' + cs['border' + k + 'Style'] + ' ' + cs['border' + k + 'Color'] : 'none'), hasBorder: bw.some(v => v > 0),
         radius: cs.borderRadius, shadow: cs.boxShadow, color: cs.webkitTextFillColor === 'rgba(0, 0, 0, 0)' ? '#7aa8fa' : cs.color, opacity: parseFloat(cs.opacity),
@@ -2171,11 +2184,11 @@ class Component extends DCLogic {
     const pushRow = n => { if (tFilter && !tHit[n.id]) return; const kids = kidsOf[n.id] || []; const closed = !!s.treeClosed[n.id] && !(tFilter && tHit[n.id] === 'anc'); const hit = tHit[n.id] === 'hit'; const isSel = n.id === s.selId; const isHov = n.id === s.hoverId; const isIso = n.id === s.isoId; const kidsFoldable = kids.filter(k => (kidsOf[k.id] || []).length);
       const hc = !!s.hierCode[n.id];
       treeRows.push({ isNode: true, id: n.id, codeDisp: isSel || isHov || hc ? 'inline-flex' : 'none', codeTitle: hc ? 'Recolher o código do estilo' : 'Expandir o código do estilo abaixo desta linha', codeBdr: hc ? 'rgba(var(--accRgb),.55)' : 'var(--line1)', codeBg: hc ? 'rgba(var(--accRgb),.15)' : 'transparent', codeColor: hc ? 'var(--acc)' : 'var(--fg2)', toggleCode: e => { e.stopPropagation(); this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: !st.hierCode[n.id] } })); }, closeCode: () => this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: false } })),
-        hlBg: hit ? 'rgba(var(--warnRgb),.28)' : 'transparent', hlColor: hit ? 'var(--hlFg)' : 'inherit', op: tq && !hit && !tFilter ? .45 : 1, depth: n.depth, name: n.name, indent: (6 + n.depth * 12) + 'px', chev: kids.length ? (closed ? '▸' : '▾') : '·', countLabel: kids.length ? '(' + kids.length + ')' : '', badge: isIso ? 'isolado' : isSel ? '●' : '',
+        hlBg: hit ? 'rgba(var(--warnRgb),.28)' : 'transparent', hlColor: hit ? 'var(--hlFg)' : 'inherit', op: tq && !hit && !tFilter ? .45 : 1, depth: n.depth, name: n.name, indent: (6 + n.depth * 12) + 'px', chev: kids.length ? (closed ? '▸' : '▾') : '·', countLabel: kids.length ? '(' + kids.length + ')' : '', badge: isIso ? 'isolado' : isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '',
         foldMark: kidsFoldable.length && kidsFoldable.every(k => s.treeClosed[k.id]) ? '⊞' : '⊟', foldTitle: kidsFoldable.length ? (kidsFoldable.every(k => s.treeClosed[k.id]) ? 'Expandir os filhos (um nível)' : 'Recolher os filhos (um nível)') : 'Sem filhos com subníveis',
         foldKids: e => { e.stopPropagation(); if (!kidsFoldable.length) return; const allClosed = kidsFoldable.every(k => s.treeClosed[k.id]); this.setState(st => { const tc = { ...st.treeClosed }; kidsFoldable.forEach(k => { tc[k.id] = !allClosed; }); if (!allClosed) tc[n.id] = false; return { treeClosed: tc }; }); },
         isoBtn: e => { e.stopPropagation(); if (isIso) this.setState({ isoId: null }, () => this.resetView()); else this.isolate(n.id); }, isoTitle: isIso ? 'Sair do isolamento' : 'Isolar este elemento (= duplo clique)', isoBdr: isIso ? 'rgba(var(--selRgb),.55)' : 'var(--line1)', isoBg: isIso ? 'rgba(var(--selRgb),.15)' : 'transparent', isoColor: isIso ? 'var(--sel)' : 'var(--fg2)',
-        title: n.name + ' · L' + n.depth + (kids.length ? ' · ' + kids.length + ' filho(s)' : '') + ' — clique: selecionar · duplo: isolar', bg: isSel ? 'rgba(var(--selRgb),.15)' : isHov ? 'rgba(var(--selRgb),.08)' : 'transparent', color: isSel || isIso ? 'var(--sel)' : 'var(--fg0)',
+        title: n.name + ' · L' + n.depth + (kids.length ? ' · ' + kids.length + ' filho(s)' : '') + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar', bg: isSel ? 'rgba(var(--selRgb),.15)' : isHov ? 'rgba(var(--selRgb),.08)' : 'transparent', color: isSel || isIso ? 'var(--sel)' : 'var(--fg0)',
         select: () => this.select(n.id), isolate: e => { e.stopPropagation(); this.isolate(n.id); }, hover: () => this.setState({ hoverId: n.id }), unhover: () => this.setState({ hoverId: null }),
         toggle: e => { e.stopPropagation(); this.setState(st => ({ treeClosed: { ...st.treeClosed, [n.id]: !st.treeClosed[n.id] } })); } });
       if (hc && this.els[n.id]) { const [file, selector, line] = ruleOf(n); const one = s.scope === 'one'; const ids = one ? [n.id] : [n.id, ...s.nodes.filter(m => m.own && m.src === n.src && m.id !== n.id).map(m => m.id)];
@@ -2204,8 +2217,8 @@ class Component extends DCLogic {
           title: r.selector + ' — ' + r.ids.length + ' uso(s) · clique: expandir e selecionar o 1º uso · duplo: isolar', click: () => { this.setState(st => ({ elOpen: { ...st.elOpen, [r.key]: true, [file]: true } })); this.loadFile(file); if (!inSel) this.select(r.ids[0]); }, dbl: e => { e.stopPropagation(); this.isolate(inSel ? s.selId : r.ids[0]); }, toggle: e => { togEl(r.key)(e); this.loadFile(file); }, hover: () => {}, unhover: () => {} });
         if (!rOpen) return;
         r.ids.forEach(id => { const n = s.byId[id]; if (!n) return; const uHit = !!eq && n.name.toLowerCase().includes(eq); const isSel = id === s.selId; const isHov = id === s.hoverId;
-          elemRows.push({ isNode: true, nodeId: id, indent: '30px', codeDisp: 'none', kind: 'L' + n.depth, kindColor: 'var(--fg3)', name: n.name, countLabel: n.kids ? '(' + n.kids + ')' : '', chev: '·', badge: isSel ? '●' : '', bg: isSel ? 'rgba(var(--accRgb),.15)' : isHov ? 'rgba(var(--accRgb),.08)' : 'transparent', color: isSel ? 'var(--acc)' : 'var(--fg1)', ...elHl(uHit),
-            title: n.name + ' · L' + n.depth + ' — clique: selecionar · duplo: isolar', click: () => this.select(id), dbl: e => { e.stopPropagation(); this.isolate(id); }, toggle: e => e.stopPropagation(), hover: () => this.setState({ hoverId: id }), unhover: () => this.setState({ hoverId: null }) }); });
+          elemRows.push({ isNode: true, nodeId: id, indent: '30px', codeDisp: 'none', kind: 'L' + n.depth, kindColor: 'var(--fg3)', name: n.name, countLabel: n.kids ? '(' + n.kids + ')' : '', chev: '·', badge: isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '', bg: isSel ? 'rgba(var(--accRgb),.15)' : isHov ? 'rgba(var(--accRgb),.08)' : 'transparent', color: isSel ? 'var(--acc)' : 'var(--fg1)', ...elHl(uHit),
+            title: n.name + ' · L' + n.depth + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar', click: () => this.select(id), dbl: e => { e.stopPropagation(); this.isolate(id); }, toggle: e => e.stopPropagation(), hover: () => this.setState({ hoverId: id }), unhover: () => this.setState({ hoverId: null }) }); });
         if (cOpen) elemRows.push(this.codeRow(r, '30px'));
       });
     });
