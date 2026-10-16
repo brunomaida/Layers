@@ -19,8 +19,16 @@ const BASE_FILES = (extra) => [
 ];
 
 // `newer` = files rewritten after the mock so their mtime is strictly greater
-async function connect(page, files, newer) {
+async function connect(page, files, newer, { badDir = false } = {}) {
   await page.addInitScript(() => { window.showDirectoryPicker = async () => window.__proj; });
+  // a directory named `bad` cannot be listed (NotReadableError), as if it vanished or lost permission mid-walk
+  if (badDir) await page.addInitScript(() => {
+    const orig = FileSystemDirectoryHandle.prototype.entries;
+    FileSystemDirectoryHandle.prototype.entries = function () {
+      if (this.name === 'bad') return (async function* () { throw new DOMException('unreadable', 'NotReadableError'); })();
+      return orig.call(this);
+    };
+  });
   await page.goto('/');
   await page.evaluate(async ({ files, newer }) => {
     const root = await navigator.storage.getDirectory();
@@ -84,4 +92,23 @@ test('WatchGlobs_MoreThanCapMatches_ToastsTheOverflow', async ({ page }) => {
   const gen = Array.from({ length: 55 }, (_, i) => ['src/gen/f' + i + '.ts', TS]);
   await connect(page, [...gen, ...BASE_FILES({ watch: ['src/gen/*.ts'] })], []);
   await expect(page.getByText('watch: 5 arquivos além do teto de 50 ignorados')).toBeVisible({ timeout: 5000 });
+});
+
+test('WatchGlobs_UnreadableSubdirectory_KeepsTheOtherMatches', async ({ page }) => {
+  await connect(page, [['src/bad/x.ts', TS], ...BASE_FILES({ watch: ['src/**/*.ts'] })], ['src/ui/other.ts'], { badDir: true });
+  await expect(banner(page)).toContainText('Mock mais antigo que a fonte: src/ui/other.ts', { timeout: 5000 });
+});
+
+test('WatchGlobs_NoWatchFieldAndManyCitedSources_NeverToastsWatchOverflow', async ({ page }) => {
+  const cited = Array.from({ length: 51 }, (_, i) => `<div class="c${i}" data-src="src/gen/f${i}.ts|.c${i}|1" style="height:2px"></div>`).join('');
+  const mock = MOCK.replace('<div class="bar"', cited + '<div class="bar"');
+  const files = BASE_FILES({}).map(([rel, text]) => (rel === 'layers/mock.html' ? [rel, mock] : [rel, text]));
+  // a toast can be replaced within milliseconds, so record any text that ever mentions it
+  await page.addInitScript(() => {
+    window.__watchToast = false;
+    new MutationObserver(() => { if (document.body && /watch: \d+ arquivos/.test(document.body.innerText)) window.__watchToast = true; }).observe(document, { subtree: true, childList: true, characterData: true });
+  });
+  await connect(page, files, []);
+  await page.waitForTimeout(1500);
+  expect(await page.evaluate(() => window.__watchToast)).toBe(false);
 });
