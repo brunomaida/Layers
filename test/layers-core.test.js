@@ -1803,6 +1803,19 @@ describe('SnapshotOriginCovered', () => {
     expect(core.snapshotOriginCovered('', ['a.css'])).toBe(false);
     expect(core.snapshotOriginCovered(null, ['a.css'])).toBe(false);
   });
+  it('OrigemUndefined_NaoCasa', () => {
+    expect(core.snapshotOriginCovered(undefined, ['a.css'])).toBe(false);
+  });
+  it('PercentInvalido_NaoLancaECasaPeloTextoCru', () => {
+    expect(() => core.snapshotOriginCovered('/a/100%.css', ['100%.css'])).not.toThrow();
+    expect(core.snapshotOriginCovered('/a/100%.css', ['100%.css'])).toBe(true);
+  });
+  it('OrigemComHash_Casa', () => {
+    expect(core.snapshotOriginCovered('/a/x.css#frag', ['x.css'])).toBe(true);
+  });
+  it('FolhaDuplicadaNaLista_Casa', () => {
+    expect(core.snapshotOriginCovered('/a/x.css', ['x.css', 'x.css'])).toBe(true);
+  });
 });
 
 describe('MaskedSheets', () => {
@@ -1823,6 +1836,15 @@ describe('MaskedSheets', () => {
   });
   it('BlobLegadoMaisComentarioPuro_DevolveAsFolhas', () => {
     expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }, { origin: null, text: '/* NÃO LIDO */' }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('TextoNuloOuIndefinido_ContaComoVazioSemLancar', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: null }, { origin: null }], ['a.css'])).toEqual([]);
+  });
+  it('OrigemVazia_ContaComoSemOrigem', () => {
+    expect(core.maskedSheets(true, [{ origin: '', text: '.a{color:red}' }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('FolhasDuplicadas_DevolveCopiaDaLista', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }], ['a.css', 'a.css'])).toEqual(['a.css', 'a.css']);
   });
   it('SnapshotSemBlocos_DevolveVazio', () => {
     expect(core.maskedSheets(true, [], ['a.css'])).toEqual([]);
