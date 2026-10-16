@@ -1,3 +1,10 @@
+---
+title: "Benchmark History"
+type: bench-history
+solution: Layers
+created: 2026-10-13
+---
+
 # Benchmark History
 
 _generated 2026-10-15T01:06:50Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
@@ -163,3 +170,8 @@ _Methodology: `docs/bench-methodology.md` (v1)_
 | `patchDc/dc-template/one-item` | 12.46 µs | 11.45 µs | — | — | new |
 | `deriveManifest/plain-admin/html+css` | 165.04 µs | 40.18 µs | — | — | new |
 | `openZip/zip/evil` | 416.72 µs | 380.29 µs | — | — | new |
+
+<!-- doc-links:auto -->
+## Related
+
+- [Bench methodology](../../bench-methodology.md)
