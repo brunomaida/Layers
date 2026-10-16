@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 94,
     "docs": [],
     "children": [
       {
@@ -912,6 +912,32 @@
           }
         ],
         "reason": "Traval só mostra o estado vazio: `states:[{name, mock}]` no manifesto, menu troca o estado e o CLI captura `gallery.html#/<estado>` (G4, G5)",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.22c",
+        "type": "spec",
+        "name": "Fidelidade do snapshot: tema, canvas e rótulo de L0",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "title": "2026-10-16-s2-22-loader-checkchanges-design.md)"
+          }
+        ],
+        "reason": "`<html>` copiado e `:host([data-theme])` no escopo, `<canvas>` vira `<img data:>` com selo `IMG`, L0 `#app · snapshot` sem `.shell` duplicado (G7, G8, G12); mockup no canvas Design",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
