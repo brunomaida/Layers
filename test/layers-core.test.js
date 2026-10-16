@@ -1873,3 +1873,36 @@ describe('PlaceDeadWarning', () => {
     expect(warn.indexOf('dead')).toBe(1);
   });
 });
+
+describe('ProjectStates', () => {
+  it('SemStates_DevolveVazio', () => {
+    expect(core.projectStates({ mock: 'a.html' })).toEqual([]);
+    expect(core.projectStates(null)).toEqual([]);
+  });
+  it('StatesForaDeArray_DevolveVazio', () => {
+    expect(core.projectStates({ states: { name: 'a', mock: 'a.html' } })).toEqual([]);
+    expect(core.projectStates({ states: 'a' })).toEqual([]);
+  });
+  it('EntradasInvalidas_Descarta', () => {
+    const man = { states: [null, 'x', { name: '', mock: 'a.html' }, { name: 'a' }, { name: 'b', mock: 3 }, { name: 'ok', mock: 'ok.html', extra: 1 }] };
+    expect(core.projectStates(man)).toEqual([{ name: 'ok', mock: 'ok.html' }]);
+  });
+  it('NomeRepetido_MantemOPrimeiro', () => {
+    const man = { states: [{ name: 'a', mock: '1.html' }, { name: 'a', mock: '2.html' }, { name: 'b', mock: '3.html' }] };
+    expect(core.projectStates(man)).toEqual([{ name: 'a', mock: '1.html' }, { name: 'b', mock: '3.html' }]);
+  });
+});
+
+describe('PickState', () => {
+  const list = [{ name: 'empty', mock: 'e.html' }, { name: 'csv', mock: 'c.html' }];
+  it('NomeExistente_DevolveEsseEstado', () => {
+    expect(core.pickState(list, 'csv')).toBe(list[1]);
+  });
+  it('NomeInexistenteOuNulo_DevolveOPrimeiro', () => {
+    expect(core.pickState(list, 'gone')).toBe(list[0]);
+    expect(core.pickState(list, null)).toBe(list[0]);
+  });
+  it('ListaVazia_DevolveNulo', () => {
+    expect(core.pickState([], 'csv')).toBeNull();
+  });
+});
