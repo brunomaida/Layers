@@ -73,7 +73,8 @@ test('WatchGlobs_MatchingSourceNewerThanMock_ShowsRestructureBanner', async ({ p
 test('WatchGlobs_SkippedDirNeverScanned_OnlyTheOtherMatchWarns', async ({ page }) => {
   await connect(page, BASE_FILES({ watch: ['**/*.ts'] }), ['docs/note.ts', 'node_modules/x/dep.ts']);
   await expect(banner(page)).toContainText('Mock mais antigo que a fonte: docs/note.ts', { timeout: 5000 });
-  await expect(banner(page)).not.toContainText('node_modules');
+  // the banner lists drift[0] + ' +N': a scanned node_modules would add a second file
+  await expect(banner(page)).not.toContainText(' +');
 });
 
 test('WatchGlobs_GlobDoesNotReachTheNewerFile_ShowsNoBanner', async ({ page }) => {
@@ -111,4 +112,10 @@ test('WatchGlobs_NoWatchFieldAndManyCitedSources_NeverToastsWatchOverflow', asyn
   await connect(page, files, []);
   await page.waitForTimeout(1500);
   expect(await page.evaluate(() => window.__watchToast)).toBe(false);
+});
+
+test('WatchGlobs_DirectoryDeeperThanTheLimit_ToastsTheCut', async ({ page }) => {
+  const deep = 'src/a/b/c/d/e/f/g/h/i/j/deep.ts';
+  await connect(page, [[deep, TS], ...BASE_FILES({ watch: ['src/**/*.ts'] })], []);
+  await expect(page.getByText('watch: pastas além de 8 níveis ignoradas')).toBeVisible({ timeout: 5000 });
 });
