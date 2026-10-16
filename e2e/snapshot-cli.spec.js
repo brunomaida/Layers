@@ -116,3 +116,57 @@ test('Snapshot_EditorPortOrExternalHost_RefusedWithoutWriting', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// S2.22b: --state opens <app>/gallery.html#/<state>; --url is the flag form of the app URL.
+test('Snapshot_StateFlag_CapturesTheGalleryState', async () => {
+  const seen = [];
+  const app = await listen((req, res) => {
+    seen.push(req.url);
+    res.setHeader('content-type', 'text/html');
+    res.end(req.url.startsWith('/gallery.html')
+      ? '<!doctype html><html><head><meta charset="utf-8"></head><body><div id="g">gallery</div><script>document.body.insertAdjacentHTML("beforeend", "<p id=\\"st\\">" + location.hash + "</p>")</script></body></html>'
+      : '<!doctype html><html><head><meta charset="utf-8"></head><body><div id="home">home</div></body></html>');
+  });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.csv.html');
+    const r = await run(['--url', `http://127.0.0.1:${app.address().port}/`, out, '--state', 'csv-loaded', '--wait', '200']);
+    expect(r.status, r.stderr).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toContain('id="g"');
+    expect(html).toContain('#/csv-loaded');
+    expect(html).not.toContain('id="home"');
+    expect(seen.some((u) => u.startsWith('/gallery.html'))).toBe(true);
+  } finally {
+    app.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Snapshot_InvalidState_RefusedWithoutWriting', async () => {
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.html');
+    const r = await run(['http://127.0.0.1:5173/', out, '--state', '../x']);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/--state/);
+    expect(fs.existsSync(out)).toBe(false);
+  } finally {
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Snapshot_StateGalleryMissing_RefusedWithoutWriting', async () => {
+  const app = await listen((req, res) => { res.statusCode = req.url.startsWith('/gallery.html') ? 404 : 200; res.setHeader('content-type', 'text/html'); res.end('<!doctype html><html><body><div id="x">page</div></body></html>'); });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.html');
+    const r = await run([`http://127.0.0.1:${app.address().port}/`, out, '--state', 'nope', '--wait', '200']);
+    expect(r.status).toBe(2);
+    expect(r.stderr).toMatch(/404/);
+    expect(fs.existsSync(out)).toBe(false);
+  } finally {
+    app.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
