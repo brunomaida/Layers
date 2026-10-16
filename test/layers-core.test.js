@@ -1785,3 +1785,91 @@ describe('LayoutBackupPaths', () => {
     expect(core.layoutBackupPaths('s', 'mock.html').mock).toBe('.design-history/layout-s/mock.html');
   });
 });
+
+describe('SnapshotOriginCovered', () => {
+  it('UrlAbsolutaComQuery_Casa', () => {
+    expect(core.snapshotOriginCovered('http://localhost:5173/src/styles/layout.css?t=1', ['src/styles/layout.css'])).toBe(true);
+  });
+  it('IdViteWindowsComBarraInvertida_Casa', () => {
+    expect(core.snapshotOriginCovered('C:\\Dev\\WAVE\\src\\styles\\layout.css', ['src/styles/layout.css'])).toBe(true);
+  });
+  it('SufixoSemFronteira_NaoCasa', () => {
+    expect(core.snapshotOriginCovered('/a/xlayout.css', ['layout.css'])).toBe(false);
+  });
+  it('CaminhoDiferenteMesmoBasename_NaoCasa', () => {
+    expect(core.snapshotOriginCovered('/a/src/styles/layout.css', ['other/layout.css'])).toBe(false);
+  });
+  it('OrigemVaziaOuNula_NaoCasa', () => {
+    expect(core.snapshotOriginCovered('', ['a.css'])).toBe(false);
+    expect(core.snapshotOriginCovered(null, ['a.css'])).toBe(false);
+  });
+  it('OrigemUndefined_NaoCasa', () => {
+    expect(core.snapshotOriginCovered(undefined, ['a.css'])).toBe(false);
+  });
+  it('PercentInvalido_NaoLancaECasaPeloTextoCru', () => {
+    expect(() => core.snapshotOriginCovered('/a/100%.css', ['100%.css'])).not.toThrow();
+    expect(core.snapshotOriginCovered('/a/100%.css', ['100%.css'])).toBe(true);
+  });
+  it('OrigemComHash_Casa', () => {
+    expect(core.snapshotOriginCovered('/a/x.css#frag', ['x.css'])).toBe(true);
+  });
+  it('FolhaDuplicadaNaLista_Casa', () => {
+    expect(core.snapshotOriginCovered('/a/x.css', ['x.css', 'x.css'])).toBe(true);
+  });
+});
+
+describe('MaskedSheets', () => {
+  it('SnapshotMisto_BlocoSemOrigemEOutroComOrigem_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [{ origin: 'x', text: '.a{}' }, { origin: null, text: '.b{}' }], ['a.css'])).toEqual([]);
+  });
+  it('TodosComOrigem_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [{ origin: 'x', text: '.a{}' }, { origin: 'y', text: '.b{}' }], ['a.css'])).toEqual([]);
+  });
+  it('NaoSnapshot_DevolveVazio', () => {
+    expect(core.maskedSheets(false, [{ origin: null, text: '.a{color:red}' }], ['a.css'])).toEqual([]);
+  });
+  it('BlobLegadoComRegras_DevolveAsFolhas', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('ComentarioPuroSemOrigem_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '/* NÃO LIDO */' }], ['a.css'])).toEqual([]);
+  });
+  it('BlobLegadoMaisComentarioPuro_DevolveAsFolhas', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }, { origin: null, text: '/* NÃO LIDO */' }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('TextoNuloOuIndefinido_ContaComoVazioSemLancar', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: null }, { origin: null }], ['a.css'])).toEqual([]);
+  });
+  it('OrigemVazia_ContaComoSemOrigem', () => {
+    expect(core.maskedSheets(true, [{ origin: '', text: '.a{color:red}' }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('FolhasDuplicadas_DevolveCopiaDaLista', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }], ['a.css', 'a.css'])).toEqual(['a.css', 'a.css']);
+  });
+  it('SnapshotSemBlocos_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [], ['a.css'])).toEqual([]);
+  });
+});
+
+describe('PlaceDeadWarning', () => {
+  it('ExisteAvisoDeUrlRemota_InsereAntes', () => {
+    const warn = ['URL remota removida: href="//x"', 'outro'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn).toEqual(['dead', 'URL remota removida: href="//x"', 'outro']);
+  });
+  it('ExisteAvisoDeUrlRemotaNeutralizada_InsereAntes', () => {
+    const warn = ['css não encontrado: a.css', 'url() remota neutralizada no CSS: //x'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn).toEqual(['css não encontrado: a.css', 'dead', 'url() remota neutralizada no CSS: //x']);
+  });
+  it('SemAvisoDeUrlRemota_Acrescenta', () => {
+    const warn = ['a', 'b'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn[warn.length - 1]).toBe('dead');
+  });
+  it('AvisoDeCssNaoEncontrado_ContinuaPrimeiro', () => {
+    const warn = ['css não encontrado: a.css', 'URL remota removida: x'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn.indexOf('dead')).toBe(1);
+  });
+});

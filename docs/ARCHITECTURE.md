@@ -220,6 +220,35 @@ confirmação diz isso). O CLI é um processo à parte que o usuário roda: abre
 mock no caminho dado; nada do app roda na origem do editor. O endpoint `/__layers/*` da ADR de 2026-09-18
 (snapshot sob clique, dentro do editor) segue não implementado.
 
+### CSS do snapshot e folhas reais
+
+Um mock de snapshot (`tools/layers-snapshot.js`) copia o CSS computado das folhas do app em `<style>`; sem
+tratamento, essa cópia entrava no shadow root depois das folhas de `styles` e as mascarava: editar a folha
+real não mudava o palco. O snapshot agora emite um `<style>` por folha com `data-layers-origin` (id do Vite
+em `data-vite-dev-id`, senão `sheet.href`, senão sem atributo); folha cross-origin ilegível vira `<style>` só
+de comentário, sem atributo.
+
+`buildProjectFromHtml` descarta o bloco cuja origem é coberta por uma folha de `styles` **lida com
+sucesso** (`LayersCore.snapshotOriginCovered`: caminho completo da folha como sufixo da origem numa
+fronteira `/`; aceita URL com query e barra invertida do Windows). Com `base`, a origem vem da raiz servida,
+então a cobertura testa o caminho com o prefixo de `base` e sem ele. A folha real, escopada, ocupa a posição
+do primeiro bloco que a copiava na ordem do mock, preservando a cascata do app; por isso uma folha
+deduplicada deixa a ordem do manifesto e segue a ordem do mock. Folha listada que falhou ao ler mantém a
+cópia do snapshot. Mock sem o atributo (snapshot antigo, mock autoral) carrega como antes.
+
+Se o snapshot é legado (blob único: **nenhum** bloco com origem e ao menos um com regras; comentário puro não
+conta), esse CSS pode mascarar qualquer folha listada: `this.maskedCss` (as folhas lidas em `css`, inclusive
+as vindas de `<link>` do mock e sem as que falharam ao ler) entra em `this.structural` e `LayersCore.staleKind`
+devolve `layout` ("Reanalisar do 0") em vez de `style` quando uma delas muda. Num snapshot rotulado, o bloco
+sem origem (CSS do próprio app, CSS-in-JS) não mascara nada. `LayersCore.maskedSheets` decide isso.
+
+Limites: o casamento por sufixo de uma folha listada na raiz (ex.: `theme.css`) é frouxo e pode casar
+`/node_modules/x/theme.css`; snapshots antigos precisam de um novo para se beneficiar. Num snapshot
+rotulado, uma cópia cuja origem não casa com nenhuma folha listada (diferença de caixa no Windows, bundle com
+hash como `/assets/index-<hash>.css`) é mantida e continua vencendo, e o banner reporta `style`. O aviso de
+`interactions` sem alvo vai antes dos avisos de URL remota (`LayersCore.placeDeadWarning`), porque o toast da
+carga mostra só `warn[0]`; `css não encontrado` continua primeiro.
+
 ### Guarda de conflito na gravação
 
 `readText` registra em `this.mtimes[path]` o mtime lido; `writeText` compara o mtime atual com ele e

@@ -31,7 +31,7 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 | `base` | `""` | subpasta que prefixa `mock` e `styles` (ex.: `src/Axai.Api/wwwroot`) |
 | `viewport` | 1280×760 | tamanho da página do mock em px; define a geometria do palco. Páginas longas: use a altura real (`scrollHeight`) |
 | `mock` | `layers/mock.html` | HTML do mock. Pode ser o próprio `index.html` do app quando o DOM é estático |
-| `styles` | `[]` | folhas `.css` reais, lidas da pasta e aplicadas dentro do shadow root (não vazam para o editor). `<link rel="stylesheet" href="relativo">` dentro do mock também é resolvido e lido |
+| `styles` | `[]` | folhas `.css` reais, lidas da pasta e aplicadas dentro do shadow root (não vazam para o editor). `<link rel="stylesheet" href="relativo">` dentro do mock também é resolvido e lido. Em mock de snapshot, a folha listada substitui a cópia do mesmo arquivo no snapshot quando o bloco traz `data-layers-origin` (ocupa a posição da cópia na ordem do mock); snapshot antigo, sem o atributo, precisa ser gerado de novo para isso |
 | `fonts` | `[]` | Famílias de fonte que o projeto usa. **Nada é buscado na rede**: cada família é resolvida contra `fonts/projects.css`, versionado no repositório do LAYERS. Por compatibilidade, uma URL de serviço de fontes com parâmetro `family=` também é aceita — só as famílias são lidas dela, a URL nunca é requisitada. Família ausente do sheet local vira aviso e cai no fallback |
 | `root` | — | `data-name` / `data-src` do elemento raiz (L0) |
 | `rules` | `{}` | seletor CSS → `arquivo|regra|linha`; sobrescreve `data-src` (e `data-name`) dos elementos que casam |
