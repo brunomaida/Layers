@@ -1769,6 +1769,39 @@ describe('HostAttrsFromHtmlAllowlist', () => {
   });
 });
 
+describe('SnapshotCaptureLongUrl', () => {
+  it('SnapshotCapture_UrlAcimaDe4000_AindaEhSnapshotComCapturaInteira', () => {
+    const url = 'http://localhost:5173/gallery.html#/' + 'y'.repeat(5000);
+    const r = core.snapshotCapture('<!doctype html>\n<!-- snapshot LAYERS · ' + url + ' · 2026-10-16T00:00:00.000Z · viewport 600×300 -->\n<html></html>');
+    expect(r.snapshot).toBe(true);
+    expect(r.capture).toBe(url + ' · 2026-10-16T00:00:00.000Z · viewport 600×300');
+  });
+
+  it('SnapshotCapture_ComentarioSemFechar_EhSnapshotSemCaptura', () => {
+    expect(core.snapshotCapture('<!-- snapshot LAYERS · sem fim\n<html></html>')).toEqual({ snapshot: true, capture: '' });
+  });
+});
+
+describe('HostAttrsFromHtmlHardening', () => {
+  const at = (name, value) => ({ name, value });
+  const vars = (style) => core.hostAttrsFromHtml([at('style', style)]).vars.map((v) => v.name);
+
+  it('HostAttrsFromHtml_ValorHostilGigante_RecusaRapido', () => {
+    const t0 = performance.now();
+    expect(vars('--a:' + 'a'.repeat(100000))).toEqual([]);
+    expect(vars('--a:' + 'a'.repeat(3000))).toEqual([]);
+    expect(performance.now() - t0).toBeLessThan(200);
+    expect(vars('--a:' + 'a'.repeat(1999))).toEqual(['--a']);
+  });
+
+  it('HostAttrsFromHtml_FuncoesModernasLegitimas_Ficam', () => {
+    const ok = ['light-dark(#fff, #000)', 'env(safe-area-inset-top)', 'translate(1px, 2px)', 'blur(4px)', 'drop-shadow(0 0 2px #000)', 'steps(4, end)', 'repeat(2, 1fr)', 'minmax(0, 1fr)', 'rotate(45deg)', 'scale(1.2)'];
+    ok.forEach((v, i) => expect(vars('--v' + i + ':' + v), v).toEqual(['--v' + i]));
+    expect(vars('--x:url(a)')).toEqual([]);
+    expect(vars('--x:image-set(a)')).toEqual([]);
+  });
+});
+
 describe('SnapshotCapture', () => {
   it('SnapshotCapture_UrlLonga_DevolveCapturaInteira', () => {
     const url = 'http://localhost:5173/gallery.html#/' + 'x'.repeat(1500);
