@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-20",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 94,
+    "progress": 96,
     "docs": [],
     "children": [
       {
@@ -793,19 +793,26 @@
         "id": "S2.21c",
         "type": "spec",
         "name": "CLI de snapshot headless para regenerar o mock",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-261016-0-s2-21c-snapshot-cli.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s2-21c-snapshot-cli.md)",
+            "title": "feature-261016-0-s2-21c-snapshot-cli.md)"
+          }
+        ],
         "reason": "Traval real: Reanalisar do 0 só mostra a UI nova depois de um mock novo; o snapshot por console é manual. Testado: snapshot do app em :5173 + reanálise mostra a UI nova",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
