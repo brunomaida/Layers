@@ -255,6 +255,13 @@ hash como `/assets/index-<hash>.css`) é mantida e continua vencendo, e o banner
 `interactions` sem alvo vai antes dos avisos de URL remota (`LayersCore.placeDeadWarning`), porque o toast da
 carga mostra só `warn[0]`; `css não encontrado` continua primeiro.
 
+### Ação `attr` de `interactions` (S2.22e)
+
+O motor de interações do menu ⚡ Interagir (`act`/`actOn` em `index.html`) ganha `attr`, que alterna `data-*`/`aria-*` nos
+elementos do mock (`mockQ(selector)`), reaproveitando o re-scan das demais ações. A validação é pura em `lib/layers-core.js`
+(`attrAction` normaliza e recusa nomes fora de `data-*`/`aria-*`, `attrIsOn`/`attrToggle` aplicam) e `deadInteractions`
+passa a listar o seletor do `attr`. O mock continua estático: nenhum script roda, só o atributo muda e o CSS do shadow root reage.
+
 ### Estados do mock (`states`)
 
 `layers.json › states` (`[{ name, mock }]`) deixa um projeto ter vários mocks, um por estado da interface
