@@ -1027,11 +1027,11 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
   let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
   // S2.22c: mock de snapshot rotula L0 como "<nome> · snapshot"; root.name/root.src (nomeados contra o app vivo) vao para o descendente que casa o seletor
-  const snapMock = /snapshot LAYERS/.test(html.slice(0, 400));
+  const snapInfo = LayersCore.snapshotCapture(html), snapMock = snapInfo.snapshot;
   const autoName = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body';
-  let nameEl = rootEl; if (snapMock && man.root && man.root.name) { try { nameEl = rootEl.querySelector(man.root.name) || rootEl; } catch (e) { nameEl = rootEl; } }
+  let nameEl = rootEl; if (snapMock && man.root && man.root.name) { try { nameEl = rootEl.matches(man.root.name) ? rootEl : rootEl.querySelector(man.root.name) || rootEl; } catch (e) { nameEl = rootEl; } }
   if (man.root && man.root.name) nameEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = autoName; if (man.root && man.root.src) nameEl.dataset.src = man.root.src;
-  if (snapMock) { rootEl.dataset.name = (rootEl.dataset.name || autoName) + ' · snapshot'; const cap = /snapshot LAYERS · ([^\n]*?) -->/.exec(html.slice(0, 1000)); if (cap) rootEl.dataset.layersCapture = cap[1]; }
+  if (snapMock && snapInfo.capture) rootEl.dataset.layersCapture = snapInfo.capture; // o sufixo " · snapshot" entra depois de rules (abaixo)
   // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
   // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
   const idx = LayersCore.buildIndex(css.concat(kept)).byClass;
@@ -1068,6 +1068,7 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   }
   rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
   Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
+  if (snapMock) rootEl.dataset.name = (rootEl.dataset.name || autoName) + ' · snapshot';
   return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc, hostAttrs: LayersCore.hostAttrsFromHtml([...doc.documentElement.attributes].map(a => ({ name: a.name, value: a.value }))), maskedCss: LayersCore.maskedSheets(snapMock, inlineCss, css.map(x => x.file)) };
 };
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
