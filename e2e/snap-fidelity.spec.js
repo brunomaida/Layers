@@ -15,6 +15,7 @@ const probe = (page) => page.evaluate(() => {
     theme: host.getAttribute('data-theme'),
     bg: getComputedStyle(shell).backgroundColor,
     textColor: getComputedStyle(t).color,
+    underline: getComputedStyle(t).textDecorationLine,
     evil: getComputedStyle(host).getPropertyValue('--evil').trim(),
     l0: sh.querySelector('#app').dataset.name, l1: shell.dataset.name, l1src: shell.dataset.src || null, l0src: sh.querySelector('#app').dataset.src || null,
   };
@@ -25,6 +26,7 @@ test('SnapFidelity_LightHtml_AppliesThemeToHost', async ({ page }) => {
   const p = await probe(page);
   expect(p.theme).toBe('light');
   expect(p.textColor).toBe('rgb(18, 52, 86)');
+  expect(p.underline).toBe('underline');
   expect(p.bg).toBe('rgb(244, 242, 237)');
   expect(p.evil).toBe('');
 });
