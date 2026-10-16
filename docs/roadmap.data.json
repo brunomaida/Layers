@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 93,
+    "progress": 95,
     "docs": [],
     "children": [
       {
@@ -891,12 +891,12 @@
         "name": "Múltiplos estados do mock no layers.json e no CLI",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s2-22b-multi-state.md)",

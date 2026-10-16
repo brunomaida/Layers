@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 41 concluídos, 3 parciais, 5 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 42 concluídos, 3 parciais, 5 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -27,6 +27,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 41 concluídos
 - [x] Undo/redo global (câmera fora; ajustes de propriedade e código dentro): Ctrl+Z, Ctrl+Shift+Z e Ctrl+Y sobre snapshots de `changes[]` (`LayersCore.inlineDelta`), pilha de 100 passos zerada ao recarregar ou aplicar; `e2e/undo-redo.spec.js`.
 - [x] Deriva do layout e "Reanalisar do 0": fontes `.ts`/`.js` citadas em `data-src` vigiadas, banner "Mock mais antigo que a fonte" na carga, backup do `layers.json` e do mock em `.design-history/layout-*/` antes de reler do zero, aborta se o backup falha (`LayersCore.citedSources`/`layoutDrift`/`staleKind`/`layoutBackupPaths`); `e2e/layout-drift.spec.js`.
 - [x] CSS do snapshot não mascara as folhas reais (S2.22a, `data-layers-origin`): `e2e/snapshot-dedupe.spec.js` cobre a folha real vencendo a cópia, snapshot sem o atributo com o comportamento antigo, folha ilegível mantendo a cópia, projeto com `base`, ordem de cascata do mock, duas cópias da mesma folha (emitida uma vez na posição da primeira) e a classificação do banner (`Reanalisar do 0` só para blob legado com regras, `Recarregar` com bloco só de comentário); `e2e/snapshot-cli.spec.js` cobre o escape do atributo de origem, página sem folhas e folha cross-origin ilegível.
+- [x] Múltiplos estados do mock (S2.22b, `layers.json › states`): `e2e/multi-state.spec.js` abre o primeiro estado, troca pelo grupo "Estado do mock" do menu ⚡ Interagir e confere que um projeto sem `states` não mostra o grupo; `e2e/snapshot-cli.spec.js` cobre `--state`/`--url` e a recusa de nome inválido; `LayersCore.projectStates`/`pickState` e o parse do CLI estão em Vitest.
 - [x] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir): `layers/v1/pending`, validade por hash das fontes (tudo-ou-nada), toast de restaurados/descartados; `e2e/pending-persist.spec.js`.
 - [x] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Origem TS/JS aparece como "manual" no cabeçalho do painel de propriedades e na lista de Ajustes (S2.15; `e2e/manual-marker.spec.js`).
 
