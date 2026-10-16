@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 94,
+    "progress": 95,
     "docs": [],
     "children": [
       {
@@ -824,6 +824,7 @@
         "status": "wip",
         "statusLabel": "In Progress",
         "tags": [
+          "bug",
           "scaffold"
         ],
         "progress": 60,
@@ -839,9 +840,48 @@
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-16-s2-22a-css-masking.md)",
             "title": "2026-10-16-s2-22a-css-masking.md)"
+          },
+          {
+            "name": "fix-261016-62-s2-22a-css-masking.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261016-62-s2-22a-css-masking.md)",
+            "title": "fix-261016-62-s2-22a-css-masking.md)"
           }
         ],
         "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.22a",
+        "type": "spec",
+        "name": "CSS do snapshot deixa de mascarar as folhas reais",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-22a-css-masking.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-16-s2-22a-css-masking.md)",
+            "title": "2026-10-16-s2-22a-css-masking.md)"
+          },
+          {
+            "name": "fix-261016-62-s2-22a-css-masking.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261016-62-s2-22a-css-masking.md)",
+            "title": "fix-261016-62-s2-22a-css-masking.md)"
+          }
+        ],
+        "reason": "O snapshot copia o CSS das folhas e essa cópia, depois do escopo, ganhava das folhas reais de `styles`",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
