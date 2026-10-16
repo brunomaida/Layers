@@ -899,7 +899,14 @@
       "scaffold"
     ],
     "progress": 50,
-    "docs": [],
+    "docs": [
+      {
+        "name": "2026-10-16-s3-5-visual-functions-new.md",
+        "type": "spec",
+        "path": "/docs/text-specs/2026-10-16-s3-5-visual-functions-new.md",
+        "title": "Text spec — S3.5 visual functions new"
+      }
+    ],
     "children": [
       {
         "id": "S3.1",
