@@ -55,8 +55,12 @@ async function main(argv) {
   const browser = await chromium.launch();
   try {
     const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
-    await page.goto(chk.url, { waitUntil: 'networkidle', timeout: 30000 });
+    // 'load', nao 'networkidle': um dev server com SSE/HMR aberto nunca fica ocioso
+    await page.goto(chk.url, { waitUntil: 'load', timeout: 30000 });
     await page.waitForTimeout(args.waitMs);
+    // um redirecionamento do app para fora do loopback (ex.: login SSO) ou para o editor nao vira mock
+    const landed = checkSnapshotUrl(page.url());
+    if (!landed.ok) { console.error('a pagina terminou em ' + page.url() + ': ' + landed.reason); return 2; }
     const [dl] = await Promise.all([page.waitForEvent('download', { timeout: 15000 }), page.evaluate(script)]);
     await dl.saveAs(path.resolve(args.out));
   } finally { await browser.close(); }

@@ -15,6 +15,12 @@ describe('CheckSnapshotUrl', () => {
     expect(checkSnapshotUrl('file:///C:/x.html').ok).toBe(false);
   });
 
+  it('UserinfoPontoFinalEPortaComZero_NaoBurlam', () => {
+    expect(checkSnapshotUrl('http://localhost@evil.com/').ok).toBe(false);
+    expect(checkSnapshotUrl('http://localhost.:3000/').ok).toBe(false);
+    expect(checkSnapshotUrl('http://localhost:05180/').ok).toBe(false);
+  });
+
   it('PortaDoEditor5180_Recusa', () => {
     const r = checkSnapshotUrl('http://localhost:5180/');
     expect(r.ok).toBe(false);
