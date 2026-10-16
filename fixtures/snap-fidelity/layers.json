@@ -1,0 +1,1 @@
+{"name":"Snap fidelity","viewport":{"width":600,"height":300},"mock":"layers/mock.light.html","states":[{"name":"light","mock":"layers/mock.light.html"},{"name":"plain","mock":"layers/mock.plain.html"}],"root":{"name":".shell","src":"src/app.ts|AppShell|1"}}

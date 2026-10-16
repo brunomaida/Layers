@@ -279,6 +279,11 @@ describe('HostAttrsFromHtml', () => {
     expect(r.attrs).toEqual([]);
   });
 
+  it('HostAttrsFromHtml_ValorQueFechaOuAbreBloco_DescartaADeclaracao', () => {
+    const r = core.hostAttrsFromHtml([at('style', '--a:red}body{display:none;--b:1 !important;--c:<x;--ok:#000')]);
+    expect(r.vars).toEqual([at('--ok', '#000')]);
+  });
+
   it('HostAttrsFromHtml_SemAtributos_DevolveListasVazias', () => {
     expect(core.hostAttrsFromHtml([])).toEqual({ attrs: [], vars: [] });
     expect(core.hostAttrsFromHtml(undefined)).toEqual({ attrs: [], vars: [] });
