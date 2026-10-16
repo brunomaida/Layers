@@ -83,7 +83,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
           <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histReset }}" title="Descarrega o projeto e volta à interface limpa (mantém tema e histórico)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div></sc-if>
           <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="Relê do disco os arquivos do projeto (atalho R)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
-          <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ restructureItem }}" title="Relê tudo do 0: guarda o layout atual em .design-history/ e descarta ajustes, seleção e câmera" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">⟲</span>Reanalisar do 0</div></sc-if>
+          <sc-if value="{{ hasDirProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ restructureItem }}" title="Relê tudo do 0: guarda o layout atual em .design-history/ e descarta ajustes, seleção e câmera" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">⟲</span>Reanalisar do 0</div></sc-if>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
       </sc-if>
@@ -1605,12 +1605,22 @@ class Component extends DCLogic {
     const seq = this.loadSeq;
     try { await this.backupLayout(); } catch (e) { this.toast('Reanálise cancelada: o backup do layout falhou — ' + e.message, 'warn'); return; }
     if (seq !== this.loadSeq) return;
-    this.dropPending(); this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject();
+    this.dropPending(); if (this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
+    this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject();
   }
   async backupLayout() {
     const L = this.loaded; if (!L) throw new Error('nenhum layout carregado');
     const at = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-'); const p = LayersCore.layoutBackupPaths(at, L.mockPath);
-    await this.writeText(p.manifest, L.manifest); await this.writeText(p.mock, L.mock);
+    const dir = this.state.dir; // as duas gravacoes valem para a pasta do clique, nao para uma conectada depois
+    try {
+      await this.writeText(p.manifest, L.manifest);
+      if (this.state.dir !== dir) throw new Error('a pasta conectada mudou durante o backup');
+      await this.writeText(p.mock, L.mock);
+    } catch (e) {
+      // backup parcial nao conta: remove o carimbo meio escrito (melhor esforco)
+      try { const h = await dir.getDirectoryHandle('.design-history'); await h.removeEntry(p.dir.split('/').pop(), { recursive: true }); } catch (e2) {}
+      throw e;
+    }
   }
   doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
   componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('pointerdown', this.onDocDown, true); clearTimeout(this.menuT); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
@@ -2265,7 +2275,7 @@ class Component extends DCLogic {
       emptyBody: s.loadError ? s.loadError.body : (window.showDirectoryPicker ? 'Abra Projetos recentes (canto superior esquerdo) e conecte uma pasta que tenha layers.json na raiz.' : 'Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta. O modo fixture (#layers=) continua funcionando aqui.'),
       emptyShowCreateBtn: !!(s.loadError && s.loadError.canCreate), emptyCreateAction: () => this.retryCreateLayersJson(),
       showHint: !s.project || !!s.loadError,
-      hasProject: !!s.project, noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
+      hasProject: !!s.project, hasDirProject: !!(s.dir && s.project), noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
       hdrA: hs === 'A', hdrB: hs === 'B', hdrC: hs === 'C', ...gear, ...topMenus, ...interModel, ...cfgVals, cbBlur: this.cbBlur, preventBlur: this.preventBlur, phA: ph === 'A', phB: ph === 'B', phC: ph === 'C',
       rightOpen: s.rightOpen, rightClosed: !s.rightOpen, rightW: s.rightOpen ? s.rightPx + 'px' : '30px', ...(() => { const rw = s.rightOpen ? s.rightPx : 30; const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const band = vw - 2 * (rw + 12); return band >= 420 ? { dockLeft: '50vw', dockMaxW: band + 'px' } : { dockLeft: 'calc((100vw - ' + rw + 'px) / 2)', dockMaxW: Math.max(360, vw - rw - 24) + 'px' }; })(),  toggleRight: () => this.setState(st => ({ rightOpen: !st.rightOpen })),
       startRightResize: e => this.startRightResize(e), resetRightW: () => this.setState({ rightPx: 340 }), rightGripBg: s.rightDrag ? 'rgba(var(--selRgb),.4)' : 'transparent',
