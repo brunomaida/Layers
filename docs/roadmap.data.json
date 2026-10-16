@@ -833,6 +833,12 @@
             "type": "spec",
             "path": "/[](text-specs/2026-10-16-s2-22-loader-checkchanges.md)",
             "title": "2026-10-16-s2-22-loader-checkchanges.md)"
+          },
+          {
+            "name": "2026-10-16-s2-22a-css-masking.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-16-s2-22a-css-masking.md)",
+            "title": "2026-10-16-s2-22a-css-masking.md)"
           }
         ],
         "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design",
