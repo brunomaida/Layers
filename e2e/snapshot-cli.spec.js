@@ -170,3 +170,34 @@ test('Snapshot_StateGalleryMissing_RefusedWithoutWriting', async () => {
     fs.rmSync(dir, { recursive: true, force: true });
   }
 });
+
+// S2.22c: <html> attributes and canvases travel with the snapshot (theme, frozen chart image).
+test('Snapshot_HtmlAttrsAndCanvas_AreCarriedIntoTheMock', async () => {
+  const app = await listen((req, res) => {
+    res.setHeader('content-type', 'text/html');
+    res.end('<!doctype html><html lang="en" data-theme="light" style="--bg-base:#f4f2ed"><head><meta charset="utf-8"></head><body>'
+      + '<canvas id="c" class="chart" width="40" height="20" style="width:40px"></canvas><canvas id="big" width="2100" height="2100"></canvas>'
+      + '<script>const g = document.getElementById("c").getContext("2d"); g.fillStyle = "#f00"; g.fillRect(0, 0, 20, 10);</script></body></html>');
+  });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.html');
+    const r = await run([`http://127.0.0.1:${app.address().port}/`, out, '--wait', '200']);
+    expect(r.status, r.stderr).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html).toMatch(/<html [^>]*data-theme="light"/);
+    expect(html).toMatch(/<html [^>]*style="--bg-base:#f4f2ed"/);
+    expect(html).toMatch(/<html [^>]*lang="en"/);
+    const img = /<img [^>]*id="c"[^>]*>/.exec(html);
+    expect(img, 'canvas #c becomes an <img>').not.toBeNull();
+    expect(img[0]).toContain('class="chart"');
+    expect(img[0]).toContain('width="40"');
+    expect(img[0]).toContain('data-layers-frozen="canvas"');
+    expect(img[0]).toContain('src="data:image/png;base64,');
+    expect(html).not.toContain('<canvas id="c"');
+    expect(html, 'canvas above 4 Mpx stays as an empty <canvas>').toContain('<canvas id="big"');
+  } finally {
+    app.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
