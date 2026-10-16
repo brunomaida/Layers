@@ -155,3 +155,50 @@ test('LayoutDrift_At1024_BannerKeepsBox', async ({ page }) => {
   expect(box.x, 'banner starts after the left column').toBeGreaterThanOrEqual(384);
   expect(box.x + box.width, 'banner ends before the right panel').toBeLessThanOrEqual(right.x);
 });
+
+const savedBackups = (page) => page.evaluate(async () => {
+  const out = [];
+  try {
+    const hist = await window.__proj.getDirectoryHandle('.design-history');
+    for await (const [name, h] of hist.entries()) if (/^layout-/.test(name) && h.kind === 'directory') out.push(name);
+  } catch (e) { /* none yet */ }
+  return out;
+});
+
+test('Restructure_MockUnchanged_ExplainsAndBacksUpOnlyWhenForced', async ({ page }) => {
+  await connect(page);
+  await banner(page).getByRole('button', { name: 'Reanalisar do 0' }).click();
+  await expect(page.getByText('O mock não mudou')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText(/tools\/layers-snapshot\.js/).first()).toBeVisible();
+  expect(await savedBackups(page), 'nothing is saved before the user insists').toEqual([]);
+  await page.getByRole('button', { name: 'Reler mesmo assim' }).click();
+  await expect.poll(async () => (await savedBackups(page)).length, { timeout: 10000 }).toBe(1);
+  await expect(page.getByText(/layout anterior salvo em \.design-history\/layout-/)).toBeVisible({ timeout: 10000 });
+  await page.waitForTimeout(800);
+  await expect(banner(page), 'the acknowledged drift does not loop back').toHaveCount(0);
+});
+
+test('LayoutDrift_Dismissed_DoesNotReturnOnReloadUntilSourceChanges', async ({ page }) => {
+  await connect(page);
+  await expect(banner(page)).toBeVisible({ timeout: 5000 });
+  await banner(page).getByTitle('Ignorar').click();
+  await expect(banner(page)).toHaveCount(0);
+  await page.keyboard.press('r');
+  await page.waitForTimeout(1500);
+  await expect(banner(page)).toHaveCount(0);
+  // a new edit of the source is a new fact: the warning comes back after the next reload
+  await page.evaluate(async () => {
+    const d = await (await window.__proj.getDirectoryHandle('src')).getDirectoryHandle('ui');
+    const h = await d.getFileHandle('shell.ts');
+    const w = await h.createWritable(); await w.write((await (await h.getFile()).text()) + '// edited again\n'); await w.close();
+  });
+  await page.keyboard.press('r');
+  await expect(banner(page)).toContainText('Mock mais antigo que a fonte', { timeout: 5000 });
+});
+
+test('LayoutDrift_RestructureButton_HasAccentedBorder', async ({ page }) => {
+  await connect(page);
+  const btn = banner(page).getByRole('button', { name: 'Reanalisar do 0' });
+  await expect(btn).toBeVisible({ timeout: 5000 });
+  expect(await btn.getAttribute('style')).toContain('border: 1px solid var(--warn)');
+});

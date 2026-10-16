@@ -198,16 +198,19 @@ Ao fim de cada carga, `probeLayout` (sem `await`, só com `queryPermission` `gra
 `.ts`/`.js` citados em `data-src` e em `root.src` (`LayersCore.citedSources`: caminho no mesmo espaço
 das folhas, tetos de 50 arquivos, sem `tpl:`) e os acrescenta a `this.watch`. Se algum é mais novo que
 o mock (`LayersCore.layoutDrift`), `state.drift` abre o banner "Mock mais antigo que a fonte: …" com o
-botão "Reanalisar do 0". A deriva volta a cada carga enquanto a fonte for mais nova que o mock; o "×"
-só a esconde na sessão. Depois da carga, `checkStale` classifica a lista com `LayersCore.staleKind`:
+botão "Reanalisar do 0" (borda `--warn`, para se destacar) e a dica de gerar um novo snapshot. O "×" e o
+Reanalisar reconhecem a deriva na sessão (`ackDrift`, `LayersCore.layoutDrift(…, ack)`): ela só volta se a
+fonte for editada de novo; numa sessão nova o aviso reaparece enquanto o mock continuar mais velho. Depois da carga, `checkStale` classifica a lista com `LayersCore.staleKind`:
 `layout` (mock, `layers.json` ou fonte citada) troca o botão "Recarregar" por "Reanalisar do 0";
 `style` (só folha CSS) mantém o banner de antes.
 
-"Reanalisar do 0" (banner ou `Projetos ▾`) pede confirmação sempre. Ao confirmar, `backupLayout` grava o
+"Reanalisar do 0" (banner ou `Projetos ▾`) pede confirmação sempre. Se `layers.json` e o mock têm o mesmo
+mtime da carga (`layoutMoved`), o modal vira "O mock não mudou": explica que reler não traz UI nova, manda
+gerar o snapshot e só recarrega com "Reler mesmo assim". Ao confirmar, `backupLayout` grava o
 `layers.json` e o mock **como foram lidos** (`this.loaded`, em memória, então mesmo um mock já
 sobrescrito no disco fica salvo) em `.design-history/layout-<AAAAMMDD-HHMMSS>/`, por `writeText`
 (permissão de escrita, guarda de conflito, `writeLog`). Falha no backup aborta antes de recarregar, com
-toast `warn`. Depois `dropPending`, `pendingSel = null` e `loadProject`: projeto novo, sem seleção,
+toast `warn`. Depois o toast da carga nomeia a pasta do backup (`bakNote`). `dropPending`, `pendingSel = null` e `loadProject`: projeto novo, sem seleção,
 câmera, undo nem ajustes salvos. O backup não tem retenção nem poda.
 
 Limite: reler só traz a UI nova se o mock mudou. Em app renderizado por JS, regenere o mock com
