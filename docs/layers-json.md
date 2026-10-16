@@ -88,9 +88,22 @@ Cada item é uma linha da coluna esquerda do menu ⚡ Interagir; `groups[].items
 - `{ "sep": "Título" }` — separador.
 - `key`, `label`, `desc`.
 - `show: seletor` — item-superfície: ganha 👁 que exibe/oculta os elementos que casam (`display:none`; `[hidden]` é removido ao exibir; `<dialog>` alterna o atributo `open`). Estado lido do estilo computado.
-- Ações dos chips (uma por chip; estado ●/○ derivado do DOM): `toggle`, `show`, `hide` (seletor → `display`), `class: {selector, name}` (ou string = seletor com `active`), `click: seletor` (dispara `click()` nativo: checkbox, radio, `<details>`), `hint` (texto; sem ação = informativo).
+- Ações dos chips (uma por chip; estado ●/○ derivado do DOM): `toggle`, `show`, `hide` (seletor → `display`), `class: {selector, name}` (ou string = seletor com `active`), `click: seletor` (dispara `click()` nativo: checkbox, radio, `<details>`), `attr: {selector, name, value, off?}` (alterna um atributo no mock, abaixo), `hint` (texto; sem ação = informativo).
 
 Toda ação re-escaneia o mock.
+
+### `attr`
+
+`attr: { "selector": "#dock", "name": "data-dock", "value": "left" }` alterna um atributo nos elementos que casam o seletor (S2.22e). Serve a CSS que reage a estado de atributo (`[data-dock="left"]`, `[aria-expanded="true"]`), já que o mock não executa script.
+
+| Campo | Regra |
+|---|---|
+| `selector` | obrigatório; seletor sem alvo é avisado na carga como nas outras ações |
+| `name` | só `data-*` ou `aria-*` (minúsculas, `[a-z0-9_.:-]` após o prefixo); `on*`, `style`, `class`, `href` e afins são recusados |
+| `value` | obrigatório; string, número ou boolean, até 200 caracteres |
+| `off` | opcional, mesmo formato; sem ele, desligar remove o atributo |
+
+Elemento cujo atributo já vale `value` é desligado (remove ou vira `off`); qualquer outro estado vira `value`. O ●/○ do chip é ● se algum alvo está ligado. `attr` malformado deixa o chip informativo, com `title` "attr inválido". Exemplo mínimo em `fixtures/attr-action/`.
 
 Seletor que não casa nada no mock (`show`, `toggle`, `hide`, `on`, `click`, `class`) é avisado na carga e a superfície sem alvo aparece como "sem alvo" no menu. Elementos ocultos contam como alvo; só o seletor sem nenhum elemento (ou inválido) é morto.
 
