@@ -1785,3 +1785,56 @@ describe('LayoutBackupPaths', () => {
     expect(core.layoutBackupPaths('s', 'mock.html').mock).toBe('.design-history/layout-s/mock.html');
   });
 });
+
+describe('SnapshotOriginCovered', () => {
+  it('UrlAbsolutaComQuery_Casa', () => {
+    expect(core.snapshotOriginCovered('http://localhost:5173/src/styles/layout.css?t=1', ['src/styles/layout.css'])).toBe(true);
+  });
+  it('IdViteWindowsComBarraInvertida_Casa', () => {
+    expect(core.snapshotOriginCovered('C:\\Dev\\WAVE\\src\\styles\\layout.css', ['src/styles/layout.css'])).toBe(true);
+  });
+  it('SufixoSemFronteira_NaoCasa', () => {
+    expect(core.snapshotOriginCovered('/a/xlayout.css', ['layout.css'])).toBe(false);
+  });
+  it('CaminhoDiferenteMesmoBasename_NaoCasa', () => {
+    expect(core.snapshotOriginCovered('/a/src/styles/layout.css', ['other/layout.css'])).toBe(false);
+  });
+  it('OrigemVaziaOuNula_NaoCasa', () => {
+    expect(core.snapshotOriginCovered('', ['a.css'])).toBe(false);
+    expect(core.snapshotOriginCovered(null, ['a.css'])).toBe(false);
+  });
+});
+
+describe('MaskedSheets', () => {
+  it('SnapshotComBlocoSemOrigem_DevolveAsFolhas', () => {
+    expect(core.maskedSheets(true, [{ origin: 'x' }, { origin: null }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('TodosComOrigem_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [{ origin: 'x' }, { origin: 'y' }], ['a.css'])).toEqual([]);
+  });
+  it('NaoSnapshot_DevolveVazio', () => {
+    expect(core.maskedSheets(false, [{ origin: null }], ['a.css'])).toEqual([]);
+  });
+  it('SnapshotSemBlocos_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [], ['a.css'])).toEqual([]);
+  });
+});
+
+describe('PlaceDeadWarning', () => {
+  it('ExisteAvisoDeUrlRemota_InsereAntes', () => {
+    const warn = ['URL remota removida: href="//x"', 'outro'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn.indexOf('dead')).toBe(0);
+    expect(warn).toHaveLength(3);
+  });
+  it('SemAvisoDeUrlRemota_Acrescenta', () => {
+    const warn = ['a', 'b'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn[warn.length - 1]).toBe('dead');
+  });
+  it('AvisoDeCssNaoEncontrado_ContinuaPrimeiro', () => {
+    const warn = ['css não encontrado: a.css', 'URL remota removida: x'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn.indexOf('dead')).toBe(1);
+  });
+});
