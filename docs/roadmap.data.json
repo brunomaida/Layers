@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 96,
+    "progress": 94,
     "docs": [],
     "children": [
       {
@@ -810,6 +810,32 @@
           }
         ],
         "reason": "Traval real: Reanalisar do 0 só mostra a UI nova depois de um mock novo; o snapshot por console é manual. Testado: snapshot do app em :5173 + reanálise mostra a UI nova",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.22",
+        "type": "spec",
+        "name": "Loader captura estados reais do Traval",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-22-loader-checkchanges.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-16-s2-22-loader-checkchanges.md)",
+            "title": "2026-10-16-s2-22-loader-checkchanges.md)"
+          }
+        ],
+        "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
