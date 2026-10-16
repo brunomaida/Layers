@@ -1602,7 +1602,7 @@ class Component extends DCLogic {
     this.layoutMoved(seen).then(moved => {
       if (seq !== this.loadSeq || this.state.modal) return;
       if (!moved) { this.setState({ modal: { stage: 'confirm', log: [], title: 'O mock não mudou', label: 'Reler mesmo assim', text: 'layers.json e ' + mock + ' no disco são os mesmos da carga: reler não traz UI nova.' + (s.drift ? ' A fonte é mais nova que o mock, mas o Layers só lê o mock.' : '') + ' Gere um novo snapshot com o app rodando: node tools/layers-snapshot-cli.mjs <url-do-app> <pasta>/' + mock + ' (ou tools/layers-snapshot.js no console), e reanalise. Reler mesmo assim salva o layout atual em .design-history/ e recarrega do zero.', onYes: () => this.doRestructure() } }); return; }
-      this.setState({ modal: { stage: 'confirm', log: [], title: 'Reanalisar projeto do 0?', label: 'Reanalisar', text: 'Descarta ajustes, seleção e câmera. O layout atual (layers.json e mock) é salvo em .design-history/ antes. Se o app monta o DOM por JavaScript, gere um novo mock com node tools/layers-snapshot-cli.mjs <url-do-app> <pasta>/layers/mock.html: reler sozinho não traz a UI nova.', onYes: () => this.doRestructure() } });
+      this.setState({ modal: { stage: 'confirm', log: [], title: 'Reanalisar projeto do 0?', label: 'Reanalisar', text: 'Descarta ajustes, seleção e câmera. O layout atual (layers.json e mock) é salvo em .design-history/ antes. Se o app monta o DOM por JavaScript, gere um novo mock com node tools/layers-snapshot-cli.mjs <url-do-app> <pasta>/' + mock + ': reler sozinho não traz a UI nova.', onYes: () => this.doRestructure() } });
     });
   }
   // S2.21b: algum dos arquivos de layout (layers.json, mock) mudou no disco desde a carga? Leitura falha conta como mudou.

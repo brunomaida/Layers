@@ -37,6 +37,22 @@ test('Snapshot_LoopbackApp_WritesRenderedMock', async () => {
   }
 });
 
+test('Snapshot_AppRedirectsToTheEditor_RefusedWithoutWriting', async () => {
+  const server = http.createServer((req, res) => { res.statusCode = 302; res.setHeader('location', 'http://localhost:5180/'); res.end(); });
+  await new Promise((r) => server.listen(0, '127.0.0.1', r));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.html');
+    const r = await run([`http://127.0.0.1:${server.address().port}/`, out, '--wait', '200']);
+    expect(r.status, r.stderr).toBe(2);
+    expect(r.stderr).toMatch(/5180/);
+    expect(fs.existsSync(out)).toBe(false);
+  } finally {
+    server.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
 test('Snapshot_EditorPortOrExternalHost_RefusedWithoutWriting', async () => {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
   try {
