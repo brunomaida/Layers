@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { checkSnapshotUrl, parseSnapshotArgs } from '../tools/layers-snapshot-cli.mjs';
+import { checkSnapshotUrl, parseSnapshotArgs, snapshotTarget } from '../tools/layers-snapshot-cli.mjs';
 
 describe('CheckSnapshotUrl', () => {
   it('LocalhostHttpComPorta_Aceita', () => {
@@ -55,5 +55,44 @@ describe('ParseSnapshotArgs', () => {
 
   it('SaidaQueNaoEHtml_DevolveErro', () => {
     expect(parseSnapshotArgs(['http://localhost:5173/', 'saida.txt']).error).toMatch(/\.html/);
+  });
+});
+
+describe('ParseSnapshotArgs estado e url', () => {
+  it('State_Parseado', () => {
+    expect(parseSnapshotArgs(['http://localhost:5173/', 'o.html', '--state', 'csv-loaded']).state).toBe('csv-loaded');
+  });
+  it('SemState_EhNulo', () => {
+    expect(parseSnapshotArgs(['http://localhost:5173/', 'o.html']).state).toBeNull();
+  });
+  it('StateInvalido_DevolveErro', () => {
+    for (const bad of ['a/b', '..', 'a..b', 'a#b', 'a b', '', '-x']) {
+      expect(parseSnapshotArgs(['http://localhost:5173/', 'o.html', '--state', bad]).error, bad).toMatch(/--state/);
+    }
+  });
+  it('StateSemValor_DevolveErro', () => {
+    expect(parseSnapshotArgs(['http://localhost:5173/', 'o.html', '--state']).error).toMatch(/--state/);
+  });
+  it('UrlComoFlag_SubstituiOPosicional', () => {
+    const a = parseSnapshotArgs(['--url', 'http://localhost:5173/', 'o.html']);
+    expect(a).toMatchObject({ url: 'http://localhost:5173/', out: 'o.html' });
+  });
+  it('UrlFlagEPosicionalJuntos_DevolveErro', () => {
+    expect(parseSnapshotArgs(['--url', 'http://localhost:5173/', 'http://localhost:5173/', 'o.html']).error).toMatch(/uso/i);
+  });
+  it('UrlFlagSemValor_DevolveErro', () => {
+    expect(parseSnapshotArgs(['o.html', '--url']).error).toMatch(/--url/);
+  });
+});
+
+describe('SnapshotTarget', () => {
+  it('ComEstado_ApontaParaAGalleryComRotaDeHash', () => {
+    expect(snapshotTarget('http://localhost:5173/', 'csv-loaded')).toBe('http://localhost:5173/gallery.html#/csv-loaded');
+  });
+  it('AppEmSubcaminho_ResolveRelativoAoCaminho', () => {
+    expect(snapshotTarget('http://localhost:5173/app/', 'x')).toBe('http://localhost:5173/app/gallery.html#/x');
+  });
+  it('SemEstado_DevolveAUrlIntacta', () => {
+    expect(snapshotTarget('http://localhost:5173/', null)).toBe('http://localhost:5173/');
   });
 });

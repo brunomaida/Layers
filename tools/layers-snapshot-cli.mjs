@@ -1,6 +1,9 @@
 // LAYERS · snapshot do DOM renderizado, sem console do navegador (S2.21c)
 //
-// node tools/layers-snapshot-cli.mjs <url-do-app> <pasta-do-projeto>/layers/mock.html [--viewport 1280x760] [--wait 2500]
+// node tools/layers-snapshot-cli.mjs <url-do-app> <pasta-do-projeto>/layers/mock.html [--viewport 1280x760] [--wait 2500] [--state <nome>]
+//
+// --state <nome> captura o estado da gallery do app (<url-do-app>/gallery.html#/<nome>) em vez da pagina inicial (S2.22b);
+// --url <url-do-app> e a forma com flag do primeiro argumento posicional.
 //
 // Abre o app (dev server que voce ja subiu, so loopback) num Chromium headless separado, roda o
 // mesmo tools/layers-snapshot.js do console e grava o mock onde voce mandou. Nada do app roda na
@@ -11,7 +14,8 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 
 const EDITOR_PORT = '5180';
 const LOOPBACK = new Set(['localhost', '127.0.0.1', '[::1]']);
-const USAGE = 'uso: node tools/layers-snapshot-cli.mjs <url-do-app> <saida.html> [--viewport 1280x760] [--wait 2500]';
+const USAGE = 'uso: node tools/layers-snapshot-cli.mjs <url-do-app> <saida.html> [--viewport 1280x760] [--wait 2500] [--state <nome>]  (ou --url <url-do-app> <saida.html>)';
+const STATE_RE = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 // So http em loopback e nunca a porta do proprio editor: o alvo e um app que o usuario ja subiu.
 export function checkSnapshotUrl(raw) {
@@ -23,8 +27,13 @@ export function checkSnapshotUrl(raw) {
   return { ok: true, url: u.href };
 }
 
+// Pagina da gallery do app para um estado: relativa a URL do app, hash de rota '#/<estado>'. Sem estado, a propria URL.
+export function snapshotTarget(url, state) {
+  return state ? new URL('gallery.html#/' + state, url).href : url;
+}
+
 export function parseSnapshotArgs(argv) {
-  const pos = []; let width = 1280, height = 760, waitMs = 2500;
+  const pos = []; let width = 1280, height = 760, waitMs = 2500, state = null, urlFlag = null;
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--viewport') {
@@ -35,11 +44,18 @@ export function parseSnapshotArgs(argv) {
       const n = Number(argv[++i]);
       if (!Number.isFinite(n) || n < 0 || n > 60000) return { error: '--wait deve ser de 0 a 60000 ms' };
       waitMs = n;
+    } else if (a === '--state') {
+      state = argv[++i] || '';
+      if (!STATE_RE.test(state) || state.includes('..')) return { error: '--state deve ser um nome simples (letras, digitos, . _ -): ' + state };
+    } else if (a === '--url') {
+      urlFlag = argv[++i];
+      if (!urlFlag) return { error: '--url precisa de um valor' };
     } else pos.push(a);
   }
-  if (pos.length !== 2) return { error: USAGE };
-  if (!/\.html?$/i.test(pos[1])) return { error: 'a saida deve terminar em .html: ' + pos[1] };
-  return { url: pos[0], out: pos[1], width, height, waitMs };
+  if (pos.length !== (urlFlag === null ? 2 : 1)) return { error: USAGE };
+  const url = urlFlag === null ? pos[0] : urlFlag, out = pos[pos.length - 1];
+  if (!/\.html?$/i.test(out)) return { error: 'a saida deve terminar em .html: ' + out };
+  return { url, out, width, height, waitMs, state };
 }
 
 async function main(argv) {
@@ -56,7 +72,7 @@ async function main(argv) {
   try {
     const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
     // 'load', nao 'networkidle': um dev server com SSE/HMR aberto nunca fica ocioso
-    await page.goto(chk.url, { waitUntil: 'load', timeout: 30000 });
+    await page.goto(snapshotTarget(chk.url, args.state), { waitUntil: 'load', timeout: 30000 });
     await page.waitForTimeout(args.waitMs);
     // um redirecionamento do app para fora do loopback (ex.: login SSO) ou para o editor nao vira mock
     const landed = checkSnapshotUrl(page.url());
