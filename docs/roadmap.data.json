@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-17",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 93,
     "docs": [],
     "children": [
       {
@@ -610,8 +610,8 @@
         "id": "S2.18",
         "type": "spec",
         "name": "Verificação manual da gravação real do template dc",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -692,6 +692,32 @@
           }
         ],
         "reason": "Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.21",
+        "type": "spec",
+        "name": "Reanalisar projeto do 0 com detecção de deriva do layout",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-21-restructure-project.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-16-s2-21-restructure-project.md)",
+            "title": "2026-10-16-s2-21-restructure-project.md)"
+          }
+        ],
+        "reason": "Traval mudou e o Layers não percebeu: mock manual e .ts citados não vigiados; backup do layout antes de reler",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
