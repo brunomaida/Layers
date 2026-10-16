@@ -824,7 +824,6 @@
         "status": "wip",
         "statusLabel": "In Progress",
         "tags": [
-          "bug",
           "scaffold"
         ],
         "progress": 60,
@@ -842,10 +841,10 @@
             "title": "2026-10-16-s2-22a-css-masking.md)"
           },
           {
-            "name": "fix-261016-62-s2-22a-css-masking.md)",
+            "name": "feature-261016-62-s2-22-loader-checkchanges.md)",
             "type": "report",
-            "path": "/[](../changelog.d/fix-261016-62-s2-22a-css-masking.md)",
-            "title": "fix-261016-62-s2-22a-css-masking.md)"
+            "path": "/[](../changelog.d/feature-261016-62-s2-22-loader-checkchanges.md)",
+            "title": "feature-261016-62-s2-22-loader-checkchanges.md)"
           }
         ],
         "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design",
@@ -863,7 +862,6 @@
         "status": "done",
         "statusLabel": "Completed",
         "tags": [
-          "bug",
           "scaffold"
         ],
         "progress": 100,
@@ -875,10 +873,10 @@
             "title": "2026-10-16-s2-22a-css-masking.md)"
           },
           {
-            "name": "fix-261016-62-s2-22a-css-masking.md)",
+            "name": "feature-261016-62-s2-22-loader-checkchanges.md)",
             "type": "report",
-            "path": "/[](../changelog.d/fix-261016-62-s2-22a-css-masking.md)",
-            "title": "fix-261016-62-s2-22a-css-masking.md)"
+            "path": "/[](../changelog.d/feature-261016-62-s2-22-loader-checkchanges.md)",
+            "title": "feature-261016-62-s2-22-loader-checkchanges.md)"
           }
         ],
         "reason": "O snapshot copia o CSS das folhas e essa cópia, depois do escopo, ganhava das folhas reais de `styles`",

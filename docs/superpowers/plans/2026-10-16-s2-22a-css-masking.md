@@ -141,7 +141,7 @@ loader (index.html) ◀───────────┘
 
 **Files:**
 - Modify: `docs/ARCHITECTURE.md`, `docs/layers-json.md`, `docs/RELEASE-CHECKLIST.md`, `docs/roadmap.md`, `docs/roadmap.config.json`, `docs/roadmap.data.json` (rebuild)
-- Create: `changelog.d/fix-261016-62-s2-22a-css-masking.md`
+- Create: `changelog.d/feature-261016-62-s2-22-loader-checkchanges.md`
 
 **Interfaces:** nenhuma.
 
