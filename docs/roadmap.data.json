@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 93,
     "docs": [],
     "children": [
       {
@@ -880,6 +880,32 @@
           }
         ],
         "reason": "O snapshot copia o CSS das folhas e essa cópia, depois do escopo, ganhava das folhas reais de `styles`",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.22b",
+        "type": "spec",
+        "name": "Múltiplos estados do mock no layers.json e no CLI",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "feature-261016-62-s2-22b-multi-state.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-62-s2-22b-multi-state.md)",
+            "title": "feature-261016-62-s2-22b-multi-state.md)"
+          }
+        ],
+        "reason": "Traval só mostra o estado vazio: `states:[{name, mock}]` no manifesto, menu troca o estado e o CLI captura `gallery.html#/<estado>` (G4, G5)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
