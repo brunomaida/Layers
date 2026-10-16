@@ -236,13 +236,16 @@ do primeiro bloco que a copiava na ordem do mock, preservando a cascata do app; 
 deduplicada deixa a ordem do manifesto e segue a ordem do mock. Folha listada que falhou ao ler mantém a
 cópia do snapshot. Mock sem o atributo (snapshot antigo, mock autoral) carrega como antes.
 
-Se o snapshot ainda tem bloco sem origem **com regras** (comentário puro não conta), esse CSS pode mascarar
-qualquer folha listada: `this.maskedCss` (as folhas de `styles`) entra em `this.structural` e
-`LayersCore.staleKind` devolve `layout` ("Reanalisar do 0") em vez de `style` quando uma delas muda.
-`LayersCore.maskedSheets` decide isso.
+Se o snapshot é legado (blob único: **nenhum** bloco com origem e ao menos um com regras; comentário puro não
+conta), esse CSS pode mascarar qualquer folha listada: `this.maskedCss` (as folhas lidas em `css`, inclusive
+as vindas de `<link>` do mock e sem as que falharam ao ler) entra em `this.structural` e `LayersCore.staleKind`
+devolve `layout` ("Reanalisar do 0") em vez de `style` quando uma delas muda. Num snapshot rotulado, o bloco
+sem origem (CSS do próprio app, CSS-in-JS) não mascara nada. `LayersCore.maskedSheets` decide isso.
 
 Limites: o casamento por sufixo de uma folha listada na raiz (ex.: `theme.css`) é frouxo e pode casar
-`/node_modules/x/theme.css`; snapshots antigos precisam de um novo para se beneficiar. O aviso de
+`/node_modules/x/theme.css`; snapshots antigos precisam de um novo para se beneficiar. Num snapshot rotulado, uma cópia cuja origem não
+casa com nenhuma folha listada (diferença de caixa no Windows, bundle com hash como `/assets/index-<hash>.css`)
+é mantida e continua vencendo, e o banner reporta `style`. O aviso de
 `interactions` sem alvo vai antes dos avisos de URL remota (`LayersCore.placeDeadWarning`), porque o toast da
 carga mostra só `warn[0]`; `css não encontrado` continua primeiro.
 
