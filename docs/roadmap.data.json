@@ -973,6 +973,12 @@
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-16-s2-22-loader-checkchanges-design.md)",
             "title": "2026-10-16-s2-22-loader-checkchanges-design.md)"
+          },
+          {
+            "name": "2026-10-16-s2-22d-watch-globs.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-16-s2-22d-watch-globs.md)",
+            "title": "2026-10-16-s2-22d-watch-globs.md)"
           }
         ],
         "reason": "`layers.json › watch` lista globs de fontes TS/JS; eles entram em `citedSources` com teto e a deriva avisa quando o código muda depois do mock (G3, G10)",
