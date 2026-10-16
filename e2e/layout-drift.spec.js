@@ -202,3 +202,18 @@ test('LayoutDrift_RestructureButton_HasAccentedBorder', async ({ page }) => {
   await expect(btn).toBeVisible({ timeout: 5000 });
   expect(await btn.getAttribute('style')).toContain('border: 1px solid var(--warn)');
 });
+
+test('Restructure_MockChangedThenBannerDismissed_StillOffersTheRealRestructure', async ({ page }) => {
+  await connect(page);
+  await replaceMockOnDisk(page, NEW_MOCK);
+  await banner(page).getByTitle('Ignorar').click();
+  await expect(banner(page)).toHaveCount(0);
+  const trigger = page.getByRole('button', { name: /Drift/ }).first();
+  const item = page.getByText(/Reanalisar do 0/).first();
+  await trigger.click();
+  if (!(await item.waitFor({ state: 'visible', timeout: 2000 }).then(() => true, () => false))) await trigger.click();
+  await item.click();
+  // the dismiss moved this.watch, but the mock on disk is still newer than the loaded one
+  await expect(page.getByText('Reanalisar projeto do 0?')).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText('O mock não mudou')).toHaveCount(0);
+});
