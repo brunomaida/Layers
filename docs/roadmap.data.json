@@ -1024,6 +1024,12 @@
             "type": "report",
             "path": "/[](../changelog.d/fix-261016-62-s2-22f-snapshot-minors.md)",
             "title": "fix-261016-62-s2-22f-snapshot-minors.md)"
+          },
+          {
+            "name": "2026-10-16-s2-22f-snapshot-minors.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-16-s2-22f-snapshot-minors.md",
+            "title": "Implementation Report — s2-22f-snapshot-minors"
           }
         ],
         "reason": "Filtro de variáveis por allowlist, nome `data-*` validado, `on*` fora do `<html>` do snapshot, `root.name` no próprio L0, L0 de body múltiplo renomeável por `rules`, teto agregado de canvas e captura além de 1000 caracteres",
