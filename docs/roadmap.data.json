@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-19",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 94,
     "docs": [],
     "children": [
       {
@@ -760,6 +760,25 @@
         "is_branch": true,
         "start_synthetic": false,
         "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.21b",
+        "type": "spec",
+        "name": "Reanalisar do 0 avisa quando o mock não mudou e informa o backup",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [],
+        "reason": "Traval real: backup feito mas sem feedback; o mock do disco nunca mudou e o aviso voltava a cada carga (#59)",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
         "version": "Unreleased"
       }
     ]
