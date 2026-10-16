@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 94,
+    "progress": 95,
     "docs": [],
     "children": [
       {
@@ -999,12 +999,13 @@
         "name": "Achados menores da revisão da S2.22c",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
+          "bug",
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s2-22-loader-checkchanges-design.md)",
@@ -1017,6 +1018,12 @@
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-16-s2-22f-snapshot-minors.md)",
             "title": "2026-10-16-s2-22f-snapshot-minors.md)"
+          },
+          {
+            "name": "fix-261016-62-s2-22f-snapshot-minors.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261016-62-s2-22f-snapshot-minors.md)",
+            "title": "fix-261016-62-s2-22f-snapshot-minors.md)"
           }
         ],
         "reason": "Filtro de variáveis por allowlist, nome `data-*` validado, `on*` fora do `<html>` do snapshot, `root.name` no próprio L0, L0 de body múltiplo renomeável por `rules`, teto agregado de canvas e captura além de 1000 caracteres",
