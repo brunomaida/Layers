@@ -249,6 +249,19 @@ hash como `/assets/index-<hash>.css`) é mantida e continua vencendo, e o banner
 `interactions` sem alvo vai antes dos avisos de URL remota (`LayersCore.placeDeadWarning`), porque o toast da
 carga mostra só `warn[0]`; `css não encontrado` continua primeiro.
 
+### Estados do mock (`states`)
+
+`layers.json › states` (`[{ name, mock }]`) deixa um projeto ter vários mocks, um por estado da interface
+(vazio, com dados, painel aberto). `LayersCore.projectStates` normaliza a lista (entrada inválida sai, nome
+repetido fica com o primeiro) e `LayersCore.pickState` escolhe o estado ativo (`this.stateSel`, senão o
+primeiro); `loadProject` lê o `mock` do estado no lugar de `man.mock` e guarda `project.states` e
+`project.stateName`. Sem `states` nada muda. O seletor é o grupo "Estado do mock" do item "Modo interativo" do
+menu ⚡ Interagir (só aparece com 2+ estados). `switchState` relê o projeto do zero: o DOM é outro, então seleção
+e câmera não valem, e edições não salvas pedem confirmação e são descartadas, como no Recarregar. O hash das
+fontes inclui o caminho do mock, por isso ajustes pendentes salvos de um estado não são restaurados em outro.
+`this.stateSel` vive só na sessão da aba. O CLI de snapshot captura cada estado da gallery do app com
+`--state <nome>` (`<url-do-app>/gallery.html#/<nome>`).
+
 ### Guarda de conflito na gravação
 
 `readText` registra em `this.mtimes[path]` o mtime lido; `writeText` compara o mtime atual com ele e
