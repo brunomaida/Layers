@@ -169,7 +169,7 @@ test('Restructure_MockUnchanged_ExplainsAndBacksUpOnlyWhenForced', async ({ page
   await connect(page);
   await banner(page).getByRole('button', { name: 'Reanalisar do 0' }).click();
   await expect(page.getByText('O mock não mudou')).toBeVisible({ timeout: 5000 });
-  await expect(page.getByText(/tools\/layers-snapshot\.js/).first()).toBeVisible();
+  await expect(page.getByText(/layers-snapshot-cli\.mjs/).first()).toBeVisible();
   expect(await savedBackups(page), 'nothing is saved before the user insists').toEqual([]);
   await page.getByRole('button', { name: 'Reler mesmo assim' }).click();
   await expect.poll(async () => (await savedBackups(page)).length, { timeout: 10000 }).toBe(1);
