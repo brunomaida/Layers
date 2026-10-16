@@ -1745,6 +1745,46 @@ describe('MenuStep', () => {
   });
 });
 
+describe('HostAttrsFromHtmlAllowlist', () => {
+  const at = (name, value) => ({ name, value });
+  const vars = (style) => core.hostAttrsFromHtml([at('style', style)]).vars.map((v) => v.name);
+
+  it('HostAttrsFromHtml_ValorFora_DaAllowlist', () => {
+    expect(vars('--c:image-set("http://e/x.png" 1x)')).toEqual([]);
+    expect(vars('--a:/*;--b:1')).toEqual(['--b']);
+    expect(vars('--d:"a')).toEqual([]);
+    expect(vars("--d:'a")).toEqual([]);
+    expect(vars('--e:foo(1)')).toEqual([]);
+    expect(vars('--f:paint(x)')).toEqual([]);
+  });
+
+  it('HostAttrsFromHtml_ValorLegitimo_Fica', () => {
+    const style = '--a:#fff;--b:rgb(1 2 3 / 50%);--c:calc(1px + 2px);--d:var(--x);--e:"Inter", sans-serif;--f:0 1px 2px rgba(0,0,0,.2);--g:1.5rem;--h:linear-gradient(90deg, #000, #fff)';
+    expect(vars(style)).toEqual(['--a', '--b', '--c', '--d', '--e', '--f', '--g', '--h']);
+  });
+
+  it('HostAttrsFromHtml_NomeDataInvalido_Sai', () => {
+    const r = core.hostAttrsFromHtml([at('data-a<b', '1'), at('data-x"y', '1'), at('data-theme', 'light'), at('data-bs-theme', 'dark')]);
+    expect(r.attrs.map((a) => a.name)).toEqual(['data-theme', 'data-bs-theme']);
+  });
+});
+
+describe('SnapshotCapture', () => {
+  it('SnapshotCapture_UrlLonga_DevolveCapturaInteira', () => {
+    const url = 'http://localhost:5173/gallery.html#/' + 'x'.repeat(1500);
+    const html = '<!doctype html>\n<!-- snapshot LAYERS · ' + url + ' · 2026-10-16T00:00:00.000Z · viewport 600×300 -->\n<html></html>';
+    const r = core.snapshotCapture(html);
+    expect(r.snapshot).toBe(true);
+    expect(r.capture).toBe(url + ' · 2026-10-16T00:00:00.000Z · viewport 600×300');
+  });
+
+  it('SnapshotCapture_SemComentarioOuAlemDoTopo_NaoEhSnapshot', () => {
+    expect(core.snapshotCapture('<!doctype html><html></html>')).toEqual({ snapshot: false, capture: '' });
+    expect(core.snapshotCapture('x'.repeat(4100) + '<!-- snapshot LAYERS · u -->')).toEqual({ snapshot: false, capture: '' });
+    expect(core.snapshotCapture(undefined)).toEqual({ snapshot: false, capture: '' });
+  });
+});
+
 describe('WatchGlobs', () => {
   it('WatchGlobs_EntradasInvalidas_SaemEValidasFicam', () => {
     expect(core.watchGlobs({ watch: ['src/**/*.ts', '', 7, '../x', 'a/../b', '/abs', 'a\\b', null] })).toEqual(['src/**/*.ts']);
