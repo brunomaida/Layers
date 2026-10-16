@@ -899,6 +899,12 @@
         "progress": 60,
         "docs": [
           {
+            "name": "2026-10-16-s2-22b-multi-state.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-16-s2-22b-multi-state.md)",
+            "title": "2026-10-16-s2-22b-multi-state.md)"
+          },
+          {
             "name": "feature-261016-62-s2-22b-multi-state.md)",
             "type": "report",
             "path": "/[](../changelog.d/feature-261016-62-s2-22b-multi-state.md)",
