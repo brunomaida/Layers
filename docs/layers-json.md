@@ -94,4 +94,4 @@ Seletor que não casa nada no mock (`show`, `toggle`, `hide`, `on`, `click`, `cl
 
 ## Snapshot de apps renderizados por JS
 
-Apps que montam o DOM em runtime (React/Babel, TS via Vite) não têm HTML estático. Use `tools/layers-snapshot.js` no console do app rodando: baixa `mock.html` com o `<body>` atual + todo o CSS carregado inline, e sugere o `viewport`. Repita quando a UI mudar.
+Apps que montam o DOM em runtime (React/Babel, TS via Vite) não têm HTML estático. Use `tools/layers-snapshot.js` no console do app rodando: baixa `mock.html` com o `<body>` atual + todo o CSS carregado inline, e sugere o `viewport`. Repita quando a UI mudar: se um `.ts`/`.js` citado em `data-src` for mais novo que o mock, o Layers avisa na carga ("Mock mais antigo que a fonte") e oferece "Reanalisar do 0", que guarda o layout atual em `.design-history/layout-<carimbo>/` antes de reler. Reler só traz a UI nova depois de regenerar o mock.
