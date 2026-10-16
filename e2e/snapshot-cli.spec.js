@@ -175,7 +175,7 @@ test('Snapshot_StateGalleryMissing_RefusedWithoutWriting', async () => {
 test('Snapshot_HtmlAttrsAndCanvas_AreCarriedIntoTheMock', async () => {
   const app = await listen((req, res) => {
     res.setHeader('content-type', 'text/html');
-    res.end('<!doctype html><html lang="en" data-theme="light" style="--bg-base:#f4f2ed"><head><meta charset="utf-8"></head><body>'
+    res.end('<!doctype html><html lang="en" data-theme="light" onclick="x()" style="--bg-base:#f4f2ed"><head><meta charset="utf-8"></head><body>'
       + '<canvas id="c" class="chart" width="40" height="20" style="width:40px"></canvas><canvas id="big" width="2100" height="2100"></canvas>'
       + '<script>const g = document.getElementById("c").getContext("2d"); g.fillStyle = "#f00"; g.fillRect(0, 0, 20, 10);</script></body></html>');
   });
@@ -188,6 +188,7 @@ test('Snapshot_HtmlAttrsAndCanvas_AreCarriedIntoTheMock', async () => {
     expect(html).toMatch(/<html [^>]*data-theme="light"/);
     expect(html).toMatch(/<html [^>]*style="--bg-base:#f4f2ed"/);
     expect(html).toMatch(/<html [^>]*lang="en"/);
+    expect(/<html [^>]*onclick/.test(html), 'on* attributes of <html> are not copied').toBe(false);
     const img = /<img [^>]*id="c"[^>]*>/.exec(html);
     expect(img, 'canvas #c becomes an <img>').not.toBeNull();
     expect(img[0]).toContain('class="chart"');
@@ -196,6 +197,29 @@ test('Snapshot_HtmlAttrsAndCanvas_AreCarriedIntoTheMock', async () => {
     expect(img[0]).toContain('src="data:image/png;base64,');
     expect(html).not.toContain('<canvas id="c"');
     expect(html, 'canvas above 4 Mpx stays as an empty <canvas>').toContain('<canvas id="big"');
+  } finally {
+    app.close();
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('Snapshot_CanvasesAboveTheAggregateCap_LastOnesStayEmpty', async () => {
+  // five 400x400 noise canvases: ~850 000 chars of data URL each, so the fifth passes 4 000 000 in total
+  const app = await listen((req, res) => {
+    res.setHeader('content-type', 'text/html');
+    res.end('<!doctype html><html><head><meta charset="utf-8"></head><body>'
+      + [0, 1, 2, 3, 4].map((i) => `<canvas id="n${i}" width="400" height="400"></canvas>`).join('')
+      + '<script>for (const c of document.querySelectorAll("canvas")) { const g = c.getContext("2d"); const d = g.createImageData(400, 400); for (let i = 0; i < d.data.length; i++) d.data[i] = Math.floor(Math.random() * 256); g.putImageData(d, 0, 0); }</script></body></html>');
+  });
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'layers-snap-'));
+  try {
+    const out = path.join(dir, 'mock.html');
+    const r = await run([`http://127.0.0.1:${app.address().port}/`, out, '--wait', '300']);
+    expect(r.status, r.stderr).toBe(0);
+    const html = fs.readFileSync(out, 'utf8');
+    expect(html.match(/<img [^>]*data-layers-frozen="canvas"/g) || []).toHaveLength(4);
+    expect(html.match(/<canvas /g) || []).toHaveLength(1);
+    expect(html).toContain('<canvas id="n4"');
   } finally {
     app.close();
     fs.rmSync(dir, { recursive: true, force: true });
