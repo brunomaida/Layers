@@ -741,7 +741,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
   <div role="status" style="position:fixed;left:{{ staleLeft }};top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;box-sizing:border-box;max-width:{{ staleWidth }};padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ staleMsg }}</span>
     <sc-if value="{{ staleReload }}" hint-placeholder-val="{{ true }}"><button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button></sc-if>
-    <sc-if value="{{ staleLayout }}" hint-placeholder-val="{{ false }}"><button onClick="{{ restructureItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Reanalisar do 0</button></sc-if>
+    <sc-if value="{{ staleLayout }}" hint-placeholder-val="{{ false }}"><button onClick="{{ restructureItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--warn);color:var(--fg0);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Reanalisar do 0</button></sc-if>
     <button onClick="{{ dismissStale }}" title="Ignorar" style="all:unset;cursor:pointer;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">×</button>
   </div>
 </sc-if>
@@ -1217,6 +1217,7 @@ class Component extends DCLogic {
     this.toast('Configuração importada — pastas locais precisam ser reconectadas (handles não são exportáveis).', 'warn');
   }
   useDir(dir, viaClick) {
+    this.driftAck = {}; // reconhecimento de deriva vale por pasta
     // F:66 — this.dirViaClick so e true quando useDir vem de um clique real (pickDir e o
     // retry de permissao); restoreSession() chama sem o 2o argumento, entao autoCreateLayersJson
     // nunca roda sem gesto — so o botao do painel de erro, que e sempre um clique fresco.
@@ -1231,6 +1232,7 @@ class Component extends DCLogic {
   async loadProject() {
     this.writeConfig(); this.pendingReady = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
     this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
+    const bak = this.bakNote ? ' · ' + this.bakNote : ''; this.bakNote = null; // so a carga que o Reanalisar disparou mostra a nota; carga falha ou superada a descarta
     this.mtimes = {}; // mtimes sao por projeto: sem isto o watch herda os da pasta anterior e o 1o foco acusa um aviso falso
     // F:66 — capturado JA AQUI, antes do primeiro await: se lido de novo depois de
     // this.readText() (que pode ficar pendente por um bom tempo numa pasta grande), um clique
@@ -1304,11 +1306,11 @@ class Component extends DCLogic {
     this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
-    this.loaded = { manifest: raw, mock: html, mockPath }; this.structural = ['layers.json', mockPath]; // S2.21: texto lido, base do backup do layout
+    this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.structural = ['layers.json', mockPath]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
     this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
-    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + '.', warn.length || dropped ? 'warn' : 'ok');
+    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
     this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); // sem await: nao atrasa a carga
   }
@@ -1322,10 +1324,10 @@ class Component extends DCLogic {
       const mt = {}; for (const f of LayersCore.citedSources(srcs, known)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
       this.structural = ['layers.json', mockPath, ...Object.keys(mt)]; Object.assign(this.watch, mt);
-      const drift = LayersCore.layoutDrift(mockMt, mt); this.setState({ drift: drift.length ? drift : null });
+      const drift = LayersCore.layoutDrift(mockMt, mt, this.driftAck); this.setState({ drift: drift.length ? drift : null });
     } catch (e) {}
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1579,8 +1581,10 @@ class Component extends DCLogic {
     } finally { this.staleBusy = false; }
   }
   dismissStale() {
-    this.watch = LayersCore.dismissWatch(this.watch, this.staleCur || {}, this.staleSeen || {}); this.setState({ stale: null, drift: null });
+    this.watch = LayersCore.dismissWatch(this.watch, this.staleCur || {}, this.staleSeen || {}); this.ackDrift(); this.setState({ stale: null, drift: null });
   }
+  // S2.21b: a deriva reconhecida (x ou Reanalisar) nao volta na sessao enquanto a fonte nao for editada de novo.
+  ackDrift() { const a = this.driftAck = this.driftAck || {}; (this.state.drift || []).forEach(f => { if (this.watch && typeof this.watch[f] === 'number') a[f] = this.watch[f]; }); }
   reloadProject() {
     const s = this.state; if (!s.dir) return;
     if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de recarregar'); return; }
@@ -1593,12 +1597,25 @@ class Component extends DCLogic {
     const s = this.state; if (!s.dir) return;
     if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de reanalisar'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
-    this.setState({ modal: { stage: 'confirm', log: [], title: 'Reanalisar projeto do 0?', label: 'Reanalisar', text: 'Descarta ajustes, seleção e câmera. O layout atual (layers.json e mock) é salvo em .design-history/ antes. Se o app monta o DOM por JavaScript, gere um novo mock com tools/layers-snapshot.js: reler sozinho não traz a UI nova.', onYes: () => this.doRestructure() } });
+    const seq = this.loadSeq, mock = (this.loaded || {}).mockPath, seen = {}, mt = (this.loaded || {}).mt || {}; // mtimes da CARGA: this.watch anda com o x e com gravacao propria
+    Object.keys(mt).forEach(f => { if (typeof mt[f] === 'number') seen[f] = mt[f]; });
+    this.layoutMoved(seen).then(moved => {
+      if (seq !== this.loadSeq || this.state.modal) return;
+      if (!moved) { this.setState({ modal: { stage: 'confirm', log: [], title: 'O mock não mudou', label: 'Reler mesmo assim', text: 'layers.json e ' + mock + ' no disco são os mesmos da carga: reler não traz UI nova.' + (s.drift ? ' A fonte é mais nova que o mock, mas o Layers só lê o mock.' : '') + ' Gere um novo snapshot com tools/layers-snapshot.js no app aberto, salve em ' + mock + ' e reanalise. Reler mesmo assim salva o layout atual em .design-history/ e recarrega do zero.', onYes: () => this.doRestructure() } }); return; }
+      this.setState({ modal: { stage: 'confirm', log: [], title: 'Reanalisar projeto do 0?', label: 'Reanalisar', text: 'Descarta ajustes, seleção e câmera. O layout atual (layers.json e mock) é salvo em .design-history/ antes. Se o app monta o DOM por JavaScript, gere um novo mock com tools/layers-snapshot.js: reler sozinho não traz a UI nova.', onYes: () => this.doRestructure() } });
+    });
+  }
+  // S2.21b: algum dos arquivos de layout (layers.json, mock) mudou no disco desde a carga? Leitura falha conta como mudou.
+  async layoutMoved(seen) {
+    const cur = {};
+    for (const f of Object.keys(seen)) { try { cur[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) { cur[f] = 'missing'; } }
+    return LayersCore.staleFiles(seen, cur).length > 0 || !Object.keys(seen).length;
   }
   async doRestructure() {
     const seq = this.loadSeq;
-    try { await this.backupLayout(); } catch (e) { this.toast('Reanálise cancelada: o backup do layout falhou — ' + e.message, 'warn'); return; }
+    let saved; try { saved = await this.backupLayout(); } catch (e) { this.toast('Reanálise cancelada: o backup do layout falhou — ' + e.message, 'warn'); return; }
     if (seq !== this.loadSeq) return;
+    this.bakNote = 'layout anterior salvo em ' + saved + '/'; this.ackDrift();
     this.dropPending(); if (this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
     this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject();
   }
@@ -1610,6 +1627,7 @@ class Component extends DCLogic {
       await this.writeText(p.manifest, L.manifest);
       if (this.state.dir !== dir) throw new Error('a pasta conectada mudou durante o backup');
       await this.writeText(p.mock, L.mock);
+      return p.dir;
     } catch (e) {
       // backup parcial nao conta: remove o carimbo meio escrito (melhor esforco)
       try { const h = await dir.getDirectoryHandle('.design-history'); await h.removeEntry(p.dir.split('/').pop(), { recursive: true }); } catch (e2) {}
@@ -2323,7 +2341,7 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') : '',
+      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') + ' — gere um novo snapshot (tools/layers-snapshot.js)' : '',
       staleLayout: s.stale ? LayersCore.staleKind(s.stale, this.structural) === 'layout' : !!s.drift, staleReload: s.stale ? LayersCore.staleKind(s.stale, this.structural) !== 'layout' : false,
       restructureItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.restructureProject(); }), dismissStale: () => this.dismissStale(),
       ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuH.hist; const curId = s.dirName ? 'folder:' + s.dirName : null;

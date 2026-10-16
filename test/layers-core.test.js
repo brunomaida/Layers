@@ -1735,6 +1735,14 @@ describe('LayoutDrift', () => {
     expect(core.layoutDrift(100, { 'src/a.ts': 'missing', 'src/b.ts': undefined, 'src/c.ts': null })).toEqual([]);
   });
 
+  it('MtimeJaReconhecido_NaoAcusaDeNovo', () => {
+    expect(core.layoutDrift(100, { 'src/a.ts': 150 }, { 'src/a.ts': 150 })).toEqual([]);
+  });
+
+  it('FonteEditadaDepoisDoReconhecimento_VoltaAAcusar', () => {
+    expect(core.layoutDrift(100, { 'src/a.ts': 200, 'src/b.ts': 150 }, { 'src/a.ts': 150, 'src/b.ts': 150 })).toEqual(['src/a.ts']);
+  });
+
   it('MockSemMtime_DevolveVazio', () => {
     expect(core.layoutDrift(undefined, { 'src/a.ts': 999 })).toEqual([]);
     expect(core.layoutDrift('missing', { 'src/a.ts': 999 })).toEqual([]);

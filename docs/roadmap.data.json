@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 96,
     "docs": [],
     "children": [
       {
@@ -758,6 +758,33 @@
         ],
         "reason": "↳ Pedido do usuário: o item Exemplos › Traval mostrava um mock fixo e desatualizado; `fixtures/traval` e `?layers=` seguem para testes",
         "is_branch": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.21b",
+        "type": "spec",
+        "name": "Reanalisar do 0 avisa quando o mock não mudou e informa o backup",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "fix-261016-59-s2-21b-restructure-feedback.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261016-59-s2-21b-restructure-feedback.md)",
+            "title": "fix-261016-59-s2-21b-restructure-feedback.md)"
+          }
+        ],
+        "reason": "Traval real: backup feito mas sem feedback; o mock do disco nunca mudou e o aviso voltava a cada carga (#59)",
+        "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
