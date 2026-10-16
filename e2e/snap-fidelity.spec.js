@@ -45,7 +45,8 @@ test('SnapFidelity_FrozenCanvas_ShowsImgBadgeWithTitle', async ({ page }) => {
   const img = page.locator('[data-node-id][title^="img"]').first();
   await expect(img).toContainText('IMG');
   await expect(img).toHaveAttribute('title', /Imagem congelada/);
-  await expect(page.locator('[data-node-id][title^="#app · snapshot"]').first()).toHaveAttribute('title', /gallery\.html#\/light/);
+  // the capture comment carries a 1200-char URL: the tooltip keeps all of it, up to the viewport
+  await expect(page.locator('[data-node-id][title^="#app · snapshot"]').first()).toHaveAttribute('title', /gallery\.html\?pad=x{1200}#\/light .*viewport 600×300/);
 });
 
 test('SnapFidelity_SwitchToPlainState_ClearsHostAttrs', async ({ page }) => {
@@ -56,4 +57,33 @@ test('SnapFidelity_SwitchToPlainState_ClearsHostAttrs', async ({ page }) => {
   await expect.poll(async () => (await probe(page)).theme).toBeNull();
   const p = await probe(page);
   expect(p.bg).toBe('rgb(16, 17, 20)');
+});
+
+test('SnapFidelity_RootNameMatchingL0_StaysOnL0', async ({ page }) => {
+  await open(page);
+  await page.getByText('Interagir', { exact: false }).first().click();
+  await page.getByText('self', { exact: true }).click();
+  await expect.poll(() => page.evaluate(() => {
+    const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+    const l0 = host.shadowRoot.querySelector('#app');
+    return l0.dataset.name;
+  })).toBe('.shell · snapshot');
+  const p = await page.evaluate(() => {
+    const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+    const l0 = host.shadowRoot.querySelector('#app'), inner = l0.querySelector('.shell');
+    return { l0src: l0.dataset.src || null, innerSrc: inner.dataset.src || null };
+  });
+  expect(p.l0src).toBe('src/app.ts|AppShell|1');
+  expect(p.innerSrc).not.toBe('src/app.ts|AppShell|1');
+});
+
+test('SnapFidelity_MultiChildBodyWithRules_L0RenamedThenSuffixed', async ({ page }) => {
+  await page.goto('/?layers=fixtures/snap-multi/');
+  await expect(page.getByText(/Projeto Snap multi/).first()).toBeVisible({ timeout: 15_000 });
+  await readNodes(page);
+  const name = await page.evaluate(() => {
+    const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+    return host.shadowRoot.querySelector('.__layers-root').dataset.name;
+  });
+  expect(name).toBe('.page · snapshot');
 });

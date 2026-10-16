@@ -1,0 +1,1 @@
+{"name":"Snap multi","viewport":{"width":600,"height":300},"mock":"layers/mock.html","rules":{".page":"src/app.ts|Page|1"}}
