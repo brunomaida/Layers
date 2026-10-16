@@ -14,7 +14,7 @@
   }
   const body = document.body.cloneNode(true);
   // S2.22c: canvas vira imagem congelada (o JS nao roda no mock); acima do teto ou ilegivel, fica o <canvas> vazio
-  const liveCanvas = document.body.querySelectorAll('canvas');
+  const liveCanvas = document.body.querySelectorAll('canvas'); let frozenChars = 0;
   body.querySelectorAll('canvas').forEach((c, i) => {
     const live = liveCanvas[i]; let why = '';
     if (!live || !live.width || !live.height) why = 'sem pixels';
@@ -22,6 +22,8 @@
     let url = '';
     if (!why) { try { url = live.toDataURL('image/png'); } catch (e) { why = 'ilegivel (' + e.name + ')'; } }
     if (!why && url.length > 1500000) why = 'data URL acima de 1,5 M caracteres';
+    if (!why && frozenChars + url.length > 4000000) why = 'soma acima de 4 M caracteres';
+    if (!why) frozenChars += url.length;
     if (why) { console.warn('LAYERS snapshot: canvas #' + i + ' mantido vazio (' + why + ')'); return; }
     const img = document.createElement('img');
     for (const a of ['id', 'class', 'style', 'width', 'height']) if (c.hasAttribute(a)) img.setAttribute(a, c.getAttribute(a));
@@ -39,7 +41,7 @@
   });
   // <details>, <dialog> e [hidden] mantêm o estado atual via atributos — já vem no clone
   const html = '<!doctype html>\n<!-- snapshot LAYERS · ' + location.href + ' · ' + new Date().toISOString() + ' · viewport ' + innerWidth + '×' + document.documentElement.scrollHeight + ' -->\n'
-    + '<html lang="' + esc(document.documentElement.lang || 'pt-BR') + '"' + [...document.documentElement.attributes].filter(a => a.name !== 'lang').map(a => ' ' + a.name + '="' + esc(a.value) + '"').join('') + '><head><meta charset="utf-8"><title>' + document.title + ' · mock LAYERS</title>\n' + css.join('\n') + '</head>\n'
+    + '<html lang="' + esc(document.documentElement.lang || 'pt-BR') + '"' + [...document.documentElement.attributes].filter(a => a.name !== 'lang' && !/^on/i.test(a.name)).map(a => ' ' + a.name + '="' + esc(a.value) + '"').join('') + '><head><meta charset="utf-8"><title>' + document.title + ' · mock LAYERS</title>\n' + css.join('\n') + '</head>\n'
     + '<body' + (document.body.className ? ' class="' + document.body.className + '"' : '') + '>\n' + body.innerHTML + '\n</body></html>\n';
   const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([html], { type: 'text/html' })); a.download = 'mock.html'; a.click();
   console.log('LAYERS snapshot: ' + html.length + ' chars · sugerido em layers.json: "viewport": {"width": ' + innerWidth + ', "height": ' + document.documentElement.scrollHeight + '}');
