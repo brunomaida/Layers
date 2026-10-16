@@ -1689,3 +1689,91 @@ describe('MenuStep', () => {
     expect(step(null, false, { type: 'close' })).toBeNull();
   });
 });
+
+describe('CitedSources', () => {
+  const known = ['layers.json', 'layers/mock.html', 'src/a.css'];
+
+  it('DataSrcComTs_DevolveArquivoUnicoNaRaiz', () => {
+    const out = core.citedSources(['src/ui/shell.ts|.shell|3', 'src/ui/shell.ts|.x|9', 'src/ui/tab.ts|.t|1'], known);
+    expect(out).toEqual(['src/ui/shell.ts', 'src/ui/tab.ts']);
+  });
+
+  it('FolhaCssEMock_FicamForaPorNaoSeremFonteManual', () => {
+    expect(core.citedSources(['src/a.css|.a|1', 'layers/mock.html|.b|2'], known)).toEqual([]);
+  });
+
+  it('ArquivoJaConhecido_NaoRepete', () => {
+    expect(core.citedSources(['src/known.ts|.a|1'], ['src/known.ts'])).toEqual([]);
+  });
+
+  it('SeletorTpl_Ignorado', () => {
+    expect(core.citedSources(['index.html|tpl:3|10', 'src/x.ts|tpl:3|10'], known)).toEqual([]);
+  });
+
+  it('ValorSemFormatoOuVazio_Ignorado', () => {
+    expect(core.citedSources([undefined, '', 'sem-pipes.ts', null, 7], known)).toEqual([]);
+    expect(core.citedSources(undefined, known)).toEqual([]);
+  });
+
+  it('AcimaDoTeto_CortaNoCap', () => {
+    const srcs = Array.from({ length: 80 }, (_, i) => 'src/f' + i + '.ts|.a|1');
+    expect(core.citedSources(srcs, known, 50)).toHaveLength(50);
+    expect(core.citedSources(srcs, known)).toHaveLength(50);
+  });
+});
+
+describe('LayoutDrift', () => {
+  it('FonteMaisNovaQueOMock_Acusa', () => {
+    expect(core.layoutDrift(100, { 'src/a.ts': 150, 'src/b.ts': 50 })).toEqual(['src/a.ts']);
+  });
+
+  it('MtimeIgualAoDoMock_NaoAcusa', () => {
+    expect(core.layoutDrift(100, { 'src/a.ts': 100 })).toEqual([]);
+  });
+
+  it('MissingOuNaoNumerico_NuncaConta', () => {
+    expect(core.layoutDrift(100, { 'src/a.ts': 'missing', 'src/b.ts': undefined, 'src/c.ts': null })).toEqual([]);
+  });
+
+  it('MockSemMtime_DevolveVazio', () => {
+    expect(core.layoutDrift(undefined, { 'src/a.ts': 999 })).toEqual([]);
+    expect(core.layoutDrift('missing', { 'src/a.ts': 999 })).toEqual([]);
+    expect(core.layoutDrift(100, undefined)).toEqual([]);
+  });
+});
+
+describe('StaleKind', () => {
+  const structural = ['layers.json', 'layers/mock.html', 'src/ui/shell.ts'];
+
+  it('SoFolhaCss_EhStyle', () => {
+    expect(core.staleKind(['src/styles/layout.css'], structural)).toBe('style');
+  });
+
+  it('MockNaLista_EhLayout', () => {
+    expect(core.staleKind(['src/styles/layout.css', 'layers/mock.html'], structural)).toBe('layout');
+  });
+
+  it('FonteCitadaOuManifesto_EhLayout', () => {
+    expect(core.staleKind(['src/ui/shell.ts'], structural)).toBe('layout');
+    expect(core.staleKind(['layers.json'], structural)).toBe('layout');
+  });
+
+  it('ListaVaziaOuSemEstrutural_EhStyle', () => {
+    expect(core.staleKind([], structural)).toBe('style');
+    expect(core.staleKind(['a.css'], undefined)).toBe('style');
+  });
+});
+
+describe('LayoutBackupPaths', () => {
+  it('MockAninhado_UsaSoOBasenameSobODiretorioDoCarimbo', () => {
+    expect(core.layoutBackupPaths('20261016-130000', 'app/layers/mock.html')).toEqual({
+      dir: '.design-history/layout-20261016-130000',
+      manifest: '.design-history/layout-20261016-130000/layers.json',
+      mock: '.design-history/layout-20261016-130000/mock.html'
+    });
+  });
+
+  it('MockNaRaiz_MantemONome', () => {
+    expect(core.layoutBackupPaths('s', 'mock.html').mock).toBe('.design-history/layout-s/mock.html');
+  });
+});
