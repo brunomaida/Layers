@@ -1000,25 +1000,27 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   const inlineCss = [...doc.querySelectorAll('style')].map(el => {
     const at = html.indexOf(el.textContent, seek);
     if (at >= 0) seek = at + el.textContent.length;
-    return { file: mockPath, text: el.textContent, lineOffset: at >= 0 ? html.slice(0, at).split('\n').length - 1 : 0 };
+    return { file: mockPath, text: el.textContent, lineOffset: at >= 0 ? html.slice(0, at).split('\n').length - 1 : 0, origin: el.getAttribute('data-layers-origin') };
   });
+  // S2.22a: bloco do snapshot que copia folha listada e lida sai; o texto vivo da folha vale
+  const kept = inlineCss.filter(c => !c.origin || !LayersCore.snapshotOriginCovered(c.origin, css.map(x => x.file)));
   doc.querySelectorAll('style').forEach(el => el.remove());
   // @font-face sai do texto que vai para o shadow root e sobe para o documento (ver hoistFaces)
   const faces = []; const scoped = [];
   const scopeOne = (text, dir) => { const r = LayersCore.scopeAst(dropRemoteUrls(text, warn)); r.faces.forEach(rule => faces.push({ dir, rule })); return r.css; };
   css.forEach(c => scoped.push({ file: c.file, css: scopeOne(c.text, c.file.replace(/[^/]*$/, '')) }));
-  const inlineScoped = inlineCss.map(c => scopeOne(c.text, mockDir));
+  const inlineScoped = kept.map(c => scopeOne(c.text, mockDir));
   const kids = [...doc.body.children]; if (!kids.length) return { empty: true };
   // raiz = único filho do <body> (ou um wrapper sintético quando há vários): recebe as regras html/body reescritas e vira L0
   let rootEl; if (kids.length === 1 && kids[0].tagName !== 'DIALOG') { rootEl = kids[0]; rootEl.classList.add('__layers-root'); } else { rootEl = doc.createElement('div'); rootEl.className = '__layers-root'; rootEl.setAttribute('style', 'position:relative;width:100%;min-height:100%;box-sizing:border-box'); kids.forEach(k => rootEl.appendChild(k)); [...doc.body.attributes].forEach(a => { if (a.name === 'class') rootEl.className += ' ' + a.value; }); }
   if (man.root && man.root.name) rootEl.dataset.name = man.root.name; else if (!rootEl.dataset.name) rootEl.dataset.name = kids.length === 1 ? (rootEl.id ? '#' + rootEl.id : rootEl.classList.length > 1 ? '.' + [...rootEl.classList].find(c => c !== '__layers-root') : rootEl.tagName.toLowerCase()) : 'body'; if (man.root && man.root.src) rootEl.dataset.src = man.root.src;
   // data-src: mapa explícito (rules) > heurística por classe nas folhas carregadas
   // indice por AST: enxerga @media, @layer e nesting, que a varredura por chaves descartava
-  const idx = LayersCore.buildIndex(css.concat(inlineCss)).byClass;
+  const idx = LayersCore.buildIndex(css.concat(kept)).byClass;
   // data-src autoral que a folha carregada nao mostra mais naquela linha: se o seletor ainda existe
   // no mesmo arquivo, a linha e corrigida; senao o atributo cai e o derivado (abaixo) assume, em vez
   // de o patch mirar a regra errada. Arquivo fora das folhas (.ts) fica como esta.
-  const srcFiles = {}; css.forEach(c => { srcFiles[c.file] = c.text; }); if (inlineCss.length) srcFiles[mockPath] = html;
+  const srcFiles = {}; css.forEach(c => { srcFiles[c.file] = c.text; }); if (kept.length) srcFiles[mockPath] = html;
   let srcFixed = 0, srcDropped = 0;
   [rootEl, ...rootEl.querySelectorAll('[data-src]')].forEach(e => {
     if (!e.dataset.src || LayersCore.checkOrigin(e.dataset.src, srcFiles, [...e.classList], e.id) !== 'stale') return;
@@ -1026,7 +1028,7 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
     if (hit && hit.file === m[1]) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; srcFixed++; } else { delete e.dataset.src; srcDropped++; }
   });
   if (srcFixed || srcDropped) warn.push('data-src autoral obsoleto: ' + srcFixed + ' corrigido(s) pela linha atual da regra, ' + srcDropped + ' descartado(s)');
-  const varIdx = LayersCore.varIndex(css.concat(inlineCss));
+  const varIdx = LayersCore.varIndex(css.concat(kept));
   // folha de utilitarios: editar .p-6 mudaria todo o projeto, entao a gravacao e recusada com
   // motivo em vez de fingir que deu certo (docs/layers-requisitos.md)
   const utility = css.filter(c => LayersCore.isUtilitySheet(c.text)).map(c => c.file);
@@ -1048,7 +1050,7 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   }
   rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
   Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
-  return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc };
+  return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc, maskedCss: LayersCore.maskedSheets(snapMock, inlineCss, css.map(x => x.file)) };
 };
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
@@ -1283,7 +1285,7 @@ class Component extends DCLogic {
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     // interactions escritas contra o app real costumam mirar classes que o mock nao tem (S2.12)
     const dead = LayersCore.deadInteractions(man.interactions, q => sh.querySelectorAll(q).length + (rootEl.matches(q) ? 1 : 0));
-    if (dead.length) warn.push(dead.length + ' seletor(es) de interactions sem alvo no mock: ' + dead.slice(0, 3).map(d => d.label + ' → ' + d.sel).join('; ') + (dead.length > 3 ? '…' : ''));
+    if (dead.length) LayersCore.placeDeadWarning(warn, dead.length + ' seletor(es) de interactions sem alvo no mock: ' + dead.slice(0, 3).map(d => d.label + ' → ' + d.sel).join('; ') + (dead.length > 3 ? '…' : ''));
     const name = man.name || this.state.dirName;
     // Projeto novo abre na vista padrao; reabrir o ultimo projeto mantem camera e selecao.
     // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
@@ -1306,7 +1308,7 @@ class Component extends DCLogic {
     this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
-    this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.structural = ['layers.json', mockPath]; // S2.21: texto lido, base do backup do layout
+    this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
     this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
@@ -1323,7 +1325,7 @@ class Component extends DCLogic {
       const srcs = [...rootEl.querySelectorAll('[data-src]')].map(e => e.dataset.src); if (rootEl.dataset.src) srcs.push(rootEl.dataset.src);
       const mt = {}; for (const f of LayersCore.citedSources(srcs, known)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
-      this.structural = ['layers.json', mockPath, ...Object.keys(mt)]; Object.assign(this.watch, mt);
+      this.structural = ['layers.json', mockPath, ...(this.maskedCss || []), ...Object.keys(mt)]; Object.assign(this.watch, mt);
       const drift = LayersCore.layoutDrift(mockMt, mt, this.driftAck); this.setState({ drift: drift.length ? drift : null });
     } catch (e) {}
   }
