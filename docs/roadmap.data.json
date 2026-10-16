@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 94,
     "docs": [],
     "children": [
       {
@@ -950,6 +950,32 @@
           }
         ],
         "reason": "`<html>` copiado e `:host([data-theme])` no escopo, `<canvas>` vira `<img data:>` com selo `IMG`, L0 `#app · snapshot` sem `.shell` duplicado (G7, G8, G12); mockup no canvas Design",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.22d",
+        "type": "spec",
+        "name": "Deriva em snapshot: globs declarados em `watch`",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "title": "2026-10-16-s2-22-loader-checkchanges-design.md)"
+          }
+        ],
+        "reason": "`layers.json › watch` lista globs de fontes TS/JS; eles entram em `citedSources` com teto e a deriva avisa quando o código muda depois do mock (G3, G10)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
