@@ -2135,3 +2135,73 @@ describe('PickState', () => {
     expect(core.pickState([], 'csv')).toBeNull();
   });
 });
+
+describe('AttrAction', () => {
+  const fake = (attrs) => ({
+    getAttribute: (n) => (n in attrs ? attrs[n] : null),
+    setAttribute: (n, v) => { attrs[n] = String(v); },
+    removeAttribute: (n) => { delete attrs[n]; },
+  });
+
+  it('DataEAria_Normaliza', () => {
+    expect(core.attrAction({ selector: '.dock', name: 'data-dock', value: 'left' }))
+      .toEqual({ selector: '.dock', name: 'data-dock', value: 'left', off: null });
+    expect(core.attrAction({ selector: '#b', name: 'ARIA-Expanded', value: true, off: false }))
+      .toEqual({ selector: '#b', name: 'aria-expanded', value: 'true', off: 'false' });
+    expect(core.attrAction({ selector: '#b', name: 'data-n', value: 3 }).value).toBe('3');
+  });
+
+  it('NomeForaDeDataAria_Rejeita', () => {
+    ['onclick', 'style', 'class', 'href', 'data-', 'aria-', 'data-a b', 'xdata-a', 'data-<x>', '', undefined, 7]
+      .forEach((name) => expect(core.attrAction({ selector: '.a', name, value: 'x' })).toBeNull());
+  });
+
+  it('EntradaMalformada_Rejeita', () => {
+    expect(core.attrAction(undefined)).toBeNull();
+    expect(core.attrAction('data-x')).toBeNull();
+    expect(core.attrAction({ name: 'data-x', value: 'v' })).toBeNull();
+    expect(core.attrAction({ selector: '', name: 'data-x', value: 'v' })).toBeNull();
+    expect(core.attrAction({ selector: '.a', name: 'data-x' })).toBeNull();
+    expect(core.attrAction({ selector: '.a', name: 'data-x', value: {} })).toBeNull();
+    expect(core.attrAction({ selector: '.a', name: 'data-x', value: 'x'.repeat(201) })).toBeNull();
+    expect(core.attrAction({ selector: '.a', name: 'data-x', value: 'v', off: {} })).toBeNull();
+    expect(core.attrAction({ selector: '.a', name: 'data-x', value: 'x'.repeat(200) })).not.toBeNull();
+  });
+
+  it('ToggleSemOff_AlternaEntreValorEAusente', () => {
+    const at = core.attrAction({ selector: '.a', name: 'data-collapsed', value: 'true' });
+    const attrs = {}; const el = fake(attrs);
+    expect(core.attrIsOn(el, at)).toBe(false);
+    core.attrToggle(el, at);
+    expect(attrs).toEqual({ 'data-collapsed': 'true' });
+    expect(core.attrIsOn(el, at)).toBe(true);
+    core.attrToggle(el, at);
+    expect(attrs).toEqual({});
+  });
+
+  it('ToggleComOff_AlternaEntreDoisValores', () => {
+    const at = core.attrAction({ selector: '.a', name: 'aria-expanded', value: 'true', off: 'false' });
+    const attrs = { 'aria-expanded': 'false' }; const el = fake(attrs);
+    core.attrToggle(el, at);
+    expect(attrs['aria-expanded']).toBe('true');
+    core.attrToggle(el, at);
+    expect(attrs['aria-expanded']).toBe('false');
+  });
+
+  it('ToggleComOutroValor_SubstituiPeloValor', () => {
+    const at = core.attrAction({ selector: '.a', name: 'data-dock', value: 'left' });
+    const attrs = { 'data-dock': 'right' }; const el = fake(attrs);
+    core.attrToggle(el, at);
+    expect(attrs['data-dock']).toBe('left');
+  });
+
+  it('DeadInteractions_AttrSemAlvo_ListaOSeletor', () => {
+    const alive = new Set(['.dock']); const count = (sel) => (alive.has(sel) ? 1 : 0);
+    const items = [{ label: 'Dock', groups: [{ items: [
+      { label: 'Esq', attr: { selector: '.dock', name: 'data-dock', value: 'left' } },
+      { label: 'Dir', attr: { selector: '.nada', name: 'data-dock', value: 'right' } },
+      { label: 'Ruim', attr: { selector: '.nada2', name: 'onclick', value: 'x' } },
+    ] }] }];
+    expect(core.deadInteractions(items, count)).toEqual([{ label: 'Dock › Dir', sel: '.nada' }]);
+  });
+});
