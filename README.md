@@ -36,7 +36,7 @@ completo do arquivo: [docs/layers-json.md](docs/layers-json.md).
 | Pasta local | Projetos recentes › **Conectar pasta local…** (Chrome/Edge) | sim |
 | `.zip` | Projetos recentes › **Abrir arquivo .zip…** (Chrome/Edge) | não |
 | Repositório GitHub público | Projetos recentes › **Registrar repositório GitHub…** (`github.com/usuario/repo`), depois clique no item | não |
-| Fixture HTTP | `http://localhost:5180/?layers=fixtures/<nome>/` ou Projetos recentes › Exemplos › Traval | não |
+| Fixture HTTP | `http://localhost:5180/?layers=fixtures/<nome>/` | não |
 | Pasta via Atlas | `http://localhost:5180/?project=<pasta absoluta>` (só com `npm run dev`; a pasta precisa ter `layers.json`) | não |
 
 - **Pasta local** conecta em modo leitura; a permissão de escrita só é pedida quando você

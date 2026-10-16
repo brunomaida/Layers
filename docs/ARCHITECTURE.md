@@ -59,6 +59,7 @@ Regras:
 | `pushUndo()`, `undo()`, `redo()`, `stepHistory()`, `LayersCore.inlineDelta`, `LayersCore.pushSnapshot` | Undo/redo global (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) sobre snapshots de `changes[]`; `inlineDelta` calcula as escritas inline entre dois snapshots. |
 | `connectDir`, `readText`, `writeText`, `exportFull` | I/O de arquivos. |
 | `checkStale`, `reloadProject`, `doReload`, `dismissStale`, `onFocus` | Recarregar projeto e aviso de "arquivos mudaram no disco" (ver § Loader de projeto). Helpers puros em `LayersCore`: `staleFiles`, `hasUnsaved`, `pickWatched`. |
+| `probeLayout`, `restructureProject`, `doRestructure`, `backupLayout` | Deriva do layout e Reanalisar do 0 (S2.21, § Reanalisar do 0). Helpers puros em `LayersCore`: `citedSources`, `layoutDrift`, `staleKind`, `layoutBackupPaths`. |
 | `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
 | Menus (Projetos, Aparência, Interagir, Ações), dropdowns customizados, toast | Chrome da interface. Os quatro menus seguem um padrão só, decidido por `LayersCore.menuStep` (puro) e aplicado por `menuGo`: hover abre (0 ms), saída fecha após 260 ms, clique fixa, `pointerdown` fora (captura), Esc, foco saindo e item de ação fecham; um menu aberto por vez (`menu`, `menuPin`). Os dropdowns de valor (`cbOpen`) abrem por clique e fecham no blur ou no Esc. Os popovers não usam `role=menu`: a navegação por setas nos itens fica fora do escopo. |
 | Mock offscreen (`pageRef`, `left:-20000px`) | Fonte de camadas atual: recriação do Traval anotada com `data-src`. Deve ser substituído pelo loader de projeto. |
@@ -69,7 +70,7 @@ Regras:
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
-- Recarga: `stale` (paths que mudaram no disco, ou `null`); `this.watch` (mtimes vigiados, fora do state) e `this.loadedSeq` (geração do `loadSeq` a que o watch pertence).
+- Recarga: `stale` (paths que mudaram no disco, ou `null`); `drift` (fontes citadas mais novas que o mock, ou `null`); `this.watch` (mtimes vigiados, fora do state) e `this.loadedSeq` (geração do `loadSeq` a que o watch pertence).
 - Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
 - Persistido: `cfg` + `UI_KEYS` em `layers/v1/ui`, histórico em `layers/v1/projects`, câmera/seleção/último projeto em `layers/v1/session`.
 
@@ -172,8 +173,8 @@ Ao fim de cada carga, `this.watch` guarda o mtime de `layers.json`, do mock, das
 Ao focar a janela (`focus`/`visibilitychange`, debounce de 300 ms), `checkStale` confere só esses
 arquivos com `getFile()`, sem ler conteúdo, e só depois de `queryPermission` retornar `granted`.
 `LayersCore.staleFiles` compara com o snapshot (mtime diferente ou arquivo ausente) e o banner
-aparece com o primeiro path e `+N`. Editar `src/**/*.ts` não dispara: não está no conjunto vigiado
-(o app alvo só entra via mock/snapshot). Escritas do próprio LAYERS (`writeText`) atualizam
+aparece com o primeiro path e `+N`. Os `.ts`/`.js` citados em `data-src` entram no conjunto vigiado depois da carga
+(§ Reanalisar do 0); `src/**/*.ts` que o mock não cita continua fora (o app alvo só entra via mock/snapshot). Escritas do próprio LAYERS (`writeText`) atualizam
 `this.watch`, então não se auto-acusam; "×" (`dismissStale`) aceita os mtimes atuais. Cargas
 concorrentes (`loadedSeq !== loadSeq`) suprimem a checagem.
 A posição do banner acompanha o dock (`top` = 36 + `topBarH` + 12, logo abaixo dele); `LayersCore.staleBannerBox`
@@ -186,6 +187,32 @@ desde então. Reverter uma aprovação (`rollback`) compara o mtime atual com o 
 (`entry.written`) e recusa se o arquivo mudou fora do LAYERS, mesmo depois de um reload; `retryCreateLayersJson`
 lê o `loadSeq` na entrada e desiste se uma carga mais nova começou.
 Uma carga superada (`seq !== loadSeq`) não descarrega nem marca `loadedSeq` por cima da carga mais nova.
+
+### Reanalisar do 0 e deriva do layout
+
+O mock é a fonte das camadas, e um mock autoral ou de snapshot não se regenera sozinho: o app alvo
+muda e o Layers continua mostrando o layout antigo. O caso que motivou a S2.21 foi o Traval, cujo
+`layers/mock.html` é feito à mão (estilo inline) e ficou para trás das mudanças de `src/ui/*.ts`.
+
+Ao fim de cada carga, `probeLayout` (sem `await`, só com `queryPermission` `granted`) lê o mtime dos
+`.ts`/`.js` citados em `data-src` e em `root.src` (`LayersCore.citedSources`: caminho no mesmo espaço
+das folhas, tetos de 50 arquivos, sem `tpl:`) e os acrescenta a `this.watch`. Se algum é mais novo que
+o mock (`LayersCore.layoutDrift`), `state.drift` abre o banner "Mock mais antigo que a fonte: …" com o
+botão "Reanalisar do 0". A deriva volta a cada carga enquanto a fonte for mais nova que o mock; o "×"
+só a esconde na sessão. Depois da carga, `checkStale` classifica a lista com `LayersCore.staleKind`:
+`layout` (mock, `layers.json` ou fonte citada) troca o botão "Recarregar" por "Reanalisar do 0";
+`style` (só folha CSS) mantém o banner de antes.
+
+"Reanalisar do 0" (banner ou `Projetos ▾`) pede confirmação sempre. Ao confirmar, `backupLayout` grava o
+`layers.json` e o mock **como foram lidos** (`this.loaded`, em memória, então mesmo um mock já
+sobrescrito no disco fica salvo) em `.design-history/layout-<AAAAMMDD-HHMMSS>/`, por `writeText`
+(permissão de escrita, guarda de conflito, `writeLog`). Falha no backup aborta antes de recarregar, com
+toast `warn`. Depois `dropPending`, `pendingSel = null` e `loadProject`: projeto novo, sem seleção,
+câmera, undo nem ajustes salvos. O backup não tem retenção nem poda.
+
+Limite: reler só traz a UI nova se o mock mudou. Em app renderizado por JS, regenere o mock com
+`tools/layers-snapshot.js` no app aberto (o texto do modal de confirmação diz isso); o snapshot headless
+da ADR de 2026-09-18 segue não implementado.
 
 ### Guarda de conflito na gravação
 

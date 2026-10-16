@@ -70,10 +70,6 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <button onClick="{{ histRepoCancel }}" style="height:24px;width:24px;border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">×</button>
             </div>
           </sc-if>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 6px 3px;border-top:1px solid var(--line0);margin-top:2px"><span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Exemplos</span></div>
-          <sc-for list="{{ demoItems }}" as="dm" hint-placeholder-count="1">
-            <div onClick="{{ dm.open }}" title="{{ dm.title }}" style="display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:3px;background:{{ dm.bg }};color:{{ dm.color }};cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="display:flex;color:{{ dm.iconColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M2 6.5h12M5.5 6.5V13"></path></svg></span><span style="min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dm.name }}</span><span style="font:400 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dm.origin }}</span></span><span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ dm.badge }}</span></div>
-          </sc-for>
           <div style="height:1px;background:var(--line0);margin:3px 0"></div>
           <div onClick="{{ connectDir }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
           <div onClick="{{ openZip }}" title="Abrir um projeto compactado — somente leitura" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:14px;text-align:center;color:var(--fg3)">▤</span>Abrir arquivo .zip…</div>
@@ -83,6 +79,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
           <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histReset }}" title="Descarrega o projeto e volta à interface limpa (mantém tema e histórico)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div></sc-if>
           <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="Relê do disco os arquivos do projeto (atalho R)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
+          <sc-if value="{{ hasDirProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ restructureItem }}" title="Relê tudo do 0: guarda o layout atual em .design-history/ e descarta ajustes, seleção e câmera" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">⟲</span>Reanalisar do 0</div></sc-if>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
       </sc-if>
@@ -743,7 +740,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
 <sc-if value="{{ staleOpen }}" hint-placeholder-val="{{ false }}">
   <div role="status" style="position:fixed;left:{{ staleLeft }};top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;box-sizing:border-box;max-width:{{ staleWidth }};padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ staleMsg }}</span>
-    <button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button>
+    <sc-if value="{{ staleReload }}" hint-placeholder-val="{{ true }}"><button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button></sc-if>
+    <sc-if value="{{ staleLayout }}" hint-placeholder-val="{{ false }}"><button onClick="{{ restructureItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Reanalisar do 0</button></sc-if>
     <button onClick="{{ dismissStale }}" title="Ignorar" style="all:unset;cursor:pointer;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">×</button>
   </div>
 </sc-if>
@@ -1052,7 +1050,6 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
   return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc };
 };
-const DEMOS = [{ name: 'Traval', base: 'fixtures/traval/', origin: 'exemplo · fixtures/traval', badge: '1280×760' }];
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
 // gerado por scripts/vendor-assets.py — que é a fonte de verdade desta lista.
@@ -1070,7 +1067,7 @@ const loadInterSize = () => { const o = CONF.ui.interSize; return o && o.w ? { s
 class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
-    project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null, demoBase: null,
+    project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
@@ -1229,8 +1226,7 @@ class Component extends DCLogic {
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
-  openDemo(d) { this.setState({ dir: null, demoBase: d.base, dirName: d.name + ' (exemplo)', cbOpen: null, cssRules: {}, fileText: {} }, () => this.loadProject()); }
-  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
+  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
     this.writeConfig(); this.pendingReady = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
@@ -1308,13 +1304,28 @@ class Component extends DCLogic {
     this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
+    this.loaded = { manifest: raw, mock: html, mockPath }; this.structural = ['layers.json', mockPath]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + '.', warn.length || dropped ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
+    this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); // sem await: nao atrasa a carga
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.els = {}; this.varIdx = {}; this.setState({ project: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  // S2.21: mtime das fontes TS/JS citadas em data-src/root.src. Entram no watch (o foco as vigia) e,
+  // se alguma e mais nova que o mock, state.drift avisa que o layout mostrado ficou para tras.
+  async probeLayout(seq, rootEl, mockPath, known) {
+    const d = this.state.dir; if (!d) return; const mockMt = (this.mtimes || {})[mockPath];
+    try {
+      if (d.queryPermission && await d.queryPermission({ mode: 'read' }) !== 'granted') return;
+      const srcs = [...rootEl.querySelectorAll('[data-src]')].map(e => e.dataset.src); if (rootEl.dataset.src) srcs.push(rootEl.dataset.src);
+      const mt = {}; for (const f of LayersCore.citedSources(srcs, known)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
+      if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
+      this.structural = ['layers.json', mockPath, ...Object.keys(mt)]; Object.assign(this.watch, mt);
+      const drift = LayersCore.layoutDrift(mockMt, mt); this.setState({ drift: drift.length ? drift : null });
+    } catch (e) {}
+  }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1568,7 +1579,7 @@ class Component extends DCLogic {
     } finally { this.staleBusy = false; }
   }
   dismissStale() {
-    this.watch = LayersCore.dismissWatch(this.watch, this.staleCur || {}, this.staleSeen || {}); this.setState({ stale: null });
+    this.watch = LayersCore.dismissWatch(this.watch, this.staleCur || {}, this.staleSeen || {}); this.setState({ stale: null, drift: null });
   }
   reloadProject() {
     const s = this.state; if (!s.dir) return;
@@ -1576,6 +1587,34 @@ class Component extends DCLogic {
     if (this.loadedSeq !== this.loadSeq) return;
     if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Recarregar projeto?', label: 'Recarregar', text: 'Há edições não salvas; recarregar descarta todas.', onYes: () => { this.dropPending(); this.doReload(); } } }); return; }
     this.doReload();
+  }
+  // S2.21: Reanalisar do 0 = backup do layout carregado + recarga como projeto novo (sem selecao, camera nem ajustes salvos).
+  restructureProject() {
+    const s = this.state; if (!s.dir) return;
+    if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de reanalisar'); return; }
+    if (this.loadedSeq !== this.loadSeq) return;
+    this.setState({ modal: { stage: 'confirm', log: [], title: 'Reanalisar projeto do 0?', label: 'Reanalisar', text: 'Descarta ajustes, seleção e câmera. O layout atual (layers.json e mock) é salvo em .design-history/ antes. Se o app monta o DOM por JavaScript, gere um novo mock com tools/layers-snapshot.js: reler sozinho não traz a UI nova.', onYes: () => this.doRestructure() } });
+  }
+  async doRestructure() {
+    const seq = this.loadSeq;
+    try { await this.backupLayout(); } catch (e) { this.toast('Reanálise cancelada: o backup do layout falhou — ' + e.message, 'warn'); return; }
+    if (seq !== this.loadSeq) return;
+    this.dropPending(); if (this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
+    this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject();
+  }
+  async backupLayout() {
+    const L = this.loaded; if (!L) throw new Error('nenhum layout carregado');
+    const at = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-'); const p = LayersCore.layoutBackupPaths(at, L.mockPath);
+    const dir = this.state.dir; // as duas gravacoes valem para a pasta do clique, nao para uma conectada depois
+    try {
+      await this.writeText(p.manifest, L.manifest);
+      if (this.state.dir !== dir) throw new Error('a pasta conectada mudou durante o backup');
+      await this.writeText(p.mock, L.mock);
+    } catch (e) {
+      // backup parcial nao conta: remove o carimbo meio escrito (melhor esforco)
+      try { const h = await dir.getDirectoryHandle('.design-history'); await h.removeEntry(p.dir.split('/').pop(), { recursive: true }); } catch (e2) {}
+      throw e;
+    }
   }
   doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
   componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('pointerdown', this.onDocDown, true); clearTimeout(this.menuT); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
@@ -1786,7 +1825,7 @@ class Component extends DCLogic {
   }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
-  get fixtureBase() { if (!this.state.demoBase && !this.props.fixture) { const pb = typeof location !== 'undefined' ? LayersCore.projectBase(location.search) : null; if (pb) return pb; } const p = this.state.demoBase || this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
+  get fixtureBase() { if (!this.props.fixture) { const pb = typeof location !== 'undefined' ? LayersCore.projectBase(location.search) : null; if (pb) return pb; } const p = this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
   async fileHandle(path, create) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
   // Ordem das origens: pasta conectada > .zip em memoria > repositorio publico > fixture HTTP.
   // Esta e a unica porta de leitura do loader — foi por isso que .zip e GitHub couberam aqui
@@ -2230,7 +2269,7 @@ class Component extends DCLogic {
       emptyBody: s.loadError ? s.loadError.body : (window.showDirectoryPicker ? 'Abra Projetos recentes (canto superior esquerdo) e conecte uma pasta que tenha layers.json na raiz.' : 'Este navegador não tem a File System Access API — use Chrome ou Edge para conectar uma pasta. O modo fixture (#layers=) continua funcionando aqui.'),
       emptyShowCreateBtn: !!(s.loadError && s.loadError.canCreate), emptyCreateAction: () => this.retryCreateLayersJson(),
       showHint: !s.project || !!s.loadError,
-      hasProject: !!s.project, noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
+      hasProject: !!s.project, hasDirProject: !!(s.dir && s.project), noProject: !s.project, pageWpx: s.pageW + 'px', pageHpx: s.pageH + 'px',
       hdrA: hs === 'A', hdrB: hs === 'B', hdrC: hs === 'C', ...gear, ...topMenus, ...interModel, ...cfgVals, cbBlur: this.cbBlur, preventBlur: this.preventBlur, phA: ph === 'A', phB: ph === 'B', phC: ph === 'C',
       rightOpen: s.rightOpen, rightClosed: !s.rightOpen, rightW: s.rightOpen ? s.rightPx + 'px' : '30px', ...(() => { const rw = s.rightOpen ? s.rightPx : 30; const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const band = vw - 2 * (rw + 12); return band >= 420 ? { dockLeft: '50vw', dockMaxW: band + 'px' } : { dockLeft: 'calc((100vw - ' + rw + 'px) / 2)', dockMaxW: Math.max(360, vw - rw - 24) + 'px' }; })(),  toggleRight: () => this.setState(st => ({ rightOpen: !st.rightOpen })),
       startRightResize: e => this.startRightResize(e), resetRightW: () => this.setState({ rightPx: 340 }), rightGripBg: s.rightDrag ? 'rgba(var(--selRgb),.4)' : 'transparent',
@@ -2284,8 +2323,9 @@ class Component extends DCLogic {
       stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!(s.stale && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : '', dismissStale: () => this.dismissStale(),
-      demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: this.menuAct(() => this.openDemo(d)) }; }),
+      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') : '',
+      staleLayout: s.stale ? LayersCore.staleKind(s.stale, this.structural) === 'layout' : !!s.drift, staleReload: s.stale ? LayersCore.staleKind(s.stale, this.structural) !== 'layout' : false,
+      restructureItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.restructureProject(); }), dismissStale: () => this.dismissStale(),
       ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuH.hist; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
         return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: he.click, histEnter: he.enter, histLeave: he.leave, histBlur: he.blur, histInside: he.inside, histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
