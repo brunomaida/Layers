@@ -734,6 +734,33 @@
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
+      },
+      {
+        "id": "S2.21a",
+        "type": "spec",
+        "name": "Remover o Traval como demo fixa do menu Projetos",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-261016-0-s2-21-restructure-project.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s2-21-restructure-project.md)",
+            "title": "feature-261016-0-s2-21-restructure-project.md)"
+          }
+        ],
+        "reason": "↳ Pedido do usuário: o item Exemplos › Traval mostrava um mock fixo e desatualizado; `fixtures/traval` e `?layers=` seguem para testes",
+        "is_branch": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
       }
     ]
   },

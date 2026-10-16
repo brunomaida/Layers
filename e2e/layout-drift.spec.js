@@ -52,7 +52,8 @@ async function connect(page, { newest = 'src/ui/shell.ts' } = {}) {
   const trigger = page.getByText('Nenhum projeto').first();
   const item = page.getByText(/Conectar pasta/i).first();
   await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
+  // cold start: the first click can land before the app wires the menu, so wait for the item and retry once
+  if (!(await item.waitFor({ state: 'visible', timeout: 2000 }).then(() => true, () => false))) await trigger.click();
   await item.click();
   await readNodes(page);
 }

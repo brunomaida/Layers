@@ -70,10 +70,6 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <button onClick="{{ histRepoCancel }}" style="height:24px;width:24px;border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">×</button>
             </div>
           </sc-if>
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 6px 3px;border-top:1px solid var(--line0);margin-top:2px"><span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Exemplos</span></div>
-          <sc-for list="{{ demoItems }}" as="dm" hint-placeholder-count="1">
-            <div onClick="{{ dm.open }}" title="{{ dm.title }}" style="display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:8px;height:30px;padding:0 8px;border-radius:3px;background:{{ dm.bg }};color:{{ dm.color }};cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="display:flex;color:{{ dm.iconColor }}"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.4"><rect x="2" y="3" width="12" height="10" rx="1.5"></rect><path d="M2 6.5h12M5.5 6.5V13"></path></svg></span><span style="min-width:0;display:flex;flex-direction:column;gap:2px"><span style="font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dm.name }}</span><span style="font:400 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ dm.origin }}</span></span><span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ dm.badge }}</span></div>
-          </sc-for>
           <div style="height:1px;background:var(--line0);margin:3px 0"></div>
           <div onClick="{{ connectDir }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
           <div onClick="{{ openZip }}" title="Abrir um projeto compactado — somente leitura" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:14px;text-align:center;color:var(--fg3)">▤</span>Abrir arquivo .zip…</div>
@@ -1054,7 +1050,6 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
   return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc };
 };
-const DEMOS = [{ name: 'Traval', base: 'fixtures/traval/', origin: 'exemplo · fixtures/traval', badge: '1280×760' }];
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
 // gerado por scripts/vendor-assets.py — que é a fonte de verdade desta lista.
@@ -1072,7 +1067,7 @@ const loadInterSize = () => { const o = CONF.ui.interSize; return o && o.w ? { s
 class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
-    project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null, demoBase: null,
+    project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
@@ -1231,8 +1226,7 @@ class Component extends DCLogic {
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
-  openDemo(d) { this.setState({ dir: null, demoBase: d.base, dirName: d.name + ' (exemplo)', cbOpen: null, cssRules: {}, fileText: {} }, () => this.loadProject()); }
-  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, demoBase: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
+  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
     this.writeConfig(); this.pendingReady = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
@@ -1831,7 +1825,7 @@ class Component extends DCLogic {
   }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
-  get fixtureBase() { if (!this.state.demoBase && !this.props.fixture) { const pb = typeof location !== 'undefined' ? LayersCore.projectBase(location.search) : null; if (pb) return pb; } const p = this.state.demoBase || this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
+  get fixtureBase() { if (!this.props.fixture) { const pb = typeof location !== 'undefined' ? LayersCore.projectBase(location.search) : null; if (pb) return pb; } const p = this.props.fixture || (typeof location !== 'undefined' ? (new URLSearchParams(location.search).get('layers') || (location.hash.match(/layers=([^&]+)/) || [])[1]) : ''); if (!p) return ''; const u = decodeURIComponent(p); return u.endsWith('/') ? u : u + '/'; }
   async fileHandle(path, create) { const ok = LayersCore.safePath(path); if (!ok) throw new Error('caminho recusado: ' + path); let d = this.state.dir; const parts = ok.split('/'); for (let i = 0; i < parts.length - 1; i++) d = await d.getDirectoryHandle(parts[i], { create }); return d.getFileHandle(parts[parts.length - 1], { create }); }
   // Ordem das origens: pasta conectada > .zip em memoria > repositorio publico > fixture HTTP.
   // Esta e a unica porta de leitura do loader — foi por isso que .zip e GitHub couberam aqui
@@ -2332,7 +2326,6 @@ class Component extends DCLogic {
       connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') : '',
       staleLayout: s.stale ? LayersCore.staleKind(s.stale, this.structural) === 'layout' : !!s.drift, staleReload: s.stale ? LayersCore.staleKind(s.stale, this.structural) !== 'layout' : false,
       restructureItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.restructureProject(); }), dismissStale: () => this.dismissStale(),
-      demoItems: DEMOS.map(d => { const cur = s.demoBase === d.base && !!s.project; return { name: d.name, origin: d.origin, badge: d.badge, title: cur ? d.name + ' carregado' : 'Carregar ' + d.name + ' (fixture em ' + d.base + ')', bg: cur ? 'rgba(var(--selRgb),.1)' : 'transparent', color: cur ? 'var(--sel)' : 'var(--fg1)', iconColor: cur ? 'var(--sel)' : 'var(--fg3)', open: this.menuAct(() => this.openDemo(d)) }; }),
       ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuH.hist; const curId = s.dirName ? 'folder:' + s.dirName : null;
         const sorted = [...hist].sort((a, b) => (b.pinned - a.pinned) || (b.last - a.last));
         return { hdrZ: (open || s.menu === 'apar') ? 70 : 30, histRef: this.histRef, histOpen: open, histToggle: he.click, histEnter: he.enter, histLeave: he.leave, histBlur: he.blur, histInside: he.inside, histBdr: open ? 'rgba(var(--selRgb),.6)' : 'transparent', histBg: open ? 'var(--bg2)' : 'transparent',
