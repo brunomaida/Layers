@@ -234,6 +234,23 @@ describe('ScopeAst', () => {
     expect(core.scopeAst(src).css).toBe(src);
   });
 
+  it('ScopeAst_RootComAtributo_EmiteHostFuncional', () => {
+    const out = core.scopeAst(":root[data-theme='light'] .a { x: 1 }").css;
+    expect(out).toContain(":host([data-theme='light']) .a");
+    expect(out).not.toContain(':host[');
+  });
+
+  it('ScopeAst_HtmlComAtributoEClasse_EmiteHostFuncional', () => {
+    expect(core.scopeAst('html[data-theme=dark] .b { x: 1 }').css).toContain(':host([data-theme=dark]) .b');
+    expect(core.scopeAst(':root.dark { x: 1 }').css).toContain(':host(.dark)');
+  });
+
+  it('ScopeAst_RootEHtmlSimples_MantemEscopoAtual', () => {
+    expect(core.scopeAst(':root { --c: red }').css).toBe(':host { --c: red }');
+    expect(core.scopeAst('html { x: 1 }').css).toBe('.__layers-root { x: 1 }');
+    expect(core.scopeAst('html .x { x: 1 }').css).toBe('.__layers-root .x { x: 1 }');
+  });
+
   it('Axai_ProduzCssValido', () => {
     const out = core.scopeAst(fixture('axai/wwwroot/painel.css'));
     expect(out.css).toContain(':host');
@@ -243,6 +260,28 @@ describe('ScopeAst', () => {
     const after = core.parseSheet('a', out.css, 0).length;
     expect(after).toBeGreaterThanOrEqual(before);
     expect(after - before).toBeLessThanOrEqual(2);
+  });
+});
+
+describe('HostAttrsFromHtml', () => {
+  const at = (name, value) => ({ name, value });
+
+  it('HostAttrsFromHtml_AllowlistDeAtributos_MantemDataLangDir', () => {
+    const r = core.hostAttrsFromHtml([at('data-theme', 'light'), at('lang', 'pt-BR'), at('dir', 'ltr'), at('class', 'x'),
+      at('onclick', 'a()'), at('data-src', 'y'), at('data-layers-frozen', 'z'), at('id', 'i')]);
+    expect(r.attrs).toEqual([at('data-theme', 'light'), at('lang', 'pt-BR'), at('dir', 'ltr')]);
+    expect(r.vars).toEqual([]);
+  });
+
+  it('HostAttrsFromHtml_StyleComUrlOuExpression_DescartaADeclaracao', () => {
+    const r = core.hostAttrsFromHtml([at('style', '--a:#fff;--b:url(http://x/y);--c: expression(1);color:red')]);
+    expect(r.vars).toEqual([at('--a', '#fff')]);
+    expect(r.attrs).toEqual([]);
+  });
+
+  it('HostAttrsFromHtml_SemAtributos_DevolveListasVazias', () => {
+    expect(core.hostAttrsFromHtml([])).toEqual({ attrs: [], vars: [] });
+    expect(core.hostAttrsFromHtml(undefined)).toEqual({ attrs: [], vars: [] });
   });
 });
 
