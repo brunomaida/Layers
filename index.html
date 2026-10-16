@@ -1334,17 +1334,49 @@ class Component extends DCLogic {
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
-    this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); // sem await: nao atrasa a carga
+    this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man)); // sem await: nao atrasa a carga
   }
   // S2.21: mtime das fontes TS/JS citadas em data-src/root.src. Entram no watch (o foco as vigia) e,
   // se alguma e mais nova que o mock, state.drift avisa que o layout mostrado ficou para tras.
-  async probeLayout(seq, rootEl, mockPath, known) {
+  // S2.22d: percorre a pasta conectada so onde algum glob de layers.json › watch pode casar; mesmo SKIP e teto de entradas da varredura do projeto
+  async walkWatch(globs) {
+    const SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
+    const MAX_ENTRIES = 5000, MAX_DEPTH = 8; let visited = 0, capped = false, deepCut = false; const files = [];
+    const cg = globs.map(g => LayersCore.compileGlob(g)); // regex compilado uma vez, nao por entrada
+    const walk = async (dirHandle, prefix, depth) => {
+      if (capped) return;
+      if (depth > MAX_DEPTH) { deepCut = true; return; }
+      // pasta ilegivel ou sumida no meio da varredura: so ela sai, os achados anteriores ficam
+      try {
+        for await (const [name, handle] of dirHandle.entries()) {
+          if (capped) return;
+          if (++visited > MAX_ENTRIES) { capped = true; return; }
+          if (name.charAt(0) === '.') continue;
+          if (handle.kind === 'directory') {
+            if (SKIP.has(name.toLowerCase())) continue;
+            const sub = prefix + name; if (cg.some(c => c.dirMayMatch(sub))) await walk(handle, sub + '/', depth + 1);
+            continue;
+          }
+          const rel = LayersCore.safePath(prefix + name); if (rel && cg.some(c => c.match(rel))) files.push(rel);
+        }
+      } catch (e) { /* esta pasta fica de fora */ }
+    };
+    await walk(this.state.dir, '', 0);
+    return { files: files.sort(), capped, deepCut };
+  }
+  async probeLayout(seq, rootEl, mockPath, known, globs) {
     const d = this.state.dir; if (!d) return; const mockMt = (this.mtimes || {})[mockPath];
     try {
       if (d.queryPermission && await d.queryPermission({ mode: 'read' }) !== 'granted') return;
       const srcs = [...rootEl.querySelectorAll('[data-src]')].map(e => e.dataset.src); if (rootEl.dataset.src) srcs.push(rootEl.dataset.src);
-      const mt = {}; for (const f of LayersCore.citedSources(srcs, known)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
+      let extra = [], capped = false, deepCut = false; if (globs && globs.length) { try { ({ files: extra, capped, deepCut } = await this.walkWatch(globs)); } catch (e) { /* sem leitura: segue sem extras */ } }
+      // so o excedente do watch avisa: citados em data-src acima do teto seguem silenciosos, como na S2.21
+      const nCited = LayersCore.citedSources(srcs, known, 1e9).length, nAll = LayersCore.citedSources(srcs, known, 1e9, extra).length;
+      const dropped = extra.length ? Math.max(0, nAll - Math.max(50, nCited)) : 0;
+      const watchNote = [dropped ? 'watch: ' + dropped + ' arquivos além do teto de 50 ignorados' : '', capped ? 'watch: varredura parou em 5000 entradas; o restante não foi lido' : '', deepCut ? 'watch: pastas além de 8 níveis ignoradas' : ''].filter(Boolean).join(' · ');
+      const mt = {}; for (const f of LayersCore.citedSources(srcs, known, 50, extra)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
+      if (watchNote) { const cur = this.state.toast; this.toast(watchNote + (cur && cur.msg ? ' · ' + cur.msg : '')); }
       this.structural = ['layers.json', mockPath, ...(this.maskedCss || []), ...Object.keys(mt)]; Object.assign(this.watch, mt);
       const drift = LayersCore.layoutDrift(mockMt, mt, this.driftAck); this.setState({ drift: drift.length ? drift : null });
     } catch (e) {}
