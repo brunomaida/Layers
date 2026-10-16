@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-17",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -538,6 +538,12 @@
             "type": "report",
             "path": "/[](../changelog.d/feature-261014-0-s2-15-manual-marker.md)",
             "title": "feature-261014-0-s2-15-manual-marker.md)"
+          },
+          {
+            "name": "2026-10-14-layers-plano-geral-da-onda-1.md",
+            "type": "spec",
+            "path": "/docs/superpowers/plans/2026-10-14-layers-plano-geral-da-onda-1.md",
+            "title": "Layers — Plano geral da Onda 1 (S2.19, S4.5, S5.6, S6.2, S7.1)"
           }
         ],
         "reason": "checklist B",
@@ -610,8 +616,8 @@
         "id": "S2.18",
         "type": "spec",
         "name": "Verificação manual da gravação real do template dc",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -693,6 +699,65 @@
         ],
         "reason": "Achado da S5.3: Traval tem 31 de 199 nós com linha que não mostra o seletor; decidir validar `data-src` autoral contra o índice",
         "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.21",
+        "type": "spec",
+        "name": "Reanalisar projeto do 0 com detecção de deriva do layout",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-21-restructure-project.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-16-s2-21-restructure-project.md)",
+            "title": "2026-10-16-s2-21-restructure-project.md)"
+          },
+          {
+            "name": "feature-261016-0-s2-21-restructure-project.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s2-21-restructure-project.md)",
+            "title": "feature-261016-0-s2-21-restructure-project.md)"
+          }
+        ],
+        "reason": "Traval mudou e o Layers não percebeu: mock manual e .ts citados não vigiados; backup do layout antes de reler",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.21a",
+        "type": "spec",
+        "name": "Remover o Traval como demo fixa do menu Projetos",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "bug",
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "feature-261016-0-s2-21-restructure-project.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s2-21-restructure-project.md)",
+            "title": "feature-261016-0-s2-21-restructure-project.md)"
+          }
+        ],
+        "reason": "↳ Pedido do usuário: o item Exemplos › Traval mostrava um mock fixo e desatualizado; `fixtures/traval` e `?layers=` seguem para testes",
+        "is_branch": true,
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
@@ -1679,8 +1744,8 @@
     "id": "S8",
     "type": "phase",
     "name": "Trilha MCP e plugin",
-    "start": "2026-10-15",
-    "end": "2026-10-22",
+    "start": "2026-10-17",
+    "end": "2026-10-24",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -1700,8 +1765,8 @@
         "id": "S8.1",
         "type": "spec",
         "name": "Spike de servidor MCP stdio sobre o core",
-        "start": "2026-10-15",
-        "end": "2026-10-17",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1719,8 +1784,8 @@
         "id": "S8.2",
         "type": "spec",
         "name": "Spike Playwright: data-vite-dev-id sobrevive",
-        "start": "2026-10-16",
-        "end": "2026-10-18",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1738,8 +1803,8 @@
         "id": "S8.3",
         "type": "spec",
         "name": "Snapshot headless (slice 3)",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1757,8 +1822,8 @@
         "id": "S8.4",
         "type": "spec",
         "name": "apply_patch e porta Node de writeText",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1776,8 +1841,8 @@
         "id": "S8.5",
         "type": "spec",
         "name": "Proveniência SPA via data-vite-dev-id",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-21",
+        "end": "2026-10-23",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1795,8 +1860,8 @@
         "id": "S8.6",
         "type": "spec",
         "name": "Re-snapshot sem renovar mtimes com changes pendentes",
-        "start": "2026-10-20",
-        "end": "2026-10-22",
+        "start": "2026-10-22",
+        "end": "2026-10-24",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -1817,7 +1882,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-22",
+    "end": "2026-10-24",
     "statusLabel": "Reference",
     "tags": [
       "bdn",
