@@ -70,7 +70,7 @@ loader (index.html) ◀───────────┘
 
 **Interfaces:**
 - Produces: `core.snapshotOriginCovered(origin: string, sheetPaths: string[]) -> boolean`
-- Produces: `core.maskedSheets(snapMock: boolean, blocks: {origin: string|null}[], sheetPaths: string[]) -> string[]`
+- Produces: `core.maskedSheets(snapMock: boolean, blocks: {origin: string|null, text: string}[], sheetPaths: string[]) -> string[]`
 - Produces: `core.placeDeadWarning(warn: string[], text: string) -> void` (muta `warn`)
 
 - [ ] **Step 1: Escrever os testes que falham** (`describe('SnapshotOriginCovered' | 'MaskedSheets' | 'PlaceDeadWarning')`)
@@ -88,7 +88,7 @@ loader (index.html) ◀───────────┘
 
 - [ ] **Step 3: Implementar as três funções** em `lib/layers-core.js`.
   - `snapshotOriginCovered`: normaliza a origem (tenta `new URL` e usa o `pathname`; troca `\` por `/`; remove `?…` e `#…`; `decodeURIComponent` em try/catch) e devolve `true` se algum `sheetPaths[i]` for igual ao caminho ou se o caminho terminar em `'/' + sheetPaths[i]`.
-  - `maskedSheets`: devolve `sheetPaths.slice()` quando `snapMock` e há ao menos um bloco e algum bloco tem `origin` falsy; senão `[]`.
+  - `maskedSheets`: devolve `sheetPaths.slice()` só quando `snapMock`, algum bloco tem CSS real (sem comentários) e nenhum bloco traz `origin` (snapshot antigo); senão `[]`. As-built: a regra inicial (qualquer bloco sem `origin`) foi estreitada na revisão final.
   - `placeDeadWarning`: insere `text` antes do primeiro item que casa `/^(URL remota removida|url\(\) remota neutralizada)/`; sem casamento, `push`.
 
 - [ ] **Step 4: Rodar e ver passar** — mesmo comando; esperado: PASS. Depois `npm test` inteiro verde.
