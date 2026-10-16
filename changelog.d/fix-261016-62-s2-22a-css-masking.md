@@ -8,7 +8,7 @@ adr: none
 - O aviso de `interactions` sem alvo passa a vir antes dos avisos de URL remota, para aparecer no toast da carga (que mostra só o primeiro aviso).
 
 ### Changed
-- Em snapshot com bloco de CSS sem origem e com regras, a alteração de uma folha listada sugere "Reanalisar do 0" em vez de "Recarregar" (`maskedCss` entra em `structural`).
+- Em snapshot legado (nenhum bloco com origem e ao menos um com regras), a alteração de uma folha listada sugere "Reanalisar do 0" em vez de "Recarregar" (`maskedCss` entra em `structural`).
 
 ### Perf
 - N/A — só remove CSS duplicado na carga do mock; sem medição, fora de qualquer caminho quente.

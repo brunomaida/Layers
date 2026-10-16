@@ -1806,14 +1806,23 @@ describe('SnapshotOriginCovered', () => {
 });
 
 describe('MaskedSheets', () => {
-  it('SnapshotComBlocoSemOrigem_DevolveAsFolhas', () => {
-    expect(core.maskedSheets(true, [{ origin: 'x' }, { origin: null }], ['a.css'])).toEqual(['a.css']);
+  it('SnapshotMisto_BlocoSemOrigemEOutroComOrigem_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [{ origin: 'x', text: '.a{}' }, { origin: null, text: '.b{}' }], ['a.css'])).toEqual([]);
   });
   it('TodosComOrigem_DevolveVazio', () => {
-    expect(core.maskedSheets(true, [{ origin: 'x' }, { origin: 'y' }], ['a.css'])).toEqual([]);
+    expect(core.maskedSheets(true, [{ origin: 'x', text: '.a{}' }, { origin: 'y', text: '.b{}' }], ['a.css'])).toEqual([]);
   });
   it('NaoSnapshot_DevolveVazio', () => {
-    expect(core.maskedSheets(false, [{ origin: null }], ['a.css'])).toEqual([]);
+    expect(core.maskedSheets(false, [{ origin: null, text: '.a{color:red}' }], ['a.css'])).toEqual([]);
+  });
+  it('BlobLegadoComRegras_DevolveAsFolhas', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }], ['a.css'])).toEqual(['a.css']);
+  });
+  it('ComentarioPuroSemOrigem_DevolveVazio', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '/* NÃO LIDO */' }], ['a.css'])).toEqual([]);
+  });
+  it('BlobLegadoMaisComentarioPuro_DevolveAsFolhas', () => {
+    expect(core.maskedSheets(true, [{ origin: null, text: '.a{color:red}' }, { origin: null, text: '/* NÃO LIDO */' }], ['a.css'])).toEqual(['a.css']);
   });
   it('SnapshotSemBlocos_DevolveVazio', () => {
     expect(core.maskedSheets(true, [], ['a.css'])).toEqual([]);
@@ -1824,8 +1833,12 @@ describe('PlaceDeadWarning', () => {
   it('ExisteAvisoDeUrlRemota_InsereAntes', () => {
     const warn = ['URL remota removida: href="//x"', 'outro'];
     core.placeDeadWarning(warn, 'dead');
-    expect(warn.indexOf('dead')).toBe(0);
-    expect(warn).toHaveLength(3);
+    expect(warn).toEqual(['dead', 'URL remota removida: href="//x"', 'outro']);
+  });
+  it('ExisteAvisoDeUrlRemotaNeutralizada_InsereAntes', () => {
+    const warn = ['css não encontrado: a.css', 'url() remota neutralizada no CSS: //x'];
+    core.placeDeadWarning(warn, 'dead');
+    expect(warn).toEqual(['css não encontrado: a.css', 'dead', 'url() remota neutralizada no CSS: //x']);
   });
   it('SemAvisoDeUrlRemota_Acrescenta', () => {
     const warn = ['a', 'b'];

@@ -1062,7 +1062,7 @@ const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, m
   }
   rootEl.querySelectorAll('*').forEach(e => { if (e.dataset.src || !e.classList) return; for (const c of e.classList) { const hit = idx['.' + c]; if (hit) { e.dataset.src = hit.file + '|' + hit.selector + '|' + hit.line; if (!e.dataset.name) e.dataset.name = hit.selector.length <= 40 ? hit.selector : '.' + c; break; } } if (!e.dataset.name && e.id) e.dataset.name = '#' + e.id; });
   Object.entries(man.rules || {}).forEach(([sel, src]) => { try { [rootEl, ...rootEl.querySelectorAll(sel)].forEach(e => { if (!e.matches(sel)) return; e.dataset.src = String(src); if (!e.dataset.name || e.dataset.name === 'body') e.dataset.name = sel; }); } catch (e) { warn.push('seletor inválido em rules: ' + sel); } });
-  return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc, maskedCss: LayersCore.maskedSheets(snapMock, inlineCss.filter(c => c.text.replace(/\/\*[\s\S]*?\*\//g, '').trim()), css.map(x => x.file)) };
+  return { empty: false, rootEl, scoped, inlineScoped, faces, varIdx, utility, snapMock, dc, maskedCss: LayersCore.maskedSheets(snapMock, inlineCss, css.map(x => x.file)) };
 };
 // Fontes do projeto sem rede. Uma folha externa NUNCA é buscada: se a URL parece pedido de
 // webfont (traz family=), as famílias são resolvidas contra fonts/projects.css, versionado e
