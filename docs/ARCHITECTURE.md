@@ -214,8 +214,11 @@ toast `warn`. Depois o toast da carga nomeia a pasta do backup (`bakNote`). `dro
 câmera, undo nem ajustes salvos. O backup não tem retenção nem poda.
 
 Limite: reler só traz a UI nova se o mock mudou. Em app renderizado por JS, regenere o mock com
-`tools/layers-snapshot.js` no app aberto (o texto do modal de confirmação diz isso); o snapshot headless
-da ADR de 2026-09-18 segue não implementado.
+`node tools/layers-snapshot-cli.mjs <url-do-app> <pasta>/layers/mock.html` (S2.21c; o texto do modal de
+confirmação diz isso). O CLI é um processo à parte que o usuário roda: abre o app (dev server já no ar, só
+`http:` em loopback, nunca a porta 5180) num Chromium headless, executa `tools/layers-snapshot.js` e grava o
+mock no caminho dado; nada do app roda na origem do editor. O endpoint `/__layers/*` da ADR de 2026-09-18
+(snapshot sob clique, dentro do editor) segue não implementado.
 
 ### Guarda de conflito na gravação
 
