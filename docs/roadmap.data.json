@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 94,
+    "progress": 95,
     "docs": [],
     "children": [
       {
@@ -999,18 +999,30 @@
         "name": "Ação `attr` em interactions",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s2-22-loader-checkchanges-design.md)",
             "type": "spec",
             "path": "/[](superpowers/specs/2026-10-16-s2-22-loader-checkchanges-design.md)",
             "title": "2026-10-16-s2-22-loader-checkchanges-design.md)"
+          },
+          {
+            "name": "2026-10-16-s2-22e-attr-action.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-16-s2-22e-attr-action.md)",
+            "title": "2026-10-16-s2-22e-attr-action.md)"
+          },
+          {
+            "name": "feature-261016-62-s2-22e-attr-action.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-62-s2-22e-attr-action.md)",
+            "title": "feature-261016-62-s2-22e-attr-action.md)"
           }
         ],
         "reason": "Mock estático não alterna `data-dock`, `data-collapsed` nem `aria-*`: `attr: {selector, name, value}` no motor de interações, só `data-*`/`aria-*` (G6)",
