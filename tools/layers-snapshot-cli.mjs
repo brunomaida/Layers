@@ -29,7 +29,10 @@ export function checkSnapshotUrl(raw) {
 
 // Pagina da gallery do app para um estado: relativa a URL do app, hash de rota '#/<estado>'. Sem estado, a propria URL.
 export function snapshotTarget(url, state) {
-  return state ? new URL('gallery.html#/' + state, url).href : url;
+  if (!state) return url;
+  const base = new URL(url);
+  if (!base.pathname.endsWith('/')) base.pathname += '/'; // /app -> /app/gallery.html, nao /gallery.html
+  return new URL('gallery.html#/' + state, base).href;
 }
 
 export function parseSnapshotArgs(argv) {
@@ -72,7 +75,9 @@ async function main(argv) {
   try {
     const page = await browser.newPage({ viewport: { width: args.width, height: args.height } });
     // 'load', nao 'networkidle': um dev server com SSE/HMR aberto nunca fica ocioso
-    await page.goto(snapshotTarget(chk.url, args.state), { waitUntil: 'load', timeout: 30000 });
+    const resp = await page.goto(snapshotTarget(chk.url, args.state), { waitUntil: 'load', timeout: 30000 });
+    // gallery inexistente nao pode virar mock: 404 (ou o fallback SPA com status de erro) aborta sem gravar
+    if (args.state && resp && !resp.ok()) { console.error('a gallery respondeu ' + resp.status() + ': ' + page.url()); return 2; }
     await page.waitForTimeout(args.waitMs);
     // um redirecionamento do app para fora do loopback (ex.: login SSO) ou para o editor nao vira mock
     const landed = checkSnapshotUrl(page.url());

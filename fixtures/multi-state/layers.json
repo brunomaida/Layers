@@ -1,1 +1,1 @@
-{"name":"Multi state","viewport":{"width":600,"height":300},"mock":"layers/mock.empty.html","states":[{"name":"empty","mock":"layers/mock.empty.html"},{"name":"csv-loaded","mock":"layers/mock.csv.html"}]}
+{"name":"Multi state","viewport":{"width":600,"height":300},"mock":"layers/never-read.html","states":[{"name":"empty","mock":"layers/mock.empty.html"},{"name":"csv-loaded","mock":"layers/mock.csv.html"},{"name":"broken","mock":"layers/missing.html"}]}

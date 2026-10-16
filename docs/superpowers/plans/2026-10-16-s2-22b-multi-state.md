@@ -12,7 +12,7 @@ created: 2026-10-16
 
 **Goal:** Um projeto declara vários mocks (`states`), o menu ⚡ Interagir troca o estado e recarrega as camadas, e o CLI de snapshot captura `gallery.html#/<estado>` (G4, G5 do [design S2.22](../specs/2026-10-16-s2-22-loader-checkchanges-design.md)).
 
-**Architecture:** Dois helpers puros em `lib/layers-core.js` (`projectStates`, `pickState`); o loader escolhe o mock pelo estado ativo (`this.stateSel`); o item "Modo interativo" ganha o grupo "Estado do mock" quando há 2+ estados; o CLI ganha `--url` e `--state`. Sem `states`, o comportamento é idêntico ao atual (`mock`).
+**Architecture:** Dois helpers puros em `lib/layers-core.js` (`projectStates`, `pickState`); o loader escolhe o mock pelo estado ativo (`this.stateMap[chave]`); o item "Modo interativo" ganha o grupo "Estado do mock" quando há 2+ estados; o CLI ganha `--url` e `--state`. Sem `states`, o comportamento é idêntico ao atual (`mock`).
 
 **Tech Stack:** JS puro, Vitest, Playwright.
 
@@ -35,11 +35,11 @@ created: 2026-10-16
 
 ```
 layers.json  states:[{name:"empty",mock:"layers/mock.empty.html"},{name:"csv-loaded",mock:"…"}]
-     │ projectStates(man) ─▶ pickState(states, this.stateSel) ─▶ mockPath (via base)
+     │ projectStates(man) ─▶ pickState(states, this.stateMap[chave]) ─▶ mockPath (via base)
      ▼
 loadProject ─▶ project.states / project.stateName ─▶ menu Interagir › Modo interativo › "Estado do mock"
      ▲                                                          │ clique
-     └──────── switchState(name): confirma se há edições, dropPending, stateSel=name, loadProject()
+     └──────── switchState(name): confirma se há edições, dropPending, stateMap[chave]=name, loadProject()
 
 CLI:  --state csv-loaded  ─▶ goto <origem do app>/gallery.html#/csv-loaded ─▶ snapshot ─▶ <saída>.html
 ```
@@ -76,7 +76,7 @@ CLI:  --state csv-loaded  ─▶ goto <origem do app>/gallery.html#/csv-loaded �
 
 ### Task 3: Loader e menu
 
-**Interfaces:** `loadProject` escolhe `mockPath` por `pickState(projectStates(man), this.stateSel)` (fallback `man.mock`); `project.states` e `project.stateName` no estado do app; `switchState(name)` no componente.
+**Interfaces:** `loadProject` escolhe `mockPath` por `pickState(projectStates(man), this.stateMap[chave])` (fallback `man.mock`); `project.states` e `project.stateName` no estado do app; `switchState(name)` no componente.
 
 - [ ] Fixture `fixtures/multi-state/` (`layers.json` com 2 estados, 2 mocks de cores distintas) e `e2e/multi-state.spec.js`: abre no 1º estado; troca pelo menu Interagir; cor de `#b` muda; `fixtures/snap-origin` (sem `states`) não mostra o grupo.
 - [ ] Rodar e ver falhar; implementar no `index.html` (âncoras únicas); ver passar; `npm test` e os E2E vizinhos (`dead-interactions`, `stale-banner`, `layout-drift`, `snapshot-dedupe`).

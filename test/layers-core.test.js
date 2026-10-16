@@ -1887,6 +1887,10 @@ describe('ProjectStates', () => {
     const man = { states: [null, 'x', { name: '', mock: 'a.html' }, { name: 'a' }, { name: 'b', mock: 3 }, { name: 'ok', mock: 'ok.html', extra: 1 }] };
     expect(core.projectStates(man)).toEqual([{ name: 'ok', mock: 'ok.html' }]);
   });
+  it('NomeIgualAPropriedadeDoPrototipo_Mantem', () => {
+    const man = { states: [{ name: 'constructor', mock: 'c.html' }, { name: 'toString', mock: 't.html' }] };
+    expect(core.projectStates(man).map((s) => s.name)).toEqual(['constructor', 'toString']);
+  });
   it('NomeRepetido_MantemOPrimeiro', () => {
     const man = { states: [{ name: 'a', mock: '1.html' }, { name: 'a', mock: '2.html' }, { name: 'b', mock: '3.html' }] };
     expect(core.projectStates(man)).toEqual([{ name: 'a', mock: '1.html' }, { name: 'b', mock: '3.html' }]);

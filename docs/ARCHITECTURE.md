@@ -253,13 +253,15 @@ carga mostra só `warn[0]`; `css não encontrado` continua primeiro.
 
 `layers.json › states` (`[{ name, mock }]`) deixa um projeto ter vários mocks, um por estado da interface
 (vazio, com dados, painel aberto). `LayersCore.projectStates` normaliza a lista (entrada inválida sai, nome
-repetido fica com o primeiro) e `LayersCore.pickState` escolhe o estado ativo (`this.stateSel`, senão o
+repetido fica com o primeiro) e `LayersCore.pickState` escolhe o estado ativo (`this.stateMap`, senão o
 primeiro); `loadProject` lê o `mock` do estado no lugar de `man.mock` e guarda `project.states` e
 `project.stateName`. Sem `states` nada muda. O seletor é o grupo "Estado do mock" do item "Modo interativo" do
 menu ⚡ Interagir (só aparece com 2+ estados). `switchState` relê o projeto do zero: o DOM é outro, então seleção
 e câmera não valem, e edições não salvas pedem confirmação e são descartadas, como no Recarregar. O hash das
-fontes inclui o caminho do mock, por isso ajustes pendentes salvos de um estado não são restaurados em outro.
-`this.stateSel` vive só na sessão da aba. O CLI de snapshot captura cada estado da gallery do app com
+fontes inclui o caminho do mock, por isso ajustes pendentes de um estado não valem em outro.
+`this.stateMap` (estado escolhido por projeto, chave = `pendingKey`) vai em `layers/v1/session › states`, então
+Recarregar e reabrir voltam ao mesmo estado e os ajustes pendentes dele são restaurados. Mock ausente no estado
+escolhido limpa a entrada e o erro cita `states`; recarregar abre o primeiro estado. O CLI de snapshot captura cada estado da gallery do app com
 `--state <nome>` (`<url-do-app>/gallery.html#/<nome>`).
 
 ### Guarda de conflito na gravação
