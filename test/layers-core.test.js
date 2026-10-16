@@ -1745,12 +1745,59 @@ describe('MenuStep', () => {
   });
 });
 
+describe('WatchGlobs', () => {
+  it('WatchGlobs_EntradasInvalidas_SaemEValidasFicam', () => {
+    expect(core.watchGlobs({ watch: ['src/**/*.ts', '', 7, '../x', 'a/../b', '/abs', 'a\\b', null] })).toEqual(['src/**/*.ts']);
+    expect(core.watchGlobs({})).toEqual([]);
+    expect(core.watchGlobs({ watch: 'x' })).toEqual([]);
+    expect(core.watchGlobs(undefined)).toEqual([]);
+    const many = Array.from({ length: 25 }, (_, i) => 'src/f' + i + '.ts');
+    expect(core.watchGlobs({ watch: many })).toEqual(many.slice(0, 20));
+  });
+});
+
+describe('GlobMatch', () => {
+  it('GlobMatch_AsteriscoNaoCruzaBarra', () => {
+    expect(core.globMatch('src/*.ts', 'src/a.ts')).toBe(true);
+    expect(core.globMatch('src/*.ts', 'src/ui/a.ts')).toBe(false);
+  });
+
+  it('GlobMatch_DoubleStarCruzaZeroOuMaisPastas', () => {
+    expect(core.globMatch('src/**/*.ts', 'src/a.ts')).toBe(true);
+    expect(core.globMatch('src/**/*.ts', 'src/ui/x/a.ts')).toBe(true);
+    expect(core.globMatch('**/*.ts', 'a.ts')).toBe(true);
+    expect(core.globMatch('**/*.ts', 'src/a.ts')).toBe(true);
+    expect(core.globMatch('src/**', 'src/ui/a.ts')).toBe(true);
+    expect(core.globMatch('src/**/*.ts', 'lib/a.ts')).toBe(false);
+  });
+
+  it('GlobMatch_PontoEMaisSaoLiterais', () => {
+    expect(core.globMatch('src/a.b+c.ts', 'src/a.b+c.ts')).toBe(true);
+    expect(core.globMatch('src/a.b+c.ts', 'src/aXb+c.ts')).toBe(false);
+    expect(core.globMatch('src/?.ts', 'src/a.ts')).toBe(true);
+    expect(core.globMatch('src/?.ts', 'src//.ts')).toBe(false);
+  });
+});
+
+describe('GlobDirMayMatch', () => {
+  it('GlobDirMayMatch_PodaPastasForaDoGlob', () => {
+    for (const d of ['', 'src', 'src/ui']) expect(core.globDirMayMatch('src/ui/*.ts', d)).toBe(true);
+    for (const d of ['src/ui/x', 'docs', 'lib']) expect(core.globDirMayMatch('src/ui/*.ts', d)).toBe(false);
+    expect(core.globDirMayMatch('src/**/*.ts', 'src/a/b/c')).toBe(true);
+    expect(core.globDirMayMatch('src/**/*.ts', 'docs')).toBe(false);
+  });
+});
+
 describe('CitedSources', () => {
   const known = ['layers.json', 'layers/mock.html', 'src/a.css'];
 
   it('DataSrcComTs_DevolveArquivoUnicoNaRaiz', () => {
     const out = core.citedSources(['src/ui/shell.ts|.shell|3', 'src/ui/shell.ts|.x|9', 'src/ui/tab.ts|.t|1'], known);
     expect(out).toEqual(['src/ui/shell.ts', 'src/ui/tab.ts']);
+  });
+
+  it('CitedSources_ExtrasDepoisDosCitadosRespeitamCapEConhecidos', () => {
+    expect(core.citedSources(['a.ts|.x|1'], ['known.ts'], 3, ['a.ts', 'b.ts', 'known.ts', 'c.ts', 'd.ts', 'x.css'])).toEqual(['a.ts', 'b.ts', 'c.ts']);
   });
 
   it('FolhaCssEMock_FicamForaPorNaoSeremFonteManual', () => {
