@@ -9,5 +9,8 @@ adr: none
 ### Changed
 - O banner de arquivos mudados troca "Recarregar" por "Reanalisar do 0" quando o arquivo mudado é o mock, o `layers.json` ou uma fonte citada; mudança só em folha CSS mantém "Recarregar".
 
+### Removed
+- O item "Exemplos › Traval" do menu Projetos (`DEMOS`, `openDemo` e o estado `demoBase`): abria um mock fixo e desatualizado do Traval. O fixture `fixtures/traval/` continua para os testes e para `?layers=fixtures/traval/`.
+
 ### Perf
 - estimated — no máximo 50 `getFile()` por carga (um por fonte citada), disparados sem `await` depois de a carga terminar; fora do caminho crítico da carga e do orbit.
