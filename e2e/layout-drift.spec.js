@@ -85,8 +85,22 @@ test('StaleBanner_CitedSourceEditedAfterLoad_OffersRestructure', async ({ page }
   await expect(banner(page).getByRole('button', { name: 'Reanalisar do 0' })).toBeVisible();
 });
 
+// rewrites the mock on disk with one more element, as a regenerated snapshot would
+const NEW_MOCK = MOCK.replace('</div></body>', '  <div class="extra" style="height:20px;background:#789">extra</div>\n</div></body>');
+async function replaceMockOnDisk(page, text) {
+  await page.evaluate(async (next) => {
+    const h = await (await window.__proj.getDirectoryHandle('layers')).getFileHandle('mock.html');
+    const w = await h.createWritable(); await w.write(next); await w.close();
+  }, text);
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  await expect(banner(page)).toContainText('mudaram no disco', { timeout: 5000 });
+}
+const nodeCount = async (page) => (await readNodes(page)).els.length;
+
 test('Restructure_Confirmed_BacksUpLayoutAndReloadsFromZero', async ({ page }) => {
   await connect(page);
+  const before = await nodeCount(page);
+  await replaceMockOnDisk(page, NEW_MOCK);
   await banner(page).getByRole('button', { name: 'Reanalisar do 0' }).click();
   await page.getByRole('button', { name: 'Reanalisar', exact: true }).click();
   const readSaved = () => page.evaluate(async () => {
@@ -107,10 +121,14 @@ test('Restructure_Confirmed_BacksUpLayoutAndReloadsFromZero', async ({ page }) =
   expect(names.some((n) => n.endsWith('/mock.html'))).toBe(true);
   expect(Object.values(saved).some((t) => t.includes('data-src="src/ui/shell.ts|.shell|3"'))).toBe(true);
   expect(Object.values(saved).some((t) => t.includes('"name":"Drift"'))).toBe(true);
+  expect(Object.values(saved).every((t) => !t.includes('class="extra"')), 'the backup is the layout that was loaded, not the new disk file').toBe(true);
+  await expect.poll(() => nodeCount(page), { timeout: 10000 }).toBe(before + 1);
 });
 
 test('Restructure_BackupFails_DoesNotReload', async ({ page }) => {
   await connect(page);
+  const before = await nodeCount(page);
+  await replaceMockOnDisk(page, NEW_MOCK);
   await page.evaluate(() => {
     const d = window.__proj;
     d.queryPermission = async ({ mode }) => (mode === 'read' ? 'granted' : 'denied');
@@ -123,8 +141,7 @@ test('Restructure_BackupFails_DoesNotReload', async ({ page }) => {
     try { await window.__proj.getDirectoryHandle('.design-history'); return true; } catch (e) { return false; }
   });
   expect(hasHistory, 'no backup directory is left behind').toBe(false);
-  const { els } = await readNodes(page);
-  expect(els.length, 'the loaded project stays mounted').toBeGreaterThan(1);
+  expect(await nodeCount(page), 'the loaded project was not reloaded').toBe(before);
 });
 
 test('LayoutDrift_At1024_BannerKeepsBox', async ({ page }) => {
