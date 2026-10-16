@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 38 concluídos, 1 parcial, 8 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 39 concluídos, 1 parcial, 8 abertos.
 
 ## A. Setup local (visual idêntico)
 
@@ -25,6 +25,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 38 concluídos
 - [x] Pasta local sem `layers.json`: auto-criação de um manifesto mínimo (`LayersCore.deriveManifest`, heurística portada de `tools/layers-derive.js`) quando a conexão veio de um clique (`useDir(dir, true)`); reconexão sem gesto (`restoreSession`) nunca escreve sozinha — cai no mesmo painel com um botão "Criar layers.json" para o mesmo processo sob clique explícito. `layers.json` existente nunca é sobrescrito (recheque de existência imediatamente antes da gravação).
 - [x] Avisar quando um seletor de `interactions` não resolve no mock (`LayersCore.deadInteractions`): a carga acrescenta um aviso com os três primeiros e a superfície sem alvo ganha o rótulo "sem alvo" no menu ⚡ Interagir; `e2e/dead-interactions.spec.js`. Medido no spike da fatia 5: 7 das 8 entradas do Traval apontam para classes que o mock autoral não tem (foram escritas contra o app real), e o menu ⚡ Interagir lista sete ações sem efeito. Ver `docs/superpowers/reports/2026-09-13-spike-superficies-latentes.md` §5.
 - [x] Undo/redo global (câmera fora; ajustes de propriedade e código dentro): Ctrl+Z, Ctrl+Shift+Z e Ctrl+Y sobre snapshots de `changes[]` (`LayersCore.inlineDelta`), pilha de 100 passos zerada ao recarregar ou aplicar; `e2e/undo-redo.spec.js`.
+- [x] Deriva do layout e "Reanalisar do 0": fontes `.ts`/`.js` citadas em `data-src` vigiadas, banner "Mock mais antigo que a fonte" na carga, backup do `layers.json` e do mock em `.design-history/layout-*/` antes de reler do zero, aborta se o backup falha (`LayersCore.citedSources`/`layoutDrift`/`staleKind`/`layoutBackupPaths`); `e2e/layout-drift.spec.js`.
 - [x] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir): `layers/v1/pending`, validade por hash das fontes (tudo-ou-nada), toast de restaurados/descartados; `e2e/pending-persist.spec.js`.
 - [x] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Origem TS/JS aparece como "manual" no cabeçalho do painel de propriedades e na lista de Ajustes (S2.15; `e2e/manual-marker.spec.js`).
 
