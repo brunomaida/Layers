@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 94,
     "docs": [],
     "children": [
       {
@@ -988,6 +988,32 @@
           }
         ],
         "reason": "`layers.json › watch` lista globs de fontes TS/JS; eles entram em `citedSources` com teto e a deriva avisa quando o código muda depois do mock (G3, G10)",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S2.22e",
+        "type": "spec",
+        "name": "Ação `attr` em interactions",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "wip",
+        "statusLabel": "In Progress",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 60,
+        "docs": [
+          {
+            "name": "2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/specs/2026-10-16-s2-22-loader-checkchanges-design.md)",
+            "title": "2026-10-16-s2-22-loader-checkchanges-design.md)"
+          }
+        ],
+        "reason": "Mock estático não alterna `data-dock`, `data-collapsed` nem `aria-*`: `attr: {selector, name, value}` no motor de interações, só `data-*`/`aria-*` (G6)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
