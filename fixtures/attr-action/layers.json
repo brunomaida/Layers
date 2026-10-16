@@ -1,0 +1,13 @@
+{
+  "name": "Attr action",
+  "viewport": { "width": 600, "height": 300 },
+  "mock": "index.html",
+  "interactions": [
+    { "key": "dock", "label": "Dock", "groups": [{ "label": "Lado", "items": [
+      { "label": "Esquerda", "attr": { "selector": "#dock", "name": "data-dock", "value": "left" } },
+      { "label": "Aberto", "attr": { "selector": "#dock", "name": "aria-expanded", "value": "true", "off": "false" } },
+      { "label": "Inválido", "attr": { "selector": "#dock", "name": "onclick", "value": "x" } },
+      { "label": "Sem alvo", "attr": { "selector": ".ghost", "name": "data-x", "value": "1" } }
+    ] }] }
+  ]
+}
