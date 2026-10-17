@@ -1485,6 +1485,7 @@ describe('PushSnapshot', () => {
 });
 
 const pendingChange = (o) => ({ key: '0.1|color', id: '0.1', ids: ['0.1'], name: '.a', src: 'a.css|.a|3', prop: 'color', from: 'red', fromInline: { '0.1': '' }, to: 'blue', scope: 'one', decided: false, scopedSel: null, ...o });
+const pendingRequest = (o) => ({ id: 'r1', layoutId: 'L1', nodeKey: '0.1', path: 'body>div', text: 'make it bigger', createdAt: 1000, ...o });
 const memStorage = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } }; };
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -1591,11 +1592,73 @@ describe('RestorePlan', () => {
 
   it('HashDiferente_DescartaTudo', () => {
     const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({}), pendingChange({ key: 'k2' })] };
-    expect(core.restorePlan(entry, 'outro')).toEqual({ keep: [], dropped: 2 });
+    expect(core.restorePlan(entry, 'outro')).toEqual({ keep: [], dropped: 2, requests: [], confirm: true });
   });
 
   it('EntryNula_VazioSemDescarte', () => {
-    expect(core.restorePlan(null, 'h')).toEqual({ keep: [], dropped: 0 });
+    expect(core.restorePlan(null, 'h')).toEqual({ keep: [], dropped: 0, requests: [], confirm: false });
+  });
+
+  it('HashDiferente_MantemRequestsComConfirm', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({}), pendingRequest({ id: 'r2' })] };
+    const plan = core.restorePlan(entry, 'outro');
+    expect(plan.keep).toEqual([]);
+    expect(plan.dropped).toBe(1);
+    expect(plan.confirm).toBe(true);
+    expect(plan.requests.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(plan.requests[0]).not.toBe(entry.requests[0]);
+  });
+
+  it('HashIgual_ConfirmFalse', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({})] };
+    const plan = core.restorePlan(entry, 'h');
+    expect(plan.confirm).toBe(false);
+    expect(plan.dropped).toBe(0);
+    expect(plan.keep).toHaveLength(1);
+    expect(plan.requests).toEqual(entry.requests);
+    expect(plan.requests[0]).not.toBe(entry.requests[0]);
+  });
+
+  it('EntradaSemRequests_RequestsVazio', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})] };
+    expect(core.restorePlan(entry, 'h').requests).toEqual([]);
+    expect(core.restorePlan(entry, 'outro').requests).toEqual([]);
+  });
+});
+
+describe('ValidRequest', () => {
+  it('CamposObrigatorios_Valida', () => {
+    expect(core.validRequest(pendingRequest({}))).toBe(true);
+  });
+
+  it('CampoObrigatorioAusenteOuTipoErrado_Rejeita', () => {
+    ['id', 'layoutId', 'nodeKey', 'path', 'text', 'createdAt'].forEach((k) => {
+      expect(core.validRequest(pendingRequest({ [k]: undefined }))).toBe(false);
+      expect(core.validRequest(pendingRequest({ [k]: k === 'createdAt' ? '1' : 1 }))).toBe(false);
+    });
+  });
+
+  it('AncorasOpcionaisValidas_Aceita', () => {
+    expect(core.validRequest(pendingRequest({ name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p' }))).toBe(true);
+    expect(core.validRequest(pendingRequest({ pendente: null }))).toBe(true);
+  });
+
+  it('AncoraOpcionalTipoErrado_Rejeita', () => {
+    const bad = { name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1 };
+    Object.keys(bad).forEach((k) => {
+      expect(core.validRequest(pendingRequest({ [k]: bad[k] }))).toBe(false);
+    });
+    expect(core.validRequest(pendingRequest({ texts: ['x', 1] }))).toBe(false);
+  });
+
+  it('ChaveExtraDesconhecida_Ignora', () => {
+    expect(core.validRequest(pendingRequest({ extra: 1 }))).toBe(true);
+  });
+
+  it('ArrayOuNaoObjeto_Rejeita', () => {
+    [null, undefined, 'x', 1, true, [], [pendingRequest({})]].forEach((v) => {
+      expect(core.validRequest(v)).toBe(false);
+    });
   });
 });
 
@@ -1674,6 +1737,100 @@ describe('SetPending / GetPending', () => {
     const st = memStorage();
     st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop: 'cssText' })] } } }));
     expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+});
+
+describe('GetPending', () => {
+  it('SemRequests_LeComoVazio', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})] } } }));
+    const e = core.getPending(st, 'fx:a');
+    expect(e.requests).toEqual([]);
+    expect(e.changes).toHaveLength(1);
+  });
+
+  it('RequestInvalida_DescartaSoRequests', () => {
+    const st = memStorage();
+    const reqs = [pendingRequest({}), pendingRequest({ id: 5 }), null, 'x', [], pendingRequest({ id: 'r3', depth: 'x' }), pendingRequest({ id: 'r4' })];
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: reqs } } }));
+    const e = core.getPending(st, 'fx:a');
+    expect(e.requests.map((r) => r.id)).toEqual(['r1', 'r4']);
+    expect(e.changes).toHaveLength(1);
+  });
+
+  it('RequestsNaoArray_LeComoVazio', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: 'x' } } }));
+    expect(core.getPending(st, 'fx:a').requests).toEqual([]);
+  });
+
+  it('ChangeInvalidaComRequests_DevolveNull', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ ids: 'x' })], requests: [pendingRequest({})] } } }));
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('RoundTripRequests_PreservaAncoras', () => {
+    const st = memStorage();
+    const r = pendingRequest({ name: 'n', texts: ['a'], pendente: null });
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [r] }, 1000);
+    expect(core.getPending(st, 'fx:a').requests).toEqual([r]);
+  });
+});
+
+describe('SetPending', () => {
+  it('SoRequests_NaoApaga', () => {
+    const st = memStorage();
+    expect(core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000)).toBe(true);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.changes).toEqual([]);
+    expect(e.requests).toHaveLength(1);
+  });
+
+  it('SemChangesNemRequests_NaoGrava', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [] }, 2000);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('SemCampoRequests_TrataComoVazio', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    expect(core.getPending(st, 'fx:a').requests).toEqual([]);
+  });
+
+  it('Teto200Changes_NaoDerrubaRequests', () => {
+    const st = memStorage();
+    const many = Array.from({ length: core.PENDING_CAP + 1 }, (_, i) => pendingChange({ key: 'k' + i }));
+    core.setPending(st, 'fx:a', { hash: 'h', changes: many, requests: [pendingRequest({})] }, 1000);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.changes).toEqual([]);
+    expect(e.requests).toHaveLength(1);
+  });
+
+  it('RequestsAcimaDoTeto_TruncaNas200Primeiras', () => {
+    const st = memStorage();
+    const many = Array.from({ length: core.PENDING_CAP + 5 }, (_, i) => pendingRequest({ id: 'r' + i }));
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: many }, 1000);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.requests).toHaveLength(core.PENDING_CAP);
+    expect(e.requests[0].id).toBe('r0');
+    expect(e.requests[core.PENDING_CAP - 1].id).toBe('r' + (core.PENDING_CAP - 1));
+  });
+
+  it('EntryNullComRequests_RemoveEntrada', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000);
+    core.setPending(st, 'fx:a', null, 2000);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('OutroProjetoSoComRequests_Preserva', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000);
+    core.setPending(st, 'fx:b', { hash: 'h', changes: [pendingChange({})] }, 2000);
+    expect(core.getPending(st, 'fx:a').requests).toHaveLength(1);
   });
 });
 
