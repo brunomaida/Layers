@@ -68,7 +68,7 @@ Ordem de merge e motivo:
 | # | Leaf | Por quê nesta posição |
 |---|---|---|
 | 1 | S7.3 | Pronta; resolve cedo as linhas de README, checklist, `_index.md` e roadmap que S7.4 também edita |
-| 2 | S3.4 | Sem sobreposição de código com a árvore e os planos; só `RELEASE-CHECKLIST.md:44`; regenera baselines do menu uma vez |
+| 2 | S3.4 | Sem sobreposição de código com a árvore e os planos; só `RELEASE-CHECKLIST.md:44`; zero diff visual (baselines geradas na `develop`, não regeneradas) |
 | 3 | S4.8 | Diagnóstico não mexe em `index.html`; o fix é em `Plane`/`scene()`, longe da árvore |
 | 4 | S4.7 | Mede sobre a `develop` já com o resultado da S4.8; a árvore libera a região para a S3.3 |
 | 5 | S3.3 | Edita `title` da árvore já virtualizada e move `SHORTCUTS` para o core |
@@ -80,7 +80,8 @@ Regiões por par (resolução esperada):
 |---|---|---|
 | S4.8 × S4.7 | `e2e/perf.spec.js` (`EXPECTED`, `test.fail` 146-153), checklist `:52`, `ARCHITECTURE.md:126` | Serializar: S4.8 primeiro; a S4.7 rebaseia e mede de novo |
 | S4.7 × S3.3 | título/estrutura da linha da árvore `:2214-2230`, template `:273-283` | S3.3 depois da S4.7; só strings de `title`, prefixo preservado |
-| S3.3 × S3.4 | trigger do menu Aparência `:92` vs `:95`, `:102` | Hunks a 3 linhas; S3.4 não toca `data-menu="apar"` nem o prefixo `Aparência · Fonte` |
+| S3.3 × S3.4 | trigger do menu Aparência `:92` vs `:95`, `:102` | Sem hunk em comum: a S3.3 não edita `:92` (revisão do plano da S3.3); a S3.4 não toca `data-menu="apar"` nem o prefixo `Aparência · Fonte` |
+| S4.8 × S4.7 (V1) | `pointer-events:none` nos planos durante o drag zera o `hoverId`, premissa do memo da S4.7 | Se a V1 entrar, a S4.7 refaz o gate da Task 1 depois do rebase, não só a medição final |
 | S3.3 × S7.4 | `SHORTCUTS` `:828-836` | S7.4 depois; guarda lê o registro do core |
 | S7.3 × S7.4 | README (Estrutura), checklist `:85-88`, `_index.md` | S7.3 mescla antes; S7.4 rebaseia |
 | S4.8 × S3.4 | `scene()` `:2106` lê `s.wire`/`wireAlpha` | S4.8 não mexe em `:2106` |
@@ -97,7 +98,8 @@ Passos de orquestração, expandidos em tasks abaixo:
 
 ### Task A: Pré-voo
 
-1. Resolver D1-D5 (callouts abaixo) com o usuário. → verificar: cada callout com resposta registrada neste plano.
+0. **Mesclar primeiro a branch `docs/261016-0-wave-3-plan` em `develop`** (PR, gate humano). Pré-condição de todas as leaves: os planos já estão em `develop`; nenhuma leaf copia arquivo de plano por `git checkout <ref> -- docs/...` nem por cherry-pick (evita add/add e `docs/_index.md` divergente). Cada leaf trabalha em worktree próprio: `git fetch origin && git worktree add .claude/worktrees/<leaf> -b <branch> origin/develop`, depois `npm ci`. Tipo de branch: `feature/` (`perf/` não existe em `fact-git-conventions`), `refactor/` na S3.4, `docs/` na S7.4. → verificar: `git ls-tree develop docs/superpowers/plans/` lista o plano geral e os cinco planos.
+1. Resolver D1-D8 (callouts abaixo) com o usuário. → verificar: cada callout com resposta registrada neste plano.
 2. Escrever os 5 planos de leaf (`docs/superpowers/plans/2026-10-16-<leaf>.md`), a partir dos esboços da seção "Esboço por leaf", e passar `plan-concision-review`. → verificar: cada plano com Tasks, Review Focus e `## Model Routing`.
 3. Revisão adversarial dos 5 planos no Architect (`adversarial-reviewer`, somente leitura). → verificar: findings registrados; plano ajustado ou finding descartado com motivo.
 4. Regra do contador: **nenhuma leaf edita a linha 8 do checklist**; a Task E recontou uma vez com `grep -c`.
@@ -129,7 +131,7 @@ Para cada leaf, na ordem acima, depois que o usuário autoriza o merge dela:
 
 ## Esboço por leaf
 
-**S3.4 (opção A, se D1 = A)** — 5 tasks: (1) dump de `getComputedStyle(documentElement)` das variáveis `--*` para os 7 `THEMES` × accent × origem × seleção, gravado antes; (2) `APPEARANCE_DEFAULTS` alimenta `applyTheme`, `opts`, `cfgVals`, `sanitizeUi`; grep sem `'Dark'` nem `|| 85` fora da constante; (3) remover as 6 props de `data-props` e o código morto (`ph`, `logoGrad`, `DEFAULT_GRAD`, `randGrad`); (4) Vitest `ResolveAppearance_*` e `SanitizeUi_*` se a resolução for ao core; (5) docs (`LOCAL-SETUP.md:94-107`, `ARCHITECTURE.md:74`, nova entrada em `architecture-decisions.md` superando `:130`, checklist `:44`).
+**S3.4 (opção A, se D1 = A)** — 5 tasks: (1) dump de `getComputedStyle(documentElement)` das variáveis `--*` para os 7 `THEMES` × accent × origem × seleção, gravado antes; (2) `APPEARANCE_DEFAULTS` alimenta `applyTheme`, `opts`, `cfgVals`, `sanitizeUi`; grep sem `'Dark'` nem `|| 85` fora da constante; (3) remover as 6 props de `data-props` e o código morto (`logoGrad`, `DEFAULT_GRAD`, `randGrad`; `ph` fica, ver D1); (4) Vitest `ResolveAppearance_*` e `SanitizeUi_*` se a resolução for ao core; (5) docs (`LOCAL-SETUP.md:94-107`, `ARCHITECTURE.md:74`, nova entrada em `architecture-decisions.md` superando `:130`, checklist `:44`).
 
 **S4.8** — 6 tasks: (1) `planeCensus.empty` e helper de override de CSS em `e2e/perf-helpers.js`, cenários V1-V4 em `e2e/perf.spec.js` (`pointer-events:none`, `will-change:auto`, ocultar planos sem pintura, ocultar 1 a cada 2), 3 runs limpas; (2) fix escolhido pelo resultado (`Plane` `:909/:912`, predicado `:2122`); (3) Vitest do predicado se for ao core; (4) E2E `Culling_DragEmptyPlanes_HiddenOnlyWhenNoPaint`; (5) perf final e `test.fail` (`perf.spec.js:151`); (6) docs.
 
@@ -159,21 +161,31 @@ Executor: A.5, E.4 e F, sempre com formato, tokens de recusa e validação pelo 
 > - **Opção A (recomendada)**: o código vira dono dos defaults (`APPEARANCE_DEFAULTS`); `data-props` perde `theme`, `accent`, `selectColor`, `originColors`, `sliderScale`, `panelHeader` e mantém `fixture`, `histMax`. Zero mudança visual se os defaults forem copiados exatamente. Perde a capacidade de mudar `accent` e `sliderScale` pelo host de design.
 > - **Opção B**: A, mais controles novos para `accent` e `sliderScale` no menu Aparência. Muda o popover (viola visual congelado) e cria chave nova em `layers/v1/ui`.
 > - **Opção C**: só consolidar duplicações internas e manter `data-props`. Não cumpre o texto do checklist ("tweaks do host saem").
-> Também decidir: `panelHeader` está morto (`hs = 'B'` fixo, `index.html:2293`); manter inerte (recomendado) ou remover do menu (muda o visual).
+> `panelHeader` **não** é código morto: `ph` (`index.html:2293`) escolhe entre três cabeçalhos do painel direito (`phA/phB/phC`, `:393/:458/:528`); só `hs` (`hdrA/B/C`) é fixo. Remover `ph` mudaria o painel de quem tem A ou C salvo, e o gate de pixels não vê isso (só renderiza com projeto). O plano da S3.4 mantém `ph` e `panelHeader` vivos (zero mudança visual); `bmAlpha: 15` entra na constante.
 
 > [!DECISION] D2 — S3.3: formato e escopo dos tooltips
+> - **Escopo aplicado no plano da S3.3**: Opção A (botões sem texto visível, mais os com tecla) **mais** o wrapper de "Ações ▾" (hoje herda o `title` "Recolher / expandir"). Ficam sem sufixo de tecla: "Todas", chips `L0…Ln`, "↑ Pai" e a linha da árvore (mantêm o título atual). Isto sobrescreve a lista de lacunas do esboço da S3.3.
 > - **Formato**: literal "Ação · atalho" (como diz o checklist, regrava ~25 títulos) ou manter "Ação (K)" já usado e corrigir o texto do checklist (recomendado).
 > - **Escopo**: só controles com atalho, ou todo botão de ação sem texto visível, inclusive os sem tecla, só com o nome (recomendado).
 > - **Registro no core**: mover `SHORTCUTS` para `lib/layers-core.js` (recomendado; fecha a divergência do `M` e dá fonte única à S7.4) ou só ajustar strings (S7.4 passa a ler `index.html` por regex).
 
 > [!DECISION] D3 — S4.7: janela completa ou memo
-> Decidir depois da Task 1 (medição do teto): se o ganho do limite superior for < 10 % do frame, parar e escolher entre (a) memo da reconstrução de `treeRows`/`elemRows` e não calcular a aba inativa, mais simples; (b) janela completa com espaçadores, linhas de código de altura variável e `revealInTree` por índice. Recomendação: tentar (a) primeiro. Não adicionar navegação por setas na árvore (colide com S3.3/S7.4).
+> Decidir depois da Task 1 (medição do teto, também com a V1 da S4.8 simulada): se o ganho do limite superior for < 10 % do frame, **parar e voltar ao usuário** para escolher entre (a) memo da reconstrução de `treeRows`/`elemRows` e não calcular a aba inativa, mais simples; (b) janela completa com espaçadores, linhas de código de altura variável e `revealInTree` por índice. Recomendação: tentar (a) primeiro. Não adicionar navegação por setas na árvore (colide com S3.3/S7.4).
 
 > [!DECISION] D4 — S4.8: comportamento durante o drag
-> V1 (`pointer-events:none` nos planos durante o drag) elimina o hit-test, mas o hover de plano some durante o arrasto e afeta o "clique após drag" (`this.dragged`, `:1560`). Aceitável? Se nenhuma variante barata fechar o orçamento de 50 fps, escolher entre aceitar ~42 fps com `test.fail` ou abrir uma leaf nova de "agrupamento de folhas" (mudança estrutural do DOM e do hit-test).
+> V1 (`pointer-events:none` nos planos durante o drag) elimina o hit-test, e a única mudança real é o hover de plano sumir durante o arrasto (soltar já não seleciona hoje: `H.click` retorna em `this.dragged`, `:1560`). Aceitável? Se nenhuma variante barata fechar o orçamento de 50 fps, escolher entre aceitar ~42 fps com `test.fail` ou abrir uma leaf nova de "agrupamento de folhas" (mudança estrutural do DOM e do hit-test).
 
 > [!DECISION] D5 — S7.4: cobertura e lacunas de `SHORTCUTS`
 > Adicionar as linhas `M` (medir), `=` (alias de zoom) e o Esc completo à tabela `SHORTCUTS` (fonte única, 1-3 linhas em `index.html:829-835`). Cobrir também alt+clique, ⚡ Interagir e a ação `attr` em `shortcuts.md`, ou só linkar `docs/layers-json.md` (recomendado, sem duplicar). A doc deve dizer Ctrl/Cmd, já que `Meta` vale como Ctrl (`:1611`, `:1617`).
+
+> [!DECISION] D6 — trailer dos commits
+> O histórico da `develop` está dividido: os 37 commits da S2.22b-e levam `Claude-Session:`; da S2.22a para trás, S4.6 e S3.2 não levam. Os planos S3.2, S4.6 e S5.7 proíbem o trailer; o `CLAUDE.md` do projeto e o global proíbem atribuição a IA. **Recomendado: sem trailer** em todos os commits e PRs da Onda 3 (os planos não escrevem trailer nos comandos). Se você quiser manter a URL da sessão, diga e reverto a regra.
+
+> [!DECISION] D7 — S4.7: foco durante a rolagem
+> Se a janela for construída, a Option A congela a faixa montada enquanto houver foco dentro do contêiner (textarea ou botão de linha) e atualiza ao sair. Efeito visível: durante a rolagem com foco, a área fora da faixa fica vazia até o blur. Aceitar explicitamente, ou escolher blur automático ao mover a janela.
+
+> [!DECISION] D8 — Esc no campo de propriedade
+> `SHORTCUTS` diz "Esc (no campo): descartar a edição" (`index.html:833`), mas `index.html:2173` chama `delBuf(k)` e depois `blur()`, e o `onBlur` (`commit`) pode aplicar o valor. A S3.3 faz a checagem no navegador; se o valor for aplicado, corrigir o runtime ou o texto da linha, e a S7.4 não escreve "descarta". Quem corrige: leaf nova de runtime ou ajuste dentro da S3.3?
 
 > [!DECISION] gh-issue-gate
 > Issue-worthy: **No** — leaves independentes já rastreadas pelo roadmap; sem issue guarda-chuva nova (a #62 continua da S2.22).
