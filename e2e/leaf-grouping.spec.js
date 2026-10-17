@@ -354,9 +354,9 @@ test.describe('visual', () => {
     await page.mouse.move(2, 2);
     await page.waitForTimeout(700);
     await frames(page);
-    // Not exact, by compositor history and not by DOM: the final DOM is identical to the base (outerHTML diff
-    // empty) and the base itself is deterministic (4 runs, 0 pixels), yet re-creating the base's layers without
-    // touching the DOM (display none/block on the world) changes 6 pixels by 1 level, and the remounted planes
+    // Not exact, by compositor history and not by DOM: the final DOM is identical to the base except the data-plane
+    // attribute (outerHTML diff), and the base itself is deterministic (4 runs, 0 pixels), yet re-creating the base's
+    // layers without touching the DOM (display none/block on the world) changes 6 pixels by 1 level, and the remounted planes
     // differ from the base by 4 to 6 pixels by 1 level (antialiased edges). The gate is the base's own noise:
     // no pixel more than 1 level off in any channel.
     await shot(page, 'static-after-drag', { level: 1 }, 0);
