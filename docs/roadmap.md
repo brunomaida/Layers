@@ -53,6 +53,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | [](superpowers/plans/2026-10-14-s3-2-menu-open-pattern.md) | [](../changelog.d/feature-261014-0-s3-2-menu-open-pattern.md) | — | done |
 | S3.3 | 2 | S3 | Tooltips ação e atalho | checklist C | — | [](superpowers/plans/2026-10-16-s3-3-action-tooltips.md) | [](../changelog.d/feature-261016-0-s3-3-action-tooltips.md) | — | done |
 | S3.4 | 2 | S3 | Fonte única de aparência | checklist C | — | [](superpowers/plans/2026-10-16-s3-4-appearance-source.md) | [](../changelog.d/refactor-261016-0-s3-4-appearance-source.md) | — | done |
+| S3.5 | 2 | S3 | Funções visuais novas | Menu de botão direito (Explodir daqui, Recolher até aqui) e Requisição no painel Ajustes; inclui a base local do mock | [](text-specs/2026-10-16-s3-5-visual-functions-new.md) | — | — | — | registered |
 | S3.6 | 2 | S3 | Esc no campo de propriedade descarta a edição | achado da S3.3, issue #73 | — | [](superpowers/plans/2026-10-17-s2-s4-closeout.md) | [](../changelog.d/fix-261017-73-s3-6-esc-property-field.md) | #73 | done |
 | S4 | 1 | — | Performance | Checklist D; orçamentos scan/orbit | — | — | — | — | in-progress |
 | S4.1 | 2 | S4 | contain e will-change só em drag | v2.22 | — | — | — | — | done |
@@ -97,3 +98,5 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S8.4 | 2 | S8 | apply_patch e porta Node de writeText | Modelo de confiança primeiro | — | — | — | — | registered |
 | S8.5 | 2 | S8 | Proveniência SPA via data-vite-dev-id | Slice 4 do plano dc; depende de S8.2 | — | — | — | — | registered |
 | S8.6 | 2 | S8 | Re-snapshot sem renovar mtimes com changes pendentes | Slice 5 do plano dc; medir antes; depende de S8.3 | — | — | — | — | registered |
+| S9 | 1 | — | Layouts múltiplos | Leitura de repositórios com várias telas: stack e vista espacial de layouts, funções por layout | — | — | — | — | registered |
+| S9.1 | 2 | S9 | Layouts newlogic | Modelo de cobertura mono × múltiplos layouts, stack/3D espacial configurável e funções atreladas ao layout | [](text-specs/2026-10-17-s9-1-layouts-newlogic.md) | — | — | — | registered |
