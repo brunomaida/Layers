@@ -202,4 +202,4 @@ created: 2026-10-17
 > Classificação: S3.5 = meso (leaf de S3); **S9 = macro nova** (Layouts múltiplos) com S9.1 = meso. Correção ao desenho anterior que dizia "sem fase nova". T6 e T7 (pedido de 2026-10-17) entram na S3.5 como parte da fatia da base do mock: sem nova linha no tracker.
 
 > [!DECISION] execution
-> Method: **Native** (Workhorse executa T1-T3, T5 na sessão; T4 passo 2 despacha um subagente Opus; revisão final por `adversarial-reviewer`). Poucas tarefas, dependências lineares, sem hot path.
+> Method: **Subagent-driven** (pedido do usuário, para o Atlas mostrar as tasks). Um implementador por task (T6 Opus para o design, T7 Workhorse) e revisor fresco por task; cada `description` de dispatch começa com o token da leaf (`S3.5 Task 6 …`) e cada commit de task leva `(S3.5 Task <id>)`. O plano está ligado às linhas S3.5 e S9.1 do tracker, então as duas leaves o mostram; dispatches de `S9.1 Task <id>` aparecem quando o plano de código da S9.1 existir.
