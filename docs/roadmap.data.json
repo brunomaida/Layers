@@ -1910,15 +1910,15 @@
     "name": "Release e governança",
     "start": "2026-10-13",
     "end": "2026-10-19",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "bug",
       "docs",
       "scaffold",
       "tests"
     ],
-    "progress": 96,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -2225,18 +2225,24 @@
         "name": "Remover Claude-Session dos docs e travar o trailer",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "docs-261017-0-s7-9-drop-session-trailer-refs.md)",
             "type": "report",
             "path": "/[](../changelog.d/docs-261017-0-s7-9-drop-session-trailer-refs.md)",
             "title": "docs-261017-0-s7-9-drop-session-trailer-refs.md)"
+          },
+          {
+            "name": "2026-10-17-s7-9-drop-session-trailer-refs.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-17-s7-9-drop-session-trailer-refs.md",
+            "title": "Implementation Report — s7-9-drop-session-trailer-refs"
           }
         ],
         "reason": "Reescrita de histórico de 2026-10-17; planos mandavam o trailer e o CLAUDE.md proíbe",
