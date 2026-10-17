@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
 <style>
 body{margin:0}
-a{color:#60a5fa}a:hover{color:#7db8ff}
+a{color:#8b96a3}a:hover{color:#adb5be}
 </style>
 </helmet>
 <div style="{{ vars }}width:1240px;height:760px;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:16px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px">
@@ -91,21 +91,25 @@ a{color:#60a5fa}a:hover{color:#7db8ff}
   <span style="font:500 10px/1.45 'Inter',sans-serif;color:var(--fg3)">Caixas com fonte Segoe UI = tooltip nativo (atributo title), o mesmo mecanismo dos outros tooltips do Layers. Toast da carga: sem mudança, para não ocupar o warn[0] reservado ao aviso de interações mortas (S2.22a). Mock em tema escuro do Traval, valores de exemplo.</span>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Dark","Bright · 1 Papel"],"default":"Dark"},"$preview":{"width":1240,"height":760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"$preview":{"width":1240,"height":760}}'>
 class Component extends DCLogic {
   renderVals() {
     const T = {
-      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#60a5fa', warn: '#f5a623', ok: '#26c281', err: '#ef5350', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg1Rgb: '22,27,34', accRgb: '96,165,250' },
-      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#4f5fb8', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg1Rgb: '244,245,247', accRgb: '79,95,184' }
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
     };
-    const t = { ...(T[this.props.tema] || T['Dark']), sel: '#60a5fa', selRgb: '96,165,250' };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
     const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
-    const H = 160, n = 28; let seed = 23, p = .5; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const H = 160, nCandles = 28; let seed = 23, p = .5; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
     const candles = [];
-    for (let i = 0; i < n; i++) {
+    for (let i = 0; i < nCandles; i++) {
       const o = p, c = Math.min(.88, Math.max(.12, o + (rnd() - .47) * .16)), e = rnd() * .05;
       const hi = Math.max(o, c) + e, lo = Math.min(o, c) - e; p = c;
-      candles.push({ left: (i / n * 100 + .8) + '%', w: (100 / n * .58) + '%', bodyTop: ((1 - Math.max(o, c)) * H) + 'px', bodyH: Math.max(2, Math.abs(c - o) * H) + 'px', wickTop: ((1 - hi) * H) + 'px', wickH: ((hi - lo) * H) + 'px', col: c >= o ? '#26c281' : '#ef5350' });
+      candles.push({ left: (i / nCandles * 100 + .8) + '%', w: (100 / nCandles * .58) + '%', bodyTop: ((1 - Math.max(o, c)) * H) + 'px', bodyH: Math.max(2, Math.abs(c - o) * H) + 'px', wickTop: ((1 - hi) * H) + 'px', wickH: ((hi - lo) * H) + 'px', col: c >= o ? '#26c281' : '#ef5350' });
     }
     const tip = 'Imagem congelada do canvas 808×652, capturada em 16/10/2026 14:57. O gráfico não atualiza no mock; o CSS do contêiner continua editável.';
     const row = (depth, name, o) => ({ depth, name, indent: (8 + depth * 10) + 'px', chev: o && o.leaf ? '' : '▾', countLabel: (o && o.count) || '', hasBadge: !!(o && o.badge), title: (o && o.badge) ? tip : '', bg: (o && o.sel) ? 'rgba(var(--selRgb),.12)' : 'transparent', color: (o && o.sel) ? 'var(--fg0)' : 'var(--fg1)' });
@@ -125,11 +129,11 @@ class Component extends DCLogic {
       vars,
       candles,
       cols: [
-        { label: 'Antes · hoje', tag: '7 canvas vazios', tagBdr: 'rgba(245,166,35,.5)', tagColor: 'var(--warn)', frozen: false, empty: true, chip: false, treeTip: false, axisColor: 'transparent', paneOutline: 'none', rows: rowsFor('before'),
+        { label: 'Antes · hoje', tag: '7 canvas vazios', tagBdr: 'color-mix(in srgb, var(--warn) 50%, transparent)', tagColor: 'var(--warn)', frozen: false, empty: true, chip: false, treeTip: false, axisColor: 'transparent', paneOutline: 'none', rows: rowsFor('before'),
           note: 'cloneNode não copia o bitmap. Gráfico, eixo de preço e eixo de tempo (7 <canvas>) chegam em branco.' },
-        { label: 'Variante A', tag: 'selo na árvore', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', frozen: true, empty: false, chip: false, treeTip: true, axisColor: '#8b949e', paneOutline: '1px solid #60a5fa', rows: rowsFor('a'),
+        { label: 'Variante A', tag: 'selo na árvore', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', frozen: true, empty: false, chip: false, treeTip: true, axisColor: '#8b949e', paneOutline: '1px solid var(--sel)', rows: rowsFor('a'),
           note: 'Selo IMG no slot de badge de cada camada convertida; o title explica. O mock fica intacto no palco.' },
-        { label: 'Variante B', tag: 'selo no palco', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', frozen: true, empty: false, chip: true, treeTip: false, axisColor: '#8b949e', paneOutline: '1px solid #60a5fa', rows: rowsFor('b'),
+        { label: 'Variante B', tag: 'selo no palco', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', frozen: true, empty: false, chip: true, treeTip: false, axisColor: '#8b949e', paneOutline: '1px solid var(--sel)', rows: rowsFor('b'),
           note: 'Selo desenhado pelo Layers (fora do shadow root) no canto de cada imagem congelada; o title explica. Fica por cima do mock e pode cobrir parte do gráfico.' }
       ]
     };

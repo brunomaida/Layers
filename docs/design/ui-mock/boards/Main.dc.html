@@ -11,7 +11,7 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
 <style>
 body{margin:0}
-a{color:#60a5fa}a:hover{color:#7db8ff}
+a{color:#8b96a3}a:hover{color:#adb5be}
 </style>
 </helmet>
 <div style="{{ vars }}width:960px;height:760px;box-sizing:border-box;padding:28px 32px;display:flex;flex-direction:column;gap:20px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px">
@@ -75,14 +75,18 @@ a{color:#60a5fa}a:hover{color:#7db8ff}
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Dark","Bright · 1 Papel"],"default":"Dark"},"$preview":{"width":960,"height":760}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"$preview":{"width":960,"height":760}}'>
 class Component extends DCLogic {
   renderVals() {
     const T = {
-      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#60a5fa', warn: '#f5a623', ok: '#26c281', err: '#ef5350', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg1Rgb: '22,27,34', accRgb: '96,165,250' },
-      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#4f5fb8', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg1Rgb: '244,245,247', accRgb: '79,95,184' }
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
     };
-    const t = { ...(T[this.props.tema] || T['Dark']), sel: '#60a5fa', selRgb: '96,165,250' };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
     const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
     const pick = (on) => on
       ? { bdr: 'rgba(var(--selRgb),.45)', bg: 'rgba(var(--selRgb),.1)', color: 'var(--sel)', mark: '●' }
@@ -102,7 +106,7 @@ class Component extends DCLogic {
         dec('D3', 'Cor de seleção sobre mock claro', 'SELECTS assume “o mock é sempre escuro”. Com G7 o mock pode ser claro.', 'Manter SELECTS como está; o usuário troca a cor se “Branco” sumir.', 'Trocar “Branco” por um tom escuro só quando o host tiver data-theme="light".', 'a')
       ],
       risks: [
-        '1. scopeAst (lib/layers-core.js:271) troca só o “:root” do seletor: :root[data-theme='light'] vira :host[data-theme='light'], que nunca casa. Precisa virar :host([data-theme='light']). As variáveis inline no host funcionam sem isso.',
+        '1. scopeAst (lib/layers-core.js:271) troca só o “:root” do seletor: :root[data-theme=\'light\'] vira :host[data-theme=\'light\'], que nunca casa. Precisa virar :host([data-theme=\'light\']). As variáveis inline no host funcionam sem isso.',
         '2. Os 7 canvas do gráfico viram 7 PNG em data: num mock que já tem 170 KB. Pode valer descartar a camada vazia (z-index 2) ou ter um teto de tamanho.',
         '3. G7, G8 e G12 só existem na linha 61 da spec. A correspondência G7=tema, G8=canvas, G12=L0 segue a ordem do texto.'
       ]

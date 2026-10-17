@@ -14,14 +14,14 @@ body{margin:0}
 a{color:#8b96a3}a:hover{color:#adb5be}
 </style>
 </helmet>
-<div style="{{ vars }}position:relative;width:1240px;height:800px;box-sizing:border-box;display:grid;grid-template-rows:36px minmax(0,1fr);grid-template-columns:minmax(0,1fr) 300px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px;overflow:hidden">
+<div style="{{ vars }}position:relative;width:1440px;height:900px;box-sizing:border-box;display:grid;grid-template-rows:36px minmax(0,1fr);grid-template-columns:minmax(0,1fr) 340px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px;overflow:hidden">
 
   <div style="grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;height:36px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--line1);white-space:nowrap">
     <div style="display:flex;align-items:center;gap:10px;min-width:0">
       <button style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--fg2);font:500 11px/1 'JetBrains Mono',monospace;cursor:pointer"><span style="display:flex;color:var(--sel)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"></path></svg></span><span>Traval</span><span style="color:var(--fg3);font-size:9px">▾</span></button>
       <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--fg3)">11 camadas · 414 elementos</span>
     </div>
-    <span style="font:400 15.6px/1 'Michroma',sans-serif;color:var(--sel)">LAYERS</span>
+    <span style="font:400 15.6px/1 'Michroma',sans-serif;background:{{ logoBg }};-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;justify-self:center">LAYERS</span>
     <div style="display:flex;align-items:center;justify-self:end;gap:6px">
       <button aria-label="Aparência" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 14px/1 'Inter',sans-serif">⚙</button>
       <button aria-label="Atalhos" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5"></rect><path d="M4 7h1M6.5 7h1M9 7h1M11.5 7h1M4 9.5h1M6.5 9.5h3M11.5 9.5h1"></path></svg></button>
@@ -32,7 +32,7 @@ a{color:#8b96a3}a:hover{color:#adb5be}
 
   <div style="position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%, var(--stageA) 0%, var(--bg0) 70%)">
 
-    <div style="position:absolute;left:300px;right:20px;top:60px;bottom:60px;perspective:1500px;perspective-origin:50% 40%">
+    <div style="position:absolute;left:422px;right:20px;top:60px;bottom:60px;perspective:1500px;perspective-origin:50% 40%">
       <div style="position:absolute;left:50%;top:50%;width:520px;height:310px;margin:-155px 0 0 -260px;transform-style:preserve-3d;transform:{{ world }}">
         <sc-for list="{{ planes }}" as="p" hint-placeholder-count="16">
         <div style="position:absolute;left:{{ p.x }};top:{{ p.y }};width:{{ p.w }};height:{{ p.h }};box-sizing:border-box;transform:{{ p.tz }};background:{{ p.bg }};border:{{ p.bdr }};border-radius:1px"></div>
@@ -44,22 +44,22 @@ a{color:#8b96a3}a:hover{color:#adb5be}
       </div>
     </div>
 
-    <div style="position:absolute;left:50%;transform:translateX(-50%);top:0;display:flex;align-items:center;gap:6px;padding:0 10px;white-space:nowrap">
+    <div style="position:absolute;left:720px;transform:translateX(-50%);top:0;width:max-content;max-width:736px;display:flex;flex-wrap:wrap;justify-content:center;align-items:center;gap:2px 6px;padding:0 10px;box-sizing:border-box;white-space:nowrap">
       <button style="height:24px;padding:0 10px;border:1px solid {{ explBdr }};border-radius:4px;background:transparent;color:{{ explColor }};font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase">{{ explGlyph }} Explodido</button>
       <button style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--line1);border-radius:4px;background:transparent;color:var(--fg2);font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8h12M2 5v6M14 5v6M5.5 6.5L4 8l1.5 1.5M10.5 6.5L12 8l-1.5 1.5"></path></svg>Medir</button>
       <sc-for list="{{ sliders1 }}" as="s" hint-placeholder-count="3">
       <label style="display:flex;align-items:center;gap:6px;height:36px;padding:0 4px"><span style="width:10px;height:10px;border:1.5px solid var(--fg3);border-radius:2px"></span><input type="range" min="0" max="100" value="{{ s.v }}" aria-label="{{ s.label }}" style="width:59px;margin:0;accent-color:var(--sel)"></label>
       </sc-for>
-      <span style="width:1px;height:18px;background:var(--line1)"></span>
+      <span style="width:1px;height:18px;background:var(--line1);flex:0 0 auto;margin:0 2px"></span>
       <button style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"></circle><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"></circle><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"></path></svg>Foco</button>
       <sc-for list="{{ sliders2 }}" as="s" hint-placeholder-count="2">
       <label style="display:flex;align-items:center;gap:6px;height:36px;padding:0 4px"><span style="width:10px;height:10px;border:1.5px solid var(--fg3);border-radius:2px"></span><input type="range" min="0" max="100" value="{{ s.v }}" aria-label="{{ s.label }}" style="width:59px;margin:0;accent-color:var(--sel)"></label>
       </sc-for>
-      <span style="width:1px;height:18px;background:var(--line1)"></span>
+      <span style="width:1px;height:18px;background:var(--line1);flex:0 0 auto;margin:0 2px"></span>
       <button style="display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;border:0;background:var(--bg1);color:var(--fg1);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"></path></svg>Interagir<span style="color:var(--fg3);font-size:12px">▾</span></button>
     </div>
 
-    <div style="position:absolute;left:12px;top:48px;bottom:12px;width:262px;display:flex;flex-direction:column">
+    <div style="position:absolute;left:12px;top:86px;bottom:12px;width:384px;display:flex;flex-direction:column">
       <div style="flex:65;min-height:0;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow);overflow:hidden">
         <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
           <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:14px">▾</span>
@@ -106,16 +106,16 @@ a{color:#8b96a3}a:hover{color:#adb5be}
       </div>
     </div>
 
-    <div style="position:absolute;right:12px;bottom:56px;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.88);border:1px solid var(--line1);border-radius:6px">
-      <div style="display:flex;align-items:center;gap:6px;height:18px;padding:0 4px 0 7px;border-bottom:1px solid var(--line0)"><span style="flex:1;font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg3)">Navegação</span><span style="color:var(--fg2);font:600 11px/1 'JetBrains Mono',monospace">–</span></div>
-      <div style="display:grid;grid-template-columns:repeat(3,22px);gap:3px;padding:5px">
+    <div style="position:absolute;right:12px;bottom:52px;z-index:6;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.88);border:1px solid var(--line1);border-radius:6px">
+      <div style="display:flex;align-items:center;gap:6px;height:18px;padding:0 4px 0 7px;border-bottom:1px solid var(--line0)"><span style="flex:1;font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg3)">Navegação</span><span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:-.15em;color:var(--line2)">⋮⋮</span><span style="width:14px;text-align:center;color:var(--fg2);font:600 11px/1 'JetBrains Mono',monospace">–</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,28px);gap:3px;padding:5px">
         <sc-for list="{{ nav }}" as="b" hint-placeholder-count="15">
-        <span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--line1);color:var(--fg2);font:600 10px/1 'JetBrains Mono',monospace">{{ b }}</span>
+        <span style="width:28px;height:28px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--line1);color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace">{{ b }}</span>
         </sc-for>
       </div>
     </div>
 
-    <div style="position:absolute;left:286px;right:12px;bottom:0;display:flex;justify-content:center;padding:10px 12px">
+    <div style="position:absolute;left:12px;right:12px;bottom:0;z-index:8;display:flex;justify-content:center;padding:10px 12px">
       <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:3px 6px;border-radius:6px;background:rgba(var(--bg0Rgb),.82)">
         <span style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Camadas</span>
         <span style="height:24px;display:inline-flex;align-items:center;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:var(--bg2);color:var(--fg0);font:600 11px/1 'JetBrains Mono',monospace">Todas</span>
@@ -132,7 +132,7 @@ a{color:#8b96a3}a:hover{color:#adb5be}
         <span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--fg3)">Componente</span>
         <span style="flex:1;height:1px;background:var(--line1)"></span>
         <span style="font:600 10px/1 'JetBrains Mono',monospace;color:var(--acc)">L3</span>
-        <span style="color:var(--sel);font:600 12px/1 'JetBrains Mono',monospace">⇔</span>
+        <span style="color:var(--fg3);font:600 12px/1 'JetBrains Mono',monospace">⇔</span>
         <span style="color:var(--fg3);font:600 14px/1 'JetBrains Mono',monospace">»</span>
       </div>
       <div style="margin-top:6px;font:600 15px/1.25 'Inter',sans-serif;color:var(--fg0)">.studies-toolbar</div>
@@ -181,7 +181,7 @@ a{color:#8b96a3}a:hover{color:#adb5be}
 
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"explodido":{"editor":"boolean","default":true},"$preview":{"width":1240,"height":800}}'>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Coral"},"explodido":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":900}}'>
 class Component extends DCLogic {
   renderVals() {
     const T = {
@@ -190,10 +190,12 @@ class Component extends DCLogic {
       'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
     };
     const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
-    const sel = S[this.props.selecao] || S['Âmbar'];
+    const sel = S[this.props.selecao] || S['Coral'];
     const n = parseInt(sel.slice(1), 16);
     const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
     const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const mixHex = (a, b, k) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); const c = i => Math.round((((A >> i) & 255) * (1 - k)) + (((B >> i) & 255) * k)); return '#' + [16, 8, 0].map(i => c(i).toString(16).padStart(2, '0')).join(''); };
+    const logoBg = 'linear-gradient(95deg,' + mixHex(sel, '#ffffff', .45) + ',var(--sel),' + mixHex(sel, '#000000', .35) + ')';
     const expl = this.props.explodido ?? true;
     const gap = expl ? 34 : 0;
     const pl = (x, y, w, h, d, o) => ({ x: x + 'px', y: y + 'px', w: w + 'px', h: h + 'px', tz: 'translateZ(' + (d * gap) + 'px)',
@@ -232,7 +234,7 @@ class Component extends DCLogic {
       { title: 'Espaçamento', total: '10 · 1', props: [P('Padding', '4px 12px', { dot: dE, ed: true }), P('Margin', '0', { unit: 'px' })] }
     ];
     return {
-      vars, planes, candles, tree, changes, rail, groups,
+      vars, logoBg, planes, candles, tree, changes, rail, groups,
       world: expl ? 'rotateX(24deg) rotateY(-34deg) rotateZ(4deg)' : 'rotateX(0deg)',
       selTag: { x: '0px', y: '24px', tz: 'translateZ(' + (3 * gap + 1) + 'px)' },
       explBdr: expl ? 'var(--sel)' : 'var(--line1)', explColor: expl ? 'var(--sel)' : 'var(--fg2)', explGlyph: expl ? '▧' : '▤',
