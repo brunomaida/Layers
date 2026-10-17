@@ -122,8 +122,8 @@ Só para servir e testar; o app em si roda no navegador.
 ## Como manter
 
 - `npm test` falha em `test/support-matrix.test.js` nestes casos: a matriz diverge de `e2e/__snapshots__/compat-probes.json` (uma coluna por motor; gravação `sim` só onde há `showDirectoryPicker`, recusa só onde não há); uma célula foge do formato da legenda ou cita um E, M ou L inexistente; cita um teste que não existe em `e2e/`; cita uma mensagem ausente do `index.html`; ou ainda cita M1/M2 depois que a linha "Compatibilidade" do checklist E for fechada.
-- Mudar um texto de recusa ou um título citado exige atualizar a matriz no mesmo commit (o `npm test` reprova). Outras branches que mexam nos 6 toasts ou renomeiem testes citados (ex.: S3.4) devem cuidar disso.
+- Mudar um texto de recusa ou um título citado exige atualizar a matriz no mesmo commit (o `npm test` reprova). Outras branches que mexam nos 6 toasts ou renomeiem testes citados devem cuidar disso.
 - Ao concluir um passo M1-M5, troque as células `não verificado · M<n>` pela evidência e registre a data aqui e no relatório.
-- Ao fechar M1/M2, revise: Resumo, Verificação pendente, L3, README:13 e G:81 do checklist. Após M4/M5, revise README:13 e as células M4/M5.
+- Ao fechar M1/M2, revise: Resumo, Verificação pendente, L3, README:13 e o item "Matriz de suporte" do G no checklist. Após M4/M5, revise README:13 e as células M4/M5.
 - Todo token entre crases no formato `Maiúscula_..._...` é tratado como título de teste pelo guard: cite outros tokens fora desse formato.
 - Navegador atualizado: rode de novo `e2e/browser-compat.spec.js` (comandos no relatório, § 7) e atualize Versões testadas.
