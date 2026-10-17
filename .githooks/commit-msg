@@ -1,0 +1,5 @@
+#!/bin/sh
+# Delegate to the global commit-msg hook (strips Claude-Session trailers).
+g="$HOME/.git-hooks/commit-msg"
+[ -x "$g" ] && exec "$g" "$@"
+exit 0
