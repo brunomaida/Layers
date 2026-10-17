@@ -66,8 +66,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <sc-if value="{{ histAdding }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;gap:4px;padding:2px 4px">
               <input value="{{ histRepoQ }}" onChange="{{ histRepoInput }}" onKeyDown="{{ histRepoKey }}" placeholder="github.com/usuario/repo" autoFocus="{{ true }}" style="flex:1;min-width:0;height:24px;padding:0 7px;border:1px solid {{ histRepoBdr }};border-radius:4px;background:var(--bg0);color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'JetBrains Mono',monospace">
-              <button onClick="{{ histRepoAdd }}" style="height:24px;padding:0 9px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:600 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--sel);color:var(--onSel)">Registrar</button>
-              <button onClick="{{ histRepoCancel }}" style="height:24px;width:24px;border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">×</button>
+              <button onClick="{{ histRepoAdd }}" title="{{ tipRepoAdd }}" style="height:24px;padding:0 9px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:600 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--sel);color:var(--onSel)">Registrar</button>
+              <button onClick="{{ histRepoCancel }}" title="{{ tipRepoCancel }}" style="height:24px;width:24px;border:0;border-radius:4px;background:transparent;color:var(--fg3);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">×</button>
             </div>
           </sc-if>
           <div style="height:1px;background:var(--line0);margin:3px 0"></div>
@@ -78,7 +78,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div onClick="{{ exportCfg }}" title="Salvar tema, painéis e histórico num arquivo layers-config.json" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↑</span>Exportar configuração…</div>
           <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
           <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histReset }}" title="Descarrega o projeto e volta à interface limpa (mantém tema e histórico)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div></sc-if>
-          <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="Relê do disco os arquivos do projeto (atalho R)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
+          <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="{{ tipReload }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
           <sc-if value="{{ hasDirProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ restructureItem }}" title="Relê tudo do 0: guarda o layout atual em .design-history/ e descarta ajustes, seleção e câmera" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">⟲</span>Reanalisar do 0</div></sc-if>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
@@ -104,7 +104,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           </div>
         </sc-if>
       </div>
-      <button onClick="{{ openShortcuts }}" title="Atalhos de teclado e mouse (?)" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5"/><path d="M4 7h1M6.5 7h1M9 7h1M11.5 7h1M4 9.5h1M6.5 9.5h3M11.5 9.5h1"/></svg></button>
+      <button onClick="{{ openShortcuts }}" title="{{ tipShortcuts }}" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5"/><path d="M4 7h1M6.5 7h1M9 7h1M11.5 7h1M4 9.5h1M6.5 9.5h3M11.5 9.5h1"/></svg></button>
       <button onClick="{{ cancelAll }}" style="height:24px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Cancelar</button>
       <button onClick="{{ openSave }}" style="height:24px;padding:0 12px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:600 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--sel);border-color:var(--sel);color:var(--onSel)">Salvar {{ changeBadge }}</button>
     </div>
@@ -258,7 +258,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
             <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
             <input type="text" value="{{ treeQ }}" onChange="{{ setTreeQ }}" onKeyDown="{{ treeQKey }}" placeholder="{{ treeQPlaceholder }}" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
             <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ treeQHits }}</span>
-            <sc-if value="{{ treeQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearTreeQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+            <sc-if value="{{ treeQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearTreeQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
           </div>
           <div style="display:inline-flex;height:22px;border:1px solid var(--line1);border-radius:4px;overflow:hidden;flex:0 0 auto">
             <button onClick="{{ treeModeHl }}" title="Só destacar as camadas que casam" style="height:100%;padding:0 7px;border:0;background:{{ treeHlBg }};color:{{ treeHlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Destacar</button>
@@ -273,7 +273,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <sc-for list="{{ treeRows }}" as="t" hint-placeholder-count="8">
             <sc-if value="{{ t.isNode }}" hint-placeholder-val="{{ true }}">
             <div data-node-id="{{ t.id }}" onClick="{{ t.select }}" onDoubleClick="{{ t.isolate }}" onMouseEnter="{{ t.hover }}" onMouseLeave="{{ t.unhover }}" title="{{ t.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ t.indent }};background:{{ t.bg }};color:{{ t.color }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;overflow:hidden">
-              <button onClick="{{ t.toggle }}" style="all:unset;width:12px;flex:0 0 12px;text-align:center;color:var(--fg3);cursor:pointer">{{ t.chev }}</button>
+              <button onClick="{{ t.toggle }}" title="{{ t.chevTitle }}" style="all:unset;width:12px;flex:0 0 12px;text-align:center;color:var(--fg3);cursor:pointer">{{ t.chev }}</button>
               <span style="flex:0 0 auto;font-size:calc(9px*var(--fs));color:var(--fg3)">L{{ t.depth }}</span>
               <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;background:{{ t.hlBg }};color:{{ t.hlColor }};border-radius:2px;padding:1px 2px;margin:-1px -2px;opacity:{{ t.op }}">{{ t.name }}</span>
               <span style="flex:0 0 auto;font-weight:400;color:var(--fg3)">{{ t.countLabel }}</span>
@@ -290,7 +290,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
                   <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ t.codeLabel }}</span><span style="flex:1"></span>
                   <sc-if value="{{ t.dirty }}" hint-placeholder-val="{{ false }}">
                     <button onClick="{{ t.discard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;text-transform:none;letter-spacing:0">Descartar</button>
-                    <button onClick="{{ t.apply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;text-transform:none;letter-spacing:0">Aplicar</button>
+                    <button onClick="{{ t.apply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;text-transform:none;letter-spacing:0">Aplicar</button>
                   </sc-if>
                   <button onClick="{{ t.closeCode }}" title="Ocultar código" style="all:unset;cursor:pointer;color:var(--fg3);font-size:calc(11px*var(--fs));line-height:1">✕</button>
                 </div>
@@ -304,7 +304,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <sc-for list="{{ elemRows }}" as="r" hint-placeholder-count="6">
             <sc-if value="{{ r.isNode }}" hint-placeholder-val="{{ true }}">
               <div data-node-id="{{ r.nodeId }}" onClick="{{ r.click }}" onDoubleClick="{{ r.dbl }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ r.indent }};background:{{ r.bg }};color:{{ r.color }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;overflow:hidden">
-                <button onClick="{{ r.toggle }}" style="all:unset;width:12px;flex:0 0 12px;text-align:center;color:var(--fg3);cursor:pointer">{{ r.chev }}</button>
+                <button onClick="{{ r.toggle }}" title="{{ r.chevTitle }}" style="all:unset;width:12px;flex:0 0 12px;text-align:center;color:var(--fg3);cursor:pointer">{{ r.chev }}</button>
                 <span style="flex:0 0 auto;font:700 calc(8px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:{{ r.kindColor }}">{{ r.kind }}</span>
                 <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;background:{{ r.hlBg }};color:{{ r.hlColor }};border-radius:2px;padding:1px 2px;margin:-1px -2px;opacity:{{ r.op }}">{{ r.name }}</span>
                 <span style="flex:0 0 auto;font-weight:400;color:var(--fg3)">{{ r.countLabel }}</span>
@@ -319,7 +319,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
                   <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ r.codeLabel }}</span><span style="flex:1"></span>
                   <sc-if value="{{ r.dirty }}" hint-placeholder-val="{{ false }}">
                     <button onClick="{{ r.discard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;text-transform:none;letter-spacing:0">Descartar</button>
-                    <button onClick="{{ r.apply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;text-transform:none;letter-spacing:0">Aplicar</button>
+                    <button onClick="{{ r.apply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;text-transform:none;letter-spacing:0">Aplicar</button>
                   </sc-if>
                 </div>
                 <textarea value="{{ r.code }}" onChange="{{ r.set }}" onKeyDown="{{ r.key }}" rows="{{ r.rows }}" spellCheck="false" style="width:100%;box-sizing:border-box;resize:vertical;padding:6px 8px;border:1px solid {{ r.codeBdr }};border-radius:4px;background:var(--bg0);color:var(--fg1);font:500 calc(10px*var(--fs))/1.5 'JetBrains Mono',monospace;white-space:pre;overflow:auto;outline:none;tab-size:2"></textarea>
@@ -337,7 +337,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <button style="all:unset;cursor:pointer;color:var(--fg2);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;width:14px">{{ ajChevron }}</button>
         <span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Ajustes</span>
         <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 6px;border-radius:3px">{{ changeCount }}</span>
-        <div ref="{{ acoesRef }}" onPointerEnter="{{ acoesEnter }}" onPointerLeave="{{ acoesLeave }}" onBlur="{{ acoesBlur }}" onClick="{{ stop }}" style="position:relative">
+        <div ref="{{ acoesRef }}" title="Ver diff · aplicar nos arquivos · exportar — passe o mouse para abrir · clique para fixar" onPointerEnter="{{ acoesEnter }}" onPointerLeave="{{ acoesLeave }}" onBlur="{{ acoesBlur }}" onClick="{{ stop }}" style="position:relative">
           <button onClick="{{ toggleMenu }}" data-menu="acoes" aria-haspopup="menu" aria-expanded="{{ menuOpen }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Ações ▾</button>
           <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
             <div onPointerDown="{{ acoesInside }}" style="position:absolute;right:0;bottom:26px;min-width:250px;display:flex;flex-direction:column;padding:4px;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 12px 32px var(--shadow2);z-index:5">
@@ -379,14 +379,14 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
   <sc-if value="{{ rightOpen }}" hint-placeholder-val="{{ true }}"><div onMouseDown="{{ startRightResize }}" onDoubleClick="{{ resetRightW }}" title="Arrastar para ampliar o painel (até +25%) · duplo clique: largura padrão" style="position:absolute;left:-3px;top:0;bottom:0;width:6px;cursor:col-resize;z-index:7;background:{{ rightGripBg }}" style-hover="background:rgba(var(--selRgb),.4)"></div></sc-if>
   <sc-if value="{{ rightClosed }}" hint-placeholder-val="{{ false }}">
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0">
-      <button onClick="{{ toggleRight }}" title="Expandir o painel de propriedades (P)" style="all:unset;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg2);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">«</button>
+      <button onClick="{{ toggleRight }}" title="{{ tipRightOpen }}" style="all:unset;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg2);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">«</button>
       <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 4px;border-radius:3px">L{{ selDepth }}</span>
       <span style="writing-mode:vertical-rl;font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">Propriedades &nbsp;·&nbsp; {{ selName }}</span>
     </div>
   </sc-if>
   <sc-if value="{{ rightOpen }}" hint-placeholder-val="{{ true }}">
     <sc-if value="{{ noProject }}" hint-placeholder-val="{{ false }}">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--line1)"><span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Propriedades</span><button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--line1)"><span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Propriedades</span><button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button></div>
     <div style="padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty">Sem projeto carregado não há elemento selecionado nem propriedades a editar.</div>
     </sc-if>
     <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ true }}">
@@ -396,7 +396,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="flex:1;min-width:0;font:700 calc(14px*var(--fs))/1.25 'JetBrains Mono',monospace;color:var(--fg0);overflow-wrap:anywhere;text-wrap:pretty">{{ selName }}</span>
         <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:4px 6px;border-radius:3px;white-space:nowrap">L{{ selDepth }}</span>
         <button onClick="{{ toggleRightWide }}" title="{{ rightWideTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:{{ rightWideColor }};font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">⇔</button>
-        <button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
+        <button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
         <span title="Arquivo de origem" style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:999px;background:rgba(var(--selRgb),.12);color:var(--sel);font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;min-width:0;max-width:100%"><span style="width:5px;height:5px;border-radius:50%;background:var(--violet);flex:0 0 auto"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ selFile }}</span></span>
@@ -405,8 +405,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </div>
       <div style="display:flex;gap:2px;margin:8px 0 0 -7px;white-space:nowrap">
         <button onClick="{{ selectParent }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">↑ Pai</button>
-        <button onClick="{{ isolateSel }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">{{ isoLabel }}</button>
-        <button onClick="{{ frameSel }}" title="Centralizar e ajustar o zoom na seleção (F)" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">⊕ Enquadrar</button>
+        <button onClick="{{ isolateSel }}" title="{{ isoSelTitle }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">{{ isoLabel }}</button>
+        <button onClick="{{ frameSel }}" title="{{ tipFrame }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">⊕ Enquadrar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">
         <div style="display:flex;align-items:center;gap:6px;height:20px;white-space:nowrap">
@@ -414,7 +414,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:1"></span>
           <sc-if value="{{ pcDirty }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ pcDiscard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar</button>
-            <button onClick="{{ pcApply }}" title="Aplicar (Ctrl+Enter)" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
+            <button onClick="{{ pcApply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
           </sc-if>
         </div>
         <sc-if value="{{ pcOpen }}" hint-placeholder-val="{{ false }}">
@@ -440,7 +440,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
           <input type="text" value="{{ propQ }}" onChange="{{ setPropQ }}" onKeyDown="{{ propQKey }}" placeholder="Buscar propriedade ou seção…" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
           <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ propQHits }}</span>
-          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
         </div>
         <button onClick="{{ toggleAllGroups }}" title="{{ allGroupsTitle }}" style="width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:4px;background:transparent;color:var(--fg2);font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;flex:0 0 auto">{{ allGroupsGlyph }}</button>
       </div>
@@ -462,7 +462,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="flex:1;height:1px;background:var(--line1)"></span>
         <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc)">L{{ selDepth }}</span>
         <button onClick="{{ toggleRightWide }}" title="{{ rightWideTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:{{ rightWideColor }};font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">⇔</button>
-        <button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
+        <button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
       </div>
       <div style="margin-top:6px;font:600 calc(15px*var(--fs))/1.25 'Inter',sans-serif;color:var(--fg0);overflow-wrap:anywhere;text-wrap:pretty">{{ selName }}</div>
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin-top:5px;font:500 calc(10px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg2)">
@@ -473,8 +473,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
         <span style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);white-space:nowrap;margin-right:4px">Ações</span>
         <button onClick="{{ selectParent }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">↑ Pai</button>
-        <button onClick="{{ isolateSel }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">{{ isoLabel }}</button>
-        <button onClick="{{ frameSel }}" title="Centralizar e ajustar o zoom na seleção (F)" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⊕ Enquadrar</button>
+        <button onClick="{{ isolateSel }}" title="{{ isoSelTitle }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">{{ isoLabel }}</button>
+        <button onClick="{{ frameSel }}" title="{{ tipFrame }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⊕ Enquadrar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:0">
         <div style="display:flex;align-items:center;gap:6px;height:20px;white-space:nowrap">
@@ -482,7 +482,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:1"></span>
           <sc-if value="{{ pcDirty }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ pcDiscard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar</button>
-            <button onClick="{{ pcApply }}" title="Aplicar (Ctrl+Enter)" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
+            <button onClick="{{ pcApply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
           </sc-if>
         </div>
         <sc-if value="{{ pcOpen }}" hint-placeholder-val="{{ false }}">
@@ -516,7 +516,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
           <input type="text" value="{{ propQ }}" onChange="{{ setPropQ }}" onKeyDown="{{ propQKey }}" placeholder="Buscar propriedade ou seção…" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
           <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ propQHits }}</span>
-          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
       </div>
         <div style="display:inline-flex;height:22px;border:1px solid var(--line1);border-radius:4px;overflow:hidden;flex:0 0 auto">
           <button onClick="{{ propModeHl }}" title="Só destacar o que casa" style="height:100%;padding:0 7px;border:0;background:{{ propHlBg }};color:{{ propHlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Destacar</button>
@@ -532,7 +532,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="flex:1;min-width:0;font:700 calc(13px*var(--fs))/1.2 'JetBrains Mono',monospace;color:var(--fg0);overflow-wrap:anywhere">{{ selName }}</span>
         <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:nowrap">{{ selSize }}</span>
         <button onClick="{{ toggleRightWide }}" title="{{ rightWideTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:{{ rightWideColor }};font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">⇔</button>
-        <button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
+        <button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;margin-top:5px;padding-left:32px">
         <span title="Arquivo de origem" style="font:italic 500 calc(10px*var(--fs))/1.4 'Inter',sans-serif;color:var(--sel);overflow-wrap:anywhere">{{ selFile }}</span>
@@ -540,8 +540,8 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </div>
       <div style="display:flex;align-items:center;gap:12px;margin-top:8px;padding-left:32px;white-space:nowrap">
         <button onClick="{{ selectParent }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">↑ Pai</button>
-        <button onClick="{{ isolateSel }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">{{ isoLabel }}</button>
-        <button onClick="{{ frameSel }}" title="Centralizar e ajustar o zoom na seleção (F)" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">⊕ Enquadrar</button>
+        <button onClick="{{ isolateSel }}" title="{{ isoSelTitle }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">{{ isoLabel }}</button>
+        <button onClick="{{ frameSel }}" title="{{ tipFrame }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">⊕ Enquadrar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">
         <div style="display:flex;align-items:center;gap:6px;height:20px;white-space:nowrap">
@@ -549,7 +549,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:1"></span>
           <sc-if value="{{ pcDirty }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ pcDiscard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar</button>
-            <button onClick="{{ pcApply }}" title="Aplicar (Ctrl+Enter)" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
+            <button onClick="{{ pcApply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
           </sc-if>
         </div>
         <sc-if value="{{ pcOpen }}" hint-placeholder-val="{{ false }}">
@@ -578,7 +578,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
           <input type="text" value="{{ propQ }}" onChange="{{ setPropQ }}" onKeyDown="{{ propQKey }}" placeholder="Buscar propriedade ou seção…" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
           <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ propQHits }}</span>
-          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
       </div>
         <button onClick="{{ propModeHl }}" title="Só destacar o que casa" style="height:20px;padding:0 6px;border:0;border-radius:3px;background:{{ propHlBg }};color:{{ propHlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;flex:0 0 auto">Destacar</button>
         <button onClick="{{ propModeFilter }}" title="Mostrar só o que casa" style="height:20px;padding:0 6px;border:0;border-radius:3px;background:{{ propFlBg }};color:{{ propFlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;flex:0 0 auto">Filtrar</button>
@@ -699,7 +699,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     <div onClick="{{ stop }}" style="width:760px;max-width:94vw;max-height:84vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)">
         <span>Atalhos <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">teclado · mouse · painéis &nbsp;·&nbsp; tecla ? abre e fecha</span></span>
-        <button onClick="{{ closeShortcuts }}" style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
+        <button onClick="{{ closeShortcuts }}" title="{{ tipCloseEsc }}" style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
       </div>
       <div style="overflow:auto;min-height:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px 28px;padding:14px 16px 18px">
         <sc-for list="{{ shortcutGroups }}" as="sg" hint-placeholder-count="6">
@@ -723,7 +723,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     <div onClick="{{ stop }}" style="width:780px;max-height:84vh;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
       <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)">
         <span>Diff <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">{{ diffSummary }}</span></span>
-        <button onClick="{{ closeDiff }}" style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
+        <button onClick="{{ closeDiff }}" title="{{ tipCloseEsc }}" style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
       </div>
       <div style="overflow:auto;min-height:0;padding-bottom:8px">
         <sc-for list="{{ diffFiles }}" as="f" hint-placeholder-count="1">
@@ -740,7 +740,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
 <sc-if value="{{ staleOpen }}" hint-placeholder-val="{{ false }}">
   <div role="status" style="position:fixed;left:{{ staleLeft }};top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;box-sizing:border-box;max-width:{{ staleWidth }};padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ staleMsg }}</span>
-    <sc-if value="{{ staleReload }}" hint-placeholder-val="{{ true }}"><button onClick="{{ reloadItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button></sc-if>
+    <sc-if value="{{ staleReload }}" hint-placeholder-val="{{ true }}"><button onClick="{{ reloadItem }}" title="{{ tipReload }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--line1);color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Recarregar</button></sc-if>
     <sc-if value="{{ staleLayout }}" hint-placeholder-val="{{ false }}"><button onClick="{{ restructureItem }}" style="all:unset;cursor:pointer;padding:3px 8px;border-radius:3px;border:1px solid var(--warn);color:var(--fg0);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--faint);color:var(--fg0)">Reanalisar do 0</button></sc-if>
     <button onClick="{{ dismissStale }}" title="Ignorar" style="all:unset;cursor:pointer;width:18px;height:18px;display:flex;align-items:center;justify-content:center;border-radius:3px;color:var(--fg3);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">×</button>
   </div>
@@ -778,7 +778,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </div>
       <div style="display:flex;flex-direction:column;gap:2px;max-height:180px;overflow-y:auto;padding:8px;background:var(--bg0);border:1px solid var(--line0);border-radius:3px;font:500 calc(10px*var(--fs))/1.5 'JetBrains Mono',monospace;color:var(--fg2);white-space:pre-wrap">{{ modalLog }}</div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button onClick="{{ closeModal }}" style="height:28px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
+        <button onClick="{{ closeModal }}" title="{{ tipCloseEsc }}" style="height:28px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
         <sc-if value="{{ isPlan }}" hint-placeholder-val="{{ true }}">
           <button onClick="{{ makeDraft }}" style="height:28px;padding:0 12px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:600 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">1 · Gerar rascunho paralelo</button>
         </sc-if>
@@ -825,15 +825,8 @@ const GROUPS = [
   ['Tipografia', [['Fonte','fontFamily','enum'],['Tamanho','fontSize','len',{min:6,max:48,step:.25}],['Peso','fontWeight','enum'],['Estilo','fontStyle','enum'],['Espaçamento','letterSpacing','len',{min:-2,max:8,step:.1}],['Line height','lineHeight','len',{min:0,max:48,step:.05,units:LH_UNITS}],['Transform','textTransform','enum'],['Decoração','textDecorationLine','enum'],['Alinhamento','textAlign','enum'],['White space','whiteSpace','enum'],['Word break','wordBreak','enum'],['Text overflow','textOverflow','enum']]],
   ['Efeitos', [['Transform','transform','text'],['Filter','filter','text'],['Backdrop filter','backdropFilter','text'],['Transition','transition','text']]],
 ];
-const SHORTCUTS = [
-  ['Câmera', [['scroll','zoom no ponto do cursor'],['arrastar','orbitar (giro + inclinação)'],['shift + arrastar · botão do meio','pan na tela'],['ctrl + arrastar','pan no plano da página'],['← → ↑ ↓','pan · com shift: no plano'],['Q / E','girar'],['W / S','inclinar'],['+ / −','zoom'],['F','enquadrar a seleção'],['C','centralizar sem mudar o zoom'],['0','recentrar a câmera']]],
-  ['Seleção', [['clique','selecionar elemento'],['duplo clique','isolar o ramo + enquadrar'],['alt + clique · ⚡ Interagir','disparar o clique nativo do elemento no mock (checkbox, radio, details)'],['duplo clique no fundo','sair do isolamento · recentrar'],['↑ Pai','subir para o elemento pai'],['Esc','fechar painel · sair do isolamento · limpar seleção']]],
-  ['Camadas', [['PgUp / PgDn','camada ativa acima / abaixo'],['chip L0…Ln · clique','mostrar só essa camada'],['chip L0…Ln · hover','foco: frame da camada + atenuação das demais'],['Todas','voltar a mostrar todas'],['Explodido / Plano · Distância','espaçamento entre camadas'],['Frames · Intensidade','wireframe dos contêineres sem fundo/borda'],['Foco de camada · Destaque · Demais','liga o foco por hover/clique nos chips; Destaque = intensidade da camada em foco, Demais = opacidade das outras'],['chip · hover com seleção ativa','foca só os elementos da camada dentro do ramo selecionado/isolado']]],
-  ['Árvore de camadas', [['hover','destaca o frame do elemento no palco'],['clique','selecionar'],['clique no palco','seleciona e rola a árvore até o elemento'],['{ } · ⊟ (barra da aba)','recolher todos os códigos abertos · recolher todas as linhas (só recolhem)'],['{ } na linha','abrir / fechar o código daquele elemento ou regra (padrão: oculto)'],['⌕ Buscar camada · Destacar / Filtrar','destaca ou mostra só as camadas cujo nome contém o texto (Esc limpa)'],['Hierarquia / Elementos','árvore do DOM · definições de estilo (arquivo › regra) sem repetição, com usos e código'],['{ } (Hierarquia)','mostra o código do elemento selecionado logo abaixo dele; Aplicar respeita "Aplicar em"'],['Elementos · regra ▾','lista os usos + textarea com o código; ctrl+Enter ou Aplicar grava em todos os usos'],['duplo clique','isolar o ramo'],['▾ / ▸','expandir / recolher o nó']]],
-  ['Propriedades', [['● ● ● (cores de origem)','declarada na regra · herdada de regra acima · editada na sessão — paleta em Aparência › Cores de origem'],['chips declarada / herdada / editada','filtram as propriedades por origem (combináveis)'],['⌕ Buscar propriedade · Destacar / Filtrar','por nome, propriedade CSS ou título da seção'],['⊟ / ⊞','recolher / expandir todas as seções'],['P · » / «','recolher / expandir o painel de propriedades'],['Enter','aplicar o valor do campo'],['Esc (no campo)','descartar a edição'],['Aplicar em','alcance: perguntar · só este · todos iguais'],['▾ título do grupo','recolher / expandir o grupo']]],
-  ['Edição', [['Ctrl + Z','desfazer o último ajuste (propriedade ou código)'],['Ctrl + Shift + Z · Ctrl + Y','refazer']]],
-  ['Geral', [['?','abrir / fechar este painel'],['R','recarregar o projeto do disco (pasta local)'],['⚡ Interagir','superfícies e ações definidas pelo projeto em layers.json › interactions'],['Ações ▾','ver diff · aplicar nos arquivos · exportar']]],
-];
+// S3.3: action titles are built once from the core registry (LayersCore.tooltip)
+const TIP = { shortcuts: LayersCore.tooltip('shortcuts'), reload: LayersCore.tooltip('reload'), rightOpen: LayersCore.tooltip('rightPanel', 'Expandir o painel de propriedades'), rightClose: LayersCore.tooltip('rightPanel', 'Recolher o painel de propriedades'), frame: LayersCore.tooltip('frame'), codeApply: LayersCore.tooltip('codeApply'), clear: LayersCore.tooltip('fieldClear'), measOn: LayersCore.tooltip('measure', 'Medidas ligadas') + ' — distâncias entre a seleção e o elemento sob o cursor; sem hover, até o pai', measOff: LayersCore.tooltip('measure', 'Medidas desligadas') + ' — clique para mostrar distâncias no palco', closeEsc: LayersCore.tooltip('escape', 'Fechar'), isoExit: LayersCore.tooltip('escape', 'Sair do isolamento'), isolate: LayersCore.tooltip('isolate'), node: LayersCore.tooltip('toggleNode'), repoAdd: LayersCore.tooltip('fieldEnter', 'Registrar'), repoCancel: LayersCore.tooltip('fieldClear', 'Cancelar') };
 const UNDO_CAP = 100;
 const kebab = p => p.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1601,15 +1594,20 @@ class Component extends DCLogic {
     if (this.stageRef.current) this.ro.observe(this.stageRef.current);
     this.restoreSession();
     if (this.fixtureBase && !this.state.dir) { const base = this.fixtureBase; this.setState({ dirName: base.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject()); }
+    this.keyRun = {
+      panLeft: e => this.pan(-40, 0, e.shiftKey ? 'plane' : 'screen'), panRight: e => this.pan(40, 0, e.shiftKey ? 'plane' : 'screen'),
+      panUp: e => this.pan(0, -40, e.shiftKey ? 'plane' : 'screen'), panDown: e => this.pan(0, 40, e.shiftKey ? 'plane' : 'screen'),
+      layerUp: () => this.stepActive(1), layerDown: () => this.stepActive(-1),
+      orbitLeft: () => this.orbit(-10, 0), orbitRight: () => this.orbit(10, 0), tiltUp: () => this.orbit(0, 10), tiltDown: () => this.orbit(0, -10),
+      zoomIn: () => this.zoomBy(1.2), zoomOut: () => this.zoomBy(1 / 1.2), measure: () => this.setState(st => ({ measure: !st.measure })),
+      frame: () => this.frame(this.state.selId), center: () => this.frame(this.state.selId, true), resetView: () => this.resetView(), reload: () => this.reloadProject(),
+      shortcuts: () => this.setState(st => ({ shortcuts: !st.shortcuts })), rightPanel: () => this.setState(st => ({ rightOpen: !st.rightOpen })), escape: () => this.escape() };
+    LayersCore.ACTIONS.forEach(a => { if (a.scope === 'global' && !this.keyRun[a.id]) console.error('keyRun: no handler for ' + a.id); });
     this.onKey = e => {
       const tg = e.target; const typing = tg && (tg.tagName === 'TEXTAREA' || (tg.tagName === 'INPUT' && !/^(range|color|checkbox|radio|button)$/.test(tg.type)));
       if (!typing && (e.ctrlKey || e.metaKey) && !e.altKey) { const k = String(e.key).toLowerCase(); if (k === 'z' || k === 'y') { e.preventDefault(); if (k === 'y' || e.shiftKey) this.redo(); else this.undo(); return; } }
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-      const mode = e.shiftKey ? 'plane' : 'screen'; const st = 40;
-      const map = { ArrowLeft: () => this.pan(-st, 0, mode), ArrowRight: () => this.pan(st, 0, mode), ArrowUp: () => this.pan(0, -st, mode), ArrowDown: () => this.pan(0, st, mode),
-        PageUp: () => this.stepActive(1), PageDown: () => this.stepActive(-1), q: () => this.orbit(-10, 0), e: () => this.orbit(10, 0), w: () => this.orbit(0, 10), s: () => this.orbit(0, -10),
-        '+': () => this.zoomBy(1.2), '=': () => this.zoomBy(1.2), '-': () => this.zoomBy(1 / 1.2), m: () => this.setState(st => ({ measure: !st.measure })), f: () => this.frame(this.state.selId), c: () => this.frame(this.state.selId, true), '0': () => this.resetView(), r: () => this.reloadProject(), '?': () => this.setState(st => ({ shortcuts: !st.shortcuts })), p: () => this.setState(st => ({ rightOpen: !st.rightOpen })), Escape: () => this.escape() };
-      const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
+      const id = LayersCore.keyAction(e.key); const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(e); }
     };
     window.addEventListener('keydown', this.onKey);
     // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
@@ -2212,10 +2210,10 @@ class Component extends DCLogic {
     const pushRow = n => { if (tFilter && !tHit[n.id]) return; const kids = kidsOf[n.id] || []; const closed = !!s.treeClosed[n.id] && !(tFilter && tHit[n.id] === 'anc'); const hit = tHit[n.id] === 'hit'; const isSel = n.id === s.selId; const isHov = n.id === s.hoverId; const isIso = n.id === s.isoId; const kidsFoldable = kids.filter(k => (kidsOf[k.id] || []).length);
       const hc = !!s.hierCode[n.id];
       treeRows.push({ isNode: true, id: n.id, codeDisp: isSel || isHov || hc ? 'inline-flex' : 'none', codeTitle: hc ? 'Recolher o código do estilo' : 'Expandir o código do estilo abaixo desta linha', codeBdr: hc ? 'rgba(var(--accRgb),.55)' : 'var(--line1)', codeBg: hc ? 'rgba(var(--accRgb),.15)' : 'transparent', codeColor: hc ? 'var(--acc)' : 'var(--fg2)', toggleCode: e => { e.stopPropagation(); this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: !st.hierCode[n.id] } })); }, closeCode: () => this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: false } })),
-        hlBg: hit ? 'rgba(var(--warnRgb),.28)' : 'transparent', hlColor: hit ? 'var(--hlFg)' : 'inherit', op: tq && !hit && !tFilter ? .45 : 1, depth: n.depth, name: n.name, indent: (6 + n.depth * 12) + 'px', chev: kids.length ? (closed ? '▸' : '▾') : '·', countLabel: kids.length ? '(' + kids.length + ')' : '', badge: isIso ? 'isolado' : isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '',
+        hlBg: hit ? 'rgba(var(--warnRgb),.28)' : 'transparent', hlColor: hit ? 'var(--hlFg)' : 'inherit', op: tq && !hit && !tFilter ? .45 : 1, depth: n.depth, name: n.name, indent: (6 + n.depth * 12) + 'px', chev: kids.length ? (closed ? '▸' : '▾') : '·', chevTitle: kids.length ? TIP.node : 'Nada para expandir', countLabel: kids.length ? '(' + kids.length + ')' : '', badge: isIso ? 'isolado' : isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '',
         foldMark: kidsFoldable.length && kidsFoldable.every(k => s.treeClosed[k.id]) ? '⊞' : '⊟', foldTitle: kidsFoldable.length ? (kidsFoldable.every(k => s.treeClosed[k.id]) ? 'Expandir os filhos (um nível)' : 'Recolher os filhos (um nível)') : 'Sem filhos com subníveis',
         foldKids: e => { e.stopPropagation(); if (!kidsFoldable.length) return; const allClosed = kidsFoldable.every(k => s.treeClosed[k.id]); this.setState(st => { const tc = { ...st.treeClosed }; kidsFoldable.forEach(k => { tc[k.id] = !allClosed; }); if (!allClosed) tc[n.id] = false; return { treeClosed: tc }; }); },
-        isoBtn: e => { e.stopPropagation(); if (isIso) this.setState({ isoId: null }, () => this.resetView()); else this.isolate(n.id); }, isoTitle: isIso ? 'Sair do isolamento' : 'Isolar este elemento (= duplo clique)', isoBdr: isIso ? 'rgba(var(--selRgb),.55)' : 'var(--line1)', isoBg: isIso ? 'rgba(var(--selRgb),.15)' : 'transparent', isoColor: isIso ? 'var(--sel)' : 'var(--fg2)',
+        isoBtn: e => { e.stopPropagation(); if (isIso) this.setState({ isoId: null }, () => this.resetView()); else this.isolate(n.id); }, isoTitle: isIso ? TIP.isoExit : 'Isolar este elemento (= duplo clique)', isoBdr: isIso ? 'rgba(var(--selRgb),.55)' : 'var(--line1)', isoBg: isIso ? 'rgba(var(--selRgb),.15)' : 'transparent', isoColor: isIso ? 'var(--sel)' : 'var(--fg2)',
         title: n.name + ' · L' + n.depth + (kids.length ? ' · ' + kids.length + ' filho(s)' : '') + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar', bg: isSel ? 'rgba(var(--selRgb),.15)' : isHov ? 'rgba(var(--selRgb),.08)' : 'transparent', color: isSel || isIso ? 'var(--sel)' : 'var(--fg0)',
         select: () => this.select(n.id), isolate: e => { e.stopPropagation(); this.isolate(n.id); }, hover: () => this.setState({ hoverId: n.id }), unhover: () => this.setState({ hoverId: null }),
         toggle: e => { e.stopPropagation(); this.setState(st => ({ treeClosed: { ...st.treeClosed, [n.id]: !st.treeClosed[n.id] } })); } });
@@ -2235,17 +2233,17 @@ class Component extends DCLogic {
       const rHits = rules.map(r => !!eq && (r.selector.toLowerCase().includes(eq) || s.nodes.some(n => r.ids.includes(n.id) && n.name.toLowerCase().includes(eq))));
       if (eFilter && !fHit && !rHits.some(Boolean)) return; if (fHit) elemHits++;
       const fOpen = !!s.elOpen[file] || (eFilter && rHits.some(Boolean)); const fSel = file === selFile;
-      elemRows.push({ isNode: true, nodeId: 'f:' + file, indent: '6px', codeDisp: 'none', kind: 'ARQ', kindColor: 'var(--sel)', name: file, countLabel: '(' + rules.length + ')', chev: fOpen ? '▾' : '▸', badge: fSel ? '●' : '', bg: 'transparent', color: fSel ? 'var(--fg0)' : 'var(--fg1)', ...elHl(fHit),
+      elemRows.push({ isNode: true, nodeId: 'f:' + file, indent: '6px', codeDisp: 'none', kind: 'ARQ', kindColor: 'var(--sel)', name: file, countLabel: '(' + rules.length + ')', chev: fOpen ? '▾' : '▸', chevTitle: TIP.node, badge: fSel ? '●' : '', bg: 'transparent', color: fSel ? 'var(--fg0)' : 'var(--fg1)', ...elHl(fHit),
         title: file + ' · ' + rules.length + ' regra(s)', click: togEl(file), dbl: e => e.stopPropagation(), toggle: togEl(file), hover: () => {}, unhover: () => {} });
       if (!fOpen) return;
       rules.forEach((r, ri) => {
         const rHit = rHits[ri]; if (eFilter && !rHit && !fHit) return; if (rHit) elemHits++;
         const rOpen = !!s.elOpen[r.key]; const rSel = r.key === selSrcKey; const inSel = r.ids.includes(s.selId); const cOpen = s.elCode[r.key] === true;
-        elemRows.push({ isNode: true, nodeId: 'r:' + r.key, indent: '18px', codeDisp: 'inline-flex', codeTitle: cOpen ? 'Recolher o código da regra' : 'Expandir o código da regra', codeBdr: cOpen ? 'rgba(var(--accRgb),.55)' : 'var(--line1)', codeBg: cOpen ? 'rgba(var(--accRgb),.15)' : 'transparent', codeColor: cOpen ? 'var(--acc)' : 'var(--fg2)', toggleCode: e => { e.stopPropagation(); this.setState(st => ({ elCode: { ...st.elCode, [r.key]: !cOpen }, elOpen: cOpen ? st.elOpen : { ...st.elOpen, [r.key]: true, [file]: true } })); if (!cOpen) this.loadFile(file); }, kind: 'REGRA', kindColor: 'var(--acc)', name: r.selector + (r.line ? '  L' + r.line : ''), countLabel: '×' + r.ids.length, chev: rOpen ? '▾' : '▸', badge: rSel ? '●' : '', bg: rSel ? 'rgba(var(--accRgb),.15)' : 'transparent', color: rSel ? 'var(--acc)' : 'var(--fg0)', ...elHl(rHit),
+        elemRows.push({ isNode: true, nodeId: 'r:' + r.key, indent: '18px', codeDisp: 'inline-flex', codeTitle: cOpen ? 'Recolher o código da regra' : 'Expandir o código da regra', codeBdr: cOpen ? 'rgba(var(--accRgb),.55)' : 'var(--line1)', codeBg: cOpen ? 'rgba(var(--accRgb),.15)' : 'transparent', codeColor: cOpen ? 'var(--acc)' : 'var(--fg2)', toggleCode: e => { e.stopPropagation(); this.setState(st => ({ elCode: { ...st.elCode, [r.key]: !cOpen }, elOpen: cOpen ? st.elOpen : { ...st.elOpen, [r.key]: true, [file]: true } })); if (!cOpen) this.loadFile(file); }, kind: 'REGRA', kindColor: 'var(--acc)', name: r.selector + (r.line ? '  L' + r.line : ''), countLabel: '×' + r.ids.length, chev: rOpen ? '▾' : '▸', chevTitle: TIP.node, badge: rSel ? '●' : '', bg: rSel ? 'rgba(var(--accRgb),.15)' : 'transparent', color: rSel ? 'var(--acc)' : 'var(--fg0)', ...elHl(rHit),
           title: r.selector + ' — ' + r.ids.length + ' uso(s) · clique: expandir e selecionar o 1º uso · duplo: isolar', click: () => { this.setState(st => ({ elOpen: { ...st.elOpen, [r.key]: true, [file]: true } })); this.loadFile(file); if (!inSel) this.select(r.ids[0]); }, dbl: e => { e.stopPropagation(); this.isolate(inSel ? s.selId : r.ids[0]); }, toggle: e => { togEl(r.key)(e); this.loadFile(file); }, hover: () => {}, unhover: () => {} });
         if (!rOpen) return;
         r.ids.forEach(id => { const n = s.byId[id]; if (!n) return; const uHit = !!eq && n.name.toLowerCase().includes(eq); const isSel = id === s.selId; const isHov = id === s.hoverId;
-          elemRows.push({ isNode: true, nodeId: id, indent: '30px', codeDisp: 'none', kind: 'L' + n.depth, kindColor: 'var(--fg3)', name: n.name, countLabel: n.kids ? '(' + n.kids + ')' : '', chev: '·', badge: isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '', bg: isSel ? 'rgba(var(--accRgb),.15)' : isHov ? 'rgba(var(--accRgb),.08)' : 'transparent', color: isSel ? 'var(--acc)' : 'var(--fg1)', ...elHl(uHit),
+          elemRows.push({ isNode: true, nodeId: id, indent: '30px', codeDisp: 'none', kind: 'L' + n.depth, kindColor: 'var(--fg3)', name: n.name, countLabel: n.kids ? '(' + n.kids + ')' : '', chev: '·', chevTitle: 'Nada para expandir', badge: isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '', bg: isSel ? 'rgba(var(--accRgb),.15)' : isHov ? 'rgba(var(--accRgb),.08)' : 'transparent', color: isSel ? 'var(--acc)' : 'var(--fg1)', ...elHl(uHit),
             title: n.name + ' · L' + n.depth + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar', click: () => this.select(id), dbl: e => { e.stopPropagation(); this.isolate(id); }, toggle: e => e.stopPropagation(), hover: () => this.setState({ hoverId: id }), unhover: () => this.setState({ hoverId: null }) }); });
         if (cOpen) elemRows.push(this.codeRow(r, '30px'));
       });
@@ -2267,16 +2265,16 @@ class Component extends DCLogic {
     const pcText = selSelector + ' {\n' + pcLines.join('\n') + '\n}'; const pcBuf = s.codeBuf[pcRule.key]; const pcCode = pcBuf !== undefined ? pcBuf : pcText; const pcDirty = pcBuf !== undefined && pcBuf !== pcText;
     const pcApply = () => { const text = s.codeBuf[pcRule.key]; if (text === undefined) return; this.applyCodeText(pcRule, text, pcText); };
     const splitOn = s.treeOpen && s.ajOpen;
-    const shortcutGroups = SHORTCUTS.map(([title, rows]) => ({ title, rows: rows.map(([keys, desc]) => ({ keys, desc })) }));
-    const nb = (glyph, title, go, on) => ({ glyph, title, go, bdr: on ? 'transparent' : 'var(--line1)', bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', color: on ? 'var(--acc)' : 'var(--fg2)' });
+    const shortcutGroups = LayersCore.SHORTCUTS.map(([title, rows]) => ({ title, rows: rows.map(([keys, desc]) => ({ keys, desc })) }));
+    const nb = (glyph, id, go, on) => ({ glyph, title: LayersCore.tooltip(id), go, bdr: on ? 'transparent' : 'var(--line1)', bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', color: on ? 'var(--acc)' : 'var(--fg2)' });
     const sliderS = APPEARANCE_DEFAULTS.sliderScale / 100;
     const sl = (k, v, mn, mx) => { const pct = clamp((v - mn) / (mx - mn), 0, 1); const hov = s.hovSl === k; return { [k + 'Pos']: 'calc(' + (pct * 100).toFixed(2) + '% + ' + ((0.5 - pct) * 12 * sliderS).toFixed(1) + 'px)', [k + 'Hint']: hov ? 1 : 0, [k + 'ValColor']: hov ? '#ffffff' : 'var(--fg1)', [k + 'Glow']: hov ? '0 0 8px rgba(var(--selRgb),.95), 0 0 2px rgba(var(--selRgb),.7)' : 'none', [k + 'In']: () => this.setState({ hovSl: k }), [k + 'Out']: () => this.setState({ hovSl: null }) }; };
     const navBtns = [
-      nb('↺', 'Girar à esquerda (Q)', () => this.orbit(-10, 0)), nb('▲', 'Pan para cima (↑) · shift: no plano', () => this.pan(0, -40)), nb('↻', 'Girar à direita (E)', () => this.orbit(10, 0)),
-      nb('◀', 'Pan para a esquerda (←)', () => this.pan(-40, 0)), nb('⊕', 'Enquadrar seleção: centralizar + zoom (F)', () => this.frame(s.selId), true), nb('▶', 'Pan para a direita (→)', () => this.pan(40, 0)),
-      nb('⇡', 'Inclinar para cima (W)', () => this.orbit(0, 10)), nb('▼', 'Pan para baixo (↓)', () => this.pan(0, 40)), nb('⇣', 'Inclinar para baixo (S)', () => this.orbit(0, -10)),
-      nb('−', 'Zoom − (−)', () => this.zoomBy(1 / 1.2)), nb('◎', 'Centralizar seleção sem mudar o zoom (C)', () => this.frame(s.selId, true)), nb('+', 'Zoom + (+)', () => this.zoomBy(1.2)),
-      nb('L−', 'Camada anterior (PgDn)', () => this.stepActive(-1)), nb('0', 'Recentrar câmera (0)', () => this.resetView()), nb('L+', 'Próxima camada (PgUp)', () => this.stepActive(1)),
+      nb('↺', 'orbitLeft', () => this.orbit(-10, 0)), nb('▲', 'panUp', () => this.pan(0, -40)), nb('↻', 'orbitRight', () => this.orbit(10, 0)),
+      nb('◀', 'panLeft', () => this.pan(-40, 0)), nb('⊕', 'frame', () => this.frame(s.selId), true), nb('▶', 'panRight', () => this.pan(40, 0)),
+      nb('⇡', 'tiltUp', () => this.orbit(0, 10)), nb('▼', 'panDown', () => this.pan(0, 40)), nb('⇣', 'tiltDown', () => this.orbit(0, -10)),
+      nb('−', 'zoomOut', () => this.zoomBy(1 / 1.2)), nb('◎', 'center', () => this.frame(s.selId, true)), nb('+', 'zoomIn', () => this.zoomBy(1.2)),
+      nb('L−', 'layerDown', () => this.stepActive(-1)), nb('0', 'resetView', () => this.resetView()), nb('L+', 'layerUp', () => this.stepActive(1)),
     ];
     const m = s.modal; const sibs = this.sharedIds(s.selId); const hasSibs = sibs.length > 1;
     const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }) }; });
@@ -2364,7 +2362,7 @@ class Component extends DCLogic {
       ...sl('wire', s.wireAlpha, 0, 100), ...sl('dist', s.spacing, 30, 200), ...sl('persp', s.persp, 600, 3000), ...sl('fstr', s.focusStr, 0, 100), ...sl('oth', s.othersOp, 0, 100),
       explBg: 'transparent', explColor: s.flat ? 'var(--fg2)' : 'var(--sel)', explBdr: s.flat ? 'var(--line1)' : 'var(--sel)', focusBdr2: s.layerFocus ? 'var(--sel)' : 'var(--line1)', focusColor2: s.layerFocus ? 'var(--sel)' : 'var(--fg2)', explLabel: 'Explodido', explGlyph: s.flat ? '▤' : '▧',
       explTitle: s.flat ? 'Vista plana (camadas no mesmo plano) — clique para explodir' : 'Vista explodida (camadas separadas em profundidade) — clique para achatar', toggleFlat: () => this.setState(st => ({ flat: !st.flat })),
-      measOn: s.measure, toggleMeasure: () => this.setState(st => ({ measure: !st.measure })), measBdr: s.measure ? 'var(--sel)' : 'var(--line1)', measColor: s.measure ? 'var(--sel)' : 'var(--fg2)', measTitle: s.measure ? 'Medidas ligadas (M) — distâncias entre a seleção e o elemento sob o cursor; sem hover, até o pai' : 'Medidas desligadas (M) — clique para mostrar distâncias no palco',
+      measOn: s.measure, toggleMeasure: () => this.setState(st => ({ measure: !st.measure })), measBdr: s.measure ? 'var(--sel)' : 'var(--line1)', measColor: s.measure ? 'var(--sel)' : 'var(--fg2)', measTitle: s.measure ? TIP.measOn : TIP.measOff, tipShortcuts: TIP.shortcuts, tipReload: TIP.reload, tipRightOpen: TIP.rightOpen, tipRightClose: TIP.rightClose, tipFrame: TIP.frame, tipCodeApply: TIP.codeApply, tipClear: TIP.clear,
       scene: this.scene(), stageRef: this.stageRef, pageRef: this.pageRef,
       treeQ: s.treeQ, setTreeQ: e => this.setState({ treeQ: e.target.value }), clearTreeQ: () => this.setState({ treeQ: '' }), treeQOn: !!tq, treeQKey: e => { if (e.key === 'Escape') { this.setState({ treeQ: '' }); e.target.blur(); } e.stopPropagation(); },
       treeQHits: tq ? (s.treeTab === 'hier' ? treeHits + ' de ' + s.nodes.length : elemHits + ' de ' + ruleCount) : '', treeQPlaceholder: s.treeTab === 'hier' ? 'Buscar camada…' : 'Buscar arquivo, regra ou uso…',
@@ -2397,7 +2395,7 @@ class Component extends DCLogic {
       layerCount: s.nodes.length ? vmax + 1 : 0, nodeCount: s.nodes.length, spacing: s.spacing, rail, navBtns, railMinW: vmax >= 9 ? 'auto' : '44px', railPad: vmax >= 9 ? '0 6px' : '0 8px',
       allLayers: () => this.setState({ solo: false }), allBg: !s.solo ? 'rgba(var(--accRgb),.15)' : 'transparent', allBdr: !s.solo ? 'transparent' : 'var(--line1)', allColor: !s.solo ? 'var(--acc)' : 'var(--fg2)',
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
-      isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
+      tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
       hasSibs, noSibs: !hasSibs, scopeOpts,
       propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '',
       ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,

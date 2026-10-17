@@ -167,7 +167,7 @@ test('Compat_NoFsAccess_WriteEntryPointsNameTheBrowser', async ({ page }) => {
   await expect(page.getByText(HINT_NO_FS, { exact: false })).toBeVisible();
   await expect(page.getByText(HINT_FS, { exact: false })).toHaveCount(0);
   // the toast lives 4.2 s: close it so the export assertion cannot pass on the draft's toast
-  await page.getByTitle('Fechar').click();
+  await page.getByTitle('Fechar', { exact: true }).click();
   await expect(page.getByText(HINT_NO_FS, { exact: false })).toHaveCount(0);
   await page.getByRole('button', { name: 'Fechar' }).first().click();
   await page.getByText('Ações', { exact: false }).first().click();
