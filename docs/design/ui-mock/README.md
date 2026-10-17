@@ -43,4 +43,5 @@ Cópia versionada dos boards `/design` (Opus) do Layers. O canvas privado `https
 | Painel Ajustes | S35Requisicao.dc.html |
 | Palco 3D | S91Fluxos.dc.html |
 | Menus | S35Menu.dc.html |
+| Seletor de layout | S91Fluxos.dc.html |
 | Toasts | exempt |
