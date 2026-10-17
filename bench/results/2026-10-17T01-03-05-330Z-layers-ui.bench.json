@@ -1,0 +1,432 @@
+{
+  "schemaVersion": 1,
+  "suite": "layers-ui",
+  "tag": "latency",
+  "timestampUtc": "2026-10-17T01:03:05.330Z",
+  "env": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+    "cores": 20,
+    "os": "win32 10.0.26200",
+    "runtime": "chromium 153.0.8010.12 (playwright)",
+    "gc": "V8",
+    "tool": "playwright"
+  },
+  "git": {
+    "sha": "4c5397a8fe11cd7d4e8fce2e34abbb653efb9cb3",
+    "dirty": false
+  },
+  "benchmarks": [
+    {
+      "benchId": "load/traval/first-scan-ms",
+      "unit": "ms",
+      "value": 8.400000005960464,
+      "stddev": 0,
+      "extra": {
+        "gcsCalls": 416
+      }
+    },
+    {
+      "benchId": "load/traval/first-scan-end-ms",
+      "unit": "ms",
+      "value": 498.30000001192093,
+      "stddev": 0,
+      "extra": {}
+    },
+    {
+      "benchId": "scan/1500-tags-ms",
+      "unit": "ms",
+      "value": 42,
+      "stddev": 0,
+      "extra": {
+        "gcsCalls": 1660,
+        "tags": 1712
+      }
+    },
+    {
+      "benchId": "orbit/traval/mean-frame-ms",
+      "unit": "ms",
+      "value": 24.060869565217395,
+      "stddev": 0,
+      "extra": {
+        "fps": 41.561257679797606,
+        "p95FrameMs": 35.50000000000023,
+        "frames": 69,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "gcsPerFrame": 0.6086956521739131,
+        "main": {
+          "taskMs": 20.96491304347826,
+          "scriptMs": 7.935826086956522,
+          "styleMs": 0.1762608695652174,
+          "layoutMs": 0.05944927536231883
+        },
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-gcs-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 23.932394366197187,
+      "stddev": 0,
+      "extra": {
+        "fps": 41.784369114877585,
+        "p95FrameMs": 39.299999999999955,
+        "frames": 71,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "gcsPerFrame": 0,
+        "main": {
+          "taskMs": 20.598098591549295,
+          "scriptMs": 7.562619718309859,
+          "styleMs": 0.1745211267605634,
+          "layoutMs": 0.061774647887323945
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-panel-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 23.456164383561642,
+      "stddev": 0,
+      "extra": {
+        "fps": 42.63271622963266,
+        "p95FrameMs": 36,
+        "frames": 73,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "gcsPerFrame": 0,
+        "main": {
+          "taskMs": 19.596369863013695,
+          "scriptMs": 7.347945205479451,
+          "styleMs": 0.17004109589041097,
+          "layoutMs": 0.05678082191780823
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-zoom/mean-frame-ms",
+      "unit": "ms",
+      "value": 18.28369565217391,
+      "stddev": 0,
+      "extra": {
+        "fps": 54.69353783960526,
+        "p95FrameMs": 18.5,
+        "frames": 92,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "gcsPerFrame": 0.6521739130434783,
+        "main": {
+          "taskMs": 13.879423913043478,
+          "scriptMs": 8.082815217391305,
+          "styleMs": 0.16671739130434782,
+          "layoutMs": 0.08940217391304348
+        },
+        "zoomSteps": 12,
+        "census": {
+          "total": 414,
+          "offscreen": 254,
+          "partial": 81,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-zoom-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 19.030488888888886,
+      "stddev": 0,
+      "extra": {
+        "fps": 52.54725750024523,
+        "p95FrameMs": 22.200000000000273,
+        "frames": 90,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "gcsPerFrame": 0.6222222222222222,
+        "main": {
+          "taskMs": 14.349466666666666,
+          "scriptMs": 8.148077777777779,
+          "styleMs": 0.22566666666666668,
+          "layoutMs": 0.10971111111111112
+        },
+        "zoomSteps": 12,
+        "census": {
+          "total": 414,
+          "offscreen": 254,
+          "partial": 81,
+          "opBelow005": 0,
+          "opZero": 0
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-tree-closed/mean-frame-ms",
+      "unit": "ms",
+      "value": 25.22063492063492,
+      "stddev": 0,
+      "extra": {
+        "fps": 39.650072377116246,
+        "p95FrameMs": 36.09999999999991,
+        "frames": 63,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 20.986809523809523,
+          "scriptMs": 3.2771269841269843,
+          "styleMs": 0.12426984126984125,
+          "layoutMs": 0.08333333333333333
+        },
+        "hoverSwapsPerFrame": 0.015873015873015872,
+        "treeRowsMounted": 0
+      }
+    },
+    {
+      "benchId": "orbit/traval-tree-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 23.34285714285714,
+      "stddev": 0,
+      "extra": {
+        "fps": 42.83965728274174,
+        "p95FrameMs": 35.90000000000009,
+        "frames": 70,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 17.969157142857142,
+          "scriptMs": 2.9646000000000003,
+          "styleMs": 0.12325714285714286,
+          "layoutMs": 0.08541428571428572
+        },
+        "hoverSwapsPerFrame": 0.014285714285714285,
+        "treeRowsMounted": 1
+      }
+    },
+    {
+      "benchId": "orbit/traval-v1/mean-frame-ms",
+      "unit": "ms",
+      "value": 23.52058823529412,
+      "stddev": 0,
+      "extra": {
+        "fps": 42.515943478804544,
+        "p95FrameMs": 35.90000000000009,
+        "frames": 68,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 19.70863235294118,
+          "scriptMs": 7.431441176470588,
+          "styleMs": 0.18416176470588236,
+          "layoutMs": 0.05539705882352941
+        },
+        "hoverSwapsPerFrame": 0,
+        "treeRowsMounted": 414
+      }
+    },
+    {
+      "benchId": "orbit/traval-v1-tree-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 23.00845070422535,
+      "stddev": 0,
+      "extra": {
+        "fps": 43.46229187071499,
+        "p95FrameMs": 36.40000000000009,
+        "frames": 71,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 18.841873239436623,
+          "scriptMs": 2.8705915492957743,
+          "styleMs": 0.11346478873239438,
+          "layoutMs": 0.07453521126760564
+        },
+        "hoverSwapsPerFrame": 0,
+        "treeRowsMounted": 1
+      }
+    },
+    {
+      "benchId": "orbit/1500-tags/mean-frame-ms",
+      "unit": "ms",
+      "value": 71.75,
+      "stddev": 0,
+      "extra": {
+        "fps": 13.937282229965156,
+        "p95FrameMs": 245.79999999999973,
+        "frames": 34,
+        "loafCount": 11,
+        "main": {
+          "taskMs": 59.38535294117647,
+          "scriptMs": 29.803235294117652,
+          "styleMs": 1.9326176470588237,
+          "layoutMs": 0.42061764705882354
+        },
+        "hoverSwapsPerFrame": 0.029411764705882353,
+        "treeRowsMounted": 1657
+      }
+    },
+    {
+      "benchId": "orbit/1500-tags-tree-closed/mean-frame-ms",
+      "unit": "ms",
+      "value": 41.96808510638298,
+      "stddev": 0,
+      "extra": {
+        "fps": 23.827629911280102,
+        "p95FrameMs": 123.40000000000009,
+        "frames": 47,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 31.796255319148937,
+          "scriptMs": 3.7316595744680847,
+          "styleMs": 0.7108936170212766,
+          "layoutMs": 0.4199574468085106
+        },
+        "hoverSwapsPerFrame": 0.02127659574468085,
+        "treeRowsMounted": 0
+      }
+    },
+    {
+      "benchId": "orbit/1500-tags-tree-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 49.985365853658536,
+      "stddev": 0,
+      "extra": {
+        "fps": 20.00585537230409,
+        "p95FrameMs": 135.5,
+        "frames": 41,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 45.68475609756098,
+          "scriptMs": 4.217414634146341,
+          "styleMs": 0.8331707317073171,
+          "layoutMs": 0.4595365853658537
+        },
+        "hoverSwapsPerFrame": 0.024390243902439025,
+        "treeRowsMounted": 1
+      }
+    },
+    {
+      "benchId": "orbit/1500-tags-v1/mean-frame-ms",
+      "unit": "ms",
+      "value": 55.094470588235296,
+      "stddev": 0,
+      "extra": {
+        "fps": 18.150641785339833,
+        "p95FrameMs": 158.79999999999995,
+        "frames": 34,
+        "loafCount": 9,
+        "main": {
+          "taskMs": 45.8205294117647,
+          "scriptMs": 22.76273529411765,
+          "styleMs": 1.306529411764706,
+          "layoutMs": 0.26073529411764707
+        },
+        "hoverSwapsPerFrame": 0,
+        "treeRowsMounted": 1657
+      }
+    },
+    {
+      "benchId": "orbit/1500-tags-v1-tree-ideal/mean-frame-ms",
+      "unit": "ms",
+      "value": 44.77395238095238,
+      "stddev": 0,
+      "extra": {
+        "fps": 22.334414248080037,
+        "p95FrameMs": 140.29999999999973,
+        "frames": 42,
+        "loafCount": 0,
+        "main": {
+          "taskMs": 33.39740476190476,
+          "scriptMs": 3.7964285714285717,
+          "styleMs": 0.5765714285714286,
+          "layoutMs": 0.32976190476190476
+        },
+        "hoverSwapsPerFrame": 0,
+        "treeRowsMounted": 1
+      }
+    },
+    {
+      "benchId": "tree/traval/hover-ms",
+      "unit": "ms",
+      "value": 26.400000005960464,
+      "stddev": 0,
+      "extra": {
+        "samples": [
+          25.099999994039536,
+          26.400000005960464,
+          26.80000001192093,
+          24.69999998807907,
+          38.900000005960464
+        ],
+        "treeRowsMounted": 414
+      }
+    },
+    {
+      "benchId": "tree/traval/select-ms",
+      "unit": "ms",
+      "value": 76.5,
+      "stddev": 0,
+      "extra": {
+        "samples": [
+          76.5,
+          98.90000000596046,
+          71.7999999821186,
+          97,
+          65.09999999403954
+        ],
+        "treeRowsMounted": 414
+      }
+    },
+    {
+      "benchId": "tree/1500-tags/hover-ms",
+      "unit": "ms",
+      "value": 76,
+      "stddev": 0,
+      "extra": {
+        "samples": [
+          74.7000000178814,
+          72,
+          76,
+          165.7999999821186,
+          102.7999999821186
+        ],
+        "treeRowsMounted": 1657
+      }
+    },
+    {
+      "benchId": "tree/1500-tags/select-ms",
+      "unit": "ms",
+      "value": 513.5,
+      "stddev": 0,
+      "extra": {
+        "samples": [
+          393,
+          313.09999999403954,
+          548.5999999940395,
+          513.5,
+          521.1000000238419
+        ],
+        "treeRowsMounted": 1657
+      }
+    },
+    {
+      "benchId": "tree/1500-tags/scroll-frame-ms",
+      "unit": "ms",
+      "value": 274.62666666666667,
+      "stddev": 0,
+      "extra": {
+        "p95FrameMs": 312,
+        "frames": 90,
+        "scrolled": 3600,
+        "treeRowsMounted": 1657
+      }
+    },
+    {
+      "benchId": "explode/traval/toggle-ms",
+      "unit": "ms",
+      "value": 63.70000001788139,
+      "stddev": 0,
+      "extra": {}
+    }
+  ]
+}
