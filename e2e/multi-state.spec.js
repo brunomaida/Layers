@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, lastTreeRow } from './tree-helpers.js';
 
 // S2.22b: layers.json › states picks the mock; the Interagir menu switches it and reloads the layers.
 const probe = (page) => page.evaluate(() => {
@@ -53,7 +53,7 @@ test('MultiState_SwitchWithUnsavedEdit_AsksBeforeDiscarding', async ({ page }) =
   await page.goto('/?layers=fixtures/multi-state/');
   await expect(page.getByText(/Projeto Multi state/).first()).toBeVisible({ timeout: 15_000 });
   await readNodes(page);
-  await page.locator('[data-node-id]').last().click();
+  await (await lastTreeRow(page)).click();
   const field = page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
   await field.click({ clickCount: 3 });
   await page.keyboard.type('0 0 0 3px rgb(1, 2, 3)');
