@@ -1909,16 +1909,16 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-19",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "end": "2026-10-18",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "bug",
       "docs",
       "scaffold",
       "tests"
     ],
-    "progress": 89,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -1990,19 +1990,38 @@
         "id": "S7.3",
         "type": "spec",
         "name": "Matriz de suporte",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "start": "2026-10-14",
+        "end": "2026-10-16",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-14-s7-3-support-matrix.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-14-s7-3-support-matrix.md)",
+            "title": "2026-10-14-s7-3-support-matrix.md)"
+          },
+          {
+            "name": "docs-261014-0-s7-3-support-matrix.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261014-0-s7-3-support-matrix.md)",
+            "title": "docs-261014-0-s7-3-support-matrix.md)"
+          },
+          {
+            "name": "2026-10-14-s7-3-support-matrix.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-14-s7-3-support-matrix.md",
+            "title": "Implementation Report — s7-3-support-matrix"
+          }
+        ],
         "reason": "checklist G",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       },
       {
