@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S2.22c: <html> theme reaches the host, snapshot roots are labelled, frozen canvases are flagged.
 const URL = '/?layers=fixtures/snap-fidelity/';
@@ -42,11 +42,11 @@ test('SnapFidelity_RootNames_L0SnapshotAndShellInL1', async ({ page }) => {
 
 test('SnapFidelity_FrozenCanvas_ShowsImgBadgeWithTitle', async ({ page }) => {
   await open(page);
-  const img = page.locator('[data-node-id][title^="img"]').first();
+  const img = await treeRow(page, { title: 'img' });
   await expect(img).toContainText('IMG');
   await expect(img).toHaveAttribute('title', /Imagem congelada/);
   // the capture comment carries a 1200-char URL: the tooltip keeps all of it, up to the viewport
-  await expect(page.locator('[data-node-id][title^="#app · snapshot"]').first()).toHaveAttribute('title', /gallery\.html\?pad=x{1200}#\/light .*viewport 600×300/);
+  await expect(await treeRow(page, { title: '#app · snapshot' })).toHaveAttribute('title', /gallery\.html\?pad=x{1200}#\/light .*viewport 600×300/);
 });
 
 test('SnapFidelity_SwitchToPlainState_ClearsHostAttrs', async ({ page }) => {

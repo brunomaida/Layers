@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S3.3: native `title` of the action buttons comes from LayersCore.tooltip(id) ("Action (K)").
 // Literal glyph -> title table of the dock (not derived from the registry: a swapped id must fail here).
@@ -71,7 +71,7 @@ test('Tooltip_ControleDeAcao_TemTitleNaoVazio', async ({ page }) => {
   await readNodes(page);
 
   // 1. selection with the panel open
-  await page.locator('[data-node-id][title^=".sum-stat"]').first().click();
+  await (await treeRow(page, { title: '.sum-stat' })).click();
   await page.getByText('Só este', { exact: false }).first().click();
   expect(await page.evaluate(untitledGlyphButtons)).toEqual([]);
 
@@ -81,7 +81,8 @@ test('Tooltip_ControleDeAcao_TemTitleNaoVazio', async ({ page }) => {
   await expect(page.locator('[data-node-id^="f:"]').first()).toBeVisible();
   if (!(await rules.count())) await page.locator('[data-node-id^="f:"]').first().click(); // the selected file may already be open
   await rules.first().click();
-  expect(await page.locator('[data-node-id]').evaluateAll((rows) => rows.map((r) => r.dataset.nodeId[0]))).toEqual(expect.arrayContaining(['f', 'r']));
+  await expect(page.locator('[data-node-id^="f:"]').first()).toBeVisible();
+  await expect(rules.first()).toBeVisible();
   expect(await page.evaluate(untitledGlyphButtons)).toEqual([]);
   await page.getByRole('button', { name: 'Hierarquia' }).click();
 
