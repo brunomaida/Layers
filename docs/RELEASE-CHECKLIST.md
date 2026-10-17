@@ -12,7 +12,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 42 concluídos
 - [x] `index.html` (CHANGELOG 0.25.0, sem projeto embutido) + `support.js` no repositório.
 - [x] Fontes locais: 15 `.woff2` variáveis subsetados por `unicode-range` em `fonts/` + `fonts/fonts.css` gerado (48 blocos `@font-face`), referenciado por `<link>` no `<helmet>`; `<link>` do Google Fonts removido. Espelhos byte-a-byte do `fonts.gstatic.com` — **não** são 8 estáticas por peso, como este item supunha.
 - [x] Servir por HTTP (`npm run dev` na 5180) — FS Access e `document.fonts` exigem origem segura.
-- [x] Defaults documentados (corrigidos — valem os `data-props`, não o `:root`): tema `Gray · 1 Grafite`, acento `5 · Cinza médio`, seleção `Coral`, `originColors Mono`, `panelHeader B`, `sliderScale 85`, `fontScale 1`.
+- [x] Defaults documentados (corrigidos — valem os `APPEARANCE_DEFAULTS`, não o `:root`): tema `Gray · 1 Grafite`, acento `5 · Cinza médio`, seleção `Coral`, `originColors Mono`, `panelHeader B`, `sliderScale 85`, `fontScale 1`.
 - [x] Chaves de `localStorage` documentadas e versionadas: `layers/v1/{meta,ui,projects,session}` + `layers/v1/tab` no `sessionStorage`, mapeadas em `docs/ARCHITECTURE.md` § Persistência. `LayersCore.migrateConfig` converte as 3 soltas (`layers-cfg`, `layers-hist`, `layers-inter-size`) e não as apaga — remoção na v2.26.
 - [x] `docs/ARCHITECTURE.md` e este checklist na raiz de `docs/`.
 - [x] React + ReactDOM UMD versionados em `vendor/`, validados contra o SRI declarado no `support.js`; zero requisições externas verificadas no Chrome (12/12 em `localhost:5180`). Ver `docs/LOCAL-SETUP.md`.
@@ -41,7 +41,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 42 concluídos
 - [x] Dock: piso de 360 px em telas estreitas (v2.22).
 - [x] Padrão único de abertura de menus: hover abre e clique fixa em Projetos, Aparência, Interagir e Ações (decisão de 2026-10-14); clique fora, Esc e item de ação fecham, toque abre fixado (`LayersCore.menuStep`; `e2e/menu-open.spec.js`, visual inalterado em `e2e/menu-visual.spec.js`).
 - [ ] Tooltips "ação · atalho" no dock e na árvore.
-- [ ] Uma só fonte de verdade para aparência no desktop (menu Aparência; tweaks do host saem).
+- [x] Uma só fonte de verdade para aparência no desktop (menu Aparência; tweaks do host saem) (`LayersCore.APPEARANCE_DEFAULTS`; `e2e/appearance-defaults.spec.js`, visual inalterado em `e2e/menu-visual.spec.js`).
 
 ## D. Performance
 
