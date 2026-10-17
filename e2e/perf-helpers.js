@@ -61,6 +61,8 @@ export async function waitForScan(page, minNodes = 5, timeout = 20_000) {
 // gcsPerFrame counts getComputedStyle calls between mousedown and mouseup.
 // opts.afterFirstMove (S4.9): awaited right after the first drag mousemove; dragStartMs is then the largest
 // of the 8 frame intervals that start at that move (the hitch a DOM regroup would cause).
+// opts.beforeUp (S4.9): awaited after the timed loop and before mouseup; frames recorded while the hook sets
+// window.__orbit.paused are dropped, so an undo done there stays out of the frame statistics.
 export async function orbitDrag(page, durationMs = 1500, opts = {}) {
   const r = await page.evaluate(() => {
     const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
@@ -78,7 +80,7 @@ export async function orbitDrag(page, durationMs = 1500, opts = {}) {
     const rec = (window.__orbit = { times: [], stop: false });
     let last = performance.now();
     const step = (t) => {
-      rec.times.push(t - last);
+      if (!rec.paused) rec.times.push(t - last);
       last = t;
       if (!rec.stop) requestAnimationFrame(step);
     };
@@ -100,6 +102,7 @@ export async function orbitDrag(page, durationMs = 1500, opts = {}) {
     i++;
   }
   const gcsCalls = await page.evaluate(() => window.__perf.calls - window.__perf.calls0);
+  if (opts.beforeUp) await opts.beforeUp();
   await page.mouse.up();
   const m1 = await metrics();
   await cdp.detach();
@@ -309,13 +312,15 @@ export async function countPlaneHovers(page) {
 
 // S4.9 spike: wraps the planes that share one translateZ in div[data-s49-group] (the app is unmodified; the
 // real change would live in scene()). Each group is a page-sized absolute box with the translateZ and
-// will-change: transform; the planes lose transform, transition and will-change (and contain with
-// dropContain) and stay at z = 0 inside it, so a group is one flat layer. Call it right after the first
-// drag mousemove, once the render that sets `dragging` has run. pointer-events: none on the group keeps
-// blank areas from hitting it; the planes keep their own inline pointer-events. Planes get data-s49-plane
-// (countPlaneHovers follows it, the translateZ filter no longer matches). probe = true compares
-// elementFromPoint on a grid before and after (extra work: keep it out of timed drags). Returns
-// { planes, groups, ms, probe }; ms is the in-page cost of the regroup itself.
+// will-change: transform; the planes stay at z = 0 inside it, so a group is one flat layer. Call it right
+// after the first drag mousemove, once the render that sets `dragging` has run. The planes' transform,
+// transition, will-change (and contain with dropContain) are overridden by an injected !important
+// stylesheet on [data-s49-plane], not stripped inline: React rewrites those props on a render, an
+// override cannot be undone by it. pointer-events: none on the group keeps blank areas from hitting it;
+// the planes keep their own inline pointer-events. countPlaneHovers follows data-s49-plane (the translateZ
+// filter no longer matches once the override is on). probe = true compares elementFromPoint on a grid
+// before and after (extra work: keep it out of timed drags). Returns { planes, groups, ms, probe }; ms is
+// the in-page cost of the regroup itself. Pair it with ungroupPlanesByZ before mouseup.
 export async function groupPlanesByZ(page, { dropContain = false, probe = false } = {}) {
   return page.evaluate(
     ({ dropContain, probe }) => {
@@ -338,12 +343,14 @@ export async function groupPlanesByZ(page, { dropContain = false, probe = false 
       const t0 = performance.now();
       const w = pageEl.offsetWidth;
       const h = pageEl.offsetHeight;
+      const orig = [...pageEl.children];
       const byZ = new Map();
       for (const el of planes) {
         const z = parseFloat(el.style.transform.slice('translateZ('.length));
         if (!byZ.has(z)) byZ.set(z, []);
         byZ.get(z).push(el);
       }
+      const groups = [];
       for (const [z, els] of byZ) {
         const g = document.createElement('div');
         g.setAttribute('data-s49-group', '');
@@ -352,12 +359,13 @@ export async function groupPlanesByZ(page, { dropContain = false, probe = false 
         for (const el of els) {
           g.appendChild(el);
           el.setAttribute('data-s49-plane', '');
-          el.style.removeProperty('transform');
-          el.style.removeProperty('transition');
-          el.style.removeProperty('will-change');
-          if (dropContain) el.style.removeProperty('contain');
         }
+        groups.push(g);
       }
+      const style = document.createElement('style');
+      style.textContent = `[data-s49-plane]{transform:none!important;transition:none!important;will-change:auto!important${dropContain ? ';contain:none!important' : ''}}`;
+      document.head.appendChild(style);
+      window.__s49 = { pageEl, orig, groups, style };
       const ms = performance.now() - t0;
       let hit = null;
       if (probe) {
@@ -368,6 +376,28 @@ export async function groupPlanesByZ(page, { dropContain = false, probe = false 
     },
     { dropContain, probe },
   );
+}
+
+// S4.9: undoes groupPlanesByZ (planes back under the page in their original order, groups, override
+// stylesheet and marks removed) so React's post-drag render never sees moved nodes. Without a regroup it only
+// waits (the A/A control). It pauses the orbitDrag frame recorder (window.__orbit.paused) around the undo
+// and two frames, so the undo hitch is not part of the drag statistics. Call it from orbitDrag's beforeUp.
+export async function ungroupPlanesByZ(page) {
+  return page.evaluate(async () => {
+    const o = window.__orbit;
+    if (o) o.paused = true;
+    const st = window.__s49;
+    if (st) {
+      st.pageEl.append(...st.orig);
+      st.groups.forEach((g) => g.remove());
+      st.style.remove();
+      st.orig.forEach((el) => el.removeAttribute('data-s49-plane'));
+      window.__s49 = null;
+    }
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    if (o) o.paused = false;
+    return !!st;
+  });
 }
 
 // S4.9: composited layer count from CDP LayerTree. The domain only emits layerTreeDidChange while the tree

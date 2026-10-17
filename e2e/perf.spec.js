@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, countCompositedLayers } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
 
 const EXPECTED = [
@@ -169,9 +169,15 @@ for (const [name, id, v] of [
 // (CDP LayerTree adds work per layer change, so it never shares a page with a timed drag); then the timed
 // drag regroups the planes by translateZ right after its first move. aa runs the same flow without the
 // regroup. Each variant is paired with orbit/traval of the same execution (run Orbit_Drag together with
-// Orbit_S49) and records dragStartMs, the largest of the 8 frames from the first move.
+// Orbit_S49) and records dragStartMs, the largest of the 8 frames from the first move. dragStartMs of this
+// manual regroup (one DOM move of ~400 nodes) does NOT predict the unmount/remount hitch of the real
+// implementation, where React mounts and unmounts the planes: that one is measured in Task E5. The grouping is
+// undone before mouseup so React's post-drag render only sees its own nodes; page errors fail the variant.
 async function layerPass(context, v) {
   const p = await context.newPage();
+  const errors = [];
+  p.on('pageerror', (e) => errors.push(String(e)));
+  p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
   try {
     await instrument(p);
     await p.goto('/?layers=fixtures/traval/');
@@ -191,10 +197,15 @@ async function layerPass(context, v) {
     const before = await countCompositedLayers(p);
     const group = v.group ? await groupPlanesByZ(p, { dropContain: v.dropContain, probe: true }) : null;
     await moves(6);
-    const stillStripped = group ? await p.evaluate(() => [...document.querySelectorAll('[data-s49-plane]')].filter((e) => e.style.transform === '').length) : null;
+    // planes still overridden (computed transform none, will-change auto) after the drag renders
+    const stillStripped = group
+      ? await p.evaluate(() => [...document.querySelectorAll('[data-s49-plane]')].filter((e) => { const c = getComputedStyle(e); return c.transform === 'none' && c.willChange === 'auto'; }).length)
+      : null;
     const after = await countCompositedLayers(p);
+    await ungroupPlanesByZ(p);
     await p.mouse.up();
-    return { before, after, group, stillStripped };
+    await p.waitForTimeout(500);
+    return { before, after, group, stillStripped, errors };
   } finally {
     await p.close();
   }
@@ -207,6 +218,9 @@ for (const [name, id, v] of [
 ]) {
   test(name, async ({ page }) => {
     const layers = await layerPass(page.context(), v);
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
     await instrument(page);
     await page.goto('/?layers=fixtures/traval/');
     await waitForScan(page);
@@ -218,7 +232,9 @@ for (const [name, id, v] of [
         if (v.group) grouped = await groupPlanesByZ(page, { dropContain: v.dropContain });
         else await page.evaluate(() => 0); // same round trip as the regroup call
       },
+      beforeUp: () => ungroupPlanesByZ(page), // A/A: only waits, same pause as the undo
     });
+    await page.waitForTimeout(500); // post-drag render with the planes back under the page
     rec(id, o.meanFrameMs, {
       fps: o.fps,
       p95FrameMs: o.p95FrameMs,
@@ -242,7 +258,10 @@ for (const [name, id, v] of [
       groups: grouped ? grouped.groups : layers.group && layers.group.groups,
       groupedPlanes: grouped ? grouped.planes : null,
       groupMs: grouped ? grouped.ms : null,
+      pageErrors: errors.length + layers.errors.length,
     });
+    expect(errors, 'page errors in the timed drag').toEqual([]);
+    expect(layers.errors, 'page errors in the layer pass').toEqual([]);
     expect(o.frames).toBeGreaterThanOrEqual(30);
     if (v.group) expect(grouped.groups, 'z groups created by the stub').toBeGreaterThan(0);
   });
