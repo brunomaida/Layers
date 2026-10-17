@@ -99,4 +99,4 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S8.5 | 2 | S8 | Proveniência SPA via data-vite-dev-id | Slice 4 do plano dc; depende de S8.2 | — | — | — | — | registered |
 | S8.6 | 2 | S8 | Re-snapshot sem renovar mtimes com changes pendentes | Slice 5 do plano dc; medir antes; depende de S8.3 | — | — | — | — | registered |
 | S9 | 1 | — | Layouts múltiplos | Leitura de repositórios com várias telas: stack e vista espacial de layouts, funções por layout | — | — | — | — | registered |
-| S9.1 | 2 | S9 | Layouts newlogic | Modelo de cobertura mono × múltiplos layouts, stack/3D espacial configurável e funções atreladas ao layout | [](text-specs/2026-10-17-s9-1-layouts-newlogic.md) | — | — | — | registered |
+| S9.1 | 2 | S9 | Layouts newlogic | Modelo de cobertura mono × múltiplos layouts, stack/3D espacial configurável e funções atreladas ao layout | [](text-specs/2026-10-17-s9-1-layouts-newlogic.md) | [](superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md) | — | — | in-progress |
