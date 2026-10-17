@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>S2.22c visão geral</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8b96a3}a:hover{color:#adb5be}
+</style>
+</helmet>
+<div style="{{ vars }}width:960px;height:760px;box-sizing:border-box;padding:28px 32px;display:flex;flex-direction:column;gap:20px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px">
+  <div style="display:flex;flex-direction:column;gap:8px">
+    <span style="font:700 9px/1 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Layers · leaf S2.22c · fidelidade do snapshot</span>
+    <h1 style="margin:0;font:600 20px/1.25 'Inter',sans-serif;color:var(--fg0);text-wrap:balance">O mock capturado da gallery mostra o tema, o gráfico e a raiz como no Traval</h1>
+    <p style="margin:0;max-width:720px;font:500 12px/1.5 'Inter',sans-serif;color:var(--fg2)">Três ajustes no snapshot e no loader. Nenhuma cor, fonte ou medida nova no dock ou nos painéis: tudo reaproveita THEMES, SELECTS e os componentes que já existem (linha da árvore, toast, title nativo).</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px">
+    <sc-for list="{{ gaps }}" as="g" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow)">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+        <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:var(--sel)">{{ g.id }}</span>
+        <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.title }}</span>
+        <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ g.board }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:10px 12px 12px">
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)">Hoje</span>
+          <span style="font:500 11px/1.45 'Inter',sans-serif;color:var(--fg1)">{{ g.now }}</span>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px">
+          <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)">Depois</span>
+          <span style="font:500 11px/1.45 'Inter',sans-serif;color:var(--fg1)">{{ g.after }}</span>
+        </div>
+        <code style="align-self:flex-start;max-width:100%;box-sizing:border-box;padding:4px 6px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg2);font:500 10px/1.4 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all">{{ g.code }}</code>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+
+  <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow)">
+    <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+      <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Decisões necessárias</span>
+      <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">● = sugestão</span>
+    </div>
+    <sc-for list="{{ decisions }}" as="d" hint-placeholder-count="3">
+    <div style="display:grid;grid-template-columns:44px minmax(0,1fr) 220px 220px;align-items:start;gap:12px;padding:9px 12px;border-bottom:1px solid var(--line0)">
+      <span style="font:700 10px/1.6 'JetBrains Mono',monospace;color:var(--sel)">{{ d.id }}</span>
+      <div style="display:flex;flex-direction:column;gap:3px;min-width:0">
+        <span style="font:600 12px/1.4 'Inter',sans-serif;color:var(--fg0)">{{ d.q }}</span>
+        <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">{{ d.where }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;padding:6px 8px;border:1px solid {{ d.aBdr }};border-radius:4px;background:{{ d.aBg }}">
+        <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:{{ d.aColor }}">{{ d.aMark }} A</span>
+        <span style="font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg1)">{{ d.a }}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:3px;padding:6px 8px;border:1px solid {{ d.bBdr }};border-radius:4px;background:{{ d.bBg }}">
+        <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;color:{{ d.bColor }}">{{ d.bMark }} B</span>
+        <span style="font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg1)">{{ d.b }}</span>
+      </div>
+    </div>
+    </sc-for>
+    <div style="display:flex;flex-direction:column;gap:5px;padding:9px 12px 11px">
+      <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--warn)">Achados no código que a spec não cobre</span>
+      <sc-for list="{{ risks }}" as="r" hint-placeholder-count="3">
+      <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg2)">{{ r }}</span>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"$preview":{"width":960,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
+    };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const pick = (on) => on
+      ? { bdr: 'rgba(var(--selRgb),.45)', bg: 'rgba(var(--selRgb),.1)', color: 'var(--sel)', mark: '●' }
+      : { bdr: 'var(--line1)', bg: 'transparent', color: 'var(--fg2)', mark: '○' };
+    const dec = (id, q, where, a, b, sug) => { const A = pick(sug === 'a'), B = pick(sug === 'b');
+      return { id, q, where, a, b, aBdr: A.bdr, aBg: A.bg, aColor: A.color, aMark: A.mark, bBdr: B.bdr, bBg: B.bg, bColor: B.color, bMark: B.mark }; };
+    return {
+      vars,
+      gaps: [
+        { id: 'G7', title: 'Tema do <html>', board: '(a)', now: 'O snapshot grava só <html lang>. O estado claro abre com o :root escuro de tokens.css.', after: 'O snapshot copia data-theme e o style inline do <html>; o loader aplica os dois ao host do shadow root.', code: '<html data-theme="light" style="--bg-base:#e8ebef">' },
+        { id: 'G8', title: 'Gráfico em <canvas>', board: '(b)', now: 'cloneNode não copia o bitmap: os 7 <canvas> do gráfico chegam vazios e o painel aparece em branco.', after: 'Cada <canvas> vira <img src="data:image/png"> do mesmo tamanho. O usuário vê que a imagem é congelada.', code: '<canvas 808×652> → <img data-layers-canvas>' },
+        { id: 'G12', title: 'Rótulo de L0', board: '(c)', now: 'No mock do WAVE a raiz é #app, mas recebe o nome .shell do layers.json. .shell aparece em L0 e de novo em L1.', after: 'L0 ganha um nome que descreve o que ele é num mock de snapshot; root.name e root.src vão para o elemento certo.', code: 'L0 .shell › L1 .shell  →  L0 #app › L1 .shell' }
+      ],
+      decisions: [
+        dec('D1', 'Como avisar que o gráfico é imagem congelada?', 'Quadro (b). Os tooltips do Layers são title nativo; não há tooltip customizado.', 'Selo IMG na linha da árvore (slot do badge) + title nativo na camada. Nada desenhado sobre o mock.', 'Selo “imagem congelada” no canto do <img>, desenhado pelo Layers fora do shadow root; title igual ao da A.', 'a'),
+        dec('D2', 'Que texto L0 mostra num mock de snapshot?', 'Quadro (c). Aparece na linha L0 da árvore e no title dela.', '“#app · snapshot”: nome real do elemento + sufixo cinza no slot de contagem.', '“mock · csv-loaded”: nome do estado (S2.22b); URL, data e viewport da captura no title.', 'a'),
+        dec('D3', 'Cor de seleção sobre mock claro', 'SELECTS assume “o mock é sempre escuro”. Com G7 o mock pode ser claro.', 'Manter SELECTS como está; o usuário troca a cor se “Branco” sumir.', 'Trocar “Branco” por um tom escuro só quando o host tiver data-theme="light".', 'a')
+      ],
+      risks: [
+        '1. scopeAst (lib/layers-core.js:271) troca só o “:root” do seletor: :root[data-theme=\'light\'] vira :host[data-theme=\'light\'], que nunca casa. Precisa virar :host([data-theme=\'light\']). As variáveis inline no host funcionam sem isso.',
+        '2. Os 7 canvas do gráfico viram 7 PNG em data: num mock que já tem 170 KB. Pode valer descartar a camada vazia (z-index 2) ou ter um teto de tamanho.',
+        '3. G7, G8 e G12 só existem na linha 61 da spec. A correspondência G7=tema, G8=canvas, G12=L0 segue a ordem do texto.'
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

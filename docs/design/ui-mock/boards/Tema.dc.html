@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>S2.22c tema do html</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8b96a3}a:hover{color:#adb5be}
+</style>
+</helmet>
+<div style="{{ vars }}width:1240px;height:760px;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:16px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px">
+  <div style="display:flex;align-items:baseline;gap:12px">
+    <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sel)">(a) G7</span>
+    <h2 style="margin:0;font:600 16px/1.3 'Inter',sans-serif;color:var(--fg0)">Estado capturado em tema claro: hoje abre escuro, depois abre como no Traval</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px">
+    <sc-for list="{{ sides }}" as="s" hint-placeholder-count="2">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">{{ s.label }}</span>
+        <span style="height:18px;display:inline-flex;align-items:center;padding:0 6px;border-radius:3px;border:1px solid {{ s.tagBdr }};color:{{ s.tagColor }};font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.06em">{{ s.tag }}</span>
+      </div>
+
+      <div style="display:flex;flex-direction:column;background:var(--stageA);border:1px solid var(--line1);border-radius:6px;overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;height:34px;padding:0 8px;border-bottom:1px solid var(--line1);background:rgba(var(--bg1Rgb),.7)">
+          <button type="button" style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:1px solid var(--line1);border-radius:4px;background:transparent;color:var(--fg2);font:500 11px/1 'JetBrains Mono',monospace;cursor:pointer">
+            <span style="display:flex;color:var(--sel)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"></path></svg></span>Traval<span style="color:var(--fg3);font-size:9px">▾</span>
+          </button>
+          <button type="button" style="display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;border:0;background:rgba(var(--bg1Rgb),.7);color:var(--fg2);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;cursor:pointer"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"></path></svg>Interagir<span style="color:var(--fg3);font-size:12px">▾</span></button>
+          <span style="flex:1"></span>
+          <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">estado: csv-loaded · tema claro · 1280×760</span>
+        </div>
+
+        <div style="padding:16px">
+          <div style="{{ s.mock }}position:relative;height:330px;display:flex;flex-direction:column;background:var(--tb);color:var(--tt);font:400 11px/1.4 'Inter',sans-serif;border-radius:2px;overflow:hidden;box-shadow:0 10px 30px var(--shadow2)">
+            <div style="height:34px;flex:0 0 34px;display:flex;align-items:center;gap:10px;padding:0 8px;background:var(--ts);border-bottom:1px solid var(--tbd)">
+              <div style="display:flex;align-items:center;gap:2px;padding:2px;border:1px solid var(--tbd);border-radius:4px;background:var(--ts2)">
+                <span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;color:var(--tm)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14M5 12h14"></path></svg></span>
+                <span style="width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;color:var(--tm)"><svg viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" aria-hidden="true"><path d="M4 7h6l2 2h8v9H4z"></path></svg></span>
+              </div>
+              <span style="font:600 12px/1 'Inter',sans-serif;letter-spacing:.24em;color:var(--ta)">WAVE</span>
+              <span style="height:20px;display:inline-flex;align-items:center;padding:0 8px;border:1px solid var(--tbd);border-radius:4px;color:var(--tt);font:500 10px/1 'Inter',sans-serif">Workspace · B3 diário</span>
+              <span style="flex:1"></span>
+              <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--tm)">tema: claro</span>
+            </div>
+            <div style="height:24px;flex:0 0 24px;display:flex;align-items:flex-end;gap:2px;padding:0 8px;background:var(--tb);border-bottom:1px solid var(--tbd)">
+              <span style="height:20px;display:inline-flex;align-items:center;padding:0 10px;background:var(--ts);border:1px solid var(--tbd);border-bottom:0;border-radius:3px 3px 0 0;color:var(--tt);font:500 10px/1 'Inter',sans-serif">WINFUT_M5.csv</span>
+              <span style="height:20px;display:inline-flex;align-items:center;padding:0 10px;color:var(--tm);font:500 10px/1 'Inter',sans-serif">PETR4_D1.csv</span>
+            </div>
+            <div style="flex:1;min-height:0;display:flex">
+              <div style="position:relative;flex:1;min-width:0;background:var(--ts)">
+                <div style="position:absolute;left:8px;right:44px;top:12px;height:220px;background-image:linear-gradient(var(--tgrid) 1px,transparent 1px);background-size:100% 44px">
+                  <sc-for list="{{ candles }}" as="c" hint-placeholder-count="30">
+                  <div style="position:absolute;left:{{ c.left }};width:{{ c.w }};top:0;height:220px">
+                    <div style="position:absolute;left:50%;width:1px;top:{{ c.wickTop }};height:{{ c.wickH }};background:{{ c.col }}"></div>
+                    <div style="position:absolute;left:0;right:0;top:{{ c.bodyTop }};height:{{ c.bodyH }};background:{{ c.col }}"></div>
+                  </div>
+                  </sc-for>
+                </div>
+                <div style="position:absolute;right:0;top:0;bottom:0;width:40px;border-left:1px solid var(--tbd);display:flex;flex-direction:column;justify-content:space-around;align-items:center;font:500 9px/1 'JetBrains Mono',monospace;color:var(--tm)"><span>128.4</span><span>127.9</span><span>127.3</span><span>126.8</span></div>
+              </div>
+              <div style="position:relative;width:170px;flex:0 0 170px;display:flex;flex-direction:column;gap:6px;padding:10px;box-sizing:border-box;background:var(--ts2);border-left:1px solid var(--tbd);outline:1px solid var(--sel);outline-offset:-1px">
+                <span style="font:600 10px/1 'Inter',sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--tm)">Resumo Global</span>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--tm)">Trades</span><span style="font-family:'JetBrains Mono',monospace">128</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--tm)">Acerto</span><span style="font-family:'JetBrains Mono',monospace">54,7%</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--tm)">Resultado</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tbull)">+3.420</span></div>
+                <div style="display:flex;justify-content:space-between"><span style="color:var(--tm)">Drawdown</span><span style="font-family:'JetBrains Mono',monospace;color:var(--tbear)">−1.180</span></div>
+                <span style="position:absolute;left:-1px;top:-15px;height:14px;display:inline-flex;align-items:center;padding:0 4px;background:var(--sel);color:#06101f;font:600 9px/1 'JetBrains Mono',monospace">.global-summary</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)">Host do shadow root</span>
+        <code style="padding:6px 8px;border:1px solid var(--line1);border-radius:4px;background:var(--bg0);color:var(--fg1);font:500 10px/1.5 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-all">{{ s.host }}</code>
+        <span style="font:500 11px/1.5 'Inter',sans-serif;color:var(--fg2)">{{ s.note }}</span>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+  <span style="font:500 10px/1.45 'Inter',sans-serif;color:var(--fg3)">Valores do Resumo Global são de exemplo. Cores do mock: fixtures/traval/src/styles/tokens.css (:root e :root[data-theme='light']) com --bg-base inline vindo das Configurações do Traval. Contorno de seleção na cor SELECTS “{{ selName }}”.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"$preview":{"width":1240,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
+    };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const css = o => Object.keys(o).map(k => '--' + k + ':' + o[k]).join(';') + ';';
+    const travalDark = { tb: '#0e1116', ts: '#161b22', ts2: '#1c2230', tbd: '#2b3140', tt: '#e6edf3', tm: '#8b949e', ta: '#60a5fa', tbull: '#26c281', tbear: '#ef5350', tgrid: 'rgba(255,255,255,.04)' };
+    const travalLight = { tb: '#e8ebef', ts: '#ffffff', ts2: '#eef1f5', tbd: '#dde1e6', tt: '#1a1f26', tm: '#5a636e', ta: '#2f7fe0', tbull: '#148a61', tbear: '#b82f2c', tgrid: 'rgba(0,0,0,.05)' };
+    const H = 220, nCandles = 34; let seed = 11, p = .55; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const candles = [];
+    for (let i = 0; i < nCandles; i++) {
+      const o = p, c = Math.min(.88, Math.max(.12, o + (rnd() - .47) * .14)), e = rnd() * .05;
+      const hi = Math.max(o, c) + e, lo = Math.min(o, c) - e; p = c;
+      candles.push({ left: (i / nCandles * 100 + .7) + '%', w: (100 / nCandles * .58) + '%', bodyTop: ((1 - Math.max(o, c)) * H) + 'px', bodyH: Math.max(2, Math.abs(c - o) * H) + 'px', wickTop: ((1 - hi) * H) + 'px', wickH: ((hi - lo) * H) + 'px', col: c >= o ? 'var(--tbull)' : 'var(--tbear)' });
+    }
+    return {
+      vars,
+      selName: S[this.props.selecao] ? this.props.selecao : 'Âmbar',
+      candles,
+      sides: [
+        { label: 'Antes · hoje', tag: 'tema perdido', tagBdr: 'color-mix(in srgb, var(--warn) 50%, transparent)', tagColor: 'var(--warn)', mock: css(travalDark),
+          host: '<div class="layers-host">  #shadow-root\n  :host { … }  /* :root de tokens.css → escuro */',
+          note: 'O snapshot grava só <html lang="pt-BR">. data-theme="light" e o style inline (--bg-base, --spc) somem, e o mock cai no :root escuro.' },
+        { label: 'Depois · S2.22c', tag: 'tema do <html>', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', mock: css(travalLight),
+          host: '<div class="layers-host" data-theme="light"\n     style="--bg-base:#e8ebef; --spc:1">  #shadow-root\n  :host([data-theme=\'light\']) { … }',
+          note: 'O snapshot copia os atributos do <html>; o loader os põe no host. A regra :root[data-theme] precisa virar :host([data-theme]) no escopo.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
