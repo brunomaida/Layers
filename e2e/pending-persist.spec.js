@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S2.14: pending changes survive a reload. Same axai setup as undo-redo.spec.js.
 const SHADOW = '0 0 0 3px rgb(1, 2, 3)';
@@ -14,7 +14,7 @@ const count = (list, needle) => list.filter((v) => v.includes(needle)).length;
 async function open(page) {
   await page.goto('/?layers=fixtures/axai/');
   await readNodes(page);
-  await page.locator('[data-node-id][title^=".sum-stat"]').first().click();
+  await (await treeRow(page, { title: '.sum-stat' })).click();
   await page.getByText('Só este', { exact: false }).first().click();
 }
 

@@ -54,3 +54,84 @@ export async function readTree(page) {
     rootBox,
   };
 }
+
+// S4.10 window-safe tree access. The tree container is the `overflow-y: auto` ancestor of the first
+// `[data-node-id]` row (as scrollFrames in tree-perf-helpers.js), so these work with and without the
+// row window. A row outside the mounted slice does not exist in the DOM: scroll first, then query.
+const frames2 = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+
+// Sets the container scrollTop (clamped by the browser) and reports its geometry after the render.
+async function scrollTree(page, to) {
+  const g = await page.evaluate((to) => {
+    let b = document.querySelector('[data-node-id]');
+    while (b && getComputedStyle(b).overflowY !== 'auto') b = b.parentElement;
+    if (!b) return null;
+    b.scrollTop = to === 'end' ? b.scrollHeight : to;
+    return true;
+  }, to);
+  if (!g) throw new Error('tree container not found');
+  await frames2(page);
+  return page.evaluate(() => {
+    let b = document.querySelector('[data-node-id]');
+    while (b && getComputedStyle(b).overflowY !== 'auto') b = b.parentElement;
+    return { top: b.scrollTop, ch: b.clientHeight, sh: b.scrollHeight };
+  });
+}
+
+// First mounted row (from the top of the list) that matches title prefix and/or text. Scrolls the
+// container from the top, one clientHeight at a time, until it mounts.
+export async function treeRow(page, { title, text } = {}) {
+  let loc = page.locator(title != null ? `[data-node-id][title^="${title}"]` : '[data-node-id]');
+  if (text != null) loc = loc.filter({ hasText: text });
+  let g = await scrollTree(page, 0);
+  for (;;) {
+    if (await loc.count()) return loc.first();
+    if (g.top + g.ch >= g.sh) break;
+    g = await scrollTree(page, g.top + g.ch);
+  }
+  throw new Error(`tree row not found: ${JSON.stringify({ title, text })}`);
+}
+
+// Last row of the list: scrolls to the end, then takes the last mounted `[data-node-id]`.
+export async function lastTreeRow(page) {
+  await scrollTree(page, 'end');
+  return page.locator('[data-node-id]').last();
+}
+
+// Geometry of the mounted slice. mounted = `[data-node-id]` rows; padTop/padBot = height of the
+// leading/trailing container children that are neither a row nor a code block (the spacers; 0
+// without the window); contiguous = children touch and add up to scrollHeight - container padding;
+// covers = the mounted slice spans the visible rectangle (a spacer edge never shows).
+export function treeWindowState(page) {
+  return page.evaluate(() => {
+    let box = document.querySelector('[data-node-id]');
+    while (box && getComputedStyle(box).overflowY !== 'auto') box = box.parentElement;
+    if (!box) throw new Error('tree container not found');
+    const flat = (p) => [...p.children].flatMap((c) => (getComputedStyle(c).display === 'contents' ? flat(c) : getComputedStyle(c).display === 'none' ? [] : [c]));
+    const cs = getComputedStyle(box);
+    const padT = parseFloat(cs.paddingTop), padB = parseFloat(cs.paddingBottom);
+    const bt = box.getBoundingClientRect().top + box.clientTop;
+    const kids = flat(box).map((el) => {
+      const r = el.getBoundingClientRect();
+      return { y: r.top - bt + box.scrollTop, h: r.height, real: el.hasAttribute('data-node-id') || !!el.querySelector('textarea') };
+    });
+    const first = kids.findIndex((k) => k.real);
+    const last = kids.length - 1 - [...kids].reverse().findIndex((k) => k.real);
+    const sum = (a) => a.reduce((s, k) => s + k.h, 0);
+    const padTop = first < 0 ? 0 : sum(kids.slice(0, first));
+    const padBot = first < 0 ? 0 : sum(kids.slice(last + 1));
+    let contiguous = kids.length > 0 && Math.abs(kids[0].y - padT) <= 1 && Math.abs(sum(kids) - (box.scrollHeight - padT - padB)) <= 1;
+    for (let i = 1; i < kids.length; i++) if (Math.abs(kids[i].y - (kids[i - 1].y + kids[i - 1].h)) > 1) contiguous = false;
+    const visTop = box.scrollTop, visBot = box.scrollTop + box.clientHeight;
+    const covers = first >= 0 && (padTop === 0 || kids[first].y <= visTop + 0.5) && (padBot === 0 || kids[last].y + kids[last].h >= visBot - 0.5);
+    return {
+      mounted: box.querySelectorAll('[data-node-id]').length,
+      scrollHeight: box.scrollHeight,
+      clientHeight: box.clientHeight,
+      padTop,
+      padBot,
+      contiguous,
+      covers,
+    };
+  });
+}

@@ -1643,6 +1643,38 @@
         "id": "S4.10",
         "type": "spec",
         "name": "Janela da árvore para projetos grandes (1500+ tags)",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-17-s2-s4-closeout.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-17-s2-s4-closeout.md)",
+            "title": "2026-10-17-s2-s4-closeout.md)"
+          },
+          {
+            "name": "feature-261017-0-s4-10-tree-window.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261017-0-s4-10-tree-window.md)",
+            "title": "feature-261017-0-s4-10-tree-window.md)"
+          }
+        ],
+        "reason": "janela de linhas: em 1.500 tags orbit 53,4 → 34,0 ms/frame, select 309 → 182 ms, hover 74 → 17 ms; scroll da árvore só −5 % (origem S4.7)",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.11",
+        "type": "spec",
+        "name": "Janela da árvore: foco e congelamento",
         "start": "2026-10-20",
         "end": "2026-10-22",
         "status": "todo",
@@ -1652,7 +1684,7 @@
         ],
         "progress": 0,
         "docs": [],
-        "reason": "origem S4.7: com 1.500 tags a montagem e o diff de ~1.650 linhas custam 25 ms/frame no orbit (teto 23,8 %), select de linha 486 ms e scroll da árvore 271 ms/frame; no Traval o teto é 2,6 % e o memo ≈ 0",
+        "reason": "revisão da S4.10: o congelamento da faixa com foco de textarea/teclado deixa um clique em linha se perder ou agir em outro nó depois de rolar com a textarea focada, o scroll para cima perto do início congelado pode deixar a vista em branco e o fim congelado cresce sem limite; desenho candidato: lista inteira montada enquanto há foco de textarea/teclado na árvore, janela volta ~250 ms depois do blur, blur ignorado com `!document.hasFocus()`",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,

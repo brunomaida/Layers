@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S3.3: characterization of every global key of the window keydown handler (`onKey`). Written against the
 // literal key map and kept green across the refactor that derives the handler from LayersCore.ACTIONS.
@@ -128,7 +128,7 @@ test('OnKey_TeclaGlobal_MesmoEfeitoDoMapa', async ({ page }) => {
   await reset(page);
 
   // 6. frame and center act on the selection
-  await page.locator('[data-node-id]').nth(1).click();
+  await (await treeRow(page, { title: '.bar ' })).click();
   await reset(page);
   t = await pressChange(page, 'f', base);
   expect(t.raw).not.toBe(base.raw);
