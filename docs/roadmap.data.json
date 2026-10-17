@@ -1918,7 +1918,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 84,
+    "progress": 89,
     "docs": [],
     "children": [
       {
@@ -2011,18 +2011,30 @@
         "name": "docs/shortcuts.md",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s7-4-shortcuts-doc.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-16-s7-4-shortcuts-doc.md)",
             "title": "2026-10-16-s7-4-shortcuts-doc.md)"
+          },
+          {
+            "name": "docs-261016-0-s7-4-shortcuts-doc.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261016-0-s7-4-shortcuts-doc.md)",
+            "title": "docs-261016-0-s7-4-shortcuts-doc.md)"
+          },
+          {
+            "name": "2026-10-16-s7-4-shortcuts-doc.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-16-s7-4-shortcuts-doc.md",
+            "title": "Implementation Report — s7-4-shortcuts-doc"
           }
         ],
         "reason": "checklist G",
