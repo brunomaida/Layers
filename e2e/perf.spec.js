@@ -386,10 +386,6 @@ test('Tree_1500TagsScroll_RecordsFrameInterval', async ({ page }) => {
 
 test('Orbit_Budget_Above50Fps', async () => {
   test.skip(!orbit, 'orbit measurement missing');
-  // Known gap (checklist D, S4.9): about 42 fps on the Traval mock; S4.8 measured plane attributes off the critical path.
-  // Flips to a hard failure once it passes, which is the signal to drop this line and keep the
-  // budget enforced.
-  test.fail(true, 'orbit budget not met yet: S4.9 (composited layers) is open; S4.10 (tree window at scale) does not move the Traval budget');
   expect(orbit.fps, `mean frame ${orbit.meanFrameMs.toFixed(1)} ms, p95 ${orbit.p95FrameMs.toFixed(1)} ms`).toBeGreaterThan(50);
 });
 
