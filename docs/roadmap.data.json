@@ -1096,7 +1096,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 65,
+    "progress": 80,
     "docs": [
       {
         "name": "2026-10-16-s3-5-visual-functions-new.md",
@@ -1170,18 +1170,18 @@
         "name": "Tooltips ação e atalho",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [
           {
-            "name": "2026-10-16-s3-3-action-tooltips.md",
+            "name": "2026-10-16-s3-3-action-tooltips.md)",
             "type": "spec",
-            "path": "/docs/superpowers/plans/2026-10-16-s3-3-action-tooltips.md",
-            "title": "S3.3 — Tooltips ação e atalho (registro único de ações) — Implementation Plan"
+            "path": "/[](superpowers/plans/2026-10-16-s3-3-action-tooltips.md)",
+            "title": "2026-10-16-s3-3-action-tooltips.md)"
           },
           {
             "name": "docs-261016-0-wave-3-plan.md",
