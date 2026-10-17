@@ -1096,7 +1096,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 80,
+    "progress": 90,
     "docs": [
       {
         "name": "2026-10-16-s3-5-visual-functions-new.md",
@@ -1170,18 +1170,24 @@
         "name": "Tooltips ação e atalho",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s3-3-action-tooltips.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-16-s3-3-action-tooltips.md)",
             "title": "2026-10-16-s3-3-action-tooltips.md)"
+          },
+          {
+            "name": "feature-261016-0-s3-3-action-tooltips.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s3-3-action-tooltips.md)",
+            "title": "feature-261016-0-s3-3-action-tooltips.md)"
           },
           {
             "name": "docs-261016-0-wave-3-plan.md",
