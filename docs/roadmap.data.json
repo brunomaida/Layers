@@ -1909,7 +1909,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-18",
+    "end": "2026-10-19",
     "status": "done",
     "statusLabel": "Completed",
     "tags": [
@@ -2218,6 +2218,38 @@
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
+      },
+      {
+        "id": "S7.9",
+        "type": "spec",
+        "name": "Remover Claude-Session dos docs e travar o trailer",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "docs-261017-0-s7-9-drop-session-trailer-refs.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261017-0-s7-9-drop-session-trailer-refs.md)",
+            "title": "docs-261017-0-s7-9-drop-session-trailer-refs.md)"
+          },
+          {
+            "name": "2026-10-17-s7-9-drop-session-trailer-refs.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-17-s7-9-drop-session-trailer-refs.md",
+            "title": "Implementation Report — s7-9-drop-session-trailer-refs"
+          }
+        ],
+        "reason": "Reescrita de histórico de 2026-10-17; planos mandavam o trailer e o CLAUDE.md proíbe",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
       }
     ]
   },
@@ -2225,8 +2257,8 @@
     "id": "S8",
     "type": "phase",
     "name": "Trilha MCP e plugin",
-    "start": "2026-10-17",
-    "end": "2026-10-24",
+    "start": "2026-10-18",
+    "end": "2026-10-25",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -2246,8 +2278,8 @@
         "id": "S8.1",
         "type": "spec",
         "name": "Spike de servidor MCP stdio sobre o core",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2265,8 +2297,8 @@
         "id": "S8.2",
         "type": "spec",
         "name": "Spike Playwright: data-vite-dev-id sobrevive",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2284,8 +2316,8 @@
         "id": "S8.3",
         "type": "spec",
         "name": "Snapshot headless (slice 3)",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2303,8 +2335,8 @@
         "id": "S8.4",
         "type": "spec",
         "name": "apply_patch e porta Node de writeText",
-        "start": "2026-10-20",
-        "end": "2026-10-22",
+        "start": "2026-10-21",
+        "end": "2026-10-23",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2322,8 +2354,8 @@
         "id": "S8.5",
         "type": "spec",
         "name": "Proveniência SPA via data-vite-dev-id",
-        "start": "2026-10-21",
-        "end": "2026-10-23",
+        "start": "2026-10-22",
+        "end": "2026-10-24",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2341,8 +2373,8 @@
         "id": "S8.6",
         "type": "spec",
         "name": "Re-snapshot sem renovar mtimes com changes pendentes",
-        "start": "2026-10-22",
-        "end": "2026-10-24",
+        "start": "2026-10-23",
+        "end": "2026-10-25",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2363,7 +2395,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-24",
+    "end": "2026-10-25",
     "statusLabel": "Reference",
     "tags": [
       "bdn",

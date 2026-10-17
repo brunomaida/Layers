@@ -179,7 +179,7 @@ Executor: A.5, E.4 e F, sempre com formato, tokens de recusa e validação pelo 
 > Adicionar as linhas `M` (medir), `=` (alias de zoom) e o Esc completo à tabela `SHORTCUTS` (fonte única, 1-3 linhas em `index.html:829-835`). Cobrir também alt+clique, ⚡ Interagir e a ação `attr` em `shortcuts.md`, ou só linkar `docs/layers-json.md` (recomendado, sem duplicar). A doc deve dizer Ctrl/Cmd, já que `Meta` vale como Ctrl (`:1611`, `:1617`).
 
 > [!DECISION] D6 — trailer dos commits
-> O histórico da `develop` está dividido: os 37 commits da S2.22b-e levam `Claude-Session:`; da S2.22a para trás, S4.6 e S3.2 não levam. Os planos S3.2, S4.6 e S5.7 proíbem o trailer; o `CLAUDE.md` do projeto e o global proíbem atribuição a IA. **Recomendado: sem trailer** em todos os commits e PRs da Onda 3 (os planos não escrevem trailer nos comandos). Se você quiser manter a URL da sessão, diga e reverto a regra.
+> O histórico da `develop` tinha 86 commits com `Claude-Session:`; foram reescritos em 2026-10-17 e nenhum commit leva o trailer. Os planos S3.2, S4.6 e S5.7 proíbem o trailer; o `CLAUDE.md` do projeto e o global proíbem atribuição a IA. **Regra: sem trailer** em todos os commits e PRs da Onda 3 (os planos não escrevem trailer nos comandos); o hook `commit-msg` remove o trailer se ele aparecer.
 
 > [!DECISION] D7 — S4.7: foco durante a rolagem
 > Se a janela for construída, a Option A congela a faixa montada enquanto houver foco dentro do contêiner (textarea ou botão de linha) e atualiza ao sair. Efeito visível: durante a rolagem com foco, a área fora da faixa fica vazia até o blur. Aceitar explicitamente, ou escolher blur automático ao mover a janela.
