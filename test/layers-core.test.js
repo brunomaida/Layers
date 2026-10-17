@@ -2229,3 +2229,78 @@ describe('AppearanceDefaults', () => {
     expect(Object.isFrozen(core.APPEARANCE_DEFAULTS)).toBe(true);
   });
 });
+
+describe('Tooltip', () => {
+  it('AcaoComAtalho_RetornaAcaoEAtalho', () => {
+    expect(core.tooltip('orbitLeft')).toBe('Girar à esquerda (Q)');
+    expect(core.tooltip('panUp')).toBe('Pan para cima (↑)');
+    expect(core.tooltip('zoomIn')).toBe('Zoom + (+)');
+    expect(core.tooltip('rightPanel', 'Recolher o painel de propriedades')).toBe('Recolher o painel de propriedades (P)');
+    expect(core.tooltip('codeApply')).toBe('Aplicar (Ctrl+Enter)');
+    expect(core.tooltip('escape', 'Fechar')).toBe('Fechar (Esc)');
+    expect(core.tooltip('measure', 'Medidas ligadas')).toBe('Medidas ligadas (M)');
+  });
+
+  it('AcaoSemAtalho_RetornaSoAcao', () => {
+    expect(core.tooltip('toggleNode')).toBe('Recolher / expandir');
+    expect(core.tooltip('isolate')).toBe('Isolar o ramo da seleção');
+    expect(core.tooltip('nope')).toBe('');
+    expect(core.tooltip('nope', 'X')).toBe('');
+  });
+});
+
+describe('Shortcuts', () => {
+  it('Registro_SemTeclaDuplicada', () => {
+    const ids = core.ACTIONS.map((a) => a.id);
+    expect(new Set(ids).size).toBe(ids.length);
+    for (const scope of ['global', 'ctrl']) {
+      const keys = core.ACTIONS.filter((a) => a.scope === scope).flatMap((a) => a.keys.map((k) => k.toLowerCase()));
+      expect(new Set(keys).size).toBe(keys.length);
+    }
+  });
+
+  it('Registro_SemTeclaSemDescricao', () => {
+    expect(core.SHORTCUTS).toHaveLength(7);
+    for (const [group, rows] of core.SHORTCUTS) {
+      expect(group).toBeTypeOf('string');
+      for (const row of rows) {
+        expect(row).toHaveLength(2);
+        for (const cell of row) {
+          expect(cell).toBeTypeOf('string');
+          expect(cell.length).toBeGreaterThan(0);
+          expect(cell).not.toContain('|');
+        }
+      }
+    }
+    for (const a of core.ACTIONS) {
+      expect(a.label, a.id).toBeTruthy();
+      if (a.scope === 'none') { expect(a.keys, a.id).toEqual([]); expect(a.hint, a.id).toBeUndefined(); }
+      else expect(a.hint, a.id).toBeTruthy();
+      if (a.scope === 'global' || a.scope === 'ctrl') expect(a.keys.length, a.id).toBeGreaterThanOrEqual(1);
+    }
+  });
+});
+
+describe('KeyAction', () => {
+  it('TeclaGlobal_ResolveId', () => {
+    for (const a of core.ACTIONS.filter((x) => x.scope === 'global')) {
+      for (const k of a.keys) {
+        expect(core.keyAction(k), k).toBe(a.id);
+        if (k.length === 1) expect(core.keyAction(k.toUpperCase()), k.toUpperCase()).toBe(a.id);
+      }
+    }
+    for (const k of ['x', 'Enter', 'z', 'constructor']) expect(core.keyAction(k), k).toBeNull();
+  });
+});
+
+describe('KeyMap', () => {
+  it('TeclaComHandler_EstaNoPainel', () => {
+    const token = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', PageUp: 'PgUp', PageDown: 'PgDn', Escape: 'Esc', '-': '−' };
+    const cells = core.SHORTCUTS.flatMap(([, rows]) => rows.map(([keys]) => keys));
+    const panel = new Set(cells.filter((c) => !c.includes('(')).flatMap((c) => c.split(' ').map((t) => t.toLowerCase())));
+    const handled = core.ACTIONS.filter((a) => a.scope === 'global' || a.scope === 'ctrl').flatMap((a) => a.keys);
+    const missing = handled.filter((k) => !panel.has((token[k] || k).toLowerCase()));
+    expect(missing, 'teclas tratadas ausentes do painel: ' + missing.join(' ')).toEqual([]);
+    expect(cells).toContain('Esc');
+  });
+});
