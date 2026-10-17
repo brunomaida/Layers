@@ -104,3 +104,28 @@ test('AppearanceDefaults_StoredPanelHeaderC_RendersCompactHeader', async ({ page
   expect(m.A).toBe(0);
   expect(m.B).toBe(0);
 });
+
+// corrupted layers/v1/ui: null / '' / unknown values never blank a label or the header
+test('AppearanceDefaults_StoredThemeBogus_FallsBackToGrafite', async ({ page }) => {
+  await load(page, { theme: 'Bogus' });
+  expect(await cssVar(page, '--bg0')).toBe('#2a2e34');
+});
+
+test('AppearanceDefaults_StoredNullOrEmpty_MenuLabelsShowDefaults', async ({ page }) => {
+  await load(page, { theme: null, originColors: '', selectColor: null });
+  await openApar(page);
+  await expect(comboOf(page, 'Tema')).toHaveText(/Gray · 1 Grafite/);
+  await expect(comboOf(page, 'Cor de seleção')).toHaveText(/Coral/);
+  await expect(comboOf(page, 'Cores de origem')).toHaveText(/Mono · cor de seleção/);
+  expect(await cssVar(page, '--bg0')).toBe('#2a2e34');
+  expect(await cssVar(page, '--oD')).toBe('#f08c6c');
+});
+
+test('AppearanceDefaults_StoredPanelHeaderNull_RendersBandedHeader', async ({ page }) => {
+  await load(page, { panelHeader: null }, PLAIN);
+  await readNodes(page);
+  await expect(page.getByText('Componente', { exact: true }).first()).toBeVisible();
+  const m = await markers(page);
+  expect(m.A).toBe(0);
+  expect(m.C).toBe(0);
+});
