@@ -267,7 +267,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ collapseAllCode }}" disabled="{{ noCodeOpen }}" title="{{ collapseCodeTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ collapseCodeColor }};font:700 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ collapseCodeCursor }};flex:0 0 auto">{ }</button>
           <button onClick="{{ treeCollapseAll }}" disabled="{{ treeAllClosed }}" title="{{ treeCollapseTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ treeCollapseColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ treeCollapseCursor }};flex:0 0 auto">{{ treeCollapseGlyph }}</button>
         </div>
-        <div ref="{{ treeScrollRef }}" onScroll="{{ treeScroll }}" onBlur="{{ treeBlur }}" style="overflow-y:auto;min-height:0;padding:4px 0">
+        <div ref="{{ treeScrollRef }}" onScroll="{{ treeScroll }}" onFocus="{{ treeFocus }}" onBlur="{{ treeBlur }}" onPointerDown="{{ treePtr }}" style="overflow-y:auto;overflow-anchor:none;min-height:0;padding:4px 0">
           <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span style="white-space:pre-wrap">{{ emptyBody }}</span><sc-if value="{{ emptyShowCreateBtn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ emptyCreateAction }}" style="align-self:flex-start;margin-top:4px;height:24px;padding:0 10px;border:1px solid var(--line1);border-radius:4px;background:transparent;color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="border-color:rgba(var(--selRgb),.55);color:var(--sel)">Criar layers.json</button></sc-if></div></sc-if>
           <sc-if value="{{ treeHier }}" hint-placeholder-val="{{ true }}">
           <div data-tree-pad="top" style="height:{{ treePadTop }}"></div>
@@ -1095,7 +1095,8 @@ class Component extends DCLogic {
   // S2.22b: estado do mock escolhido por projeto (chave = pendingKey), guardado na sessao para o reload voltar ao mesmo estado
   stateMap = CONF.session.states && typeof CONF.session.states === 'object' ? { ...CONF.session.states } : {};
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
-  codeH = {}; codeObs = new WeakMap(); _treeAll = []; _treeH = []; _treeCodeN = 0; _treeBox = null; // S4.10: alturas medidas das linhas de código por codeKey; lista completa e alturas da aba ativa
+  codeH = {}; codeObs = new Map(); _treeAll = []; _treeH = []; _treeCodeN = 0; _treeBox = null; // S4.10: alturas medidas das linhas de código por codeKey; lista completa e alturas da aba ativa
+  _treeA = 0; _treeB = 0; _treeFrozen = null; _treePtr = false; _treeWinOn = false; _treeWasOn = false; _codeSig = ''; // faixa montada, congelamento por foco, origem do foco (ponteiro x teclado), janela ligada, assinatura que invalida codeH
   treeScrollRef = React.createRef(); colRef = React.createRef(); topBarRef = React.createRef(); gearRef = React.createRef();
   interDdRef = React.createRef();
   saveInter = sz => { this.setState({ interSize: sz }); };
@@ -1824,26 +1825,56 @@ class Component extends DCLogic {
     const box = this.treeScrollRef.current; if (!box) return; // árvore recolhida: fica como está
     const i = this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === id); if (i < 0) return;
     const w = LayersCore.treeWindow({ scrollTop: box.scrollTop - TREE_PAD, viewH: box.clientHeight, rowH: TREE_ROW_H, rows: this._treeH, overscan: 0, reveal: i });
-    if (w.scrollTo === null) return; box.scrollTop = w.scrollTo + TREE_PAD; const top = box.scrollTop; // a faixa acompanha no mesmo lote, sem quadro vazio
-    this.setState(st => st.treeWin.top === top ? null : { treeWin: { ...st.treeWin, top } });
+    if (w.scrollTo === null) return; this._treeFrozen = null; box.scrollTop = w.scrollTo > 0 ? w.scrollTo + TREE_PAD : 0; const top = box.scrollTop; // a faixa acompanha no mesmo lote, sem quadro vazio
+    const out = this.treeHoverOut(top);
+    if (top !== this.state.treeWin.top || out) this.setState(st => ({ treeWin: { ...st.treeWin, top }, ...(out ? { hoverId: null } : null) }), () => this.treeVerify(id));
   }
-  // S4.10: scroll da árvore -> faixa de linhas; só reconstrói a cada TREE_SCROLL_STEP (ou nas pontas), congela com foco de teclado/textarea (key por índice no sc-for reaproveita os nós)
+  // depois do reveal, uma única correção se a altura estimada de linhas de código desmontadas deixou a linha fora da vista
+  treeVerify(id) {
+    const box = this.treeScrollRef.current; if (!box) return; const i = this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === id);
+    const el = i < 0 ? null : box.children[1 + i - this._treeA]; if (!el || el.dataset.nodeId !== id) return;
+    const rb = el.getBoundingClientRect(), bb = box.getBoundingClientRect(); if (rb.top >= bb.top && rb.bottom <= bb.bottom) return;
+    box.scrollTop += rb.top < bb.top ? rb.top - bb.top - TREE_ROW_H : rb.bottom - bb.bottom + TREE_ROW_H; this.treeSync(box, true);
+  }
+  // a linha sob o mouse sai da faixa calculada para o scroll `top`? (a linha desmontada nunca recebe mouseleave)
+  treeHoverOut(top) {
+    const hov = this.state.hoverId; if (hov == null || !this._treeWinOn) return false;
+    const hi = this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === hov); if (hi < 0) return false;
+    const w = LayersCore.treeWindow({ scrollTop: top - TREE_PAD, viewH: Math.max(this.state.treeWin.h, window.innerHeight), rowH: TREE_ROW_H, rows: this._treeH, overscan: TREE_OVERSCAN });
+    return hi < w.start || hi >= w.end;
+  }
+  // S4.10: scroll da árvore -> faixa de linhas; só reconstrói a cada TREE_SCROLL_STEP (ou nas pontas) e não anda com a faixa congelada (key por índice no sc-for reaproveita os nós)
   treeSync(box, force) {
-    const top = box.scrollTop, st = this.state.treeWin; if (top === st.top) return;
+    const top = box.scrollTop, st = this.state.treeWin; if (!this._treeWinOn || top === st.top) return;
     if (!force) {
+      if (this._treeFrozen) return;
       if (Math.abs(top - st.top) < TREE_SCROLL_STEP && top > 0 && top < box.scrollHeight - box.clientHeight - 1) return;
-      const ae = document.activeElement;
-      if (ae && ae !== box && box.contains(ae)) { if (ae.localName === 'textarea' || ae.matches(':focus-visible')) return; ae.blur(); }
+      const ae = document.activeElement; if (ae && ae !== box && box.contains(ae)) ae.blur(); // foco de mouse num botão da linha: sai antes de a janela mover
     }
-    const hov = this.state.hoverId; let out = false;
-    if (hov != null) { const hi = this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === hov);
-      if (hi >= 0) { const w = LayersCore.treeWindow({ scrollTop: top - TREE_PAD, viewH: box.clientHeight, rowH: TREE_ROW_H, rows: this._treeH, overscan: TREE_OVERSCAN }); out = hi < w.start || hi >= w.end; } } // linha desmontada nunca recebe mouseleave
+    const out = this.treeHoverOut(top);
     this.setState(s2 => ({ treeWin: { ...s2.treeWin, top }, ...(out ? { hoverId: null } : null) }));
+  }
+  // Foco: textarea ou foco vindo do Tab congela o início da faixa (só o fim cresce, até o foco + sobra, para o Tab seguir pelas linhas); foco vindo do ponteiro em botão não congela
+  treeFocus(e) {
+    const t = e.target, box = e.currentTarget; if (!this._treeWinOn) return;
+    if (t.localName !== 'textarea' && this._treePtr) { if (this._treeFrozen) { this._treeFrozen = null; this.treeSync(box, true); } return; }
+    const row = t.closest('[data-node-id]'), code = row ? null : t.closest('[data-code-key]');
+    const i = row ? this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === row.dataset.nodeId) : code ? this._treeAll.findIndex(r => r.isCode && r.codeKey === code.dataset.codeKey) : -1;
+    if (!this._treeFrozen) this._treeFrozen = { start: this._treeA, end: this._treeB };
+    const need = i < 0 ? 0 : Math.min(this._treeAll.length, i + 1 + TREE_OVERSCAN);
+    if (need > this._treeFrozen.end) { this._treeFrozen.end = need; this.setState(st => ({ treeWin: { ...st.treeWin, v: st.treeWin.v + 1 } })); }
   }
   // S4.10: observa o contêiner e as linhas de código montadas; a chave é lida no callback (o mesmo div passa a mostrar outra regra)
   observeTree() {
     if (!this.treeRO) return; const box = this.treeScrollRef.current;
     if (box !== this._treeBox) { if (this._treeBox) this.treeRO.unobserve(this._treeBox); this._treeBox = box; if (box) { this.treeRO.observe(box); if (box.scrollTop !== this.state.treeWin.top) this.setState(st => ({ treeWin: { ...st.treeWin, top: box.scrollTop } })); } }
+    // quebra de linha das notas muda com a fonte e a largura do painel: alturas medidas deixam de valer
+    const sig = this.cfg('fontScale') + '|' + this.state.colScale + '|' + this.state.rightPx;
+    if (sig !== this._codeSig) { const first = this._codeSig === ''; this._codeSig = sig; if (!first) { this.codeObs.forEach((k, el) => this.treeRO.unobserve(el)); this.codeObs.clear(); this.codeH = {}; this.setState(st => ({ treeWin: { ...st.treeWin, v: st.treeWin.v + 1 } })); } }
+    this.codeObs.forEach((k, el) => { if (!el.isConnected) { this.treeRO.unobserve(el); this.codeObs.delete(el); } });
+    if (this._treeFrozen && !(box && box.contains(document.activeElement))) { this._treeFrozen = null; if (box) this.treeSync(box, true); } // o foco saiu sem blur (linha removida)
+    if (this._treeWinOn && !this._treeWasOn && box) this.treeSync(box, true); // a lista cresceu e a janela ligou: alinha com o scroll atual
+    this._treeWasOn = this._treeWinOn;
     if (!box || !this._treeCodeN) return;
     box.querySelectorAll('[data-code-key]').forEach(el => { const k = el.dataset.codeKey; if (this.codeObs.get(el) === k) return; if (this.codeObs.has(el)) this.treeRO.unobserve(el); this.codeObs.set(el, k); this.treeRO.observe(el); });
   }
@@ -2281,10 +2312,15 @@ class Component extends DCLogic {
       });
     });
     // S4.10: as linhas seguem construídas inline acima; a janela só fatia a lista da aba ativa (alturas: nó = null, código = medida ou estimativa)
-    const tAll = s.treeTab === 'hier' ? treeRows : elemRows;
-    const tH = tAll.map(r => r.isCode ? (this.codeH[r.codeKey] || 80 + r.rows * 15) : null);
-    const tw = LayersCore.treeWindow({ scrollTop: s.treeWin.top - TREE_PAD, viewH: s.treeWin.h || 600, rowH: TREE_ROW_H, rows: tH, overscan: TREE_OVERSCAN });
-    const treeSlice = tAll.slice(tw.start, tw.end); this._treeAll = tAll; this._treeH = tH; this._treeCodeN = treeSlice.filter(r => r.isCode).length;
+    const tAll = s.treeTab === 'hier' ? treeRows : elemRows; const fsc = +this.cfg('fontScale') || 1;
+    const tH = tAll.map(r => r.isCode ? (this.codeH[r.codeKey] || (80 + r.rows * 15) * fsc) : null);
+    const viewH = Math.max(s.treeWin.h, window.innerHeight); // nunca menor que a janela: expandir um nó grande depois de recolher tudo não mostra quadro vazio
+    const tw = LayersCore.treeWindow({ scrollTop: s.treeWin.top - TREE_PAD, viewH, rowH: TREE_ROW_H, rows: tH, overscan: TREE_OVERSCAN });
+    // lista curta (<= 3 telas): sem janela, tudo montado e espaçadores 0; com foco de teclado/textarea o início fica congelado e só o fim cresce
+    const winOn = tw.total > 3 * viewH; let wa = 0, wb = tAll.length, padTop = 0, padBot = 0;
+    if (winOn) { wa = tw.start; wb = tw.end; padTop = tw.top; padBot = tw.bottom; const fz = this._treeFrozen;
+      if (fz) { wa = Math.min(fz.start, tAll.length); wb = Math.min(fz.end, tAll.length); padTop = 0; padBot = 0; tH.forEach((h, k) => { const v = h == null ? TREE_ROW_H : h; if (k < wa) padTop += v; else if (k >= wb) padBot += v; }); } }
+    const treeSlice = tAll.slice(wa, wb); this._treeAll = tAll; this._treeH = tH; this._treeA = wa; this._treeB = wb; this._treeWinOn = winOn; this._treeCodeN = treeSlice.filter(r => r.isCode).length;
     // recolher / expandir tudo (Hierarquia: raiz + filhos L1 ficam visíveis; Elementos: arquivos e regras)
     const collapsible = s.nodes.filter(n => n.depth >= 1 && kidsOf[n.id] && kidsOf[n.id].length);
     const hierAllClosed = collapsible.length > 0 && collapsible.every(n => s.treeClosed[n.id]);
@@ -2417,7 +2453,8 @@ class Component extends DCLogic {
       allGroupsGlyph: Object.values(s.grpClosed).filter(Boolean).length >= GROUPS.length ? '⊞' : '⊟', allGroupsTitle: Object.values(s.grpClosed).filter(Boolean).length >= GROUPS.length ? 'Expandir todas as seções' : 'Recolher todas as seções',
       toggleAllGroups: () => this.setState(st => { const allClosed = Object.values(st.grpClosed).filter(Boolean).length >= GROUPS.length; const g = {}; if (!allClosed) GROUPS.forEach(([t]) => { g[t] = true; }); return { grpClosed: g }; }),
       treeScrollRef: this.treeScrollRef, declaredCount: nDecl, inheritedCount: nInh, originSource: s.dir && /\.css$/.test(selFile) ? 'origem: ' + selFile : LayersCore.isManualSource(selFile) ? 'origem: ' + selFile + ' — patch manual (a fonte não é .css)' : 'origem: estilos do mock (conecte a pasta para ler o .css)',
-      treeRows: s.treeTab === 'hier' ? treeSlice : [], treePadTop: tw.top + 'px', treePadBot: tw.bottom + 'px', treeScroll: e => this.treeSync(e.currentTarget, false), treeBlur: e => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; this.treeSync(e.currentTarget, true); },
+      treeRows: s.treeTab === 'hier' ? treeSlice : [], treePadTop: padTop + 'px', treePadBot: padBot + 'px', treeScroll: e => this.treeSync(e.currentTarget, false), treeFocus: e => this.treeFocus(e), treePtr: () => { this._treePtr = true; setTimeout(() => { this._treePtr = false; }, 0); },
+      treeBlur: e => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; this._treeFrozen = null; this.treeSync(e.currentTarget, true); },
       treeOpen: s.treeOpen, treeChevron: s.treeOpen ? '▾' : '▸', toggleTree: () => this.setState(st => ({ treeOpen: !st.treeOpen })),
       treeCollapseAll, treeCollapseGlyph: '⊟', treeCollapseColor: treeAllClosed ? 'var(--line2)' : 'var(--fg2)', treeCollapseCursor: treeAllClosed ? 'default' : 'pointer', treeAllClosed, treeCollapseTitle: treeAllClosed ? 'Tudo já recolhido' : (s.treeTab === 'hier' ? 'Recolher todas as linhas (mantém raiz e L1 visíveis)' : 'Recolher todos os arquivos e regras'),
       colRef: this.colRef, topBarRef: this.topBarRef, colTop: (s.topBarH + 12) + 'px', colOpen: s.colOpen, colClosed: !s.colOpen, toggleCol: () => this.setState(st => ({ colOpen: !st.colOpen })),

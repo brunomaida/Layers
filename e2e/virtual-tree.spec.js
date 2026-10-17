@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { instrument, waitForScan } from './perf-helpers.js';
 import { inflateTraval } from './tree-perf-helpers.js';
-import { treeRow, lastTreeRow, treeWindowState } from './tree-helpers.js';
+import { treeRow, lastTreeRow, treeWindowState, readNodes } from './tree-helpers.js';
 
 // S4.10: the layer tree mounts only the visible row window (plus overscan) between two invisible
 // spacers. These invariants hold with or without the window: before it, every row is mounted and the
@@ -77,7 +77,10 @@ test('VirtualTree_1500Nos_MontaPoucasLinhas', async ({ page }) => {
   const st = await treeWindowState(page);
   const n = await nodeCount(page);
   expect(n).toBeGreaterThan(1000);
-  expect(st.mounted, 'mounted rows').toBeLessThanOrEqual(Math.ceil(st.clientHeight / 22) + 2 * OVERSCAN + 2);
+  // the slice is sized by max(container, window) height, so a small container never starts with a blank band
+  const winH = page.viewportSize().height;
+  expect(st.mounted, 'mounted rows').toBeLessThanOrEqual(Math.ceil(Math.max(st.clientHeight, winH) / 22) + 2 * OVERSCAN + 2);
+  expect(st.mounted, 'mounted rows cover the window height').toBeGreaterThanOrEqual(Math.ceil(winH / 22));
   expect(st.scrollHeight, 'spacers keep the full height').toBe(8 + n * 22);
   expect(st.contiguous).toBe(true);
   expect(st.covers).toBe(true);
@@ -88,15 +91,34 @@ test('VirtualTree_RolagemEmPassos_FaixaCobreAVista', async ({ page }) => {
   await open(page);
   const bad = [];
   const max = await box(page).evaluate((el) => el.scrollHeight - el.clientHeight);
+  const top = () => box(page).evaluate((el) => el.scrollTop);
   // 97 px: neither a multiple of 22 nor of 110, and below the 110 px rebuild step + overscan margin
   for (let y = 0; y <= max + 97; y += 97) {
-    await scrollTo(page, Math.min(y, max));
-    // the rebuild is a React task that can land after the 2 frames: give it a few more before calling the slice stale
-    let st = await treeWindowState(page);
-    for (let i = 0; i < 12 && !(st.covers && st.contiguous); i++) { await frames2(page); st = await treeWindowState(page); }
-    if (!st.covers || !st.contiguous) bad.push({ y, covers: st.covers, contiguous: st.contiguous, padTop: st.padTop, padBot: st.padBot });
+    const want = Math.min(y, max);
+    await scrollTo(page, want);
+    const st = await treeWindowState(page); // first read, 2 frames after the scroll: covers must already hold
+    const t1 = await top();
+    await frames2(page);
+    const t2 = await top();
+    if (!st.covers || !st.contiguous || t1 !== want || t2 !== want) bad.push({ y: want, t1, t2, covers: st.covers, contiguous: st.contiguous, padTop: st.padTop, padBot: st.padBot });
   }
-  expect(bad, 'steps where the mounted slice leaves the view empty').toEqual([]);
+  expect(bad, 'steps where the slice leaves the view empty or scrollTop drifts').toEqual([]);
+});
+
+test('VirtualTree_RodaDoMouse_ScrollTopSemFuga', async ({ page }) => {
+  await open(page);
+  const bb = await box(page).boundingBox();
+  await page.mouse.move(bb.x + bb.width / 2, bb.y + bb.height / 2);
+  const top = () => box(page).evaluate((el) => el.scrollTop);
+  for (let k = 1; k <= 10; k++) {
+    await page.mouse.wheel(0, 100);
+    let prev = -1, cur = await top();
+    for (let i = 0; i < 40 && cur !== prev; i++) { prev = cur; await frames2(page); cur = await top(); } // smooth scroll settles
+    expect(cur, `after wheel step ${k}`).toBe(100 * k);
+    await frames2(page);
+    await frames2(page);
+    expect(await top(), `stable 2 frames after step ${k}`).toBe(100 * k);
+  }
 });
 
 test('VirtualTree_SelecionarPlano_RolaAteALinha', async ({ page }) => {
@@ -233,6 +255,92 @@ test('VirtualTree_BotaoComFoco_RolagemNaoTrocaONo', async ({ page }) => {
   await scrollTo(page, 0);
   await expect(page.locator(`[data-node-id="${at.id}"] button`).first()).toHaveText('▸');
   expect(await rowsAbove(at.id), 'rows above the toggled one are unchanged').toEqual(above);
+});
+
+test('VirtualTree_CliqueChevronTeclaFERolagem_JanelaAcompanha', async ({ page }) => {
+  await open(page);
+  await page.locator('[data-node-id]').nth(5).locator('button').first().click(); // mouse focus on a row button
+  await page.keyboard.press('f'); // a key press makes :focus-visible match for the mouse-focused button
+  const before = await page.locator('[data-node-id]').first().getAttribute('data-node-id');
+  await scrollTo(page, 2000);
+  let st = await treeWindowState(page);
+  for (let i = 0; i < 6 && !(st.covers && st.padTop > 1500); i++) { await frames2(page); st = await treeWindowState(page); }
+  expect(st.covers, 'slice covers the view after the scroll').toBe(true);
+  expect(st.padTop, 'the window followed the scroll').toBeGreaterThan(1500);
+  expect(await page.locator('[data-node-id]').first().getAttribute('data-node-id')).not.toBe(before);
+  expect(await page.evaluate(() => !document.querySelector('[data-tree-box]').contains(document.activeElement)), 'mouse-focused button was blurred').toBe(true);
+});
+
+test('VirtualTree_TabPelasLinhas_FocoNaoEscapaNemTravaAJanela', async ({ page }) => {
+  await open(page);
+  const mountedAtStart = (await treeWindowState(page)).mounted;
+  await page.locator('input[placeholder="Buscar camada…"]').focus();
+  const where = () => page.evaluate(() => {
+    const t = document.activeElement, b = document.querySelector('[data-tree-box]'), r = t.closest('[data-node-id]');
+    return { inBox: b.contains(t), id: r && r.dataset.nodeId };
+  });
+  const seen = new Set();
+  let entered = false;
+  for (let i = 0; i < mountedAtStart + 40; i++) {
+    await page.keyboard.press('Tab');
+    const w = await where();
+    if (w.inBox) entered = true;
+    if (entered) {
+      expect(w.inBox, `Tab ${i}: focus stayed in the tree`).toBe(true);
+      seen.add(w.id);
+      const st = await treeWindowState(page);
+      expect(st.covers && st.contiguous, `Tab ${i}: mounted slice covers the view`).toBe(true);
+    }
+  }
+  expect(seen.size, 'Tab went past the rows mounted at the start').toBeGreaterThan(mountedAtStart);
+  await page.locator('input[placeholder="Buscar camada…"]').focus(); // focus leaves the tree: the frozen window catches up
+  await frames2(page);
+  await frames2(page);
+  const st = await treeWindowState(page);
+  expect(st.covers).toBe(true);
+  expect(st.padTop, 'window follows the scroll position after blur').toBeGreaterThan(500);
+});
+
+test('VirtualTree_SelecionarRaiz_NaoMoveScrollTop', async ({ page }) => {
+  await open(page);
+  await scrollTo(page, 0);
+  await page.locator('[data-node-id="0"]').click();
+  await frames2(page);
+  await frames2(page);
+  expect(await box(page).evaluate((el) => el.scrollTop), 'row 0 is already visible: the 4 px top padding stays').toBe(0);
+});
+
+test('VirtualTree_ListaCurta_SemJanela', async ({ page }) => {
+  await page.goto('/?layers=fixtures/axai/');
+  await readNodes(page);
+  await page.evaluate(() => {
+    let b = document.querySelector('[data-node-id]');
+    while (b && getComputedStyle(b).overflowY !== 'auto') b = b.parentElement;
+    b.setAttribute('data-tree-box', '');
+  });
+  const st = await treeWindowState(page);
+  expect(st.padTop + st.padBot, 'no spacers for a list under 3 screens').toBe(0);
+  expect(st.mounted, 'every row mounted').toBe(await nodeCount(page));
+});
+
+test('VirtualTree_FonteMuda_AlturaDoCodigoDesmontadoEhRecalculada', async ({ page }) => {
+  await open(page);
+  await page.locator('[data-node-id]').nth(3).click();
+  await page.locator('[data-node-id]').nth(3).locator('button[title^="Expandir o código do estilo"]').click();
+  await scrollTo(page, 0);
+  await frames2(page);
+  await scrollTo(page, 3000); // the code row unmounts: its height now comes from the cache
+  const away = () => box(page).evaluate((el) => el.scrollHeight);
+  const h0 = await away();
+  await page.locator('button[title^="Aparência · Fonte"]').click();
+  await page.locator('label[title^="Tamanho proporcional"] input[type=range]').evaluate((el) => {
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(el, '1.5');
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+  });
+  await frames2(page);
+  await frames2(page);
+  const h1 = await away();
+  expect(h1, 'unmounted code row height follows the font scale, not the stale measure').not.toBe(h0);
 });
 
 test('TreeHelpers_TreeRowELastTreeRow_AchamLinhasForaDaFaixa', async ({ page }) => {
