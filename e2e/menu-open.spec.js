@@ -216,12 +216,12 @@ test('PinnedMenu_StageDrag_ClosesAndOrbits', async ({ page }) => {
   await page.mouse.down();
   await page.mouse.move(c.x + 8, c.y);
   await page.mouse.move(c.x + 60, c.y + 40, { steps: 5 });
-  // Plane sets willChange 'transform' only while dragging (same probe as viewport-culling.spec.js)
+  // While dragging the planes sit in div[data-plane-group] (S4.9); the groups and the world carry will-change: transform
   const dragging = await page.evaluate(() => {
     const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
       getComputedStyle(el).backgroundImage.includes('radial-gradient'),
     );
-    return [...stage.querySelectorAll('div')].some((el) => el.style.willChange === 'transform');
+    return !!stage.querySelector('[data-plane-group]');
   });
   await page.mouse.up();
   expect(dragging, 'the orbit starts on the same pointerdown that closes the menu').toBe(true);

@@ -2293,6 +2293,34 @@ describe('KeyAction', () => {
   });
 });
 
+describe('GroupPlanesByZ', () => {
+  it('MesmoZ_UmGrupoNaOrdemDeEntrada', () => {
+    const g = core.groupPlanesByZ([{ id: '0.2', z: 90 }, { id: '0.1', z: 90 }, { id: '0.3', z: 90 }]);
+    expect(g).toEqual([{ z: 90, ids: ['0.2', '0.1', '0.3'] }]);
+  });
+
+  it('ZDiferente_GruposOrdenadosPorZ', () => {
+    const g = core.groupPlanesByZ([{ id: 'a', z: 180 }, { id: 'b', z: 0 }, { id: 'c', z: 90 }, { id: 'd', z: 0 }, { id: 'e', z: -0.5 }]);
+    expect(g).toEqual([{ z: -0.5, ids: ['e'] }, { z: 0, ids: ['b', 'd'] }, { z: 90, ids: ['c'] }, { z: 180, ids: ['a'] }]);
+  });
+
+  it('ZProximo_ArredondaA001', () => {
+    const g = core.groupPlanesByZ([{ id: 'a', z: 90.001 }, { id: 'b', z: 89.996 }, { id: 'c', z: 90.02 }]);
+    expect(g).toEqual([{ z: 90, ids: ['a', 'b'] }, { z: 90.02, ids: ['c'] }]);
+  });
+
+  it('ZNegativoQuaseZero_NaoViraMenosZero', () => {
+    const g = core.groupPlanesByZ([{ id: 'a', z: -0.001 }, { id: 'b', z: 0 }]);
+    expect(g).toHaveLength(1);
+    expect(Object.is(g[0].z, 0)).toBe(true);
+    expect(g[0].ids).toEqual(['a', 'b']);
+  });
+
+  it('ListaVazia_SemGrupos', () => {
+    expect(core.groupPlanesByZ([])).toEqual([]);
+  });
+});
+
 describe('KeyMap', () => {
   it('TeclaComHandler_EstaNoPainel', () => {
     const token = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', PageUp: 'PgUp', PageDown: 'PgDn', Escape: 'Esc', '-': '−' };
