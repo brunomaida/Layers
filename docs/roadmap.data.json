@@ -2423,12 +2423,6 @@
     "progress": 0,
     "docs": [
       {
-        "name": "2026-10-17-s9-1-layouts-newlogic.md",
-        "type": "spec",
-        "path": "/docs/text-specs/2026-10-17-s9-1-layouts-newlogic.md",
-        "title": "Text spec — S9.1 layouts newlogic"
-      },
-      {
         "name": "layers-specs.md",
         "type": "spec",
         "path": "/docs/text-specs/layers-specs.md",
