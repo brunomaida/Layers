@@ -123,7 +123,7 @@ Ver [LOCAL-SETUP.md](LOCAL-SETUP.md).
 
 ## Limites conhecidos
 
-- DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações: `contain`, `will-change` só durante drag, transições desligadas no drag (v2.22) e culling por viewport durante o arrasto (S4.5; selecionado e hover nunca cortam; opacidade não é critério, ver comentário v2.7-b no `Plane`). Leitura do estilo computado medida fora do caminho crítico do orbit (S4.6, sem cache). Próximo passo: custo dos planos no orbit (S4.8), árvore virtualizada (S4.7) e agrupamento de folhas.
+- DOM 3D: acima de ~1.500 planos o orbit degrada. Mitigações: `contain`, `will-change` só durante drag, transições desligadas no drag (v2.22) e culling por viewport durante o arrasto (S4.5; selecionado e hover nunca cortam; opacidade não é critério, ver comentário v2.7-b no `Plane`). Leitura do estilo computado medida fora do caminho crítico do orbit (S4.6, sem cache). Atributos de plano (hit-test, will-change, planos vazios) medidos fora do caminho crítico do orbit (S4.8): o custo está nas camadas compostas por plano (Layerize ~11,5 ms/frame no trace; custo linear por plano visível). Próximo passo: árvore virtualizada (S4.7) e agrupamento de folhas (S4.9).
 - Fonte de camadas fixa (mock). Ver `RELEASE-CHECKLIST.md` → "Loader de projeto".
 - Regras vindas de TS/JS/JSX são exibidas e registradas, mas não reescritas; o cabeçalho do painel de propriedades e a lista de Ajustes as marcam como "manual" (`LayersCore.isManualSource`).
 
