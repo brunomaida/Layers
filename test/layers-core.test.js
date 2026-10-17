@@ -1328,6 +1328,37 @@ describe('ViewCuller', () => {
   });
 });
 
+describe('TreeWindow', () => {
+  const rows = (n, h) => Array(n).fill(h);
+
+  it('TreeWindow_ScrollNoMeio_DevolveFaixaComOverscan', () => {
+    expect(core.treeWindow({ scrollTop: 440, viewH: 220, rowH: 22, rows: rows(100, null), overscan: 5 }))
+      .toEqual({ start: 15, end: 35, top: 330, bottom: 1430, total: 2200, scrollTo: null });
+  });
+
+  it('TreeWindow_LinhaDeCodigoAltura_SomaOffsets', () => {
+    const r = [null, null, 200, ...rows(20, null)];
+    expect(core.treeWindow({ scrollTop: 0, viewH: 100, rowH: 22, rows: r, overscan: 0 }))
+      .toEqual({ start: 0, end: 3, top: 0, bottom: 440, total: 684, scrollTo: null });
+    expect(core.treeWindow({ scrollTop: 250, viewH: 100, rowH: 22, rows: r, overscan: 0 }))
+      .toEqual({ start: 3, end: 8, top: 244, bottom: 330, total: 684, scrollTo: null });
+  });
+
+  it('TreeWindow_ListaCurta_NaoCorta', () => {
+    const w = { start: 0, end: 5, top: 0, bottom: 0, total: 110, scrollTo: null };
+    expect(core.treeWindow({ scrollTop: 0, viewH: 400, rowH: 22, rows: rows(5, null), overscan: 10 })).toEqual(w);
+    // stale scrollTop after Filtrar shrank the list
+    expect(core.treeWindow({ scrollTop: 900, viewH: 400, rowH: 22, rows: rows(5, null), overscan: 10 })).toEqual(w);
+  });
+
+  it('TreeWindow_IndiceDoSelecionado_ReveladoNoTopoOuBase', () => {
+    const at = (reveal) => core.treeWindow({ scrollTop: 440, viewH: 220, rowH: 22, rows: rows(100, null), overscan: 0, reveal }).scrollTo;
+    expect(at(50)).toBe(924); // below: bottom edge lands rowH above the view bottom
+    expect(at(5)).toBe(88); // above: top edge lands rowH below the view top
+    expect(at(25)).toBeNull(); // inside the padded view
+  });
+});
+
 describe('MovedSince', () => {
   it('Rollback_ExternalChangeAfterApprove_ListsPath', () => {
     expect(core.movedSince({ 'a.css': 10, 'b.css': 20 }, { 'a.css': 10, 'b.css': 25 })).toEqual(['b.css']);
