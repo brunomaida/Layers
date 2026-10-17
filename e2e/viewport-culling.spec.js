@@ -11,7 +11,7 @@ const cullState = (page) =>
     );
     const sb = stage.getBoundingClientRect();
     const planes = [...stage.querySelectorAll('div')].filter(
-      (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+      (el) => el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)),
     );
     let hidden = 0, hiddenOnStage = 0;
     for (const el of planes) {
@@ -22,8 +22,8 @@ const cullState = (page) =>
       el.style.display = 'none';
       if (r.right > sb.left && r.left < sb.right && r.bottom > sb.top && r.top < sb.bottom) hiddenOnStage++;
     }
-    // Plane sets willChange 'transform' only while dragging (index.html:912)
-    return { hidden, hiddenOnStage, dragging: planes.some((el) => el.style.willChange === 'transform') };
+    // while dragging the planes sit in div[data-plane-group] (S4.9) and the group carries the will-change
+    return { hidden, hiddenOnStage, dragging: !!stage.querySelector('[data-plane-group]') || planes.some((el) => el.style.willChange === 'transform') };
   });
 
 async function stageCentre(page) {

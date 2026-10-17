@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers, reapplyMarks } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
 
 const EXPECTED = [
@@ -16,6 +16,9 @@ const EXPECTED = [
   'orbit/traval-v3-empty-hidden/mean-frame-ms',
   'orbit/traval-v4-half-hidden/mean-frame-ms',
   'orbit/traval-aa/mean-frame-ms',
+  'orbit/traval-s49-g1-group-z/mean-frame-ms',
+  'orbit/traval-s49-g2-group-z-no-contain/mean-frame-ms',
+  'orbit/traval-s49-aa/mean-frame-ms',
   'orbit/traval-zoom/mean-frame-ms',
   'orbit/traval-zoom-ideal/mean-frame-ms',
   'orbit/traval-tree-closed/mean-frame-ms',
@@ -125,9 +128,12 @@ for (const [name, id, box] of [
 // S4.8 diagnosis, no app change: each variant overrides the scene before the drag. wire-off is the control
 // for V3 (V3 compares against it, not against orbit/traval); V4 only checks that plane cost is linear.
 // aa is a plain orbit run last: its delta against orbit/traval is the order bias of this fixed sequence.
+// S4.9: an app with data-plane groups the planes at the first drag move (remount), which drops per-node marks:
+// the css targets [data-plane] / the groups as well, and the hide variants re-apply their marks by plane id
+// in the first-move hook (reapplyMarks) and count `hidden` after it, so they work on the base sha and later.
 for (const [name, id, v] of [
-  ['Orbit_NoHitTest_RecordsFrameInterval', 'orbit/traval-v1-no-hit/mean-frame-ms', { css: '[data-s48-plane]{pointer-events:none!important}' }],
-  ['Orbit_PlanesNoWillChange_RecordsFrameInterval', 'orbit/traval-v2a-planes-no-will-change/mean-frame-ms', { css: '[data-s48-plane]{will-change:auto!important}' }],
+  ['Orbit_NoHitTest_RecordsFrameInterval', 'orbit/traval-v1-no-hit/mean-frame-ms', { css: '[data-s48-plane],[data-plane]{pointer-events:none!important}', noHit: true }],
+  ['Orbit_PlanesNoWillChange_RecordsFrameInterval', 'orbit/traval-v2a-planes-no-will-change/mean-frame-ms', { css: '[data-s48-plane],[data-plane-group]{will-change:auto!important}' }],
   ['Orbit_WorldNoWillChange_RecordsFrameInterval', 'orbit/traval-v2b-world-no-will-change/mean-frame-ms', { css: '[data-s48-world]{will-change:auto!important}' }],
   ['Orbit_WireOff_RecordsFrameInterval', 'orbit/traval-wire-off/mean-frame-ms', { wireOff: true }],
   ['Orbit_WireOffEmptyHidden_RecordsFrameInterval', 'orbit/traval-v3-empty-hidden/mean-frame-ms', { wireOff: true, hide: 'empty' }],
@@ -141,10 +147,99 @@ for (const [name, id, v] of [
     if (v.wireOff) await setWireAlpha(page, 0);
     await markScene(page);
     const census = await planeCensus(page);
-    const hidden = v.hide ? await hidePlanes(page, v.hide) : 0;
+    let hidden = v.hide ? await hidePlanes(page, v.hide) : 0;
     if (v.css) await page.addStyleTag({ content: v.css });
     const swaps = await countPlaneHovers(page);
-    const o = await orbitDrag(page, 1500);
+    const o = await orbitDrag(page, 1500, v.hide ? { afterFirstMove: async () => (hidden = await reapplyMarks(page)) } : {});
+    const hoverSwapsPerFrame = (await swaps()) / o.frames;
+    rec(id, o.meanFrameMs, {
+      fps: o.fps,
+      p95FrameMs: o.p95FrameMs,
+      frames: o.frames,
+      loafCount: o.loafCount,
+      loafScriptShare: o.loafScriptShare,
+      gcsPerFrame: o.gcsPerFrame,
+      main: o.main,
+      hoverSwapsPerFrame,
+      census,
+      hidden,
+    });
+    expect(o.frames).toBeGreaterThanOrEqual(30);
+    if (v.noHit) expect(hoverSwapsPerFrame, 'no plane hit-test: hoverId must not swap during the drag').toBeLessThanOrEqual(0.005);
+    if (v.hide) expect(hidden, 'planes hidden by the stub').toBeGreaterThan(0);
+  });
+}
+
+// S4.9 spike (informative, no guard): one throwaway page counts the composited layers around the regroup
+// (CDP LayerTree adds work per layer change, so it never shares a page with a timed drag); then the timed
+// drag regroups the planes by translateZ right after its first move. aa runs the same flow without the
+// regroup. Each variant is paired with orbit/traval of the same execution (run Orbit_Drag together with
+// Orbit_S49) and records dragStartMs, the largest of the 8 frames from the first move. dragStartMs of this
+// manual regroup (one DOM move of ~400 nodes) does NOT predict the unmount/remount hitch of the real
+// implementation, where React mounts and unmounts the planes: that one is measured in Task E5. The grouping is
+// undone before mouseup so React's post-drag render only sees its own nodes; page errors fail the variant.
+async function layerPass(context, v) {
+  const p = await context.newPage();
+  const errors = [];
+  p.on('pageerror', (e) => errors.push(String(e)));
+  p.on('console', (m) => m.type() === 'error' && !/favicon\.ico$/.test(m.location().url) && errors.push(m.text()));
+  try {
+    await instrument(p);
+    await p.goto('/?layers=fixtures/traval/');
+    await waitForScan(p);
+    const c = await p.evaluate(() => {
+      const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) => getComputedStyle(el).backgroundImage.includes('radial-gradient'));
+      const b = stage.getBoundingClientRect();
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+    });
+    const moves = async (n) => {
+      for (let k = 0; k < n; k++) await p.mouse.move(c.x + (k % 20) * 2, c.y + Math.sin(k / 4) * 20);
+      await p.waitForTimeout(300);
+    };
+    await p.mouse.move(c.x, c.y);
+    await p.mouse.down();
+    await moves(6);
+    const before = await countCompositedLayers(p);
+    const group = v.group ? await groupPlanesByZ(p, { dropContain: v.dropContain, probe: true }) : null;
+    await moves(6);
+    // planes still overridden (computed transform none, will-change auto) after the drag renders
+    const stillStripped = group
+      ? await p.evaluate(() => [...document.querySelectorAll('[data-s49-plane]')].filter((e) => { const c = getComputedStyle(e); return c.transform === 'none' && c.willChange === 'auto'; }).length)
+      : null;
+    const after = await countCompositedLayers(p);
+    await ungroupPlanesByZ(p);
+    await p.mouse.up();
+    await p.waitForTimeout(500);
+    return { before, after, group, stillStripped, errors };
+  } finally {
+    await p.close();
+  }
+}
+
+for (const [name, id, v] of [
+  ['Orbit_S49G1GroupByZ_RecordsFrameInterval', 'orbit/traval-s49-g1-group-z/mean-frame-ms', { group: true, dropContain: false }],
+  ['Orbit_S49G2GroupByZNoContain_RecordsFrameInterval', 'orbit/traval-s49-g2-group-z-no-contain/mean-frame-ms', { group: true, dropContain: true }],
+  ['Orbit_S49AA_RecordsFrameInterval', 'orbit/traval-s49-aa/mean-frame-ms', { group: false }],
+]) {
+  test(name, async ({ page }) => {
+    const layers = await layerPass(page.context(), v);
+    const errors = [];
+    page.on('pageerror', (e) => errors.push(String(e)));
+    page.on('console', (m) => m.type() === 'error' && !/favicon\.ico$/.test(m.location().url) && errors.push(m.text()));
+    await instrument(page);
+    await page.goto('/?layers=fixtures/traval/');
+    await waitForScan(page);
+    const census = await planeCensus(page);
+    const swaps = await countPlaneHovers(page);
+    let grouped = null;
+    const o = await orbitDrag(page, 1500, {
+      afterFirstMove: async () => {
+        if (v.group) grouped = await groupPlanesByZ(page, { dropContain: v.dropContain });
+        else await page.evaluate(() => 0); // same round trip as the regroup call
+      },
+      beforeUp: () => ungroupPlanesByZ(page), // A/A: only waits, same pause as the undo
+    });
+    await page.waitForTimeout(500); // post-drag render with the planes back under the page
     rec(id, o.meanFrameMs, {
       fps: o.fps,
       p95FrameMs: o.p95FrameMs,
@@ -155,10 +250,28 @@ for (const [name, id, v] of [
       main: o.main,
       hoverSwapsPerFrame: (await swaps()) / o.frames,
       census,
-      hidden,
+      // true: the app groups the planes itself (S4.9 Task E4), so G1/G2 no longer simulate grouping and equal A/A
+      native: await page.evaluate(() => !!document.querySelector('[data-plane]')),
+      dragStartMs: o.dragStartMs,
+      dragEndMs: o.dragEndMs,
+      pairedWith: 'orbit/traval/mean-frame-ms',
+      deltaVsOrbitMs: orbit ? o.meanFrameMs - orbit.meanFrameMs : null,
+      layersBefore: layers.before.total,
+      layersAfter: layers.after.total,
+      layersDrawingBefore: layers.before.drawing,
+      layersDrawingAfter: layers.after.drawing,
+      layerEvents: [layers.before.events, layers.after.events],
+      hitProbe: layers.group && layers.group.probe,
+      stillStripped: layers.stillStripped,
+      groups: grouped ? grouped.groups : layers.group && layers.group.groups,
+      groupedPlanes: grouped ? grouped.planes : null,
+      groupMs: grouped ? grouped.ms : null,
+      pageErrors: errors.length + layers.errors.length,
     });
+    expect(errors, 'page errors in the timed drag').toEqual([]);
+    expect(layers.errors, 'page errors in the layer pass').toEqual([]);
     expect(o.frames).toBeGreaterThanOrEqual(30);
-    if (v.hide) expect(hidden, 'planes hidden by the stub').toBeGreaterThan(0);
+    if (v.group && !grouped.native) expect(grouped.groups, 'z groups created by the stub').toBeGreaterThan(0); // native: the app groups itself (Task E4)
   });
 }
 
@@ -228,16 +341,18 @@ for (const [name, id, tags, mode, v1] of [
     if (v1) await noPlaneHits(page);
     const swaps = await countHoverSwaps(page);
     const o = await orbitDrag(page, 1500);
+    const hoverSwapsPerFrame = (await swaps()) / o.frames;
     rec(id, o.meanFrameMs, {
       fps: o.fps,
       p95FrameMs: o.p95FrameMs,
       frames: o.frames,
       loafCount: o.loafCount,
       main: o.main,
-      hoverSwapsPerFrame: (await swaps()) / o.frames,
+      hoverSwapsPerFrame,
       treeRowsMounted: await page.locator('[data-node-id]').count(),
     });
     expect(o.frames).toBeGreaterThanOrEqual(30);
+    if (v1) expect(hoverSwapsPerFrame, 'V1 simulates no plane hit-test: hoverId must not swap during the drag').toBeLessThanOrEqual(0.005);
   });
 }
 
@@ -271,10 +386,6 @@ test('Tree_1500TagsScroll_RecordsFrameInterval', async ({ page }) => {
 
 test('Orbit_Budget_Above50Fps', async () => {
   test.skip(!orbit, 'orbit measurement missing');
-  // Known gap (checklist D, S4.9): about 42 fps on the Traval mock; S4.8 measured plane attributes off the critical path.
-  // Flips to a hard failure once it passes, which is the signal to drop this line and keep the
-  // budget enforced.
-  test.fail(true, 'orbit budget not met yet: S4.9 (composited layers) is open; S4.10 (tree window at scale) does not move the Traval budget');
   expect(orbit.fps, `mean frame ${orbit.meanFrameMs.toFixed(1)} ms, p95 ${orbit.p95FrameMs.toFixed(1)} ms`).toBeGreaterThan(50);
 });
 

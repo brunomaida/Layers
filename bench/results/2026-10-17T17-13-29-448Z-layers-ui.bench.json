@@ -1,0 +1,212 @@
+{
+  "schemaVersion": 1,
+  "suite": "layers-ui",
+  "tag": "latency",
+  "timestampUtc": "2026-10-17T17:13:29.448Z",
+  "env": {
+    "cpu": "12th Gen Intel(R) Core(TM) i7-12700",
+    "cores": 20,
+    "os": "win32 10.0.26200",
+    "runtime": "chromium 153.0.8010.12 (playwright)",
+    "gc": "V8",
+    "tool": "playwright"
+  },
+  "git": {
+    "sha": "3c2d58fde34201909e182a175468e0a28066191a",
+    "dirty": false
+  },
+  "benchmarks": [
+    {
+      "benchId": "load/traval/first-scan-ms",
+      "unit": "ms",
+      "value": 8.199999988079071,
+      "stddev": 0,
+      "extra": {
+        "gcsCalls": 416
+      }
+    },
+    {
+      "benchId": "load/traval/first-scan-end-ms",
+      "unit": "ms",
+      "value": 478.80000001192093,
+      "stddev": 0,
+      "extra": {}
+    },
+    {
+      "benchId": "orbit/traval/mean-frame-ms",
+      "unit": "ms",
+      "value": 17.71298947368421,
+      "stddev": 0,
+      "extra": {
+        "fps": 56.455744045107544,
+        "p95FrameMs": 16.90000000000009,
+        "frames": 95,
+        "loafCount": 0,
+        "loafScriptShare": 0,
+        "gcsPerFrame": 0.8631578947368421,
+        "main": {
+          "taskMs": 13.550684210526317,
+          "scriptMs": 10.387326315789474,
+          "styleMs": 0.14091578947368422,
+          "layoutMs": 0.055578947368421054
+        },
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0,
+          "bare": 72,
+          "empty": 0
+        }
+      }
+    },
+    {
+      "benchId": "orbit/traval-s49-g1-group-z/mean-frame-ms",
+      "unit": "ms",
+      "value": 20.629213483146067,
+      "stddev": 0,
+      "extra": {
+        "fps": 48.474945533769066,
+        "p95FrameMs": 34,
+        "frames": 89,
+        "loafCount": 2,
+        "loafScriptShare": 0.7995444192972835,
+        "gcsPerFrame": 0.6629213483146067,
+        "main": {
+          "taskMs": 16.44166292134831,
+          "scriptMs": 11.561764044943818,
+          "styleMs": 0.3490112359550562,
+          "layoutMs": 0.10095505617977528
+        },
+        "hoverSwapsPerFrame": 0.033707865168539325,
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0,
+          "bare": 72,
+          "empty": 0
+        },
+        "native": true,
+        "dragStartMs": 66.10000000000014,
+        "dragEndMs": 133.19999999999982,
+        "pairedWith": "orbit/traval/mean-frame-ms",
+        "deltaVsOrbitMs": 2.916224009461857,
+        "layersBefore": 31,
+        "layersAfter": 31,
+        "layersDrawingBefore": 25,
+        "layersDrawingAfter": 25,
+        "layerEvents": [
+          2,
+          2
+        ],
+        "hitProbe": null,
+        "stillStripped": 0,
+        "groups": 0,
+        "groupedPlanes": 414,
+        "groupMs": 0,
+        "pageErrors": 0
+      }
+    },
+    {
+      "benchId": "orbit/traval-s49-g2-group-z-no-contain/mean-frame-ms",
+      "unit": "ms",
+      "value": 19.862921348314607,
+      "stddev": 0,
+      "extra": {
+        "fps": 50.345061658558656,
+        "p95FrameMs": 33.5,
+        "frames": 89,
+        "loafCount": 2,
+        "loafScriptShare": 0.8207964601205872,
+        "gcsPerFrame": 0.6404494382022472,
+        "main": {
+          "taskMs": 15.906359550561799,
+          "scriptMs": 10.927662921348315,
+          "styleMs": 0.22878651685393261,
+          "layoutMs": 0.08451685393258428
+        },
+        "hoverSwapsPerFrame": 0.033707865168539325,
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0,
+          "bare": 72,
+          "empty": 0
+        },
+        "native": true,
+        "dragStartMs": 66.60000000000014,
+        "dragEndMs": 82.80000000000018,
+        "pairedWith": "orbit/traval/mean-frame-ms",
+        "deltaVsOrbitMs": 2.149931874630397,
+        "layersBefore": 31,
+        "layersAfter": 31,
+        "layersDrawingBefore": 25,
+        "layersDrawingAfter": 25,
+        "layerEvents": [
+          2,
+          2
+        ],
+        "hitProbe": null,
+        "stillStripped": 0,
+        "groups": 0,
+        "groupedPlanes": 414,
+        "groupMs": 0,
+        "pageErrors": 0
+      }
+    },
+    {
+      "benchId": "orbit/traval-s49-aa/mean-frame-ms",
+      "unit": "ms",
+      "value": 20.56555555555555,
+      "stddev": 0,
+      "extra": {
+        "fps": 48.624993246528724,
+        "p95FrameMs": 33.40000000000009,
+        "frames": 90,
+        "loafCount": 2,
+        "loafScriptShare": 0.8120085774381487,
+        "gcsPerFrame": 0.6222222222222222,
+        "main": {
+          "taskMs": 16.252344444444443,
+          "scriptMs": 11.334022222222222,
+          "styleMs": 0.29057777777777777,
+          "layoutMs": 0.1062
+        },
+        "hoverSwapsPerFrame": 0.03333333333333333,
+        "census": {
+          "total": 414,
+          "offscreen": 0,
+          "partial": 0,
+          "opBelow005": 0,
+          "opZero": 0,
+          "bare": 72,
+          "empty": 0
+        },
+        "native": true,
+        "dragStartMs": 66.79999999999995,
+        "dragEndMs": 116.5,
+        "pairedWith": "orbit/traval/mean-frame-ms",
+        "deltaVsOrbitMs": 2.852566081871341,
+        "layersBefore": 31,
+        "layersAfter": 31,
+        "layersDrawingBefore": 25,
+        "layersDrawingAfter": 25,
+        "layerEvents": [
+          2,
+          2
+        ],
+        "hitProbe": null,
+        "stillStripped": null,
+        "groups": null,
+        "groupedPlanes": null,
+        "groupMs": null,
+        "pageErrors": 0
+      }
+    }
+  ]
+}
