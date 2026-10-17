@@ -1843,13 +1843,18 @@ class Component extends DCLogic {
     const w = LayersCore.treeWindow({ scrollTop: top - TREE_PAD, viewH: Math.max(this.state.treeWin.h, window.innerHeight), rowH: TREE_ROW_H, rows: this._treeH, overscan: TREE_OVERSCAN });
     return hi < w.start || hi >= w.end;
   }
-  // S4.10: scroll da árvore -> faixa de linhas; só reconstrói a cada TREE_SCROLL_STEP (ou nas pontas) e não anda com a faixa congelada (key por índice no sc-for reaproveita os nós)
+  // S4.10: scroll da árvore -> faixa de linhas; só reconstrói a cada TREE_SCROLL_STEP (ou nas pontas). Com a faixa congelada o início fica e o fim cresce com o scroll (o render faz a união)
   treeSync(box, force) {
     const top = box.scrollTop, st = this.state.treeWin; if (!this._treeWinOn || top === st.top) return;
     if (!force) {
-      if (this._treeFrozen) return;
       if (Math.abs(top - st.top) < TREE_SCROLL_STEP && top > 0 && top < box.scrollHeight - box.clientHeight - 1) return;
-      const ae = document.activeElement; if (ae && ae !== box && box.contains(ae)) ae.blur(); // foco de mouse num botão da linha: sai antes de a janela mover
+      const fz = this._treeFrozen;
+      if (fz) {
+        const w0 = LayersCore.treeWindow({ scrollTop: top - TREE_PAD, viewH: Math.max(st.h, window.innerHeight), rowH: TREE_ROW_H, rows: this._treeH, overscan: 0 });
+        if (w0.start >= fz.start) { this.setState(s2 => ({ treeWin: { ...s2.treeWin, top } })); return; }
+        this._treeFrozen = null; // a vista passou do início congelado: baixar o início moveria os nós por índice sob o foco, então o foco sai
+      }
+      const ae = document.activeElement; if (ae && ae !== box && box.contains(ae)) ae.blur(); // foco de mouse num botão da linha (ou o congelado acima): sai antes de a janela mover
     }
     const out = this.treeHoverOut(top);
     this.setState(s2 => ({ treeWin: { ...s2.treeWin, top }, ...(out ? { hoverId: null } : null) }));
@@ -2319,7 +2324,7 @@ class Component extends DCLogic {
     // lista curta (<= 3 telas): sem janela, tudo montado e espaçadores 0; com foco de teclado/textarea o início fica congelado e só o fim cresce
     const winOn = tw.total > 3 * viewH; let wa = 0, wb = tAll.length, padTop = 0, padBot = 0;
     if (winOn) { wa = tw.start; wb = tw.end; padTop = tw.top; padBot = tw.bottom; const fz = this._treeFrozen;
-      if (fz) { wa = Math.min(fz.start, tAll.length); wb = Math.min(fz.end, tAll.length); padTop = 0; padBot = 0; tH.forEach((h, k) => { const v = h == null ? TREE_ROW_H : h; if (k < wa) padTop += v; else if (k >= wb) padBot += v; }); } }
+      if (fz) { fz.end = Math.max(fz.end, tw.end); wa = Math.min(fz.start, tAll.length); wb = Math.min(fz.end, tAll.length); padTop = 0; padBot = 0; tH.forEach((h, k) => { const v = h == null ? TREE_ROW_H : h; if (k < wa) padTop += v; else if (k >= wb) padBot += v; }); } }
     const treeSlice = tAll.slice(wa, wb); this._treeAll = tAll; this._treeH = tH; this._treeA = wa; this._treeB = wb; this._treeWinOn = winOn; this._treeCodeN = treeSlice.filter(r => r.isCode).length;
     // recolher / expandir tudo (Hierarquia: raiz + filhos L1 ficam visíveis; Elementos: arquivos e regras)
     const collapsible = s.nodes.filter(n => n.depth >= 1 && kidsOf[n.id] && kidsOf[n.id].length);
@@ -2454,7 +2459,7 @@ class Component extends DCLogic {
       toggleAllGroups: () => this.setState(st => { const allClosed = Object.values(st.grpClosed).filter(Boolean).length >= GROUPS.length; const g = {}; if (!allClosed) GROUPS.forEach(([t]) => { g[t] = true; }); return { grpClosed: g }; }),
       treeScrollRef: this.treeScrollRef, declaredCount: nDecl, inheritedCount: nInh, originSource: s.dir && /\.css$/.test(selFile) ? 'origem: ' + selFile : LayersCore.isManualSource(selFile) ? 'origem: ' + selFile + ' — patch manual (a fonte não é .css)' : 'origem: estilos do mock (conecte a pasta para ler o .css)',
       treeRows: s.treeTab === 'hier' ? treeSlice : [], treePadTop: padTop + 'px', treePadBot: padBot + 'px', treeScroll: e => this.treeSync(e.currentTarget, false), treeFocus: e => this.treeFocus(e), treePtr: () => { this._treePtr = true; setTimeout(() => { this._treePtr = false; }, 0); },
-      treeBlur: e => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; this._treeFrozen = null; this.treeSync(e.currentTarget, true); },
+      treeBlur: e => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; if (this._treeFrozen) { this._treeFrozen = null; this.setState(st => ({ treeWin: { ...st.treeWin, v: st.treeWin.v + 1 } })); } this.treeSync(e.currentTarget, true); }, // soltar o congelamento refaz a faixa mesmo com `top` igual
       treeOpen: s.treeOpen, treeChevron: s.treeOpen ? '▾' : '▸', toggleTree: () => this.setState(st => ({ treeOpen: !st.treeOpen })),
       treeCollapseAll, treeCollapseGlyph: '⊟', treeCollapseColor: treeAllClosed ? 'var(--line2)' : 'var(--fg2)', treeCollapseCursor: treeAllClosed ? 'default' : 'pointer', treeAllClosed, treeCollapseTitle: treeAllClosed ? 'Tudo já recolhido' : (s.treeTab === 'hier' ? 'Recolher todas as linhas (mantém raiz e L1 visíveis)' : 'Recolher todos os arquivos e regras'),
       colRef: this.colRef, topBarRef: this.topBarRef, colTop: (s.topBarH + 12) + 'px', colOpen: s.colOpen, colClosed: !s.colOpen, toggleCol: () => this.setState(st => ({ colOpen: !st.colOpen })),

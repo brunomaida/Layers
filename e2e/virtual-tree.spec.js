@@ -26,6 +26,13 @@ async function open(page) {
   });
 }
 
+// After a jump of more than one screen the rebuild is a React task that lands a few frames later: give it up to 10.
+async function expectCovered(page, what) {
+  let st = await treeWindowState(page);
+  for (let i = 0; i < 10 && !(st.covers && st.contiguous); i++) { await frames2(page); st = await treeWindowState(page); }
+  expect(st.covers && st.contiguous, `${what}: mounted slice covers the view (padTop ${st.padTop}, padBot ${st.padBot})`).toBe(true);
+}
+
 async function scrollTo(page, to) {
   await box(page).evaluate((el, to) => { el.scrollTop = to === 'end' ? el.scrollHeight : to; }, to);
   await frames2(page);
@@ -216,6 +223,7 @@ test('VirtualTree_DigitandoNoCodigo_RolagemNaoTrocaARegra', async ({ page }) => 
   await scrollTo(page, T);
   await box(page).locator(`[data-code-key="${k1}"] textarea`).click();
   await scrollTo(page, T + h1 + 41 * 22);
+  await expectCovered(page, 'textarea focused, scrolled one screen down'); // the frozen start must not leave the view blank
   await page.keyboard.type('/*y*/');
   const active = await page.evaluate(() => {
     const t = document.activeElement, c = t.closest('[data-code-key]');
@@ -250,6 +258,7 @@ test('VirtualTree_BotaoComFoco_RolagemNaoTrocaONo', async ({ page }) => {
   const above = await rowsAbove(at.id);
   await box(page).evaluate((el) => { el.scrollTop += 2000; });
   await frames2(page);
+  await expectCovered(page, 'button focused by Tab, scrolled 2000 px down'); // the frozen start must not leave the view blank
   expect((await info()).id, 'focus stays on the same node after scrolling').toBe(at.id);
   await page.keyboard.press('Enter');
   await scrollTo(page, 0);
