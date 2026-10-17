@@ -36,6 +36,6 @@ Decisões do usuário sobre os boards do canvas `https://claude.ai/artifact/YAjn
 
 ## Limites conhecidos dos boards
 
-- `Base` usa larguras de painel reduzidas e logo simplificado; tipografia, cores e raios são os reais.
+- `Base` reproduz a UI a 1440×900 com larguras de painel (340 px, coluna de 384 px) e logo reais, medidos no app.
 - Cobertura (43/64/93 %) e o projeto de 3 layouts do `S91Cobertura` são ilustrativos.
-- Defaults dos boards (tema Grafite, seleção Âmbar) vêm da sessão ao vivo; o default do app é Coral.
+- Defaults dos boards: tema Grafite e seleção Âmbar, exceto o `Base`, que usa Coral (o default do app).
