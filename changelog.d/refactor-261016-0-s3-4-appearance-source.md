@@ -9,7 +9,7 @@ adr: updated
 - Código morto `DEFAULT_GRAD`, `randGrad` e a chave `logoGrad` (fora de `CFG_KEYS`): um `logoGrad` salvo deixa de ser lido.
 
 ### Tests
-- `AppearanceDefaults_*` e `MigrateConfig_LogoGradAntigo_NaoMigra` (Vitest); `e2e/appearance-defaults.spec.js` (7 casos, incluindo os cabeçalhos A/B/C do painel).
+- `AppearanceDefaults_*` e `MigrateConfig_LogoGradAntigo_NaoMigra` (Vitest); `e2e/appearance-defaults.spec.js` (10 casos, incluindo os cabeçalhos A/B/C do painel).
 
 ### Perf
 - N/A — `applyTheme` faz os mesmos `setProperty`; só a origem do default muda (constante em vez de prop).
