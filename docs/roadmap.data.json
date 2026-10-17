@@ -42,7 +42,7 @@
       {
         "id": "S1.2",
         "type": "spec",
-        "name": "Histórico de projetos (0.23)",
+        "name": "Histórico de projetos",
         "start": "2026-09-12",
         "end": "2026-09-14",
         "status": "done",
@@ -63,12 +63,12 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
-        "version": "0.23.0"
+        "version": "Unreleased"
       },
       {
         "id": "S1.3",
         "type": "spec",
-        "name": "Baseline sem projeto embutido (0.24)",
+        "name": "Baseline sem projeto embutido",
         "start": "2026-09-12",
         "end": "2026-09-14",
         "status": "done",
@@ -89,7 +89,7 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
-        "version": "0.24.0"
+        "version": "Unreleased"
       }
     ]
   },
@@ -107,7 +107,7 @@
       "perf",
       "scaffold"
     ],
-    "progress": 95,
+    "progress": 97,
     "docs": [],
     "children": [
       {
@@ -840,12 +840,12 @@
         "name": "Loader captura estados reais do Traval",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s2-22-loader-checkchanges.md)",
@@ -866,7 +866,7 @@
             "title": "feature-261016-62-s2-22-loader-checkchanges.md)"
           }
         ],
-        "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design",
+        "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design; a parte WAVE (estados novos da gallery) fica fora deste repo",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -1108,7 +1108,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 72,
+    "progress": 80,
     "docs": [
       {
         "name": "2026-10-16-s3-5-visual-functions-new.md",
@@ -1142,7 +1142,7 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
-        "version": "0.25.0"
+        "version": "Unreleased"
       },
       {
         "id": "S3.2",
@@ -1220,12 +1220,12 @@
         "name": "Fonte única de aparência",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s3-4-appearance-source.md)",
@@ -1302,7 +1302,7 @@
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
-        "version": "0.22.0"
+        "version": "Unreleased"
       },
       {
         "id": "S4.2",
@@ -2416,6 +2416,12 @@
     ],
     "progress": 0,
     "docs": [
+      {
+        "name": "2026-10-17-s9-1-layouts-newlogic.md",
+        "type": "spec",
+        "path": "/docs/text-specs/2026-10-17-s9-1-layouts-newlogic.md",
+        "title": "Text spec — S9.1 layouts newlogic"
+      },
       {
         "name": "layers-specs.md",
         "type": "spec",
