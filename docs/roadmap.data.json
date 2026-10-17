@@ -1261,7 +1261,7 @@
       {
         "id": "S3.6",
         "type": "spec",
-        "name": "Esc no campo de propriedade aplica o valor em vez de descartar",
+        "name": "Esc no campo de propriedade descarta a edição",
         "start": "2026-10-17",
         "end": "2026-10-19",
         "status": "todo",
