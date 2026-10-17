@@ -825,15 +825,6 @@ const GROUPS = [
   ['Tipografia', [['Fonte','fontFamily','enum'],['Tamanho','fontSize','len',{min:6,max:48,step:.25}],['Peso','fontWeight','enum'],['Estilo','fontStyle','enum'],['Espaçamento','letterSpacing','len',{min:-2,max:8,step:.1}],['Line height','lineHeight','len',{min:0,max:48,step:.05,units:LH_UNITS}],['Transform','textTransform','enum'],['Decoração','textDecorationLine','enum'],['Alinhamento','textAlign','enum'],['White space','whiteSpace','enum'],['Word break','wordBreak','enum'],['Text overflow','textOverflow','enum']]],
   ['Efeitos', [['Transform','transform','text'],['Filter','filter','text'],['Backdrop filter','backdropFilter','text'],['Transition','transition','text']]],
 ];
-const SHORTCUTS = [
-  ['Câmera', [['scroll','zoom no ponto do cursor'],['arrastar','orbitar (giro + inclinação)'],['shift + arrastar · botão do meio','pan na tela'],['ctrl + arrastar','pan no plano da página'],['← → ↑ ↓','pan · com shift: no plano'],['Q / E','girar'],['W / S','inclinar'],['+ / −','zoom'],['F','enquadrar a seleção'],['C','centralizar sem mudar o zoom'],['0','recentrar a câmera']]],
-  ['Seleção', [['clique','selecionar elemento'],['duplo clique','isolar o ramo + enquadrar'],['alt + clique · ⚡ Interagir','disparar o clique nativo do elemento no mock (checkbox, radio, details)'],['duplo clique no fundo','sair do isolamento · recentrar'],['↑ Pai','subir para o elemento pai'],['Esc','fechar painel · sair do isolamento · limpar seleção']]],
-  ['Camadas', [['PgUp / PgDn','camada ativa acima / abaixo'],['chip L0…Ln · clique','mostrar só essa camada'],['chip L0…Ln · hover','foco: frame da camada + atenuação das demais'],['Todas','voltar a mostrar todas'],['Explodido / Plano · Distância','espaçamento entre camadas'],['Frames · Intensidade','wireframe dos contêineres sem fundo/borda'],['Foco de camada · Destaque · Demais','liga o foco por hover/clique nos chips; Destaque = intensidade da camada em foco, Demais = opacidade das outras'],['chip · hover com seleção ativa','foca só os elementos da camada dentro do ramo selecionado/isolado']]],
-  ['Árvore de camadas', [['hover','destaca o frame do elemento no palco'],['clique','selecionar'],['clique no palco','seleciona e rola a árvore até o elemento'],['{ } · ⊟ (barra da aba)','recolher todos os códigos abertos · recolher todas as linhas (só recolhem)'],['{ } na linha','abrir / fechar o código daquele elemento ou regra (padrão: oculto)'],['⌕ Buscar camada · Destacar / Filtrar','destaca ou mostra só as camadas cujo nome contém o texto (Esc limpa)'],['Hierarquia / Elementos','árvore do DOM · definições de estilo (arquivo › regra) sem repetição, com usos e código'],['{ } (Hierarquia)','mostra o código do elemento selecionado logo abaixo dele; Aplicar respeita "Aplicar em"'],['Elementos · regra ▾','lista os usos + textarea com o código; ctrl+Enter ou Aplicar grava em todos os usos'],['duplo clique','isolar o ramo'],['▾ / ▸','expandir / recolher o nó']]],
-  ['Propriedades', [['● ● ● (cores de origem)','declarada na regra · herdada de regra acima · editada na sessão — paleta em Aparência › Cores de origem'],['chips declarada / herdada / editada','filtram as propriedades por origem (combináveis)'],['⌕ Buscar propriedade · Destacar / Filtrar','por nome, propriedade CSS ou título da seção'],['⊟ / ⊞','recolher / expandir todas as seções'],['P · » / «','recolher / expandir o painel de propriedades'],['Enter','aplicar o valor do campo'],['Esc (no campo)','descartar a edição'],['Aplicar em','alcance: perguntar · só este · todos iguais'],['▾ título do grupo','recolher / expandir o grupo']]],
-  ['Edição', [['Ctrl + Z','desfazer o último ajuste (propriedade ou código)'],['Ctrl + Shift + Z · Ctrl + Y','refazer']]],
-  ['Geral', [['?','abrir / fechar este painel'],['R','recarregar o projeto do disco (pasta local)'],['⚡ Interagir','superfícies e ações definidas pelo projeto em layers.json › interactions'],['Ações ▾','ver diff · aplicar nos arquivos · exportar']]],
-];
 const UNDO_CAP = 100;
 const kebab = p => p.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -1601,15 +1592,20 @@ class Component extends DCLogic {
     if (this.stageRef.current) this.ro.observe(this.stageRef.current);
     this.restoreSession();
     if (this.fixtureBase && !this.state.dir) { const base = this.fixtureBase; this.setState({ dirName: base.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject()); }
+    this.keyRun = {
+      panLeft: e => this.pan(-40, 0, e.shiftKey ? 'plane' : 'screen'), panRight: e => this.pan(40, 0, e.shiftKey ? 'plane' : 'screen'),
+      panUp: e => this.pan(0, -40, e.shiftKey ? 'plane' : 'screen'), panDown: e => this.pan(0, 40, e.shiftKey ? 'plane' : 'screen'),
+      layerUp: () => this.stepActive(1), layerDown: () => this.stepActive(-1),
+      orbitLeft: () => this.orbit(-10, 0), orbitRight: () => this.orbit(10, 0), tiltUp: () => this.orbit(0, 10), tiltDown: () => this.orbit(0, -10),
+      zoomIn: () => this.zoomBy(1.2), zoomOut: () => this.zoomBy(1 / 1.2), measure: () => this.setState(st => ({ measure: !st.measure })),
+      frame: () => this.frame(this.state.selId), center: () => this.frame(this.state.selId, true), resetView: () => this.resetView(), reload: () => this.reloadProject(),
+      shortcuts: () => this.setState(st => ({ shortcuts: !st.shortcuts })), rightPanel: () => this.setState(st => ({ rightOpen: !st.rightOpen })), escape: () => this.escape() };
+    LayersCore.ACTIONS.forEach(a => { if (a.scope === 'global' && !this.keyRun[a.id]) console.error('keyRun: no handler for ' + a.id); });
     this.onKey = e => {
       const tg = e.target; const typing = tg && (tg.tagName === 'TEXTAREA' || (tg.tagName === 'INPUT' && !/^(range|color|checkbox|radio|button)$/.test(tg.type)));
       if (!typing && (e.ctrlKey || e.metaKey) && !e.altKey) { const k = String(e.key).toLowerCase(); if (k === 'z' || k === 'y') { e.preventDefault(); if (k === 'y' || e.shiftKey) this.redo(); else this.undo(); return; } }
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-      const mode = e.shiftKey ? 'plane' : 'screen'; const st = 40;
-      const map = { ArrowLeft: () => this.pan(-st, 0, mode), ArrowRight: () => this.pan(st, 0, mode), ArrowUp: () => this.pan(0, -st, mode), ArrowDown: () => this.pan(0, st, mode),
-        PageUp: () => this.stepActive(1), PageDown: () => this.stepActive(-1), q: () => this.orbit(-10, 0), e: () => this.orbit(10, 0), w: () => this.orbit(0, 10), s: () => this.orbit(0, -10),
-        '+': () => this.zoomBy(1.2), '=': () => this.zoomBy(1.2), '-': () => this.zoomBy(1 / 1.2), m: () => this.setState(st => ({ measure: !st.measure })), f: () => this.frame(this.state.selId), c: () => this.frame(this.state.selId, true), '0': () => this.resetView(), r: () => this.reloadProject(), '?': () => this.setState(st => ({ shortcuts: !st.shortcuts })), p: () => this.setState(st => ({ rightOpen: !st.rightOpen })), Escape: () => this.escape() };
-      const fn = map[e.key] || map[String(e.key).toLowerCase()]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(); }
+      const id = LayersCore.keyAction(e.key); const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(e); }
     };
     window.addEventListener('keydown', this.onKey);
     // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
@@ -2267,7 +2263,7 @@ class Component extends DCLogic {
     const pcText = selSelector + ' {\n' + pcLines.join('\n') + '\n}'; const pcBuf = s.codeBuf[pcRule.key]; const pcCode = pcBuf !== undefined ? pcBuf : pcText; const pcDirty = pcBuf !== undefined && pcBuf !== pcText;
     const pcApply = () => { const text = s.codeBuf[pcRule.key]; if (text === undefined) return; this.applyCodeText(pcRule, text, pcText); };
     const splitOn = s.treeOpen && s.ajOpen;
-    const shortcutGroups = SHORTCUTS.map(([title, rows]) => ({ title, rows: rows.map(([keys, desc]) => ({ keys, desc })) }));
+    const shortcutGroups = LayersCore.SHORTCUTS.map(([title, rows]) => ({ title, rows: rows.map(([keys, desc]) => ({ keys, desc })) }));
     const nb = (glyph, title, go, on) => ({ glyph, title, go, bdr: on ? 'transparent' : 'var(--line1)', bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', color: on ? 'var(--acc)' : 'var(--fg2)' });
     const sliderS = APPEARANCE_DEFAULTS.sliderScale / 100;
     const sl = (k, v, mn, mx) => { const pct = clamp((v - mn) / (mx - mn), 0, 1); const hov = s.hovSl === k; return { [k + 'Pos']: 'calc(' + (pct * 100).toFixed(2) + '% + ' + ((0.5 - pct) * 12 * sliderS).toFixed(1) + 'px)', [k + 'Hint']: hov ? 1 : 0, [k + 'ValColor']: hov ? '#ffffff' : 'var(--fg1)', [k + 'Glow']: hov ? '0 0 8px rgba(var(--selRgb),.95), 0 0 2px rgba(var(--selRgb),.7)' : 'none', [k + 'In']: () => this.setState({ hovSl: k }), [k + 'Out']: () => this.setState({ hovSl: null }) }; };

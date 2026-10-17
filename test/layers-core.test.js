@@ -2280,3 +2280,27 @@ describe('Shortcuts', () => {
     }
   });
 });
+
+describe('KeyAction', () => {
+  it('TeclaGlobal_ResolveId', () => {
+    for (const a of core.ACTIONS.filter((x) => x.scope === 'global')) {
+      for (const k of a.keys) {
+        expect(core.keyAction(k), k).toBe(a.id);
+        if (k.length === 1) expect(core.keyAction(k.toUpperCase()), k.toUpperCase()).toBe(a.id);
+      }
+    }
+    for (const k of ['x', 'Enter', 'z', 'constructor']) expect(core.keyAction(k), k).toBeNull();
+  });
+});
+
+describe('KeyMap', () => {
+  it('TeclaComHandler_EstaNoPainel', () => {
+    const token = { ArrowLeft: '←', ArrowRight: '→', ArrowUp: '↑', ArrowDown: '↓', PageUp: 'PgUp', PageDown: 'PgDn', Escape: 'Esc', '-': '−' };
+    const cells = core.SHORTCUTS.flatMap(([, rows]) => rows.map(([keys]) => keys));
+    const panel = new Set(cells.filter((c) => !c.includes('(')).flatMap((c) => c.split(' ').map((t) => t.toLowerCase())));
+    const handled = core.ACTIONS.filter((a) => a.scope === 'global' || a.scope === 'ctrl').flatMap((a) => a.keys);
+    const missing = handled.filter((k) => !panel.has((token[k] || k).toLowerCase()));
+    expect(missing, 'teclas tratadas ausentes do painel: ' + missing.join(' ')).toEqual([]);
+    expect(cells).toContain('Esc');
+  });
+});
