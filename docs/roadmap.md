@@ -63,7 +63,8 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S4.5 | 2 | S4 | Culling de planos fora do viewport | checklist D | — | [](superpowers/plans/2026-10-14-s4-5-viewport-culling.md) | [](../changelog.d/feature-261014-0-s4-5-viewport-culling.md) | — | done |
 | S4.6 | 2 | S4 | Cache de getComputedStyle por nó | medido-negativo: teto do cache +1,1 %; ver S4.8 | — | [](superpowers/plans/2026-10-14-s4-6-computed-style-cache.md) | [](../changelog.d/feature-261014-0-s4-6-computed-style-cache.md) | — | done |
 | S4.7 | 2 | S4 | Árvore virtualizada | checklist D | — | — | — | — | registered |
-| S4.8 | 2 | S4 | Custo dos planos no orbit | otherMs 12,3 ms (61 % da tarefa) no orbit padrão e 5,1 ms com zoom (254 de 414 planos cortados): sugere custo por plano visível (inferência de 2 cenários; CDP sem métrica de paint); S4.6 mediu o teto do cache de getComputedStyle em +1,1 % | — | — | — | — | registered |
+| S4.8 | 2 | S4 | Custo dos planos no orbit | otherMs 12,3 ms (61 % da tarefa) no orbit padrão e 5,1 ms com zoom (254 de 414 planos cortados): sugere custo por plano visível (inferência de 2 cenários; CDP sem métrica de paint); S4.6 mediu o teto do cache de getComputedStyle em +1,1 % | — | [](superpowers/plans/2026-10-16-s4-8-orbit-plane-cost.md) | [](../changelog.d/feature-261016-0-s4-8-orbit-plane-cost.md) | — | done |
+| S4.9 | 2 | S4 | Agrupamento de folhas para reduzir camadas compostas no orbit | origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test | — | — | — | — | registered |
 | S5 | 1 | — | Testes | Checklist E | — | — | — | — | in-progress |
 | S5.1 | 2 | S5 | Unit do core (Vitest) | patchCssAt, parseSheet, scopeAst, zip e dc | — | — | — | — | done |
 | S5.2 | 2 | S5 | Snapshot de árvore por fixture | checklist E | — | — | [](../changelog.d/feature-261013-35-s5-2-tree-snapshot.md) | #35 | done |
