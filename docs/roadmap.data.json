@@ -1115,12 +1115,13 @@
     "name": "Ferramentas e UI",
     "start": "2026-09-16",
     "end": "2026-10-19",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
+      "bug",
       "scaffold"
     ],
-    "progress": 80,
+    "progress": 100,
     "docs": [
       {
         "name": "2026-10-16-s3-5-visual-functions-new.md",
@@ -1261,20 +1262,34 @@
       {
         "id": "S3.6",
         "type": "spec",
-        "name": "Esc no campo de propriedade aplica o valor em vez de descartar",
+        "name": "Esc no campo de propriedade descarta a edição",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
+          "bug",
           "scaffold"
         ],
-        "progress": 0,
-        "docs": [],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-17-s2-s4-closeout.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-17-s2-s4-closeout.md)",
+            "title": "2026-10-17-s2-s4-closeout.md)"
+          },
+          {
+            "name": "fix-261017-73-s3-6-esc-property-field.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/fix-261017-73-s3-6-esc-property-field.md)",
+            "title": "fix-261017-73-s3-6-esc-property-field.md)"
+          }
+        ],
         "reason": "achado da S3.3, issue #73",
         "is_branch": false,
-        "start_synthetic": true,
-        "end_synthetic": true,
+        "start_synthetic": false,
+        "end_synthetic": false,
         "version": "Unreleased"
       }
     ]
