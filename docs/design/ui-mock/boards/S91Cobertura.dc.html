@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>S9.1 cobertura e estados</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8b96a3}a:hover{color:#adb5be}
+</style>
+</helmet>
+<div style="{{ vars }}width:1240px;height:1260px;box-sizing:border-box;padding:22px 28px;display:flex;flex-direction:column;gap:14px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sel)">S9.1 · 2</span>
+      <h2 style="margin:0;font:600 16px/1.3 'Inter',sans-serif;color:var(--fg0)">Quanto do app cada abordagem mostra, quando dividir em layouts e como layouts convivem com states</h2>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:290px minmax(0,1fr) 330px;gap:16px">
+    <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px">
+      <div style="padding:6px 10px;border-bottom:1px solid var(--line1);font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Método</div>
+      <div style="display:flex;flex-direction:column;gap:8px;padding:9px 11px 11px;font:500 10.5px/1.5 'Inter',sans-serif;color:var(--fg2)">
+        <span><b style="color:var(--fg0);font-weight:600">Região</b> = subárvore que aparece de forma exclusiva: tela, aba, diálogo, painel recolhível ou estado vazio/cheio.</span>
+        <span><b style="color:var(--fg0);font-weight:600">Detectada</b> = achada no repo sem rodar o app:</span>
+        <sc-for list="{{ sources }}" as="s" hint-placeholder-count="5">
+        <span style="display:flex;gap:6px"><span style="color:var(--sel)">·</span><span>{{ s }}</span></span>
+        </sc-for>
+        <span><b style="color:var(--fg0);font-weight:600">Visível</b> = a raiz da região rende com caixa maior que 0 em algum mock carregado.</span>
+        <code style="padding:6px 8px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg1);font:500 10px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap">cob_reg = |∪ regiões visíveis| / |regiões detectadas|
+cob_el  = Σ elementos visíveis / Σ elementos estimados</code>
+        <span>As duas medidas saem juntas: cob_reg diz quantas telas faltam; cob_el pesa telas grandes.</span>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+        <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Exemplo trabalhado</span>
+        <span style="height:16px;display:inline-flex;align-items:center;padding:0 5px;border:1px solid rgba(247,178,74,.5);border-radius:3px;color:var(--warn);font:600 8.5px/1 'JetBrains Mono',monospace;letter-spacing:.06em">NÚMEROS ILUSTRATIVOS</span>
+      </div>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 62px 40px 50px 58px 58px;gap:0 8px;padding:5px 10px;border-bottom:1px solid var(--line1);font:600 8.5px/1.3 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3)">
+        <span>Região</span><span>Tipo</span><span style="text-align:right">Elem.</span><span style="text-align:center">Mono</span><span style="text-align:center">Mono + states</span><span style="text-align:center">3 layouts</span>
+      </div>
+      <sc-for list="{{ regions }}" as="r" hint-placeholder-count="14">
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 62px 40px 50px 58px 58px;gap:0 8px;align-items:center;height:20px;padding:0 10px;border-bottom:1px solid var(--line0);font:500 10px/1 'JetBrains Mono',monospace">
+        <span style="color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis"><span style="color:var(--fg3)">{{ r.lay }}</span> {{ r.name }}</span>
+        <span style="color:var(--fg3)">{{ r.kind }}</span>
+        <span style="text-align:right;color:var(--fg2)">{{ r.el }}</span>
+        <span style="text-align:center;color:{{ r.c1 }}">{{ r.m1 }}</span>
+        <span style="text-align:center;color:{{ r.c2 }}">{{ r.m2 }}</span>
+        <span style="text-align:center;color:{{ r.c3 }}">{{ r.m3 }}</span>
+      </div>
+      </sc-for>
+      <div style="display:grid;grid-template-columns:minmax(0,1fr) 62px 40px 50px 58px 58px;gap:0 8px;align-items:center;padding:6px 10px;font:700 10px/1.3 'JetBrains Mono',monospace;color:var(--fg0)">
+        <span>cob_reg · cob_el</span><span></span><span style="text-align:right;color:var(--fg2)">780</span><span style="text-align:center">43 · 58</span><span style="text-align:center">64 · 67</span><span style="text-align:center;color:var(--sel)">93 · 98</span>
+      </div>
+      <span style="padding:0 10px 8px;font:500 10px/1.4 'Inter',sans-serif;color:var(--fg3)">Projeto de exemplo parecido com o Traval: Tela principal (main), Configuração (config), Painel de função (replay). O diálogo de confirmação só abre num fluxo com dados e fica fora nas três.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px">
+        <div style="padding:6px 10px;border-bottom:1px solid var(--line1);font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Cobertura final</div>
+        <div style="display:flex;flex-direction:column;gap:9px;padding:10px 11px 12px">
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:column;gap:4px">
+            <div style="display:flex;align-items:baseline;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">{{ b.label }}</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:{{ b.color }}">{{ b.pct }}</span></div>
+            <div style="height:6px;border-radius:3px;background:var(--line0);overflow:hidden"><div style="width:{{ b.w }};height:6px;background:{{ b.color }}"></div></div>
+            <span style="font:500 9.5px/1.3 'JetBrains Mono',monospace;color:var(--fg3)">{{ b.sub }}</span>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid rgba(var(--selRgb),.45);border-radius:6px">
+        <div style="padding:6px 10px;border-bottom:1px solid var(--line1);font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">Regra de decisão</div>
+        <sc-for list="{{ rule }}" as="r" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px;padding:6px 10px;border-bottom:1px solid var(--line0);font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg2)">
+          <span style="font:700 10px/1.45 'JetBrains Mono',monospace;color:var(--sel)">{{ r.n }}</span><span>{{ r.t }}</span>
+        </div>
+        </sc-for>
+        <span style="padding:6px 10px 8px;font:600 10.5px/1.4 'Inter',sans-serif;color:var(--fg0)">No exemplo: 64% &lt; 85% e o ganho é de 29 p.p. → Múltiplos layouts.</span>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:560px minmax(0,1fr);gap:16px;flex:1;min-height:0">
+    <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">states × layouts</span>
+        <span style="font:500 10px/1.3 'Inter',sans-serif;color:var(--fg3)">layers.json › states já existe: um mock por estado da mesma tela (ARCHITECTURE § Estados do mock).</span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;flex:1;min-height:0">
+        <sc-for list="{{ opts }}" as="o" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;background:{{ o.bg }};border:1px solid {{ o.bdr }};border-radius:6px;min-width:0">
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line1)">
+            <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:{{ o.titleColor }}">{{ o.mark }} {{ o.title }}</span>
+            <span style="flex:1"></span>
+            <span style="font:600 9px/1 'JetBrains Mono',monospace;color:{{ o.titleColor }}">{{ o.verdict }}</span>
+          </div>
+          <span style="padding:7px 10px 0;font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg1)">{{ o.idea }}</span>
+          <code style="margin:7px 10px 0;padding:6px 8px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg1);font:500 9.5px/1.5 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word">{{ o.code }}</code>
+          <div style="display:flex;flex-direction:column;gap:3px;padding:8px 10px 0">
+            <sc-for list="{{ o.pros }}" as="p" hint-placeholder-count="3"><span style="font:500 10px/1.4 'Inter',sans-serif;color:var(--fg2)"><span style="color:var(--ok)">+ </span>{{ p }}</span></sc-for>
+            <sc-for list="{{ o.cons }}" as="c" hint-placeholder-count="3"><span style="font:500 10px/1.4 'Inter',sans-serif;color:var(--fg2)"><span style="color:var(--err)">− </span>{{ c }}</span></sc-for>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:3px;margin-top:auto;padding:8px 10px 10px;border-top:1px solid var(--line0)">
+            <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)">Migração e pendentes</span>
+            <span style="font:500 10px/1.45 'Inter',sans-serif;color:var(--fg2)">{{ o.mig }}</span>
+          </div>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;min-width:0;min-height:0">
+      <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+        <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Funções atuais que conflitam</span>
+        <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">resolução com layouts ortogonais</span>
+      </div>
+      <sc-for list="{{ conflicts }}" as="c" hint-placeholder-count="11">
+      <div style="display:grid;grid-template-columns:128px minmax(0,1fr) minmax(0,1.25fr);gap:10px;padding:5px 10px;border-bottom:1px solid var(--line0);font:500 10px/1.4 'Inter',sans-serif">
+        <code style="font:600 9.5px/1.4 'JetBrains Mono',monospace;color:var(--fg0)">{{ c.f }}</code>
+        <span style="color:var(--fg3)">{{ c.x }}</span>
+        <span style="color:var(--fg1)">{{ c.r }}</span>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"$preview":{"width":1240,"height":1260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
+    };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const yes = (b) => b ? '✓' : '–';
+    const col = (b) => b ? 'var(--ok)' : 'var(--fg3)';
+    const R = (lay, name, kind, el, a, b, c) => ({ lay, name, kind, el, m1: yes(a), m2: yes(b), m3: yes(c), c1: col(a), c2: col(b), c3: col(c) });
+    return {
+      vars,
+      sources: [
+        'rotas: router, gallery.html#/<nome>, entradas .html',
+        'abas e trocas: role=tab, [hidden], display:none no CSS inicial',
+        'diálogos: <dialog>, [aria-modal], .modal',
+        'templates dc (<x-dc>) e layers.json › states',
+        'docs de UI do projeto (TOPOLOGY, specs) como dica'
+      ],
+      regions: [
+        R('main', 'Barra superior', 'tela', 24, true, true, true),
+        R('main', 'Gráfico + estudos', 'painel', 160, true, true, true),
+        R('main', 'Resumo Global', 'painel', 40, true, true, true),
+        R('main', 'Estudos · Posições', 'painel', 120, true, true, true),
+        R('main', 'Lista de ordens', 'painel', 70, true, true, true),
+        R('main', 'Parâmetros de ordens', 'painel', 40, true, true, true),
+        R('main', 'Painel vazio (sem CSV)', 'estado', 12, false, true, true),
+        R('main', 'Importar CSV', 'diálogo', 30, false, true, true),
+        R('main', 'Menu de estudos aberto', 'estado', 26, false, true, true),
+        R('config', 'Configuração · Geral', 'aba', 60, false, false, true),
+        R('config', 'Configuração · Atalhos', 'aba', 48, false, false, true),
+        R('config', 'Configuração · Tema', 'aba', 38, false, false, true),
+        R('replay', 'Replay de pregão', 'tela', 94, false, false, true),
+        R('main', 'Confirmar ordem', 'diálogo', 18, false, false, false)
+      ],
+      bars: [
+        { label: 'Monovisual', pct: '43%', w: '43%', color: 'var(--fg3)', sub: '6/14 regiões · 58% dos elementos · 454 planos' },
+        { label: 'Monovisual + states', pct: '64%', w: '64%', color: 'var(--acc)', sub: '9/14 · 67% · 1 estado montado por vez' },
+        { label: 'Múltiplos layouts', pct: '93%', w: '93%', color: 'var(--sel)', sub: '13/14 · 98% · foco: 454–484 planos · espalhar: 694' }
+      ],
+      rule: [
+        { n: '1', t: 'Detecção e as duas coberturas rodam na carga, sobre arquivos já lidos (sem rede, sem rodar o app).' },
+        { n: '2', t: 'cob_reg do melhor monovisual (com states) ≥ 85% e ≤ 1.500 planos → Monovisual.' },
+        { n: '3', t: 'Abaixo de 85% e layouts somam ≥ 15 p.p. → Múltiplos layouts.' },
+        { n: '4', t: 'Um layout acima de 1.500 planos (limite do orbit) → dividir, mesmo com cobertura alta.' },
+        { n: '5', t: 'Duas capturas que dividem ≥ 60% dos nós (data-src ou caminho) são states do mesmo layout, não layouts.' }
+      ],
+      opts: [
+        { title: 'Ortogonais', mark: '●', verdict: 'RECOMENDADA', bg: 'rgba(var(--selRgb),.07)', bdr: 'rgba(var(--selRgb),.5)', titleColor: 'var(--sel)',
+          idea: 'Layout = tela distinta (raiz própria). State = variação da mesma tela. Cada layout pode ter seus states.',
+          code: 'layouts: [\n  { id:"main", name:"Tela principal", mock, states:[…] },\n  { id:"config", name:"Configuração", mock },\n  { id:"replay", name:"Painel de função", mock } ]\nstates (raiz) = states do layout implícito "main"',
+          pros: ['Manifesto atual vale sem mudar: sem layouts = 1 layout com os states de hoje.', 'Espalhar mostra telas, não 3 cópias quase iguais da mesma tela.', 'switchState fica local ao layout ativo; os outros não recarregam.'],
+          cons: ['Dois seletores: layout (palco) e estado (Interagir).', 'Matriz layout × estado no session e no pending.'],
+          mig: 'Nenhuma no layers.json. Chave do pending vira <pendingKey>|<layoutId>; o hash já cobre o caminho do mock (layout + estado). stateMap passa a ser por layout. Entradas antigas leem como layoutId "main".' },
+        { title: 'Unificar', mark: '○', verdict: 'NÃO', bg: 'rgba(var(--bg1Rgb),.95)', bdr: 'var(--line1)', titleColor: 'var(--fg2)',
+          idea: 'States viram um subtipo de layout (kind:"state", of:"main"). Um seletor só para tudo.',
+          code: 'layouts: [\n  { id:"main", mock },\n  { id:"main.vazio", kind:"state", of:"main", mock },\n  { id:"config", mock } ]\nstates (raiz) → migrado para layouts',
+          pros: ['Um conceito e um seletor para o usuário.', 'Mesmo código de montagem para tudo.'],
+          cons: ['Espalhar todos monta N cópias da mesma tela: memória e planos dobram.', 'Quebra o manifesto e o CLI --state; precisa de migração.', 'Câmera e seleção por estado não fazem sentido (DOM quase igual).'],
+          mig: 'Reescrever states → layouts no load (e no CLI de snapshot), migrar layers/v1/session › states e as chaves do pending. Ajustes pendentes de hoje se perdem se a chave mudar sem ponte.' }
+      ],
+      conflicts: [
+        { f: 'toggleFlat / flat', x: 'Um flag global para o palco todo.', r: 'flat por layout; Explodir daqui (explodeFrom) também por layout. O dock mostra o do layout ativo.' },
+        { f: 'selId · isoId · hover', x: 'ids de nó só são únicos num shadow root.', r: 'Chave layoutId:nodeId. Clicar num plano de outro layout (espalhar) troca o layout ativo antes de selecionar.' },
+        { f: 'câmera', x: 'yaw/tilt/zoom/pan únicos no session.', r: 'Câmera por layout + câmera de visão geral do modo espalhar. Enquadrar mira dentro do layout.' },
+        { f: 'Camadas L0–Ln · Foco', x: 'Rail conta profundidades do projeto todo.', r: 'Rail e Foco do layout ativo. Espalhar: cada layout tem o seu L0.' },
+        { f: 'changes · pending', x: 'Uma entrada por projeto; hash de 1 mock.', r: 'change ganha layoutId; uma entrada por layout. Aplicar nos arquivos junta todos e deduplica arquivo|seletor|prop.' },
+        { f: 'escopo all', x: 'A mesma regra CSS pode estar em outro layout.', r: 'Aviso “também afeta Configuração (3 usos)” no escopo e no diff.' },
+        { f: 'undo / redo', x: 'Snapshots de changes sem layout.', r: 'Pilha única; o passo leva layoutId e foca o layout dele ao desfazer.' },
+        { f: 'switchState', x: 'Relê o projeto inteiro e zera câmera.', r: 'Relê só o layout ativo; confirma só se ele tiver ajustes não salvos.' },
+        { f: 'Recarregar · Reanalisar', x: 'Assumem 1 mock; backup de 1 mock.', r: 'Recarregar relê os layouts montados e mantém seleção por layout. Reanalisar faz backup de todos os mocks.' },
+        { f: 'watch · drift', x: 'watch = 1 mock + folhas.', r: 'watch = mocks de todos os layouts (só mtime) + fontes citadas; drift indica qual layout.' },
+        { f: 'interactions', x: 'Aplicadas ao único mock.', r: 'interactions[].layout opcional (default: todos); deadInteractions por layout.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

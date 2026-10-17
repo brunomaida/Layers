@@ -16,7 +16,7 @@ Cópia versionada dos boards `/design` (Opus) do Layers. O canvas privado `https
 - O motor de tokens do tipo Design é copiado, nunca reescrito.
 - Visual congelado: o mock só propõe mudança no que a leaf pede.
 - Os boards podem carregar fontes por `<link>` do Google Fonts (são docs de design, fora da regra de rede do app); `<script src>` externo é proibido pelo teste.
-- Os 4 boards atuais são da S2.22c (snapshot). Ainda não há board da UI atual do dock, dos painéis e do palco: entra no design conjunto da S3.5.
+- `Main`, `Tema`, `Canvas` e `RotuloL0` são da S2.22c (snapshot). `Base` reproduz a UI atual (larguras de painel reduzidas; logo simplificado); os demais são as propostas da S3.5 e da S9.1.
 - Reexporte apenas os boards alterados, mais `canvas.json`.
 
 ## Boards
@@ -27,15 +27,20 @@ Cópia versionada dos boards `/design` (Opus) do Layers. O canvas privado `https
 | Tema.dc.html | (a) Tema do html no host | Loader · snapshot |
 | Canvas.dc.html | (b) canvas vira imagem congelada | Loader · snapshot |
 | RotuloL0.dc.html | (c) Rótulo de L0 | Loader · snapshot |
+| Base.dc.html | Base · UI atual do Layers | Dock · Painel de propriedades · Painel Ajustes · Palco 3D |
+| S35Menu.dc.html | S3.5 · 1 Menu de contexto | Menus |
+| S35Requisicao.dc.html | S3.5 · 2 Requisição em Ajustes | Painel Ajustes |
+| S91Cobertura.dc.html | S9.1 · 2 Cobertura, regra e states × layouts | Palco 3D |
+| S91Fluxos.dc.html | S9.1 · 1 Três fluxos de múltiplos layouts | Palco 3D · Dock |
 
 ## Matriz
 
 | Região da UI | Board |
 |---|---|
 | Loader · snapshot | Main.dc.html |
-| Dock | exempt |
-| Painel de propriedades | exempt |
-| Painel Ajustes | exempt |
-| Palco 3D | exempt |
-| Menus | exempt |
+| Dock | Base.dc.html |
+| Painel de propriedades | Base.dc.html |
+| Painel Ajustes | S35Requisicao.dc.html |
+| Palco 3D | S91Fluxos.dc.html |
+| Menus | S35Menu.dc.html |
 | Toasts | exempt |

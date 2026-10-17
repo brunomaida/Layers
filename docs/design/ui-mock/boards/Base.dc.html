@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>Layers base atual</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;family=Michroma&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8b96a3}a:hover{color:#adb5be}
+</style>
+</helmet>
+<div style="{{ vars }}position:relative;width:1240px;height:800px;box-sizing:border-box;display:grid;grid-template-rows:36px minmax(0,1fr);grid-template-columns:minmax(0,1fr) 300px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px;overflow:hidden">
+
+  <div style="grid-column:1 / -1;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:12px;height:36px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--line1);white-space:nowrap">
+    <div style="display:flex;align-items:center;gap:10px;min-width:0">
+      <button style="display:flex;align-items:center;gap:7px;height:24px;padding:0 6px 0 4px;border:1px solid transparent;border-radius:4px;background:transparent;color:var(--fg2);font:500 11px/1 'JetBrains Mono',monospace;cursor:pointer"><span style="display:flex;color:var(--sel)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"></path></svg></span><span>Traval</span><span style="color:var(--fg3);font-size:9px">▾</span></button>
+      <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--fg3)">11 camadas · 414 elementos</span>
+    </div>
+    <span style="font:400 15.6px/1 'Michroma',sans-serif;color:var(--sel)">LAYERS</span>
+    <div style="display:flex;align-items:center;justify-self:end;gap:6px">
+      <button aria-label="Aparência" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 14px/1 'Inter',sans-serif">⚙</button>
+      <button aria-label="Atalhos" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5"></rect><path d="M4 7h1M6.5 7h1M9 7h1M11.5 7h1M4 9.5h1M6.5 9.5h3M11.5 9.5h1"></path></svg></button>
+      <button style="height:24px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif">Cancelar</button>
+      <button style="height:24px;padding:0 12px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:600 12px/1 'Inter',sans-serif">Salvar 2</button>
+    </div>
+  </div>
+
+  <div style="position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%, var(--stageA) 0%, var(--bg0) 70%)">
+
+    <div style="position:absolute;left:300px;right:20px;top:60px;bottom:60px;perspective:1500px;perspective-origin:50% 40%">
+      <div style="position:absolute;left:50%;top:50%;width:520px;height:310px;margin:-155px 0 0 -260px;transform-style:preserve-3d;transform:{{ world }}">
+        <sc-for list="{{ planes }}" as="p" hint-placeholder-count="16">
+        <div style="position:absolute;left:{{ p.x }};top:{{ p.y }};width:{{ p.w }};height:{{ p.h }};box-sizing:border-box;transform:{{ p.tz }};background:{{ p.bg }};border:{{ p.bdr }};border-radius:1px"></div>
+        </sc-for>
+        <sc-for list="{{ candles }}" as="c" hint-placeholder-count="20">
+        <div style="position:absolute;left:{{ c.x }};top:{{ c.y }};width:5px;height:{{ c.h }};background:{{ c.col }};transform:{{ c.tz }}"></div>
+        </sc-for>
+        <span style="position:absolute;left:{{ selTag.x }};top:{{ selTag.y }};transform:{{ selTag.tz }};height:14px;display:inline-flex;align-items:center;padding:0 5px;background:var(--sel);color:#1a1205;font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.04em;white-space:nowrap">studies-toolbar · L3</span>
+      </div>
+    </div>
+
+    <div style="position:absolute;left:50%;transform:translateX(-50%);top:0;display:flex;align-items:center;gap:6px;padding:0 10px;white-space:nowrap">
+      <button style="height:24px;padding:0 10px;border:1px solid {{ explBdr }};border-radius:4px;background:transparent;color:{{ explColor }};font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase">{{ explGlyph }} Explodido</button>
+      <button style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--line1);border-radius:4px;background:transparent;color:var(--fg2);font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 8h12M2 5v6M14 5v6M5.5 6.5L4 8l1.5 1.5M10.5 6.5L12 8l-1.5 1.5"></path></svg>Medir</button>
+      <sc-for list="{{ sliders1 }}" as="s" hint-placeholder-count="3">
+      <label style="display:flex;align-items:center;gap:6px;height:36px;padding:0 4px"><span style="width:10px;height:10px;border:1.5px solid var(--fg3);border-radius:2px"></span><input type="range" min="0" max="100" value="{{ s.v }}" aria-label="{{ s.label }}" style="width:59px;margin:0;accent-color:var(--sel)"></label>
+      </sc-for>
+      <span style="width:1px;height:18px;background:var(--line1)"></span>
+      <button style="display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase"><svg viewBox="0 0 16 16" width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="5"></circle><circle cx="8" cy="8" r="1.2" fill="currentColor" stroke="none"></circle><path d="M8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2"></path></svg>Foco</button>
+      <sc-for list="{{ sliders2 }}" as="s" hint-placeholder-count="2">
+      <label style="display:flex;align-items:center;gap:6px;height:36px;padding:0 4px"><span style="width:10px;height:10px;border:1.5px solid var(--fg3);border-radius:2px"></span><input type="range" min="0" max="100" value="{{ s.v }}" aria-label="{{ s.label }}" style="width:59px;margin:0;accent-color:var(--sel)"></label>
+      </sc-for>
+      <span style="width:1px;height:18px;background:var(--line1)"></span>
+      <button style="display:flex;align-items:center;gap:6px;height:24px;padding:0 9px;border-radius:4px;border:0;background:var(--bg1);color:var(--fg1);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase"><svg viewBox="0 0 16 16" width="11" height="11" fill="currentColor" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"></path></svg>Interagir<span style="color:var(--fg3);font-size:12px">▾</span></button>
+    </div>
+
+    <div style="position:absolute;left:12px;top:48px;bottom:12px;width:262px;display:flex;flex-direction:column">
+      <div style="flex:65;min-height:0;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+          <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:14px">▾</span>
+          <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Árvore de camadas</span>
+          <span style="color:var(--fg3);font:600 14px/1 'JetBrains Mono',monospace">«</span>
+        </div>
+        <div style="display:flex;height:32px;flex:0 0 32px;border-bottom:1px solid var(--line1);background:var(--bg0)">
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--fg0);font:600 10px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:inset 0 -2px 0 var(--sel)">Hierarquia <span style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:0;opacity:.7">414</span></span>
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-left:1px solid var(--line1);color:var(--fg2);font:500 10px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase">Elementos <span style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:0;opacity:.7">89</span></span>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;padding:5px 8px;border-bottom:1px solid var(--line1)">
+          <div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px;height:22px;padding:0 6px;border:1px solid var(--line1);border-radius:4px;background:var(--bg0)"><span style="color:var(--fg3);font-size:11px">⌕</span><span style="font:500 11px/1 'JetBrains Mono',monospace;color:var(--fg3)">Buscar camada…</span></div>
+          <div style="display:inline-flex;height:22px;border:1px solid var(--line1);border-radius:4px;overflow:hidden"><span style="display:flex;align-items:center;padding:0 7px;background:var(--bg2);color:var(--fg1);font:500 10px/1 'Inter',sans-serif">Destacar</span><span style="display:flex;align-items:center;padding:0 7px;border-left:1px solid var(--line1);color:var(--fg2);font:500 10px/1 'Inter',sans-serif">Filtrar</span></div>
+        </div>
+        <div style="padding:4px 0;overflow:hidden">
+          <sc-for list="{{ tree }}" as="t" hint-placeholder-count="18">
+          <div style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ t.indent }};background:{{ t.bg }};color:{{ t.color }};font:500 11px/1 'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden">
+            <span style="width:12px;flex:0 0 12px;text-align:center;color:var(--fg3)">{{ t.chev }}</span>
+            <span style="flex:0 0 auto;font-size:9px;color:var(--fg3)">L{{ t.d }}</span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ t.name }}</span>
+            <span style="flex:0 0 auto;font-weight:400;color:var(--fg3)">{{ t.count }}</span>
+            <span style="flex:1"></span>
+            <span style="flex:0 0 auto;color:var(--sel)">{{ t.badge }}</span>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="flex:0 0 12px;display:flex;align-items:center;justify-content:center"><span style="width:40px;height:3px;border-radius:2px;background:var(--line2)"></span></div>
+      <div style="flex:35;min-height:0;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+          <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:14px">▾</span>
+          <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Ajustes</span>
+          <span style="font:600 10px/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 6px;border-radius:3px">2</span>
+          <button style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 11px/1 'Inter',sans-serif">Ações ▾</button>
+        </div>
+        <sc-for list="{{ changes }}" as="c" hint-placeholder-count="2">
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:6px 10px;border-bottom:1px solid var(--line0);font:500 10px/1.4 'JetBrains Mono',monospace">
+          <span style="color:var(--fg0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.name }} <span style="color:var(--fg2)">{{ c.count }}· {{ c.prop }}</span></span>
+          <span style="color:var(--fg2)">↺</span>
+          <div style="grid-column:1 / -1;display:flex;gap:6px;white-space:nowrap"><span style="color:var(--err);text-decoration:line-through">{{ c.from }}</span><span style="color:var(--fg3)">→</span><span style="color:var(--ok)">{{ c.to }}</span></div>
+          <div style="grid-column:1 / -1;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ c.src }}</div>
+        </div>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="position:absolute;right:12px;bottom:56px;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.88);border:1px solid var(--line1);border-radius:6px">
+      <div style="display:flex;align-items:center;gap:6px;height:18px;padding:0 4px 0 7px;border-bottom:1px solid var(--line0)"><span style="flex:1;font:600 8px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg3)">Navegação</span><span style="color:var(--fg2);font:600 11px/1 'JetBrains Mono',monospace">–</span></div>
+      <div style="display:grid;grid-template-columns:repeat(3,22px);gap:3px;padding:5px">
+        <sc-for list="{{ nav }}" as="b" hint-placeholder-count="15">
+        <span style="width:22px;height:22px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;border:1px solid var(--line1);color:var(--fg2);font:600 10px/1 'JetBrains Mono',monospace">{{ b }}</span>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="position:absolute;left:286px;right:12px;bottom:0;display:flex;justify-content:center;padding:10px 12px">
+      <div style="display:flex;flex-wrap:wrap;align-items:center;gap:4px;padding:3px 6px;border-radius:6px;background:rgba(var(--bg0Rgb),.82)">
+        <span style="font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Camadas</span>
+        <span style="height:24px;display:inline-flex;align-items:center;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:var(--bg2);color:var(--fg0);font:600 11px/1 'JetBrains Mono',monospace">Todas</span>
+        <sc-for list="{{ rail }}" as="r" hint-placeholder-count="11">
+        <span style="height:24px;display:inline-flex;align-items:center;gap:3px;padding:0 5px;border-radius:4px;border:1px solid {{ r.bdr }};color:{{ r.color }};font:600 11px/1 'JetBrains Mono',monospace">L{{ r.d }} <span style="font-weight:400;opacity:.6">{{ r.n }}</span></span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;min-height:0;background:var(--bg1);border-left:1px solid var(--line1);overflow:hidden">
+    <div style="padding:8px 12px 10px;background:var(--bg2);border-bottom:1px solid var(--line1)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.16em;text-transform:uppercase;color:var(--fg3)">Componente</span>
+        <span style="flex:1;height:1px;background:var(--line1)"></span>
+        <span style="font:600 10px/1 'JetBrains Mono',monospace;color:var(--acc)">L3</span>
+        <span style="color:var(--sel);font:600 12px/1 'JetBrains Mono',monospace">⇔</span>
+        <span style="color:var(--fg3);font:600 14px/1 'JetBrains Mono',monospace">»</span>
+      </div>
+      <div style="margin-top:6px;font:600 15px/1.25 'Inter',sans-serif;color:var(--fg0)">.studies-toolbar</div>
+      <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin-top:5px;font:500 10px/1.4 'JetBrains Mono',monospace;color:var(--fg2)"><span style="color:var(--sel)">src/ui/studies.css</span><span style="color:var(--line2)">›</span><span style="color:var(--fg1)">.studies-toolbar · L41</span><span style="color:var(--line2)">·</span><span style="color:var(--fg3)">612 × 28 px</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:6px 12px 8px;border-bottom:1px solid var(--line1)">
+      <div style="display:flex;align-items:center;gap:4px;white-space:nowrap">
+        <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-right:4px">Ações</span>
+        <button style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 11px/1 'Inter',sans-serif">↑ Pai</button>
+        <button style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 11px/1 'Inter',sans-serif">⤡ Isolar ramo</button>
+        <button style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 11px/1 'Inter',sans-serif">⊕ Enquadrar</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;height:20px;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2)"><span style="width:10px;color:var(--acc)">▸</span><span>{ } Código</span><span style="font-weight:500;letter-spacing:0;color:var(--fg3);text-transform:none">9 propriedade(s)</span></div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:6px;padding:6px 12px 8px;border-bottom:1px solid var(--line1)">
+      <div style="display:flex;align-items:center;gap:8px;font:500 10px/1 'Inter',sans-serif;color:var(--fg2)"><span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3)">Escopo</span>elemento único — sem irmãos na regra</div>
+      <div style="display:flex;align-items:center;gap:4px"><span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);margin-right:4px">Origem</span>
+        <sc-for list="{{ origins }}" as="o" hint-placeholder-count="3"><span style="display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border:1px solid var(--line1);border-radius:999px;font:500 10px/1 'Inter',sans-serif;color:var(--fg1)"><span style="width:6px;height:6px;border-radius:50%;background:{{ o.dot }}"></span>{{ o.label }} <span style="font-family:'JetBrains Mono',monospace;color:var(--fg3)">{{ o.n }}</span></span></sc-for>
+        <span style="flex:1"></span><span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">mock</span>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;padding:6px 12px;border-bottom:1px solid var(--line1)">
+      <div style="flex:1;min-width:0;height:22px;display:flex;align-items:center;padding:0 6px;border:1px solid var(--line1);border-radius:4px;background:var(--bg0);font:500 11px/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:nowrap;overflow:hidden">⌕ Buscar propriedade ou seção…</div>
+      <div style="display:inline-flex;height:22px;border:1px solid var(--line1);border-radius:4px;overflow:hidden"><span style="display:flex;align-items:center;padding:0 7px;background:var(--bg2);color:var(--fg1);font:500 10px/1 'Inter',sans-serif">Destacar</span><span style="display:flex;align-items:center;padding:0 7px;border-left:1px solid var(--line1);color:var(--fg2);font:500 10px/1 'Inter',sans-serif">Filtrar</span></div>
+    </div>
+    <div style="flex:1;min-height:0;overflow:hidden">
+      <sc-for list="{{ groups }}" as="g" hint-placeholder-count="4">
+      <div style="padding:0 0 4px">
+        <div style="display:flex;align-items:center;gap:8px;height:28px;padding:0 10px 0 0;margin-top:6px;border-left:3px solid var(--acc);background:rgba(var(--accRgb),.08)">
+          <span style="flex:1;padding-left:9px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg1)">{{ g.title }}</span>
+          <span style="font:600 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ g.total }}</span>
+          <span style="width:10px;text-align:right;font:600 11px/1 'JetBrains Mono',monospace;color:var(--fg3)">▾</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 12px;padding:8px 12px">
+          <sc-for list="{{ g.props }}" as="p" hint-placeholder-count="4">
+          <div style="display:flex;flex-direction:column;gap:4px;min-width:0">
+            <span style="display:flex;align-items:center;gap:5px;font:500 10px/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg2);white-space:nowrap;overflow:hidden"><span style="flex:0 0 auto;width:6px;height:6px;border-radius:50%;background:{{ p.dot }}"></span>{{ p.label }}</span>
+            <div style="display:flex;gap:4px"><span style="flex:1;min-width:0;height:22px;display:flex;align-items:center;gap:5px;padding:0 6px;border:1px solid {{ p.bdr }};border-radius:3px;background:var(--bg0);font:500 11px/1 'JetBrains Mono',monospace;color:var(--fg1);white-space:nowrap;overflow:hidden"><sc-if value="{{ p.hasSw }}" hint-placeholder-val="{{ false }}"><span style="flex:0 0 auto;width:10px;height:10px;border:1px solid var(--line2);background:{{ p.sw }}"></span></sc-if>{{ p.v }}</span><sc-if value="{{ p.hasUnit }}" hint-placeholder-val="{{ false }}"><span style="width:40px;height:22px;display:flex;align-items:center;padding:0 6px;box-sizing:border-box;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);font:500 11px/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ p.unit }}</span></sc-if></div>
+          </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-for>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"explodido":{"editor":"boolean","default":true},"$preview":{"width":1240,"height":800}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
+    };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const expl = this.props.explodido ?? true;
+    const gap = expl ? 34 : 0;
+    const pl = (x, y, w, h, d, o) => ({ x: x + 'px', y: y + 'px', w: w + 'px', h: h + 'px', tz: 'translateZ(' + (d * gap) + 'px)',
+      bg: (o && o.sel) ? 'rgba(var(--selRgb),.10)' : (d === 0 ? 'rgba(14,17,22,.92)' : 'rgba(var(--bg1Rgb),' + (o && o.solid ? '.55' : '.18') + ')'),
+      bdr: (o && o.sel) ? '1.5px solid var(--sel)' : '1px solid rgba(173,181,190,' + (0.38 - d * 0.04) + ')' });
+    const planes = [
+      pl(0, 0, 520, 310, 0),
+      pl(0, 0, 520, 22, 1, { solid: true }), pl(0, 22, 520, 288, 1),
+      pl(0, 22, 350, 288, 2), pl(350, 22, 170, 288, 2, { solid: true }),
+      pl(0, 22, 350, 16, 3), pl(0, 38, 350, 18, 3, { sel: true }), pl(0, 56, 312, 200, 3), pl(312, 56, 38, 200, 3), pl(356, 30, 158, 120, 3), pl(356, 156, 158, 146, 3),
+      pl(6, 40, 60, 14, 4), pl(72, 40, 90, 14, 4), pl(168, 40, 120, 14, 4), pl(362, 60, 146, 34, 4, { solid: true }), pl(362, 176, 146, 120, 4),
+      pl(172, 42, 34, 10, 5), pl(210, 42, 34, 10, 5), pl(248, 42, 34, 10, 5)
+    ];
+    let seed = 7, p = .5; const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    const candles = [];
+    for (let i = 0; i < 22; i++) { const o = p, c = Math.min(.85, Math.max(.15, o + (rnd() - .47) * .2)); p = c;
+      const top = 70 + (1 - Math.max(o, c)) * 150, h = Math.max(3, Math.abs(c - o) * 150);
+      candles.push({ x: (14 + i * 13) + 'px', y: top + 'px', h: h + 'px', col: c >= o ? '#26c281' : '#ef5350', tz: 'translateZ(' + (4 * gap) + 'px)' }); }
+    const row = (d, name, count, o) => ({ d, name, count: count ? '(' + count + ')' : '', indent: (8 + d * 10) + 'px', chev: (o && o.leaf) ? '' : '▾', badge: (o && o.badge) || '',
+      bg: (o && o.sel) ? 'rgba(var(--selRgb),.12)' : 'transparent', color: (o && o.sel) ? 'var(--fg0)' : 'var(--fg1)' });
+    const tree = [row(0, '.shell', 3), row(1, '.toolbar', 3), row(2, '.toolbar-zone--start', 1), row(2, '.brand', 2), row(2, '.toolbar-zone--end', 1), row(1, '.workspace', 2), row(2, '.chart-stage', 3), row(3, '.tab-strip', 1),
+      row(3, '.studies-toolbar', 7, { sel: true, badge: '●' }), row(4, '.studies-toolbar-group TF', 2), row(4, '.studies-toolbar-group Visual', 5), row(4, '.studies-toolbar-chips', 3), row(5, '.chip.studies-toolbar-chip', 4, { leaf: true, badge: '●' }),
+      row(3, '.chart-pane', 2), row(2, '.side-panel', 2), row(3, '.estudos', 4), row(3, '.posicoes', 3)];
+    const changes = [
+      { name: '.chip.studies-toolbar-chip', count: '×4 ', prop: 'border-radius', from: '3px', to: '999px', src: 'src/ui/studies.css › .studies-toolbar-chip · L88' },
+      { name: '.studies-toolbar', count: '', prop: 'padding', from: '4px 8px', to: '4px 12px', src: 'src/ui/studies.css › .studies-toolbar · L41' }
+    ];
+    const counts = [1, 3, 6, 11, 22, 46, 115, 115, 78, 16, 1];
+    const rail = counts.map((c, d) => ({ d, n: c, bdr: d === 3 ? 'var(--sel)' : 'var(--line1)', color: d === 3 ? 'var(--sel)' : 'var(--fg1)' }));
+    const dD = 'var(--sel)', dE = 'var(--ok)', dN = 'var(--line2)';
+    const P = (label, v, o) => ({ label, v, dot: (o && o.dot) || dN, bdr: (o && o.ed) ? 'var(--sel)' : 'var(--line1)', hasUnit: !!(o && o.unit), unit: (o && o.unit) || '', hasSw: !!(o && o.sw), sw: (o && o.sw) || '' });
+    const groups = [
+      { title: 'Borda', total: '5', props: [P('Borda · largura', '0', { unit: 'px' }), P('Borda · estilo', 'none ▾'), P('Cantos (radius)', '0', { unit: 'px' }), P('Outline', 'none')] },
+      { title: 'Caixa', total: '8 · 3', props: [P('Largura', '100', { unit: '%', dot: dD }), P('Altura', '28', { unit: 'px', dot: dD }), P('Min largura', '0', { unit: 'px' }), P('Box-sizing', 'border-box ▾', { dot: dD })] },
+      { title: 'Cores & Fundo', total: '6 · 2', props: [P('Fundo', 'rgb(53, 58, 65)', { sw: '#353a41', dot: dD }), P('Texto', 'rgb(213, 218, 224)', { sw: '#d5dae0', dot: dD })] },
+      { title: 'Espaçamento', total: '10 · 1', props: [P('Padding', '4px 12px', { dot: dE, ed: true }), P('Margin', '0', { unit: 'px' })] }
+    ];
+    return {
+      vars, planes, candles, tree, changes, rail, groups,
+      world: expl ? 'rotateX(24deg) rotateY(-34deg) rotateZ(4deg)' : 'rotateX(0deg)',
+      selTag: { x: '0px', y: '24px', tz: 'translateZ(' + (3 * gap + 1) + 'px)' },
+      explBdr: expl ? 'var(--sel)' : 'var(--line1)', explColor: expl ? 'var(--sel)' : 'var(--fg2)', explGlyph: expl ? '▧' : '▤',
+      sliders1: [{ v: 40, label: 'Intensidade dos frames' }, { v: 30, label: 'Distância entre as camadas' }, { v: 35, label: 'Perspectiva da câmera' }],
+      sliders2: [{ v: 60, label: 'Destaque' }, { v: 50, label: 'Demais' }],
+      origins: [{ label: 'declarada', n: 9, dot: dD }, { label: 'herdada', n: 0, dot: 'var(--warn)' }, { label: 'editada', n: 1, dot: dE }],
+      nav: ['↺', '▲', '↻', '◀', '⊙', '▶', '↑', '▼', '↓', '−', '⚙', '+', 'L−', '0', 'L+']
+    };
+  }
+}
+</script>
+</body>
+</html>
