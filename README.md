@@ -93,6 +93,7 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 - changelog.d/ — um fragmento por branch; CHANGELOG.md — histórico por versão
 - docs/LOCAL-SETUP.md — rodar local com visual idêntico
 - docs/layers-json.md — contrato do layers.json e das origens
+- docs/shortcuts.md — atalhos de teclado e mouse do painel ? e contextos (campos de texto, Esc, menus)
 - docs/ARCHITECTURE.md — arquitetura e fluxo de dados
 - docs/RELEASE-CHECKLIST.md — pendências para a v1 (funcional, testes, segurança)
 - docs/roadmap.md — tracker de fases; docs/TOPOLOGY.md — mapa dos docs

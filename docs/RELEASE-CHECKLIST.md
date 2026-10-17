@@ -85,4 +85,4 @@ Cinco fixtures vendorizados de projetos públicos reais (MIT), lote 2, mesma ext
 - [x] `README.md`: o que é, requisitos (Chrome/Edge), como rodar, como conectar um projeto (cinco origens, auto-criação do `layers.json`, rascunho → aprovar). Matriz de suporte fica na S7.3.
 - [x] `CHANGELOG.md` com entradas por versão (padrão `changelog.d/` do Traval).
 - [ ] Matriz de suporte: navegadores × funcionalidades (leitura, edição, gravação).
-- [ ] Atalhos e interações (exportar o conteúdo do painel `?` para `docs/shortcuts.md`).
+- [x] Atalhos e interações (exportar o conteúdo do painel `?` para `docs/shortcuts.md`): [docs/shortcuts.md](shortcuts.md) traz uma tabela por grupo do painel `?` e os contextos (campos de texto, Esc em cascata, Ctrl/Cmd+Enter, `R` com confirmação, menus); as interações de projeto ficam em [layers-json.md](layers-json.md#interactions), e `test/shortcuts.test.js` mantém as tabelas iguais a `LayersCore.SHORTCUTS` (a cobertura das teclas do handler é do teste `KeyMap` da S3.3).
