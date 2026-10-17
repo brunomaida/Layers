@@ -1,6 +1,13 @@
+---
+title: "Benchmark History"
+type: bench-history
+solution: Layers
+created: 2026-10-13
+---
+
 # Benchmark History
 
-_generated 2026-10-17T00:38:34Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
+_generated 2026-10-17T01:16:52Z · env `61c971a2` · 12th Gen Intel(R) Core(TM) i7-12700 · chromium 153.0.8010.12 (playwright) · 20 cores · GC=V8_
 
 _Methodology: `docs/bench-methodology.md` (v1)_
 
@@ -8,6 +15,90 @@ _Methodology: `docs/bench-methodology.md` (v1)_
 > Interactive view: Atlas Bench tab (`http://127.0.0.1:5190/`), reads `bench-history.json`.
 
 ## 2026-10-17
+
+### layers-ui — 01:06:58Z  ·  _latency · env 61c971a2 · 4c5397a8fe11cd7d4e8fce2e34abbb653efb9cb3_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 7.80 ns | 0.00 ns | — | — | ≈ +2.6% |
+| `load/traval/first-scan-end-ms` | 482.70 ns | 0.00 ns | — | — | ≈ +2.4% |
+| `scan/1500-tags-ms` | 42.30 ns | 0.00 ns | — | — | ≈ -2.5% |
+| `orbit/traval/mean-frame-ms` | 23.70 ns | 0.00 ns | — | — | ≈ -3.5% |
+| `orbit/traval-gcs-ideal/mean-frame-ms` | 24.07 ns | 0.00 ns | — | — | ≈ +1.4% |
+| `orbit/traval-panel-ideal/mean-frame-ms` | 24.09 ns | 0.00 ns | — | — | ≈ +0.1% |
+| `orbit/traval-zoom/mean-frame-ms` | 18.58 ns | 0.00 ns | — | — | ≈ +1.5% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 19.85 ns | 0.00 ns | — | — | ▲ +8.2% |
+| `orbit/traval-tree-closed/mean-frame-ms` | 23.79 ns | 0.00 ns | — | — | ≈ +1.9% |
+| `orbit/traval-tree-ideal/mean-frame-ms` | 24.34 ns | 0.00 ns | — | — | ▲ +7.8% |
+| `orbit/traval-v1/mean-frame-ms` | 23.63 ns | 0.00 ns | — | — | ≈ -0.4% |
+| `orbit/traval-v1-tree-ideal/mean-frame-ms` | 23.10 ns | 0.00 ns | — | — | ≈ +2.1% |
+| `orbit/1500-tags/mean-frame-ms` | 63.09 ns | 0.00 ns | — | — | ▼ -6.6% |
+| `orbit/1500-tags-tree-closed/mean-frame-ms` | 42.52 ns | 0.00 ns | — | — | ▼ -11.1% |
+| `orbit/1500-tags-tree-ideal/mean-frame-ms` | 40.88 ns | 0.00 ns | — | — | ▼ -13.6% |
+| `orbit/1500-tags-v1/mean-frame-ms` | 62.36 ns | 0.00 ns | — | — | ≈ -0.9% |
+| `orbit/1500-tags-v1-tree-ideal/mean-frame-ms` | 49.47 ns | 0.00 ns | — | — | ≈ +4.1% |
+| `tree/traval/hover-ms` | 25.10 ns | 0.00 ns | — | — | ≈ -1.6% |
+| `tree/traval/select-ms` | 78.50 ns | 0.00 ns | — | — | ▼ -6.2% |
+| `tree/1500-tags/hover-ms` | 76.40 ns | 0.00 ns | — | — | ▼ -10.1% |
+| `tree/1500-tags/select-ms` | 414.10 ns | 0.00 ns | — | — | ▼ -14.8% |
+| `tree/1500-tags/scroll-frame-ms` | 250.63 ns | 0.00 ns | — | — | ▼ -7.5% |
+| `explode/traval/toggle-ms` | 62.40 ns | 0.00 ns | — | — | ≈ +0.6% |
+
+### layers-ui — 01:05:03Z  ·  _latency · env 61c971a2 · 4c5397a8fe11cd7d4e8fce2e34abbb653efb9cb3_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 7.60 ns | 0.00 ns | — | — | ▼ -9.5% |
+| `load/traval/first-scan-end-ms` | 471.40 ns | 0.00 ns | — | — | ▼ -5.4% |
+| `scan/1500-tags-ms` | 43.40 ns | 0.00 ns | — | — | ≈ +3.3% |
+| `orbit/traval/mean-frame-ms` | 24.57 ns | 0.00 ns | — | — | ≈ +2.1% |
+| `orbit/traval-gcs-ideal/mean-frame-ms` | 23.75 ns | 0.00 ns | — | — | ≈ -0.8% |
+| `orbit/traval-panel-ideal/mean-frame-ms` | 24.07 ns | 0.00 ns | — | — | ≈ +2.6% |
+| `orbit/traval-zoom/mean-frame-ms` | 18.30 ns | 0.00 ns | — | — | ≈ +0.1% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 18.34 ns | 0.00 ns | — | — | ≈ -3.6% |
+| `orbit/traval-tree-closed/mean-frame-ms` | 23.34 ns | 0.00 ns | — | — | ▼ -7.5% |
+| `orbit/traval-tree-ideal/mean-frame-ms` | 22.58 ns | 0.00 ns | — | — | ≈ -3.3% |
+| `orbit/traval-v1/mean-frame-ms` | 23.72 ns | 0.00 ns | — | — | ≈ +0.8% |
+| `orbit/traval-v1-tree-ideal/mean-frame-ms` | 22.63 ns | 0.00 ns | — | — | ≈ -1.7% |
+| `orbit/1500-tags/mean-frame-ms` | 67.52 ns | 0.00 ns | — | — | ▼ -5.9% |
+| `orbit/1500-tags-tree-closed/mean-frame-ms` | 47.85 ns | 0.00 ns | — | — | ▲ +14.0% |
+| `orbit/1500-tags-tree-ideal/mean-frame-ms` | 47.32 ns | 0.00 ns | — | — | ▼ -5.3% |
+| `orbit/1500-tags-v1/mean-frame-ms` | 62.89 ns | 0.00 ns | — | — | ▲ +14.1% |
+| `orbit/1500-tags-v1-tree-ideal/mean-frame-ms` | 47.51 ns | 0.00 ns | — | — | ▲ +6.1% |
+| `tree/traval/hover-ms` | 25.50 ns | 0.00 ns | — | — | ≈ -3.4% |
+| `tree/traval/select-ms` | 83.70 ns | 0.00 ns | — | — | ▲ +9.4% |
+| `tree/1500-tags/hover-ms` | 85.00 ns | 0.00 ns | — | — | ▲ +11.8% |
+| `tree/1500-tags/select-ms` | 485.90 ns | 0.00 ns | — | — | ▼ -5.4% |
+| `tree/1500-tags/scroll-frame-ms` | 270.91 ns | 0.00 ns | — | — | ≈ -1.4% |
+| `explode/traval/toggle-ms` | 62.00 ns | 0.00 ns | — | — | ≈ -2.7% |
+
+### layers-ui — 01:03:05Z  ·  _latency · env 61c971a2 · 4c5397a8fe11cd7d4e8fce2e34abbb653efb9cb3_
+
+| benchId | Mean | StdDev | P99 | Alloc B/op | Δ vs prior |
+|---|---|---|---|---|---|
+| `load/traval/first-scan-ms` | 8.40 ns | 0.00 ns | — | — | ≈ +2.4% |
+| `load/traval/first-scan-end-ms` | 498.30 ns | 0.00 ns | — | — | ≈ +4.4% |
+| `scan/1500-tags-ms` | 42.00 ns | 0.00 ns | — | — | ▼ -11.8% |
+| `orbit/traval/mean-frame-ms` | 24.06 ns | 0.00 ns | — | — | ▲ +7.9% |
+| `orbit/traval-gcs-ideal/mean-frame-ms` | 23.93 ns | 0.00 ns | — | — | ≈ +1.5% |
+| `orbit/traval-panel-ideal/mean-frame-ms` | 23.46 ns | 0.00 ns | — | — | ≈ -2.0% |
+| `orbit/traval-zoom/mean-frame-ms` | 18.28 ns | 0.00 ns | — | — | ≈ +4.0% |
+| `orbit/traval-zoom-ideal/mean-frame-ms` | 19.03 ns | 0.00 ns | — | — | ≈ -0.8% |
+| `orbit/traval-tree-closed/mean-frame-ms` | 25.22 ns | 0.00 ns | — | — | new |
+| `orbit/traval-tree-ideal/mean-frame-ms` | 23.34 ns | 0.00 ns | — | — | new |
+| `orbit/traval-v1/mean-frame-ms` | 23.52 ns | 0.00 ns | — | — | new |
+| `orbit/traval-v1-tree-ideal/mean-frame-ms` | 23.01 ns | 0.00 ns | — | — | new |
+| `orbit/1500-tags/mean-frame-ms` | 71.75 ns | 0.00 ns | — | — | new |
+| `orbit/1500-tags-tree-closed/mean-frame-ms` | 41.97 ns | 0.00 ns | — | — | new |
+| `orbit/1500-tags-tree-ideal/mean-frame-ms` | 49.99 ns | 0.00 ns | — | — | new |
+| `orbit/1500-tags-v1/mean-frame-ms` | 55.09 ns | 0.00 ns | — | — | new |
+| `orbit/1500-tags-v1-tree-ideal/mean-frame-ms` | 44.77 ns | 0.00 ns | — | — | new |
+| `tree/traval/hover-ms` | 26.40 ns | 0.00 ns | — | — | new |
+| `tree/traval/select-ms` | 76.50 ns | 0.00 ns | — | — | new |
+| `tree/1500-tags/hover-ms` | 76.00 ns | 0.00 ns | — | — | new |
+| `tree/1500-tags/select-ms` | 513.50 ns | 0.00 ns | — | — | new |
+| `tree/1500-tags/scroll-frame-ms` | 274.63 ns | 0.00 ns | — | — | new |
+| `explode/traval/toggle-ms` | 63.70 ns | 0.00 ns | — | — | ▼ -8.6% |
 
 ### layers-ui — 00:38:11Z  ·  _latency · env 61c971a2 · 226ad2fa27b81aa607494c24688ea7d4d1ffca68_
 
@@ -228,3 +319,8 @@ _Methodology: `docs/bench-methodology.md` (v1)_
 | `patchDc/dc-template/one-item` | 12.46 µs | 11.45 µs | — | — | new |
 | `deriveManifest/plain-admin/html+css` | 165.04 µs | 40.18 µs | — | — | new |
 | `openZip/zip/evil` | 416.72 µs | 380.29 µs | — | — | new |
+
+<!-- doc-links:auto -->
+## Related
+
+- [Bench methodology](../../bench-methodology.md)
