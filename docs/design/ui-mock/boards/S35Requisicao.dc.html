@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>S3.5 requisição em Ajustes</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8b96a3}a:hover{color:#adb5be}
+</style>
+</helmet>
+<div style="{{ vars }}width:1240px;height:820px;box-sizing:border-box;padding:22px 28px;display:flex;flex-direction:column;gap:14px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px;overflow:hidden">
+  <div style="display:flex;flex-direction:column;gap:6px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sel)">S3.5 · 2</span>
+      <h2 style="margin:0;font:600 16px/1.3 'Inter',sans-serif;color:var(--fg0)">Requisição: o pedido escrito fica em Ajustes, preso ao componente, e sai num bloco que a IA lê</h2>
+    </div>
+    <p style="margin:0;max-width:1000px;font:500 11.5px/1.5 'Inter',sans-serif;color:var(--fg2)">Menu de contexto › Requisição cria uma entrada em Ajustes: chip com o componente (nome, origem, caixa, estilos) e um campo livre. As requisições convivem com os ajustes De → Para; no fim da lista, a seção Requisições Manuais junta todas num texto pronto para colar numa conversa com a IA.</p>
+  </div>
+
+  <div style="display:grid;grid-template-columns:330px 430px minmax(0,1fr);gap:20px;min-height:0;flex:1">
+
+    <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+      <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">A · Painel Ajustes</span>
+      <div style="flex:1;min-height:0;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+          <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:14px">▾</span>
+          <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Ajustes</span>
+          <span title="1 ajuste · 3 requisições" style="font:600 10px/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 6px;border-radius:3px">1 · 3</span>
+          <button style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 11px/1 'Inter',sans-serif">Ações ▾</button>
+        </div>
+
+        <div style="display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 8px;padding:6px 10px;border-bottom:1px solid var(--line0);font:500 10px/1.4 'JetBrains Mono',monospace">
+          <span style="color:var(--fg0);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">.chip.studies-toolbar-chip <span style="color:var(--fg2)">×4 · border-radius</span></span>
+          <span style="color:var(--fg2)">↺</span>
+          <div style="grid-column:1 / -1;display:flex;gap:6px"><span style="color:var(--err);text-decoration:line-through">3px</span><span style="color:var(--fg3)">→</span><span style="color:var(--ok)">999px</span></div>
+          <div style="grid-column:1 / -1;color:var(--fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">src/ui/studies.css › .studies-toolbar-chip · L88</div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;padding:8px 10px 4px">
+          <span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Requisições</span>
+          <span style="flex:1;height:1px;background:var(--line1)"></span>
+          <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">3</span>
+        </div>
+
+        <sc-for list="{{ collapsedReqs }}" as="r" hint-placeholder-count="2">
+        <div style="display:flex;flex-direction:column;gap:3px;padding:6px 10px;border-bottom:1px solid var(--line0)">
+          <div style="display:flex;align-items:center;gap:6px;font:500 10px/1.3 'JetBrains Mono',monospace;white-space:nowrap">
+            <span style="color:var(--sel);font-weight:700">{{ r.id }}</span>
+            <span style="color:var(--fg0);min-width:0;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+            <span style="color:var(--fg3)">L{{ r.d }}</span>
+            <sc-if value="{{ multi }}" hint-placeholder-val="{{ false }}"><span style="height:14px;display:inline-flex;align-items:center;padding:0 4px;border:1px solid var(--line2);border-radius:3px;color:var(--fg2);font-size:8.5px">{{ r.layout }}</span></sc-if>
+            <span style="flex:1"></span>
+            <span style="color:var(--fg2)">▸</span>
+          </div>
+          <span style="font:400 10.5px/1.4 'Inter',sans-serif;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.text }}</span>
+        </div>
+        </sc-for>
+
+        <div style="display:flex;flex-direction:column;gap:7px;padding:8px 10px 10px;border-bottom:1px solid var(--line0);background:rgba(var(--selRgb),.05)">
+          <div style="display:flex;flex-direction:column;gap:5px;padding:7px 8px;border:1px solid rgba(var(--selRgb),.45);border-radius:6px;background:var(--bg2)">
+            <div style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+              <span style="font:700 10px/1 'JetBrains Mono',monospace;color:var(--sel)">R3</span>
+              <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 11px/1 'JetBrains Mono',monospace;color:var(--fg0)">.chip.studies-toolbar-chip</span>
+              <span style="font:600 10px/1 'JetBrains Mono',monospace;color:var(--acc)">L5</span>
+              <sc-if value="{{ multi }}" hint-placeholder-val="{{ false }}"><span title="layoutId: main" style="height:15px;display:inline-flex;align-items:center;padding:0 5px;border:1px solid var(--line2);border-radius:3px;color:var(--fg2);font:600 8.5px/1 'JetBrains Mono',monospace">Tela principal</span></sc-if>
+              <span style="flex:1"></span>
+              <button aria-label="Remover requisição" style="all:unset;cursor:pointer;color:var(--fg3);font-size:11px">✕</button>
+            </div>
+            <div style="display:flex;flex-wrap:wrap;gap:2px 6px;font:500 10px/1.4 'JetBrains Mono',monospace;color:var(--fg2)"><span style="color:var(--sel)">src/ui/studies.css</span><span style="color:var(--line2)">›</span><span style="color:var(--fg1)">.studies-toolbar-chip · L88</span><span style="color:var(--line2)">·</span><span style="color:var(--fg3)">64 × 22 px · ×4</span></div>
+            <div style="display:flex;flex-wrap:wrap;gap:3px">
+              <sc-for list="{{ styleChips }}" as="s" hint-placeholder-count="5">
+              <span style="display:inline-flex;align-items:center;gap:4px;height:18px;padding:0 6px;border-radius:999px;background:var(--faint);box-shadow:inset 0 0 0 1px var(--line0);font:500 9.5px/1 'JetBrains Mono',monospace;color:var(--fg1);white-space:nowrap"><sc-if value="{{ s.hasSw }}" hint-placeholder-val="{{ false }}"><span style="width:8px;height:8px;border:1px solid var(--line2);background:{{ s.sw }}"></span></sc-if><span style="color:var(--fg3)">{{ s.k }}</span>{{ s.v }}</span>
+              </sc-for>
+            </div>
+            <div style="font:500 9.5px/1.4 'JetBrains Mono',monospace;color:var(--fg3)">texto: “EMA 9”, “RSI”, “VWAP”, “+” · ajuste pendente: radius 3px → 999px</div>
+          </div>
+          <label for="req-r3" style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3)">O que mudar</label>
+          <textarea id="req-r3" rows="4" spellcheck="false" style="width:100%;box-sizing:border-box;resize:vertical;padding:6px 8px;border:1px solid var(--sel);border-radius:4px;background:var(--bg0);color:var(--fg1);font:400 11px/1.5 'Inter',sans-serif;outline:none">O chip ativo precisa de contraste maior que os outros (hoje só muda a borda). Manter a altura de 22px; aumentar 2px de padding lateral e alinhar o “+” à direita do grupo.</textarea>
+          <div style="display:flex;align-items:center;gap:6px">
+            <button style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 10px/1 'Inter',sans-serif">⊕ Mostrar no palco</button>
+            <span style="flex:1"></span>
+            <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">salvo · 162 car.</span>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-top:1px solid var(--line1);margin-top:auto;background:var(--bg0)">
+          <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:10px">▸</span>
+          <span style="flex:1;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2)">Requisições Manuais</span>
+          <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">3</span>
+          <button style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:500 10px/1 'Inter',sans-serif">Copiar</button>
+        </div>
+      </div>
+      <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">No Layers de hoje, Ajustes fica na coluna esquerda, sob a Árvore (index.html:339). A spec diz “painel direito”: decisão em aberto, o mock usa o painel real.</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:8px;min-height:0">
+      <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">B · Requisições Manuais aberta</span>
+      <div style="position:relative;flex:1;min-height:0;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow);overflow:hidden">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid var(--line1)">
+          <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:10px">▾</span>
+          <span style="flex:1;font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2)">Requisições Manuais</span>
+          <button style="height:20px;padding:0 8px;border-radius:3px;border:1px solid var(--sel);background:transparent;color:var(--sel);font:600 10px/1 'Inter',sans-serif">Copiar</button>
+          <button style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:500 10px/1 'Inter',sans-serif">Exportar .md…</button>
+        </div>
+        <pre style="flex:1;min-height:0;margin:0;padding:10px 12px;overflow:hidden;background:var(--bg0);color:var(--fg1);font:500 10px/1.55 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word">{{ md }}</pre>
+        <div role="status" style="position:absolute;left:50%;bottom:14px;transform:translateX(-50%);display:flex;align-items:center;gap:10px;max-width:380px;padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--ok);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 11px/1.4 'Inter',sans-serif;white-space:nowrap">3 requisições copiadas como Markdown.</div>
+      </div>
+      <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">Ações ▾ ganha “Copiar requisições (Markdown)” e “Exportar requisições…” (grava layers-requests.md na pasta conectada por writeText).</span>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">C · Como a IA acha o componente</span>
+      <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px">
+        <sc-for list="{{ anchors }}" as="a" hint-placeholder-count="6">
+        <div style="display:grid;grid-template-columns:22px 92px minmax(0,1fr);gap:8px;padding:6px 10px;border-bottom:1px solid var(--line0);font:500 10.5px/1.45 'Inter',sans-serif">
+          <span style="font:700 10px/1.45 'JetBrains Mono',monospace;color:var(--sel)">{{ a.n }}</span>
+          <span style="font:600 10px/1.45 'JetBrains Mono',monospace;color:var(--fg1)">{{ a.k }}</span>
+          <span style="color:var(--fg2)">{{ a.v }}</span>
+        </div>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px">
+        <div style="padding:6px 10px;border-bottom:1px solid var(--line1);font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Registro</div>
+        <code style="display:block;padding:8px 10px;color:var(--fg2);font:500 10px/1.5 'JetBrains Mono',monospace;white-space:pre-wrap">{{ record }}</code>
+        <sc-for list="{{ recNotes }}" as="r" hint-placeholder-count="3">
+        <span style="padding:4px 10px 6px;border-top:1px solid var(--line0);font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg2)">{{ r }}</span>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"multiLayout":{"editor":"boolean","default":false},"$preview":{"width":1240,"height":820}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
+    };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const multi = !!this.props.multiLayout;
+    const L = (name) => multi ? ' · layout: ' + name : '';
+    const md = [
+      '## Requisições Manuais · Traval · 3',
+      '<!-- Layers 0.25 · 17/10/2026 14:32 · mock layers/mock.html' + (multi ? ' · 3 layouts' : '') + ' -->',
+      '',
+      '### R1 · .studies-toolbar (L3)' + L('Tela principal'),
+      '- alvo: src/ui/studies.css › .studies-toolbar · L41',
+      '- caminho: .shell > .workspace > .chart-stage > .studies-toolbar',
+      '- caixa: 612×28 px · 1 uso',
+      '- estilos: display:flex; gap:6px; padding:4px 12px; background:#353a41',
+      '- pedido: Agrupar TF e Visual à esquerda e levar os chips para a direita.',
+      '',
+      '### R2 · span “Resumo Global” (L4)' + L('Tela principal'),
+      '- alvo: src/ui/summary.ts › .summary-title · L12 (manual: fonte TS)',
+      '- caminho: … > .chart-pane > .summary-card > span',
+      '- caixa: 118×18 px · texto “Resumo Global”',
+      '- estilos: font:600 13px Inter; color:#d5dae0; letter-spacing:0',
+      '- pedido: Título em caixa alta, 11px, igual aos cabeçalhos dos painéis.',
+      '',
+      '### R3 · .chip.studies-toolbar-chip (L5) ×4' + L('Tela principal'),
+      '- alvo: src/ui/studies.css › .studies-toolbar-chip · L88',
+      '- caminho: … > .studies-toolbar > .studies-toolbar-chips > .chip:nth-of-type(1–4)',
+      '- caixa: 64×22 px · textos “EMA 9”, “RSI”, “VWAP”, “+”',
+      '- estilos: background:#3f454d; color:#d5dae0; font:500 11px Inter; border-radius:3px; padding:0 8px',
+      '- ajuste pendente: border-radius 3px → 999px',
+      '- pedido: O chip ativo precisa de contraste maior que os outros (hoje só muda a borda). Manter 22px de altura; +2px de padding lateral; “+” à direita do grupo.'
+    ].join('\n');
+    return {
+      vars, multi, md,
+      collapsedReqs: [
+        { id: 'R1', name: '.studies-toolbar', d: 3, layout: 'Tela principal', text: 'Agrupar TF e Visual à esquerda e levar os chips para a direita.' },
+        { id: 'R2', name: 'span “Resumo Global”', d: 4, layout: 'Tela principal', text: 'Título em caixa alta, 11px, igual aos cabeçalhos dos painéis.' }
+      ],
+      styleChips: [
+        { k: 'bg ', v: '#3f454d', hasSw: true, sw: '#3f454d' }, { k: 'cor ', v: '#d5dae0', hasSw: true, sw: '#d5dae0' },
+        { k: 'font ', v: '500 11px Inter', hasSw: false, sw: '' }, { k: 'radius ', v: '3px', hasSw: false, sw: '' }, { k: 'padding ', v: '0 8px', hasSw: false, sw: '' }
+      ],
+      anchors: [
+        { n: '1', k: 'alvo', v: 'arquivo › seletor · linha do data-src, a mesma âncora que Aplicar usa para gravar. Fonte TS/JS leva “(manual)”.' },
+        { n: '2', k: 'caminho', v: 'Seletor do L0 até o nó, com :nth-of-type quando há irmãos iguais. Reacha o nó se a linha mudar.' },
+        { n: '3', k: 'texto', v: 'Até 40 caracteres do texto do nó e dos filhos diretos: desambigua chips e botões iguais.' },
+        { n: '4', k: 'caixa · camada', v: 'Tamanho renderizado, Ln e número de usos da regra.' },
+        { n: '5', k: 'estilos', v: 'Só as propriedades declaradas e editadas da seção ativa, não as 200 computadas.' },
+        { n: '6', k: 'layout · estado', v: 'layoutId e nome do estado do mock. Some do texto quando o projeto tem um layout só.' }
+      ],
+      record: '{ id:"R3", layoutId:"main", nodeKey:"src/ui/studies.css|.studies-toolbar-chip|88",\n  path:".shell>…>.chip", text:"…", createdAt }',
+      recNotes: [
+        'Persistido em layers/v1/pending › requests[] na mesma entrada dos changes (chave pendingKey).',
+        'Hash das fontes diferente: as requisições ficam (são texto do usuário) e ganham “alvo a confirmar”; os changes seguem descartados como hoje.',
+        'Requisição não conta no Salvar nem entra em Aplicar nos arquivos; só ajustes De → Para gravam.'
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
