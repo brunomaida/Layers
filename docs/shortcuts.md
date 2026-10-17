@@ -82,7 +82,7 @@ Geradas de `LayersCore.SHORTCUTS` (`lib/layers-core.js`); `test/shortcuts.test.j
 | ⊟ / ⊞ | recolher / expandir todas as seções |
 | P · » / « | recolher / expandir o painel de propriedades |
 | Enter | aplicar o valor do campo |
-| Esc (no campo) | descartar a edição e sair do campo |
+| Esc (no campo de texto) | descartar a edição e sair do campo |
 | Aplicar em | alcance: perguntar · só este · todos iguais |
 | ▾ título do grupo | recolher / expandir o grupo |
 
@@ -111,7 +111,7 @@ Com o foco em qualquer controle de formulário (`<input>` de qualquer tipo, `<te
 
 - Ctrl/Cmd+Z e Ctrl/Cmd+Y ficam com o navegador num campo de texto e num `<textarea>`.
 - Em controles não textuais (slider, cor, checkbox, radio, botão) e no `<select>`, Ctrl/Cmd+Z e Ctrl/Cmd+Y desfazem e refazem o ajuste global, e o Esc não faz nada (o editor ignora controles de formulário e eles não têm handler próprio).
-- Campo de propriedade: Enter aplica o valor e sai do campo. Esc descarta o valor digitado, restaura o anterior e sai do campo, sem registrar nada em Ajustes. A linha `Esc (no campo)` do painel diz o mesmo.
+- Campo de propriedade de texto: Enter aplica o valor e sai do campo. Esc descarta o valor digitado, restaura o anterior e sai do campo, sem registrar nada em Ajustes. A linha `Esc (no campo de texto)` do painel diz o mesmo.
 - ⌕ Buscar camada e ⌕ Buscar propriedade: Esc limpa a busca e sai do campo.
 - Campo do repositório GitHub (menu Projetos): Enter registra, Esc cancela.
 
