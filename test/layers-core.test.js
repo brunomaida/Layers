@@ -1600,23 +1600,33 @@ describe('RestorePlan', () => {
   });
 
   it('HashDiferente_MantemRequestsComConfirm', () => {
-    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({}), pendingRequest({ id: 'r2' })] };
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({ texts: ['a'] }), pendingRequest({ id: 'r2' })] };
     const plan = core.restorePlan(entry, 'outro');
     expect(plan.keep).toEqual([]);
     expect(plan.dropped).toBe(1);
     expect(plan.confirm).toBe(true);
     expect(plan.requests.map((r) => r.id)).toEqual(['r1', 'r2']);
     expect(plan.requests[0]).not.toBe(entry.requests[0]);
+    expect(plan.requests[0].texts).toEqual(['a']);
+    expect(plan.requests[0].texts).not.toBe(entry.requests[0].texts);
   });
 
   it('HashIgual_ConfirmFalse', () => {
-    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({})] };
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({ texts: ['a'] })] };
     const plan = core.restorePlan(entry, 'h');
     expect(plan.confirm).toBe(false);
     expect(plan.dropped).toBe(0);
     expect(plan.keep).toHaveLength(1);
     expect(plan.requests).toEqual(entry.requests);
     expect(plan.requests[0]).not.toBe(entry.requests[0]);
+    expect(plan.requests[0].texts).toEqual(['a']);
+    expect(plan.requests[0].texts).not.toBe(entry.requests[0].texts);
+  });
+
+  it('RequestsNaoArrayOuElementoInvalido_Ignora', () => {
+    const base = { savedAt: 1, hash: 'h', changes: [pendingChange({})] };
+    expect(core.restorePlan({ ...base, requests: 'x' }, 'h').requests).toEqual([]);
+    expect(core.restorePlan({ ...base, requests: [null, 'x', pendingRequest({})] }, 'outro').requests).toEqual([pendingRequest({})]);
   });
 
   it('EntradaSemRequests_RequestsVazio', () => {
@@ -1738,9 +1748,7 @@ describe('SetPending / GetPending', () => {
     st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop: 'cssText' })] } } }));
     expect(core.getPending(st, 'fx:a')).toBeNull();
   });
-});
 
-describe('GetPending', () => {
   it('SemRequests_LeComoVazio', () => {
     const st = memStorage();
     st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})] } } }));
@@ -1776,9 +1784,7 @@ describe('GetPending', () => {
     core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [r] }, 1000);
     expect(core.getPending(st, 'fx:a').requests).toEqual([r]);
   });
-});
 
-describe('SetPending', () => {
   it('SoRequests_NaoApaga', () => {
     const st = memStorage();
     expect(core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000)).toBe(true);
