@@ -11,11 +11,11 @@ const ORIGINAL = fs.readFileSync(path.resolve('fixtures/dc-template/index.html')
 const sha = (text) => crypto.createHash('sha256').update(text).digest('hex');
 const DRAFT = 'index.design-draft.html';
 
-// Edit row of a property on the selected element: the row title names the rule it is declared in.
-const row = (page, label) => page.locator('[title^="Declarada na regra tpl:"]').filter({ hasText: label }).first();
+// Number input of a property row on the selected element (the row title varies with where the value is declared).
+const field = (page, label) => page.locator(`xpath=//*[normalize-space(text())="${label}"]/ancestor::*[.//input[@type="number"]][1]//input[@type="number"]`).first();
 
 async function setProp(page, label, value) {
-  const input = row(page, label).locator('input[type="number"]').first();
+  const input = field(page, label);
   await input.click({ clickCount: 3 });
   await page.keyboard.type(value);
   await page.keyboard.press('Tab');
@@ -84,6 +84,7 @@ test('DcWrite_ArquivoMudouNoDisco_RecusaSourceChanged', async ({ page }) => {
   await connectFixture(page, 'dc-template');
   await selectLayer(page, 'h1');
   await setProp(page, 'Tamanho', '22');
+  // outside edit lands before "Gerar rascunho" so the refusal is SOURCE_CHANGED, not the later "file changed after the draft" guard
   // someone else edits the same declaration after the project was loaded
   const outside = ORIGINAL.replace('font-size:20px;margin:0', 'font-size:30px;margin:0');
   expect(outside).not.toBe(ORIGINAL);
@@ -98,4 +99,21 @@ test('DcWrite_ArquivoMudouNoDisco_RecusaSourceChanged', async ({ page }) => {
 
   expect(await readDisk(page, 'index.html'), 'the outside edit survives untouched').toBe(outside);
   expect(await listDisk(page), 'nothing written: no history, no draft').toEqual(['index.html', 'layers', 'layers.json']);
+});
+
+test('DcWrite_SemStyleInline_RecusaSemTocarOArquivo', async ({ page }) => {
+  await connectFixture(page, 'dc-template');
+  await selectLayer(page, 'span');
+  // `<span>no inline style</span>` has no style="" in the source: the value comes from the browser default
+  await setProp(page, 'Tamanho', '22');
+
+  await openApply(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect(page.getByText(/NO_INLINE_STYLE/).first()).toBeVisible();
+  expect(await readDisk(page, DRAFT), 'no draft for a refused edit').toBeNull();
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+
+  expect(sha(await readDisk(page, 'index.html'))).toBe(sha(ORIGINAL));
+  expect(await listDisk(page), 'nothing written: no .bak, no history, no draft').toEqual(['index.html', 'layers', 'layers.json']);
 });
