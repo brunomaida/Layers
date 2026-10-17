@@ -134,6 +134,7 @@ export async function orbitDrag(page, durationMs = 1500) {
 // inline translateZ transform and a pointer/crosshair cursor (overlays have no cursor). Off-screen is
 // measured against the stage grown by 15 % of its larger side (the culler's CULL_MARGIN).
 // hide = true sets display:none on the off-screen planes (Task 1 upper-bound spike).
+// bare = paints only its outline; empty = paints nothing (marked data-s48-empty for hidePlanes).
 export async function planeCensus(page, hide = false) {
   return page.evaluate((hide) => {
     const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
@@ -146,7 +147,7 @@ export async function planeCensus(page, hide = false) {
     const planes = [...stage.querySelectorAll('div')].filter(
       (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
     );
-    const c = { total: planes.length, offscreen: 0, partial: 0, opBelow005: 0, opZero: 0 };
+    const c = { total: planes.length, offscreen: 0, partial: 0, opBelow005: 0, opZero: 0, bare: 0, empty: 0 };
     for (const el of planes) {
       const r = el.getBoundingClientRect();
       const out = r.right < sb.left || r.left > sb.right || r.bottom < sb.top || r.top > sb.bottom;
@@ -158,6 +159,15 @@ export async function planeCensus(page, hide = false) {
       const op = el.style.opacity === '' ? 1 : +el.style.opacity;
       if (op < 0.05) c.opBelow005++;
       if (op === 0) c.opZero++;
+      // computed style per plane: runs after waitForScan and before the drag, so neither burst nor gcsPerFrame moves
+      const cs = getComputedStyle(el);
+      const noBorder = ['Top', 'Right', 'Bottom', 'Left'].every((k) => cs['border' + k + 'Style'] === 'none' || parseFloat(cs['border' + k + 'Width']) === 0);
+      const bare = cs.backgroundColor === 'rgba(0, 0, 0, 0)' && cs.backgroundImage === 'none' && noBorder && cs.boxShadow === 'none' && el.childNodes.length === 0;
+      if (bare) c.bare++;
+      if (bare && cs.outlineStyle === 'none') {
+        c.empty++;
+        el.setAttribute('data-s48-empty', '');
+      }
     }
     return c;
   }, hide);
@@ -220,6 +230,75 @@ export async function memoClientBox(page) {
       });
     }
   });
+}
+
+// S4.8: marks the planes (planeCensus filter) and the world div so a stylesheet can override their inline
+// styles with !important. React never touches attributes it did not set: the marks survive drag renders.
+export async function markScene(page) {
+  return page.evaluate(() => {
+    const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) =>
+      getComputedStyle(el).backgroundImage.includes('radial-gradient'),
+    );
+    if (!stage) throw new Error('stage element not found');
+    const planes = [...stage.querySelectorAll('div')].filter(
+      (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+    );
+    if (!planes.length) throw new Error('no planes found');
+    planes.forEach((el) => el.setAttribute('data-s48-plane', ''));
+    // Plane -> page -> world (index.html:2159-2160)
+    planes[0].parentElement.parentElement.setAttribute('data-s48-world', '');
+    return planes.length;
+  });
+}
+
+// S4.8 upper bounds: hides planes by mark with display:none !important. 'empty' = planes planeCensus marked
+// as painting nothing (call planeCensus first); 'odd' = every other plane (linearity check, not a fix).
+export async function hidePlanes(page, which) {
+  const n = await page.evaluate((which) => {
+    const planes = [...document.querySelectorAll('[data-s48-plane]')];
+    let n = 0;
+    planes.forEach((el, i) => {
+      const hide = which === 'odd' ? i % 2 === 1 : el.hasAttribute('data-s48-empty');
+      if (hide) {
+        el.setAttribute('data-s48-hide', '');
+        n++;
+      }
+    });
+    return n;
+  }, which);
+  await page.addStyleTag({ content: '[data-s48-hide]{display:none!important}' });
+  return n;
+}
+
+// Sets the "Intensidade dos frames" slider (wireAlpha, index.html:123) through React's onChange; 0 turns
+// every wire outline off. Waits two frames for the render.
+export async function setWireAlpha(page, v) {
+  await page.evaluate((v) => {
+    const input = document.querySelector('label[title="Intensidade dos frames"] input[type="range"]');
+    if (!input) throw new Error('wire slider not found');
+    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, String(v));
+    input.dispatchEvent(new Event('input', { bubbles: true }));
+  }, v);
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+}
+
+// S4.8: counts plane-to-plane pointer transitions (each one is an H.enter hoverId change) until the
+// returned function is called. Same probe as S4.7's countHoverSwaps (e2e/tree-perf-helpers.js), kept
+// under another name so the two imports never collide in perf.spec.js.
+export async function countPlaneHovers(page) {
+  await page.evaluate(() => {
+    const st = (window.__s48hov = { n: 0, last: null });
+    const plane = (el) => {
+      for (; el; el = el.parentElement) if (el.style && el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)) return el;
+      return null;
+    };
+    st.fn = (e) => {
+      const p = plane(e.target);
+      if (p && p !== st.last) { st.n++; st.last = p; }
+    };
+    document.addEventListener('mouseover', st.fn, true);
+  });
+  return () => page.evaluate(() => { document.removeEventListener('mouseover', window.__s48hov.fn, true); return window.__s48hov.n; });
 }
 
 export function writeBench(benchmarks, runtime) {
