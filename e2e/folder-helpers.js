@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // A fixture copied into the origin-private file system and handed to the app through a stubbed
 // showDirectoryPicker, so the real connected-folder paths (read, mtime guard, write) run unchanged.
@@ -44,9 +44,9 @@ export async function connectFixture(page, name) {
   await readNodes(page);
 }
 
-// The only raw tree-row query of the functional specs: S4.7 virtualizes the tree, fix it here.
+// Window-safe: treeRow scrolls the tree until the row is mounted (S4.10 windows the tree).
 export async function selectLayer(page, titlePrefix) {
-  await page.locator(`[data-node-id][title^="${titlePrefix}"]`).first().click();
+  await (await treeRow(page, { title: titlePrefix })).click();
 }
 
 // Text of a file in the connected folder, or null when it does not exist.

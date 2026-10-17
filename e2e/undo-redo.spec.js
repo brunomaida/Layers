@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S2.13: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y over property edits. Driven through the real UI on the axai
 // fixture, where `.sum-stat` is used by 6 nodes (same setup as scope-all-equal.spec.js).
@@ -16,7 +16,7 @@ const count = (list, needle) => list.filter((v) => v.includes(needle)).length;
 async function open(page, scopeLabel) {
   await page.goto('/?layers=fixtures/axai/');
   await readNodes(page);
-  await page.locator('[data-node-id][title^=".sum-stat"]').first().click();
+  await (await treeRow(page, { title: '.sum-stat' })).click();
   if (scopeLabel) await page.getByText(scopeLabel, { exact: false }).first().click();
 }
 

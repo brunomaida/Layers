@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S5.4: with scope "Todos iguais", one property edit reaches every use of the rule (same `src`,
 // same tag, same leaf-ness: the app's `sharedIds` grouping) and no other element. "Só este" is the
@@ -25,7 +25,7 @@ function group() {
 async function edit(page, scopeLabel) {
   await page.goto('/?layers=fixtures/axai/');
   await readNodes(page);
-  await page.locator('[data-node-id][title^=".sum-stat"]').first().click();
+  await (await treeRow(page, { title: '.sum-stat' })).click();
   await page.getByText(scopeLabel, { exact: false }).first().click();
   // Text field of the "Sombra" row; typed like a user (select all, type, leave the field to commit).
   const field = page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
