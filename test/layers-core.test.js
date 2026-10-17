@@ -2668,3 +2668,121 @@ describe('CtxMenuModel', () => {
     expect(core.ctxMenuModel({ nodes, selId: 'x', flat: true, explodeFrom: null, collapseAt: null })).toBeNull();
   });
 });
+
+describe('RequestsMarkdown', () => {
+  const base = { project: 'Traval', version: '0.25', stamp: '17/10/2026 14:32', mock: 'layers/mock.html', layouts: 1, confirm: false };
+  const r1 = {
+    id: 'R1', layoutId: 'main', nodeKey: 'k1', path: '.shell > .workspace > .chart-stage > .studies-toolbar',
+    text: 'Agrupar TF e Visual à esquerda e levar os chips para a direita.', createdAt: 1,
+    name: '.studies-toolbar', depth: 3, uses: 1,
+    alvo: 'src/ui/studies.css › .studies-toolbar · L41', caixa: '612×28 px · 1 uso',
+    estilos: 'display:flex; gap:6px; padding:4px 12px; background:#353a41'
+  };
+  const r3 = {
+    id: 'R3', layoutId: 'main', nodeKey: 'k3', path: '… > .studies-toolbar > .studies-toolbar-chips > .chip:nth-of-type(1–4)',
+    text: 'O chip ativo precisa de contraste maior.', createdAt: 3, name: '.chip.studies-toolbar-chip', depth: 5, uses: 4,
+    alvo: 'src/ui/studies.css › .studies-toolbar-chip · L88', caixa: '64×22 px',
+    texts: ['EMA 9', 'RSI', 'VWAP', '+'], estilos: 'background:#3f454d; border-radius:3px', pendente: 'border-radius 3px → 999px'
+  };
+  const lines = (s) => s.split('\n');
+
+  it('RequestsMarkdown_UmaRequest_FormatoDoBoard', () => {
+    expect(core.requestsMarkdown({ ...base, requests: [r1] })).toBe([
+      '## Requisições Manuais · Traval · 1',
+      '<!-- Layers 0.25 · 17/10/2026 14:32 · mock layers/mock.html -->',
+      '',
+      '### R1 · .studies-toolbar (L3)',
+      '- alvo: src/ui/studies.css › .studies-toolbar · L41',
+      '- caminho: .shell > .workspace > .chart-stage > .studies-toolbar',
+      '- caixa: 612×28 px · 1 uso',
+      '- estilos: display:flex; gap:6px; padding:4px 12px; background:#353a41',
+      '- pedido: Agrupar TF e Visual à esquerda e levar os chips para a direita.'
+    ].join('\n'));
+  });
+
+  it('RequestsMarkdown_VariosUsos_MarcaXN', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [r1, r3] });
+    expect(out).toContain('### R3 · .chip.studies-toolbar-chip (L5) ×4\n');
+    expect(out).toContain('### R1 · .studies-toolbar (L3)\n');
+    expect(out).toContain('\n\n### R3 ');
+    expect(out.startsWith('## Requisições Manuais · Traval · 2\n')).toBe(true);
+  });
+
+  it('RequestsMarkdown_BlocoR3_TextosEPendente_Ordem', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [r3] });
+    expect(lines(out).slice(3)).toEqual([
+      '### R3 · .chip.studies-toolbar-chip (L5) ×4',
+      '- alvo: src/ui/studies.css › .studies-toolbar-chip · L88',
+      '- caminho: … > .studies-toolbar > .studies-toolbar-chips > .chip:nth-of-type(1–4)',
+      '- texto: “EMA 9”, “RSI”, “VWAP”, “+”',
+      '- caixa: 64×22 px',
+      '- estilos: background:#3f454d; border-radius:3px',
+      '- ajuste pendente: border-radius 3px → 999px',
+      '- pedido: O chip ativo precisa de contraste maior.'
+    ]);
+  });
+
+  it('RequestsMarkdown_TextoComCercaECrases_NaoQuebra', () => {
+    const text = 'Usar `a | b` e "aspas"\n```css\n.x { color: red }\n```\n# titulo\n- item\n\nfim';
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text }] });
+    lines(out).forEach((l) => {
+      expect(/^(#|```|- )/.test(l)).toBe(l.startsWith('## ') || l.startsWith('### ') || /^- (alvo|caminho|caixa|estilos|pedido): /.test(l));
+    });
+    expect(out).toContain('- pedido: Usar `a | b` e "aspas"\n    ```css\n    .x { color: red }\n    ```\n    # titulo\n    - item\n    \n    fim');
+  });
+
+  it('RequestsMarkdown_PedidoMultilinha_IndentaContinuacao', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text: 'a\r\nb\rc' }] });
+    expect(out.endsWith('- pedido: a\n    b\n    c')).toBe(true);
+  });
+
+  it('RequestsMarkdown_TextoLongo_NaoTrunca', () => {
+    const text = 'x'.repeat(10240);
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text }] });
+    expect(out.endsWith('- pedido: ' + text)).toBe(true);
+  });
+
+  it('RequestsMarkdown_NomeComQuebraDeLinha_Colapsa', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, name: 'span\n# x\r\nfim', alvo: 'a\nb' }] });
+    expect(lines(out)[3]).toBe('### R1 · span # x fim (L3)');
+    expect(out).toContain('\n- alvo: a b\n');
+  });
+
+  it('RequestsMarkdown_SemNome_UsaUltimoSegmentoDoCaminho', () => {
+    const { name: _n, ...noName } = r1;
+    expect(lines(core.requestsMarkdown({ ...base, requests: [noName] }))[3]).toBe('### R1 · .studies-toolbar (L3)');
+    const bare = { id: 'R9', layoutId: 'm', nodeKey: 'k', path: '', text: 't', createdAt: 1 };
+    const out = core.requestsMarkdown({ ...base, requests: [bare] });
+    expect(lines(out).slice(3)).toEqual(['### R9 · R9', '- pedido: t']);
+  });
+
+  it('RequestsMarkdown_SemEstilos_OmiteLinha', () => {
+    const { estilos: _e, ...noStyle } = r1;
+    const out = core.requestsMarkdown({ ...base, requests: [noStyle, { ...r3, id: 'R2', estilos: '', pendente: null, texts: [] }] });
+    expect(out).not.toContain('- estilos:');
+    expect(out).not.toContain('- ajuste pendente:');
+    expect(out).not.toContain('- texto:');
+  });
+
+  it('RequestsMarkdown_MultiLayout_IncluiLayout', () => {
+    const out = core.requestsMarkdown({ ...base, layouts: 3, requests: [r1, { ...r3, layoutId: 'Tela principal' }] });
+    expect(lines(out)[1]).toBe('<!-- Layers 0.25 · 17/10/2026 14:32 · mock layers/mock.html · 3 layouts -->');
+    expect(out).toContain('### R1 · .studies-toolbar (L3) · layout: main\n');
+    expect(out).toContain('### R3 · .chip.studies-toolbar-chip (L5) ×4 · layout: Tela principal\n');
+  });
+
+  it('RequestsMarkdown_Confirm_MarcaAlvoAConfirmar', () => {
+    const out = core.requestsMarkdown({ ...base, confirm: true, requests: [r1, r3] });
+    const ls = lines(out);
+    ls.forEach((l, i) => {
+      if (l.startsWith('### ')) expect(ls[i + 1]).toBe('- status: alvo a confirmar');
+    });
+    expect(out.match(/- status: alvo a confirmar/g)).toHaveLength(2);
+    expect(core.requestsMarkdown({ ...base, requests: [r1] })).not.toContain('status:');
+  });
+
+  it('RequestsMarkdown_Lista_Vazia_String_Vazia', () => {
+    expect(core.requestsMarkdown({ ...base, requests: [] })).toBe('');
+    expect(core.requestsMarkdown({ ...base })).toBe('');
+  });
+});
