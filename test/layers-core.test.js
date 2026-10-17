@@ -2781,6 +2781,30 @@ describe('RequestsMarkdown', () => {
     expect(core.requestsMarkdown({ ...base, requests: [r1] })).not.toContain('status:');
   });
 
+  it('RequestsMarkdown_CamposInvalidos_NaoLancaNemImprimeUndefined', () => {
+    const bad = [
+      { id: 'R1', layoutId: 'm', nodeKey: 'k', path: 'a > b', text: 'x', createdAt: 1, depth: NaN, uses: 0, texts: 'abc' },
+      { id: 'R2', layoutId: 'm', nodeKey: 'k', path: 'a > b', text: 'y', createdAt: 1, depth: Infinity, uses: Infinity, texts: [null, 1, '', 'ok'] },
+      { layoutId: 'm', nodeKey: 'k', path: 'a', createdAt: 1 },
+      null, undefined, 7, []
+    ];
+    let out;
+    expect(() => { out = core.requestsMarkdown({ layouts: 3, requests: bad }); }).not.toThrow();
+    expect(out).not.toMatch(/undefined|NaN|null|Infinity/);
+    expect(out.split('\n')[0]).toBe('## Requisições Manuais ·  · 3');
+    expect(out).toContain('- texto: “ok”');
+    expect(out).not.toContain('abc');
+    expect(out).toContain('### R1 · b · layout: m');
+    expect(out.endsWith('- pedido: ')).toBe(true);
+    expect(core.requestsMarkdown({ ...base, requests: [null, {}] }).startsWith('## Requisições Manuais · Traval · 1')).toBe(true);
+    expect(core.requestsMarkdown({ ...base, requests: [null, 3] })).toBe('');
+  });
+
+  it('RequestsMarkdown_PedidoComQuebraFinal_SemLinhaSoDeEspacos', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text: 'x\n' }] });
+    expect(lines(out).pop()).toBe('- pedido: x');
+  });
+
   it('RequestsMarkdown_Lista_Vazia_String_Vazia', () => {
     expect(core.requestsMarkdown({ ...base, requests: [] })).toBe('');
     expect(core.requestsMarkdown({ ...base })).toBe('');
