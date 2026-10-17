@@ -71,7 +71,7 @@ Regras:
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
 - Recarga: `stale` (paths que mudaram no disco, ou `null`); `drift` (fontes citadas mais novas que o mock, ou `null`); `this.watch` (mtimes vigiados, fora do state) e `this.loadedSeq` (geração do `loadSeq` a que o watch pertence).
-- Aparência: `cfg` (prioridade sobre tweaks do host, regra "último que mudou").
+- Aparência: `cfg` (só o que o usuário mudou no menu Aparência; o resto vem de `LayersCore.APPEARANCE_DEFAULTS`).
 - Persistido: `cfg` + `UI_KEYS` em `layers/v1/ui`, histórico em `layers/v1/projects`, câmera/seleção/último projeto em `layers/v1/session`.
 
 ## Persistência
