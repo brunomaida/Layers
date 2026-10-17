@@ -1235,7 +1235,7 @@
     "type": "phase",
     "name": "Performance",
     "start": "2026-10-13",
-    "end": "2026-10-20",
+    "end": "2026-10-21",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1245,7 +1245,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 80,
+    "progress": 82,
     "docs": [],
     "children": [
       {
@@ -1511,24 +1511,49 @@
         "name": "Custo dos planos no orbit",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 100,
         "docs": [
           {
-            "name": "2026-10-16-s4-8-orbit-plane-cost.md",
+            "name": "2026-10-16-s4-8-orbit-plane-cost.md)",
             "type": "spec",
-            "path": "/docs/superpowers/plans/2026-10-16-s4-8-orbit-plane-cost.md",
-            "title": "S4.8 — Custo dos planos no orbit — Implementation Plan"
+            "path": "/[](superpowers/plans/2026-10-16-s4-8-orbit-plane-cost.md)",
+            "title": "2026-10-16-s4-8-orbit-plane-cost.md)"
+          },
+          {
+            "name": "feature-261016-0-s4-8-orbit-plane-cost.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s4-8-orbit-plane-cost.md)",
+            "title": "feature-261016-0-s4-8-orbit-plane-cost.md)"
           }
         ],
         "reason": "otherMs 12,3 ms (61 % da tarefa) no orbit padrão e 5,1 ms com zoom (254 de 414 planos cortados): sugere custo por plano visível (inferência de 2 cenários; CDP sem métrica de paint); S4.6 mediu o teto do cache de getComputedStyle em +1,1 %",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.9",
+        "type": "spec",
+        "name": "Agrupamento de folhas para reduzir camadas compostas no orbit",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
         "version": "Unreleased"
       }
     ]
