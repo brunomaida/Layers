@@ -898,8 +898,8 @@ async function writeInto(dir, path, text) { const ok = LayersCore.safePath(path)
 const CULL_MARGIN = 0.15; // fraction of the larger stage side kept around the viewport (outline); flat-mode shadows are exempt
 // plano memoizado: só re-renderiza quando a geometria/estado derivado dele muda
 const Plane = React.memo(function Plane(p) {
-  const { n, z, dim, op, sel, hov, onLayer, showWire, soloOff, tr, interact, fs, wa, spacing, H, dragging, culled, grouped } = p;
-      const st = { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: grouped ? undefined : 'translateZ(' + z + 'px)', transition: grouped ? undefined : tr, contain: 'layout paint', willChange: grouped ? undefined : dragging ? 'transform' : 'auto',
+  const { n, z, dim, op, sel, hov, onLayer, showWire, soloOff, tr, interact, fs, wa, spacing, H, dragging, culled } = p;
+      const st = { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: dragging ? undefined : 'translateZ(' + z + 'px)', transition: dragging ? undefined : tr, contain: 'layout paint', willChange: dragging ? undefined : 'auto',
         background: n.hasBg ? n.bg : 'transparent', backgroundImage: n.bgImg !== 'none' ? n.bgImg : undefined,
         borderTop: n.borders[0], borderRight: n.borders[1], borderBottom: n.borders[2], borderLeft: n.borders[3], borderRadius: n.radius, boxShadow: n.shadow !== 'none' && spacing === 0 ? n.shadow : 'none',
         opacity: op, boxSizing: 'border-box', color: n.color, font: n.font, letterSpacing: n.ls, textTransform: n.tt, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', cursor: interact ? 'crosshair' : 'pointer', pointerEvents: soloOff ? 'none' : 'auto',
@@ -908,7 +908,7 @@ const Plane = React.memo(function Plane(p) {
       if (n.text) { st.display = 'flex'; st.alignItems = 'center'; st.justifyContent = n.jc !== 'normal' ? n.jc : (n.ta === 'right' ? 'flex-end' : n.ta === 'center' ? 'center' : 'flex-start'); st.padding = n.pad; }
       if (n.isCheck) { st.border = '1px solid #8b949e'; st.borderRadius = n.radio ? '50%' : 2; st.display = 'flex'; st.alignItems = 'center'; st.justifyContent = 'center'; st.font = '700 9px/1 "JetBrains Mono", monospace'; st.color = '#60a5fa'; if (n.checked) content = n.radio ? '●' : '✓'; }
       if (culled) st.display = 'none';
-      const props = { style: st, 'data-plane': '',
+      const props = { style: st, 'data-plane': n.id,
         onClick: e => H.click(n.id, e),
         onDoubleClick: e => H.dbl(n.id, e),
         onMouseEnter: () => H.enter(n.id), onMouseLeave: H.leave };
@@ -2117,7 +2117,7 @@ class Component extends DCLogic {
       const onLayer = hL != null && layerSet.has(n.id); const showWire = wire && wa > 0 && !n.hasBg && !n.hasBorder && !n.text && !n.svg && !dim && spacing > 0 && !soloOff;
       const pv = prev[n.id]; const dz = !pv || pv.z !== z; const dop = !pv || pv.op !== op; nextPrev[n.id] = { z: z, op: op };
       const ptr = (dragging || (!dz && !dop)) ? 'none' : (dz && dop) ? tr : dz ? 'transform .35s ease' : 'opacity .3s ease';
-      zOf[n.id] = z; const pl = React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, culled: culled, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H, grouped: dragging }); if (dragging) leaf.push({ id: n.id, z: z, el: pl }); else planes.push(pl);
+      zOf[n.id] = z; const pl = React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, culled: culled, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H }); if (dragging) leaf.push({ id: n.id, z: z, el: pl }); else planes.push(pl);
       if (sel) label = React.createElement('div', { key: 'lbl', style: { position: 'absolute', left: n.x, top: n.y - 24, transform: 'translateZ(' + (z + 2) + 'px)', padding: '3px 7px', background: 'var(--sel)', color: 'var(--onSel)', font: '700 11px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', transition: dragging ? 'none' : 'transform .35s ease' } }, n.name + '  ·  L' + n.depth);
     });
     this._prev = nextPrev;
