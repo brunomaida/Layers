@@ -41,8 +41,9 @@ describe('ui-mock coverage', () => {
     expect(matrix.filter(([, board]) => board !== 'exempt' && !onDisk.includes(board))).toEqual([]);
   });
 
-  it('Boards_Conteudo_SemScriptOuLinkExterno', () => {
-    const bad = onDisk.filter((f) => /<(?:script|link)\b[^>]*\b(?:src|href)="https?:/i.test(fs.readFileSync(path.join(mock, 'boards', f), 'utf8')));
+  it('Boards_Conteudo_SemScriptExterno', () => {
+    // boards are design docs, not the app: Google Fonts <link> is allowed, remote code is not
+    const bad = onDisk.filter((f) => /<script\b[^>]*\bsrc="https?:/i.test(fs.readFileSync(path.join(mock, 'boards', f), 'utf8')));
     expect(bad).toEqual([]);
   });
 });
