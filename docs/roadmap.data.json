@@ -2511,12 +2511,12 @@
     "name": "Layouts múltiplos",
     "start": "2026-10-17",
     "end": "2026-10-19",
-    "status": "todo",
-    "statusLabel": "Registered",
+    "status": "wip",
+    "statusLabel": "In Progress",
     "tags": [
       "scaffold"
     ],
-    "progress": 0,
+    "progress": 60,
     "docs": [],
     "children": [
       {
@@ -2525,12 +2525,12 @@
         "name": "Layouts newlogic",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
@@ -2539,16 +2539,16 @@
             "title": "2026-10-17-s9-1-layouts-newlogic.md)"
           },
           {
+            "name": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md)",
+            "title": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md)"
+          },
+          {
             "name": "2026-10-17-s3-5-s9-1-sequencing-design.md",
             "type": "spec",
             "path": "/docs/superpowers/specs/2026-10-17-s3-5-s9-1-sequencing-design.md",
             "title": "S3.5 × S9.1 — ordem, fusão e mock /design"
-          },
-          {
-            "name": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
-            "type": "spec",
-            "path": "/docs/superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
-            "title": "Plano S3.5 × S9.1 — base local do mock e design conjunto"
           },
           {
             "name": "docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
