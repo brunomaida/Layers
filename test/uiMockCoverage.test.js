@@ -7,7 +7,8 @@ const root = path.resolve(import.meta.dirname, '..');
 const mock = path.join(root, 'docs/design/ui-mock');
 const readme = fs.readFileSync(path.join(mock, 'README.md'), 'utf8').replace(/\r\n/g, '\n');
 const canvas = JSON.parse(fs.readFileSync(path.join(mock, 'canvas.json'), 'utf8'));
-const onDisk = fs.readdirSync(path.join(mock, 'boards')).filter((f) => f.endsWith('.dc.html')).sort();
+const allFiles = fs.readdirSync(path.join(mock, 'boards'));
+const onDisk = allFiles.filter((f) => f.endsWith('.dc.html')).sort();
 
 const section = (title) => readme.split(/^## /m).find((s) => s.startsWith(title + '\n')) || '';
 const rows = (title) => section(title).split('\n').filter((l) => l.startsWith('|')).slice(2).map((l) => l.slice(1, -1).split('|').map((c) => c.trim()));
@@ -17,6 +18,14 @@ const boxes = Object.entries(canvas.boards || {});
 const overlap = (a, b) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
 
 describe('ui-mock coverage', () => {
+  it('Boards_Diretorio_ContemSoDcHtml', () => {
+    expect(allFiles.filter((f) => !f.endsWith('.dc.html'))).toEqual([]);
+  });
+
+  it('Boards_ListadosNoReadme_SemDuplicata', () => {
+    expect(listed.filter((f, i) => listed.indexOf(f) !== i)).toEqual([]);
+  });
+
   it('Boards_ListadosNoReadme_ExistemEmDisco', () => {
     expect(listed.filter((f) => !onDisk.includes(f))).toEqual([]);
   });
@@ -28,6 +37,11 @@ describe('ui-mock coverage', () => {
   it('CanvasJson_Caixas_BatemComBoardsEmDisco', () => {
     expect(boxes.map(([f]) => f).sort()).toEqual(onDisk);
     expect([...(canvas.order || [])].sort()).toEqual(onDisk);
+  });
+
+  it('CanvasJson_Caixas_TemMedidasValidas', () => {
+    const bad = boxes.filter(([, b]) => !['x', 'y', 'w', 'h'].every((k) => Number.isFinite(b[k])) || b.w <= 0 || b.h <= 0).map(([f]) => f);
+    expect(bad).toEqual([]);
   });
 
   it('CanvasJson_Caixas_NaoSeSobrepoem', () => {
@@ -43,7 +57,7 @@ describe('ui-mock coverage', () => {
 
   it('Boards_Conteudo_SemScriptExterno', () => {
     // boards are design docs, not the app: Google Fonts <link> is allowed, remote code is not
-    const bad = onDisk.filter((f) => /<script\b[^>]*\bsrc="https?:/i.test(fs.readFileSync(path.join(mock, 'boards', f), 'utf8')));
+    const bad = onDisk.filter((f) => /<script\b[^>]*\bsrc\s*=\s*["']?(?:https?:)?\/\//i.test(fs.readFileSync(path.join(mock, 'boards', f), 'utf8')));
     expect(bad).toEqual([]);
   });
 });
