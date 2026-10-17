@@ -2375,3 +2375,108 @@ describe('KeyMap', () => {
     expect(cells).toContain('Esc');
   });
 });
+
+describe('BranchZ', () => {
+  it('SemCollapse_ProfundidadeRelativaARaiz', () => {
+    expect(core.branchZ(5, 3, null, 10)).toBe(20);
+    expect(core.branchZ(3, 3, null, 10)).toBe(0);
+  });
+
+  it('BranchZ_CollapseAt_ClampaProfundidade', () => {
+    expect(core.branchZ(7, 3, 5, 10)).toBe(20);
+    expect(core.branchZ(4, 3, 5, 10)).toBe(10);
+    expect(core.branchZ(5, 3, 5, 10)).toBe(20);
+  });
+
+  it('CollapseAtZero_NaoEhTratadoComoAusente', () => {
+    expect(core.branchZ(4, 0, 0, 10)).toBe(0);
+  });
+});
+
+describe('BranchOf', () => {
+  const nodes = [
+    { id: '0', depth: 0 }, { id: '0.0', depth: 1 }, { id: '0.0.0', depth: 2 },
+    { id: '0.1', depth: 1 }, { id: '0.10', depth: 1 }
+  ];
+  const byId = new Map(nodes.map((n) => [n.id, n]));
+
+  it('Raiz_InclueRaizEDescendentesPorPrefixo', () => {
+    expect([...core.branchOf(nodes, byId, '0.0')].sort()).toEqual(['0.0', '0.0.0']);
+  });
+
+  it('PrefixoNumerico_NaoVazaParaIrmaos', () => {
+    expect([...core.branchOf(nodes, byId, '0.1')]).toEqual(['0.1']);
+  });
+
+  it('BranchOf_RaizInexistente_Null', () => {
+    expect(core.branchOf(nodes, byId, '9.9')).toBeNull();
+    expect(core.branchOf(nodes, byId, null)).toBeNull();
+    expect(core.branchOf(nodes, byId, '')).toBeNull();
+  });
+});
+
+describe('CtxMenuModel', () => {
+  const nodes = [
+    { id: '0', depth: 0, name: '.shell' },
+    { id: '0.0', depth: 1, name: '.workspace' },
+    { id: '0.0.0', depth: 2, name: '.stage' },
+    { id: '0.0.0.0', depth: 3, name: '.toolbar' },
+    { id: '0.0.0.0.0', depth: 4, name: '.chip-a' },
+    { id: '0.0.0.0.1', depth: 4, name: '.chip-b' },
+    { id: '0.0.0.0.0.0', depth: 5, name: '.label' },
+    { id: '0.0.1', depth: 2, name: '.side' },
+    { id: '0.0.1.0', depth: 3, name: '.side-item' }
+  ];
+  const ids = (m) => m.items.map((i) => i.id);
+
+  it('Flat_SemRamo_OferecaExplodirERequisicao', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: null, collapseAt: null });
+    expect(ids(m)).toEqual(['explode', 'request']);
+    expect(m.items[0]).toEqual({ id: 'explode', label: 'Explodir daqui', hint: 'só o ramo' });
+    expect(m.items[1]).toEqual({ id: 'request', label: 'Requisição', hint: '→ Ajustes' });
+    expect(m.header).toEqual({ name: '.toolbar', depth: 3 });
+  });
+
+  it('Explodido_DockOn_SemExplodir', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: false, explodeFrom: null, collapseAt: null });
+    expect(ids(m)).toEqual(['request']);
+    const inBranch = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: false, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(inBranch)).toEqual(['request']);
+  });
+
+  it('NoDoRamo_OferecaRecolherERequisicao', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(m)).toEqual(['collapse', 'request']);
+    expect(m.items[0]).toEqual({ id: 'collapse', label: 'Recolher até aqui', hint: 'L5+ → L4' });
+  });
+
+  it('RaizDoRamo_RecolherDesfazExplodir', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(m)).toEqual(['collapse', 'request']);
+    expect(m.items[0].hint).toBe('L4+ → L3');
+  });
+
+  it('FueraDoRamo_NaoOfereceRecolher', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.1.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(m)).toEqual(['explode', 'request']);
+  });
+
+  it('LayersKinds_AncestorSelectedDescendantOutside', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: null, collapseAt: null });
+    expect(m.layers.map((l) => [l.d, l.kind, l.count])).toEqual([
+      [0, 'ancestor', 1], [1, 'ancestor', 1], [2, 'ancestor', 2], [3, 'selected', 2],
+      [4, 'descendant', 2], [5, 'descendant', 1]
+    ]);
+  });
+
+  it('DepthsSemDescendentes_Outside', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.1', flat: true, explodeFrom: null, collapseAt: null });
+    expect(m.layers.map((l) => [l.d, l.kind])).toEqual([
+      [0, 'ancestor'], [1, 'ancestor'], [2, 'selected'], [3, 'descendant'], [4, 'outside'], [5, 'outside']
+    ]);
+  });
+
+  it('SelecaoInexistente_Null', () => {
+    expect(core.ctxMenuModel({ nodes, selId: 'x', flat: true, explodeFrom: null, collapseAt: null })).toBeNull();
+  });
+});
