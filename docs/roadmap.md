@@ -51,7 +51,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S3 | 1 | — | Ferramentas e UI | Checklist C e ferramentas 0.25 | — | — | — | — | in-progress |
 | S3.1 | 2 | S3 | Medir, Box Model e Tokens | PR #12 | — | — | [](../changelog.d/archived/0.25.0/feature-260916-v2-24b-tools-reconcile.md) | — | done |
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | [](superpowers/plans/2026-10-14-s3-2-menu-open-pattern.md) | [](../changelog.d/feature-261014-0-s3-2-menu-open-pattern.md) | — | done |
-| S3.3 | 2 | S3 | Tooltips ação e atalho | checklist C | — | [](superpowers/plans/2026-10-16-s3-3-action-tooltips.md) | — | — | in-progress |
+| S3.3 | 2 | S3 | Tooltips ação e atalho | checklist C | — | [](superpowers/plans/2026-10-16-s3-3-action-tooltips.md) | [](../changelog.d/feature-261016-0-s3-3-action-tooltips.md) | — | done |
 | S3.4 | 2 | S3 | Fonte única de aparência | checklist C | — | [](superpowers/plans/2026-10-16-s3-4-appearance-source.md) | [](../changelog.d/refactor-261016-0-s3-4-appearance-source.md) | — | in-progress |
 | S4 | 1 | — | Performance | Checklist D; orçamentos scan/orbit | — | — | — | — | in-progress |
 | S4.1 | 2 | S4 | contain e will-change só em drag | v2.22 | — | — | — | — | done |

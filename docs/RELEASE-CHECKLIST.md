@@ -40,7 +40,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 42 concluídos
 - [x] Emojis removidos das strings de UI (v2.22).
 - [x] Dock: piso de 360 px em telas estreitas (v2.22).
 - [x] Padrão único de abertura de menus: hover abre e clique fixa em Projetos, Aparência, Interagir e Ações (decisão de 2026-10-14); clique fora, Esc e item de ação fecham, toque abre fixado (`LayersCore.menuStep`; `e2e/menu-open.spec.js`, visual inalterado em `e2e/menu-visual.spec.js`).
-- [ ] Tooltips "ação · atalho" no dock e na árvore.
+- [x] Tooltips "Ação (atalho)" nos botões de ação sem texto visível e nos que têm atalho (dock, painéis, modais e árvore) e um `title` próprio no gatilho "Ações ▾"; botões com texto e sem tecla (Salvar, Cancelar, Descartar, ↑ Pai) ficam sem `title` novo, e "Todas" e os chips `L0…Ln` mantêm o título atual; nome e tecla vêm do registro único `LayersCore.ACTIONS` (`tooltip(id)`), que também gera o painel `?` e o `onKey` (`e2e/tooltips.spec.js`, `e2e/onkey-keys.spec.js`).
 - [x] Uma só fonte de verdade para aparência no desktop (menu Aparência; tweaks do host saem) (`LayersCore.APPEARANCE_DEFAULTS`; `e2e/appearance-defaults.spec.js`, visual inalterado em `e2e/menu-visual.spec.js`).
 
 ## D. Performance
