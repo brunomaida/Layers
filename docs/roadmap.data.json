@@ -1115,21 +1115,14 @@
     "name": "Ferramentas e UI",
     "start": "2026-09-16",
     "end": "2026-10-19",
-    "status": "done",
-    "statusLabel": "Completed",
+    "status": "wip",
+    "statusLabel": "In Progress",
     "tags": [
       "bug",
       "scaffold"
     ],
-    "progress": 100,
-    "docs": [
-      {
-        "name": "2026-10-16-s3-5-visual-functions-new.md",
-        "type": "spec",
-        "path": "/docs/text-specs/2026-10-16-s3-5-visual-functions-new.md",
-        "title": "Text spec — S3.5 visual functions new"
-      }
-    ],
+    "progress": 83,
+    "docs": [],
     "children": [
       {
         "id": "S3.1",
@@ -1254,6 +1247,44 @@
           }
         ],
         "reason": "checklist C",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S3.5",
+        "type": "spec",
+        "name": "Funções visuais novas",
+        "start": "2026-10-16",
+        "end": "2026-10-18",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-16-s3-5-visual-functions-new.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-16-s3-5-visual-functions-new.md)",
+            "title": "2026-10-16-s3-5-visual-functions-new.md)"
+          },
+          {
+            "name": "2026-10-17-s3-5-s9-1-sequencing-design.md",
+            "type": "spec",
+            "path": "/docs/superpowers/specs/2026-10-17-s3-5-s9-1-sequencing-design.md",
+            "title": "S3.5 × S9.1 — ordem, fusão e mock /design"
+          },
+          {
+            "name": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
+            "type": "spec",
+            "path": "/docs/superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
+            "title": "Plano S3.5 × S9.1 — base local do mock e design conjunto"
+          }
+        ],
+        "reason": "Menu de botão direito (Explodir daqui, Recolher até aqui) e Requisição no painel Ajustes; inclui a base local do mock",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -2475,6 +2506,66 @@
     ]
   },
   {
+    "id": "S9",
+    "type": "phase",
+    "name": "Layouts múltiplos",
+    "start": "2026-10-17",
+    "end": "2026-10-19",
+    "status": "todo",
+    "statusLabel": "Registered",
+    "tags": [
+      "scaffold"
+    ],
+    "progress": 0,
+    "docs": [],
+    "children": [
+      {
+        "id": "S9.1",
+        "type": "spec",
+        "name": "Layouts newlogic",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-17-s9-1-layouts-newlogic.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
+            "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          },
+          {
+            "name": "2026-10-17-s3-5-s9-1-sequencing-design.md",
+            "type": "spec",
+            "path": "/docs/superpowers/specs/2026-10-17-s3-5-s9-1-sequencing-design.md",
+            "title": "S3.5 × S9.1 — ordem, fusão e mock /design"
+          },
+          {
+            "name": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
+            "type": "spec",
+            "path": "/docs/superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
+            "title": "Plano S3.5 × S9.1 — base local do mock e design conjunto"
+          },
+          {
+            "name": "docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
+            "type": "report",
+            "path": "/changelog.d/docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
+            "title": "Docs"
+          }
+        ],
+        "reason": "Modelo de cobertura mono × múltiplos layouts, stack/3D espacial configurável e funções atreladas ao layout",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      }
+    ]
+  },
+  {
     "id": "PRJ",
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
@@ -2488,12 +2579,6 @@
     ],
     "progress": 0,
     "docs": [
-      {
-        "name": "2026-10-17-s9-1-layouts-newlogic.md",
-        "type": "spec",
-        "path": "/docs/text-specs/2026-10-17-s9-1-layouts-newlogic.md",
-        "title": "Text spec — S9.1 layouts newlogic"
-      },
       {
         "name": "layers-specs.md",
         "type": "spec",
@@ -2523,12 +2608,6 @@
         "type": "report",
         "path": "/changelog.d/docs-261013-23-roadmap-claude-md-perf-plan.md",
         "title": "Added"
-      },
-      {
-        "name": "docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
-        "type": "report",
-        "path": "/changelog.d/docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
-        "title": "Docs"
       }
     ],
     "children": []
