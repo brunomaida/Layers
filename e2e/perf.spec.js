@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, countCompositedLayers } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
 
 const EXPECTED = [
@@ -16,6 +16,9 @@ const EXPECTED = [
   'orbit/traval-v3-empty-hidden/mean-frame-ms',
   'orbit/traval-v4-half-hidden/mean-frame-ms',
   'orbit/traval-aa/mean-frame-ms',
+  'orbit/traval-s49-g1-group-z/mean-frame-ms',
+  'orbit/traval-s49-g2-group-z-no-contain/mean-frame-ms',
+  'orbit/traval-s49-aa/mean-frame-ms',
   'orbit/traval-zoom/mean-frame-ms',
   'orbit/traval-zoom-ideal/mean-frame-ms',
   'orbit/traval-tree-closed/mean-frame-ms',
@@ -159,6 +162,89 @@ for (const [name, id, v] of [
     });
     expect(o.frames).toBeGreaterThanOrEqual(30);
     if (v.hide) expect(hidden, 'planes hidden by the stub').toBeGreaterThan(0);
+  });
+}
+
+// S4.9 spike (informative, no guard): one throwaway page counts the composited layers around the regroup
+// (CDP LayerTree adds work per layer change, so it never shares a page with a timed drag); then the timed
+// drag regroups the planes by translateZ right after its first move. aa runs the same flow without the
+// regroup. Each variant is paired with orbit/traval of the same execution (run Orbit_Drag together with
+// Orbit_S49) and records dragStartMs, the largest of the 8 frames from the first move.
+async function layerPass(context, v) {
+  const p = await context.newPage();
+  try {
+    await instrument(p);
+    await p.goto('/?layers=fixtures/traval/');
+    await waitForScan(p);
+    const c = await p.evaluate(() => {
+      const stage = [...document.querySelectorAll('div[tabindex="0"]')].find((el) => getComputedStyle(el).backgroundImage.includes('radial-gradient'));
+      const b = stage.getBoundingClientRect();
+      return { x: b.left + b.width / 2, y: b.top + b.height / 2 };
+    });
+    const moves = async (n) => {
+      for (let k = 0; k < n; k++) await p.mouse.move(c.x + (k % 20) * 2, c.y + Math.sin(k / 4) * 20);
+      await p.waitForTimeout(300);
+    };
+    await p.mouse.move(c.x, c.y);
+    await p.mouse.down();
+    await moves(6);
+    const before = await countCompositedLayers(p);
+    const group = v.group ? await groupPlanesByZ(p, { dropContain: v.dropContain, probe: true }) : null;
+    await moves(6);
+    const stillStripped = group ? await p.evaluate(() => [...document.querySelectorAll('[data-s49-plane]')].filter((e) => e.style.transform === '').length) : null;
+    const after = await countCompositedLayers(p);
+    await p.mouse.up();
+    return { before, after, group, stillStripped };
+  } finally {
+    await p.close();
+  }
+}
+
+for (const [name, id, v] of [
+  ['Orbit_S49G1GroupByZ_RecordsFrameInterval', 'orbit/traval-s49-g1-group-z/mean-frame-ms', { group: true, dropContain: false }],
+  ['Orbit_S49G2GroupByZNoContain_RecordsFrameInterval', 'orbit/traval-s49-g2-group-z-no-contain/mean-frame-ms', { group: true, dropContain: true }],
+  ['Orbit_S49AA_RecordsFrameInterval', 'orbit/traval-s49-aa/mean-frame-ms', { group: false }],
+]) {
+  test(name, async ({ page }) => {
+    const layers = await layerPass(page.context(), v);
+    await instrument(page);
+    await page.goto('/?layers=fixtures/traval/');
+    await waitForScan(page);
+    const census = await planeCensus(page);
+    const swaps = await countPlaneHovers(page);
+    let grouped = null;
+    const o = await orbitDrag(page, 1500, {
+      afterFirstMove: async () => {
+        if (v.group) grouped = await groupPlanesByZ(page, { dropContain: v.dropContain });
+        else await page.evaluate(() => 0); // same round trip as the regroup call
+      },
+    });
+    rec(id, o.meanFrameMs, {
+      fps: o.fps,
+      p95FrameMs: o.p95FrameMs,
+      frames: o.frames,
+      loafCount: o.loafCount,
+      loafScriptShare: o.loafScriptShare,
+      gcsPerFrame: o.gcsPerFrame,
+      main: o.main,
+      hoverSwapsPerFrame: (await swaps()) / o.frames,
+      census,
+      dragStartMs: o.dragStartMs,
+      pairedWith: 'orbit/traval/mean-frame-ms',
+      deltaVsOrbitMs: orbit ? o.meanFrameMs - orbit.meanFrameMs : null,
+      layersBefore: layers.before.total,
+      layersAfter: layers.after.total,
+      layersDrawingBefore: layers.before.drawing,
+      layersDrawingAfter: layers.after.drawing,
+      layerEvents: [layers.before.events, layers.after.events],
+      hitProbe: layers.group && layers.group.probe,
+      stillStripped: layers.stillStripped,
+      groups: grouped ? grouped.groups : layers.group && layers.group.groups,
+      groupedPlanes: grouped ? grouped.planes : null,
+      groupMs: grouped ? grouped.ms : null,
+    });
+    expect(o.frames).toBeGreaterThanOrEqual(30);
+    if (v.group) expect(grouped.groups, 'z groups created by the stub').toBeGreaterThan(0);
   });
 }
 
