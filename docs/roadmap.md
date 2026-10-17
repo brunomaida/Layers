@@ -53,6 +53,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S3.2 | 2 | S3 | Padrão único de abertura de menus | checklist C; decisão de produto | — | [](superpowers/plans/2026-10-14-s3-2-menu-open-pattern.md) | [](../changelog.d/feature-261014-0-s3-2-menu-open-pattern.md) | — | done |
 | S3.3 | 2 | S3 | Tooltips ação e atalho | checklist C | — | [](superpowers/plans/2026-10-16-s3-3-action-tooltips.md) | [](../changelog.d/feature-261016-0-s3-3-action-tooltips.md) | — | done |
 | S3.4 | 2 | S3 | Fonte única de aparência | checklist C | — | [](superpowers/plans/2026-10-16-s3-4-appearance-source.md) | [](../changelog.d/refactor-261016-0-s3-4-appearance-source.md) | — | in-progress |
+| S3.6 | 2 | S3 | Esc no campo de propriedade aplica o valor em vez de descartar | achado da S3.3, issue #73 | — | — | — | #73 | registered |
 | S4 | 1 | — | Performance | Checklist D; orçamentos scan/orbit | — | — | — | — | in-progress |
 | S4.1 | 2 | S4 | contain e will-change só em drag | v2.22 | — | — | — | — | done |
 | S4.2 | 2 | S4 | Medição da travessia do scan | Spike da fatia 5 (~2,5 µs/nó); ver spike superficies-latentes (docs/superpowers/reports) | — | — | — | — | done |

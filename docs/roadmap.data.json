@@ -1090,13 +1090,13 @@
     "type": "phase",
     "name": "Ferramentas e UI",
     "start": "2026-09-16",
-    "end": "2026-10-18",
+    "end": "2026-10-19",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
       "scaffold"
     ],
-    "progress": 90,
+    "progress": 72,
     "docs": [
       {
         "name": "2026-10-16-s3-5-visual-functions-new.md",
@@ -1232,6 +1232,25 @@
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S3.6",
+        "type": "spec",
+        "name": "Esc no campo de propriedade aplica o valor em vez de descartar",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "achado da S3.3, issue #73",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
         "version": "Unreleased"
       }
     ]
