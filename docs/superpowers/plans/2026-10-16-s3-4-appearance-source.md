@@ -22,18 +22,40 @@ created: 2026-10-16
 - Menu Aparência: não tocar `data-menu="apar"` (`index.html:92`) nem o prefixo `Aparência · Fonte` do `title`. Abrir e fechar continua em `menuEv('apar')`. Nenhum popup novo; se surgir um, ele fica dentro de `aparRef` (`:91`).
 - `:root` do `<style>` (`index.html:23`) fica intocado: é placeholder antes do `applyTheme()`, não é default.
 - Não editar a linha 8 do `RELEASE-CHECKLIST.md` (contador; regra da Onda 3, recontado na Task E do plano geral).
-- Números de linha são de antes das edições (`develop@0da02d6`); o Task 3 Step 1 desloca tudo abaixo de `:946` em −2. Editar por âncora, nunca por número.
-- `support.js` intocado. `index.html`: âncoras únicas, contagem de matches antes de substituir. Nomes de teste `Metodo_Cenario_Esperado`; `npm test` verde antes de cada commit; commits EN com trailer de sessão, sem `Co-Authored-By`.
-- Baselines locais (`e2e/menu-visual.spec.js-snapshots/`) e dumps do Task 1 nunca entram em commit: `git add` sempre com caminhos explícitos.
-- Branch `refactor/261016-0-s3-4-appearance-source`; fragmento `changelog.d/refactor-261016-0-s3-4-appearance-source.md` com `adr: updated` e `### Perf` N/A (≥20 caracteres).
+- Números de linha são de antes das edições (`develop@0da02d6`). No Task 3, o Step 2 desloca tudo abaixo de `:946` em −2; o Step 4 remove mais 3 linhas, e abaixo de `:1593` o deslocamento total é −5. Editar por âncora, nunca por número.
+- `support.js` intocado. `index.html`: âncoras únicas, contagem de matches antes de substituir. Nomes de teste `Metodo_Cenario_Esperado`; `npm test` verde antes de cada commit; commits em EN (Conventional Commits), sem `Co-Authored-By` e sem texto de trailer nos comandos (regra única da Onda 3: o harness acrescenta o trailer de sessão exigido).
+- Baselines locais (`e2e/menu-visual.spec.js-snapshots/`) e dumps do Task 1 nunca entram em commit: `git add` sempre com caminhos explícitos. Nunca `git add bench/results` em bloco: os resultados que o Task 4 Step 4 gerar ficam untracked.
+- Branch `refactor/261016-0-s3-4-appearance-source`, na worktree própria `/c/Development/Layers/.claude/worktrees/s3-4` (Task 0). Todo `Run` começa com `cd /c/Development/Layers/.claude/worktrees/s3-4 &&`: nem o harness nem o Executor guardam cwd ou variáveis entre chamadas, e o dump resolve `@playwright/test` a partir do cwd. Nunca `git switch`/`git checkout` no checkout compartilhado.
+- Fragmento `changelog.d/refactor-261016-0-s3-4-appearance-source.md` com `adr: updated` e `### Perf` N/A (≥20 caracteres).
+- **Wrapper E2E** (todo comando Playwright deste plano roda dentro dele; Bash com `timeout: 600000`). Mesmo lock da [S4.8](2026-10-16-s4-8-orbit-plane-cost.md) (Global Constraints), que roda em paralelo noutra worktree: com `reuseExistingServer: true` (`playwright.config.js:30`), um servidor alheio na 5180 faria o gate medir o `index.html` da outra árvore e ler IDENTICAL mesmo com o fallback quebrado. Com a porta livre, o Playwright sobe o servidor desta worktree (`npm run dev -- --strictPort`, `playwright.config.js:28`).
+
+```bash
+cd /c/Development/Layers/.claude/worktrees/s3-4 && n=0; until mkdir /tmp/layers-e2e.lock 2>/dev/null; do n=$((n+1)); [ "$n" -ge 60 ] && { echo "COULD NOT RUN: stale lock"; exit 1; }; sleep 5; done
+trap 'rmdir /tmp/layers-e2e.lock' EXIT
+code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5180/); [ "$code" = "000" ] || { echo "COULD NOT RUN: port 5180 busy ($code)"; exit 1; }
+<comando playwright>
+```
+
+- **Wrapper do dump** (Task 1 Step 3 e Task 4 Step 2). Mesmo lock e mesma recusa de porta ocupada; depois sobe o servidor desta worktree com `--strictPort` e o derruba no fim. `node node_modules/vite/bin/vite.js --port 5180 --strictPort` é o `npm run dev -- --strictPort` sem o processo npm intermediário: no Windows o `kill` do npm deixaria o filho vite segurando a porta, e o Task 4 Step 3 recusaria.
+
+```bash
+cd /c/Development/Layers/.claude/worktrees/s3-4 && D="${TMPDIR:-/tmp}/layers-s3-4"; n=0; until mkdir /tmp/layers-e2e.lock 2>/dev/null; do n=$((n+1)); [ "$n" -ge 60 ] && { echo "COULD NOT RUN: stale lock"; exit 1; }; sleep 5; done
+trap 'rmdir /tmp/layers-e2e.lock' EXIT
+code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5180/); [ "$code" = "000" ] || { echo "COULD NOT RUN: port 5180 busy ($code)"; exit 1; }
+node node_modules/vite/bin/vite.js --port 5180 --strictPort > "$D/vite.log" 2>&1 & srv=$!
+trap 'kill $srv 2>/dev/null; rmdir /tmp/layers-e2e.lock' EXIT
+n=0; until [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:5180/)" = "200" ]; do n=$((n+1)); [ "$n" -ge 30 ] && { echo "COULD NOT RUN: dev server"; exit 1; }; sleep 1; done
+node "$D/s3-4-dump.cjs" "$D/<saida>.json"
+kill $srv; wait $srv 2>/dev/null; sleep 1; curl -s -o /dev/null -w 'port after: %{http_code}\n' http://localhost:5180/
+```
 
 ## Review Focus
 
-- **Fallback silencioso (risco principal):** sem `data-props`, todo `|| X` que antes nunca disparava passa a disparar. `THEMES[...] || THEMES.Dark` (`:1577`) mostraria Dark; `SELECTS[cfg('selectColor')] || t.acc` (`:1578`) mostraria o acento do tema (teal no Grafite) em vez de Coral; `cfg('originColors') || ''` (`:1579`) mostraria Semântica em vez de Mono. Os rótulos do menu (`:2339`) e o `cur` de `opts` (`:2335`) derivam do mesmo jeito. A dobradiça é `cfg(k)` (`:1573`) cair na constante.
+- **Fallback silencioso (risco principal):** sem `data-props`, todo `|| X` que antes nunca disparava passa a disparar. `THEMES[...] || THEMES.Dark` (`:1577`) mostraria Dark; `SELECTS[cfg('selectColor')] || t.acc` (`:1578`) mostraria o acento do tema (teal no Grafite) em vez de Coral; `cfg('originColors') || ''` (`:1579`) mostraria Semântica em vez de Mono. Os rótulos do menu (`:2339`) e o `cur` de `opts` (`:2335`) derivam do mesmo jeito. A dobradiça é `cfg(k)` (`:1573`) cair na constante. O `|| ''` de `light` (`:2334`) também fica inalcançável (`cfg('theme')` nunca é vazio); só registrado, sem edição.
 - **Tema salvo inválido:** `loadCfg` (`:970`) não sanitiza; um `theme` corrompido no `localStorage` caía em Dark e passa a cair em Grafite (o default real). Mudança intencional, só para storage corrompido.
 - **`logoGrad` fora de `CFG_KEYS`** (`lib/layers-core.js:945`): `migrateConfig`, `loadCfg`, `sanitizeUi` e o import deixam de ler essa chave. Quem só tem `logoGrad` salvo perde `cfgDirty`/`menuOn.apar`: o ⚙ deixa de aparecer "sujo". Efeito desprezível (a chave nunca teve UI).
-- **`ph` está vivo:** `:2293` lê `panelHeader` e `phA/phB/phC` escolhem um de três cabeçalhos do painel direito (`<sc-if>` em `:393`, `:458`, `:528`). Só `hs` (`hdrA/hdrB/hdrC`, `:628`) é fixo. Ver `[!DECISION] panelHeader`.
-- **Strings com "tweak":** `title` do reset (`:102`, 10 linhas do trigger que a S3.3 edita em `:92`) e a linha de ajuda em `SHORTCUTS` (`:833`, que a S3.3 move para o core). A S3.4 mescla antes; a S3.3 rebaseia.
+- **`ph` está vivo:** `:2293` lê `panelHeader` e `phA/phB/phC` escolhem um de três cabeçalhos do painel direito (`<sc-if>` em `:393`, `:458`, `:528`). Só `hs` (`hdrA/hdrB/hdrC`, `:628`) é fixo. Ver `[!DECISION] panelHeader`. O plano geral já trata `ph` como vivo (`:134`, D1 `:164`) e não regenera baselines (`:71`). Fica superada a frase do [plano da S3.3](2026-10-16-s3-3-action-tooltips.md) (`:103`) que espera baselines do menu regeneradas pela S3.4: esta leaf não regenera nenhuma.
+- **Strings com "tweak":** `title` do reset (`:102`) e a linha de ajuda em `SHORTCUTS` (`:833`, que a S3.3 move para o core). A S3.4 mescla antes; a S3.3 rebaseia. A S3.3 **não** edita o trigger Aparência (`:92`; o plano dela mantém `data-menu="apar"` e o prefixo do `title`, `:26`): não há hunk em `:92` a contornar.
 
 ## Design: Architecture & Flows
 
@@ -70,42 +92,53 @@ Valores da constante, copiados exatamente do `data-props` atual (`:800`):
 
 ## Implementation Outline
 
-- **Task 0** — reservar a leaf.
+- **Task 0** — worktree própria e reserva da leaf.
 - **Task 1** — baselines, dump "antes" e E2E de guarda, com o `index.html` igual ao de `develop`.
 - **Task 2** — `APPEARANCE_DEFAULTS` e `CFG_KEYS` no core, com Vitest.
-- **Task 3** — `index.html`: `cfg()`, fallbacks, `data-props`, regra "último que mudou", código morto, strings.
+- **Task 3** — `index.html`: `data-props` primeiro (guarda vermelha), depois `cfg()`, fallbacks, regra "último que mudou", código morto, strings.
 - **Task 4** — verificação: greps, dump "depois", pixels, revisão.
-- **Task 5** — docs, ADR, changelog, checklist e roadmap.
+- **Task 5** — docs, ADR, changelog, checklist e coluna `report` do roadmap.
 
 ## Critical Files
 
-`lib/layers-core.js` (`CFG_KEYS` `:945`, `migrateConfig` `:1114`, exports `:1494`), `test/layers-core.test.js`, `index.html` (`:92`, `:102`, `:800` `data-props`, `:833` `SHORTCUTS`, `:944` `CFG_KEYS`, `:946-948` código morto, `:1572-1581` `cfg`/`applyTheme`, `:1591-1596` `componentDidUpdate`, `:2277` `sliderS`, `:2293` `ph`, `:2335-2342` `opts`/`cfgVals`, `:2354` `bmAlpha`), `e2e/appearance-defaults.spec.js` (novo), `e2e/menu-visual.spec.js` (gate, sem edição), `docs/LOCAL-SETUP.md` (`:94-123`), `docs/ARCHITECTURE.md` (`:74`), `docs/architecture-decisions.md` (`:130-148`), `docs/RELEASE-CHECKLIST.md` (`:15`, `:44`), `docs/roadmap.md` (`:55`).
+`lib/layers-core.js` (`CFG_KEYS` `:945`, `migrateConfig` `:1114`, exports `:1494`), `test/layers-core.test.js`, `index.html` (`:92`, `:102`, `:392-587` cabeçalhos `phA/phB/phC`, `:800` `data-props`, `:833` `SHORTCUTS`, `:944` `CFG_KEYS`, `:946-948` código morto, `:1572-1581` `cfg`/`applyTheme`, `:1591-1596` `componentDidUpdate`, `:2277` `sliderS`, `:2293` `ph`, `:2334-2342` `light`/`opts`/`cfgVals`, `:2354` `bmAlpha`), `e2e/appearance-defaults.spec.js` (novo), `e2e/menu-visual.spec.js` (gate, sem edição), `playwright.config.js` (`:28-30`), `docs/LOCAL-SETUP.md` (`:94-123`), `docs/ARCHITECTURE.md` (`:74`), `docs/architecture-decisions.md` (`:130-148`, `## Formato` `:151-159`), `docs/RELEASE-CHECKLIST.md` (`:15`, `:44`), `docs/roadmap.md` (`:55`).
 
-### Task 0: Reservar a leaf
+### Task 0: Worktree e reserva da leaf
+
+**Precondição:** a branch `docs/261016-0-wave-3-plan` já foi mesclada em `develop` (os planos da Onda 3 estão lá). Nada de copiar planos com `git checkout <ref> -- docs/...`.
 
 **Files:**
 - Modify: `docs/roadmap.md` (linha S3.4, `:55`)
 
 A linha S3.4 (`registered`) e o membro em `docs/roadmap.config.json` (`:61`) já existem: o primeiro commit só muda o status e linka o plano.
 
-- [ ] **Step 1: Branch**
+- [ ] **Step 1: Conferir a precondição**
+
+Run: `cd /c/Development/Layers && git fetch origin && git cat-file -e origin/develop:docs/superpowers/plans/2026-10-16-s3-4-appearance-source.md && git cat-file -e origin/develop:docs/superpowers/plans/2026-10-16-layers-plano-geral-da-onda-3.md && echo IN-DEVELOP`
+Expected: `IN-DEVELOP`. Senão parar com `COULD NOT RUN: wave-3 plan not in develop`.
+
+- [ ] **Step 2: Worktree própria**
+
+A S4.8 roda em paralelo (plano geral, Task B): nunca `git switch` nem `git checkout -b` no checkout compartilhado.
 
 ```bash
-git checkout develop && git pull --ff-only
-git checkout -b refactor/261016-0-s3-4-appearance-source
+cd /c/Development/Layers && git worktree add .claude/worktrees/s3-4 -b refactor/261016-0-s3-4-appearance-source origin/develop
+cd /c/Development/Layers/.claude/worktrees/s3-4 && npm ci
 ```
 
-- [ ] **Step 2: Linha do roadmap**
+Expected: `git -C /c/Development/Layers/.claude/worktrees/s3-4 branch --show-current` = `refactor/261016-0-s3-4-appearance-source`; `npm test` verde na worktree. Todos os passos seguintes rodam nela.
 
-Se este plano ainda não estiver em `develop`: `git checkout docs/261016-0-wave-3-plan -- docs/superpowers/plans/2026-10-16-s3-4-appearance-source.md`. Na linha S3.4: coluna `plan` = `[](superpowers/plans/2026-10-16-s3-4-appearance-source.md)`, status `in-progress`. Depois:
+- [ ] **Step 3: Linha do roadmap**
 
-Run: `python ~/.claude/design/_build_proto.py .`
+Na linha S3.4: coluna `plan` = `[](superpowers/plans/2026-10-16-s3-4-appearance-source.md)`, status `in-progress`. Depois:
+
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && python ~/.claude/design/_build_proto.py .`
 Expected: `docs/roadmap.data.json` regenerado sem erro.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add docs/roadmap.md docs/roadmap.data.json docs/_index.md docs/superpowers/plans/2026-10-16-s3-4-appearance-source.md
+cd /c/Development/Layers/.claude/worktrees/s3-4 && git add docs/roadmap.md docs/roadmap.data.json docs/_index.md
 git commit -m "docs: reserve the S3.4 leaf in the tracker (S3.4)"
 ```
 
@@ -113,20 +146,21 @@ git commit -m "docs: reserve the S3.4 leaf in the tracker (S3.4)"
 
 **Files:**
 - Create: `e2e/appearance-defaults.spec.js`
-- Local, sem commit: `e2e/menu-visual.spec.js-snapshots/`, `$D/s3-4-dump.cjs`, `$D/before.json` (`D="${TMPDIR:-/tmp}/layers-s3-4"`)
+- Local, sem commit: `e2e/menu-visual.spec.js-snapshots/`, `$D/s3-4-dump.cjs`, `$D/before.json`, `$D/vite.log` (`D="${TMPDIR:-/tmp}/layers-s3-4"`, definido em cada `Run`)
 
 `index.html` ainda é o de `develop` (o Task 0 só tocou docs). Nada deste task muda código.
 
 - [ ] **Step 1: Baselines de pixel**
 
-Run: `npm ci && LAYERS_VISUAL=1 npx playwright test e2e/menu-visual.spec.js --project=chromium --update-snapshots`
-Expected: 9 testes PASS e 5 PNGs criados (`menu-closed`, `menu-{hist,apar,inter,acoes}-open`). Rodar de novo sem `--update-snapshots`: 9 PASS.
+Run (dentro do Wrapper E2E): `LAYERS_VISUAL=1 npx playwright test e2e/menu-visual.spec.js --project=chromium --update-snapshots`
+Expected: 9 testes PASS e 5 PNGs criados (`menu-closed`, `menu-{hist,apar,inter,acoes}-open`). Rodar de novo sem `--update-snapshots` (também no wrapper): 9 PASS.
 
 - [ ] **Step 2: Script do dump das variáveis**
 
-Criar `$D/s3-4-dump.cjs` (fora do repo; resolve `@playwright/test` a partir da raiz):
+Criar `$D/s3-4-dump.cjs` (fora do repo; resolve `@playwright/test` a partir do cwd, a raiz da worktree) com heredoc no mesmo `Run` do `mkdir`:
 
-```js
+```bash
+cd /c/Development/Layers/.claude/worktrees/s3-4 && D="${TMPDIR:-/tmp}/layers-s3-4"; mkdir -p "$D" && cat > "$D/s3-4-dump.cjs" <<'EOF'
 // Dumps every --* custom property applyTheme sets, for each saved appearance combo (S3.4 gate).
 const { chromium } = require(require.resolve('@playwright/test', { paths: [process.cwd()] }));
 const THEMES = ['Dark', 'Gray · 1 Grafite', 'Gray · 2 Ardósia', 'Gray · 3 Cinza quente', 'Bright · 1 Papel', 'Bright · 2 Névoa', 'Bright · 3 Linho'];
@@ -135,7 +169,7 @@ const ORIGINS = ['Semântica · verde / âmbar / acento', 'Mono · cor de seleç
 (async () => {
   const combos = [null, {}, { theme: 'Dark' }, { selectColor: 'Azul' }, { originColors: 'Mono · acento' }];
   for (const theme of THEMES) for (const selectColor of SELECTS) for (const originColors of ORIGINS) combos.push({ theme, selectColor, originColors });
-  const browser = await chromium.launch(), out = {};
+  const browser = await chromium.launch({ channel: 'chromium' }), out = {};
   for (const ui of combos) {
     const ctx = await browser.newContext();
     if (ui) await ctx.addInitScript(u => { localStorage.setItem('layers/v1/meta', JSON.stringify({ schema: 1 })); localStorage.setItem('layers/v1/ui', JSON.stringify(u)); }, ui);
@@ -147,35 +181,46 @@ const ORIGINS = ['Semântica · verde / âmbar / acento', 'Mono · cor de seleç
       for (let i = 0; i < s.length; i++) if (s[i].startsWith('--')) v[s[i]] = cs.getPropertyValue(s[i]).trim();
       return v;
     });
+    // Proves which tree was served: false on develop's index.html, true after Task 3.
+    if (!ui) out.$probe = await page.evaluate(() => !!LayersCore.APPEARANCE_DEFAULTS);
     await ctx.close();
   }
   await browser.close();
   require('fs').writeFileSync(process.argv[2], JSON.stringify(out, null, 1));
-  console.log(Object.keys(out).length + ' combos');
+  console.log((Object.keys(out).length - 1) + ' combos, $probe=' + out.$probe);
 })();
+EOF
+node --check "$D/s3-4-dump.cjs" && echo SCRIPT-OK
 ```
+
+Expected: `SCRIPT-OK`. O `<<'EOF'` com aspas impede o bash de expandir `$probe`.
 
 As combinações parciais (`{}`, só `theme`, só `selectColor`, só `originColors`) são as que expõem o fallback: as chaves ausentes caem no default.
 
 - [ ] **Step 3: Dump "antes"**
 
-Run (com `npm run dev` rodando na porta 5180): `mkdir -p "$D" && node "$D/s3-4-dump.cjs" "$D/before.json"`
-Expected: `173 combos`. Em `"no-storage"`, `--bg0` = `#2a2e34`, `--acc` = `#8b96a3`, `--sel` = `#f08c6c`, `--sliderS` = `0.85`.
+Run: Wrapper do dump com `<saida>` = `before`.
+Expected: `173 combos, $probe=false` e `port after: 000`. Em `"no-storage"`, `--bg0` = `#2a2e34`, `--acc` = `#8b96a3`, `--sel` = `#f08c6c`, `--sliderS` = `0.85`. `$probe=true` aqui é árvore errada: parar.
 
-- [ ] **Step 4: Guarda E2E (passa antes e depois)**
+- [ ] **Step 4: Guarda E2E (passa antes e depois; o vermelho aparece no Task 3 Step 1)**
 
 `e2e/appearance-defaults.spec.js`, só Chromium. Semeia `localStorage` com `page.addInitScript` (`layers/v1/meta` = `{schema:1}`, `layers/v1/ui` = objeto), abre `/` e espera `Ações ▾`. Lê as variáveis com `getComputedStyle(document.documentElement).getPropertyValue(...)`.
   - `AppearanceDefaults_NoStorage_ResolvesGrafiteCoralMono`: sem storage → `--bg0` `#2a2e34`, `--acc` `#8b96a3`, `--sel` `#f08c6c`, `--oD` `#f08c6c`, `--sliderS` `0.85`, `--fs` `1`.
   - `AppearanceDefaults_StoredThemeOnly_KeepsDefaultSelectAndOrigin`: `ui = {theme:'Dark'}` → `--bg0` `#0e1116`, `--sel` `#f08c6c`, `--oD` `#f08c6c`, `--acc` `#8b96a3`.
-  - `AppearanceDefaults_EmptyUi_MenuLabelsShowDefaults`: `ui = {}` → clicar `button[title^="Aparência · Fonte"]`; os quatro combos mostram `Gray · 1 Grafite`, `Coral`, `Mono · cor de seleção` e `B · Faixas rotuladas`.
+  - `AppearanceDefaults_EmptyUi_MenuLabelsShowDefaults`: `ui = {}` → clicar `button[title^="Aparência · Fonte"]`; os quatro combos mostram `Gray · 1 Grafite`, `Coral`, `Mono · cor de seleção` e `B · Faixas rotuladas`. Abrir o combo Tema (`cb_theme_open`, `:97`): a única opção com fundo diferente de `transparent` (o `bg` de `cur`, `:2335`) é `Gray · 1 Grafite`.
+  - `AppearanceDefaults_StoredThemeDark_HighlightsDarkOption`: `ui = {theme:'Dark'}` → abrir Aparência e o combo Tema; rótulo `Dark` e a única opção destacada é `Dark`.
+  - Cabeçalho do painel direito (`phA/phB/phC`, só com projeto: `:392`): abrir `/?layers=fixtures/plain-css/`. Marcadores exclusivos, conferidos com `grep -c` = 1 antes de escrever: A = `>Aplicar em<` (`:427`), B = `>Componente<` (`:461`), C = badge `L<n>` (`:531`, regex `/^L\d+$/`). Se o cabeçalho pedir nó selecionado além de `hasProject`, selecionar como `editCard` (`e2e/browser-compat.spec.js:74`).
+    - `AppearanceDefaults_NoStorageWithProject_RendersBandedHeader`: sem storage → `Componente` visível; `Aplicar em` e o badge ausentes.
+    - `AppearanceDefaults_StoredPanelHeaderA_RendersCardHeader`: `ui = {panelHeader:'A · Cartão'}` → `Aplicar em` visível; `Componente` ausente.
+    - `AppearanceDefaults_StoredPanelHeaderC_RendersCompactHeader`: `ui = {panelHeader:'C · Compacto'}` → badge `L<n>` visível; `Componente` e `Aplicar em` ausentes.
 
-Run: `npx playwright test e2e/appearance-defaults.spec.js --project=chromium`
-Expected: 3 PASS no `index.html` atual (é guarda de equivalência, não teste vermelho).
+Run (dentro do Wrapper E2E): `npx playwright test e2e/appearance-defaults.spec.js --project=chromium`
+Expected: 7 PASS no `index.html` atual (é guarda de equivalência; o vermelho é visto no Task 3 Step 1).
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add e2e/appearance-defaults.spec.js
+cd /c/Development/Layers/.claude/worktrees/s3-4 && git add e2e/appearance-defaults.spec.js
 git commit -m "test: guard the resolved appearance defaults before the refactor (S3.4)"
 ```
 
@@ -192,11 +237,11 @@ git commit -m "test: guard the resolved appearance defaults before the refactor 
 
   - `AppearanceDefaults_Valores_IguaisAosDataPropsAntigos`: `toEqual` com a tabela do Design (8 chaves, `sliderScale` 85, `fontScale` 1, `bmAlpha` 15).
   - `AppearanceDefaults_CfgKeys_TodaChaveTemDefault`: cada item de `CFG_KEYS` existe em `APPEARANCE_DEFAULTS`; `CFG_KEYS` não contém `logoGrad`.
-  - `AppearanceDefaults_Objeto_Congelado`: `Object.isFrozen(core.APPEARANCE_DEFAULTS)` é `true`.
+  - `AppearanceDefaults_Objeto_Congelado`: primeiro `expect(core.APPEARANCE_DEFAULTS).toBeTypeOf('object')` (sem isso o teste passa antes da implementação: `Object.isFrozen(undefined)` é `true`); depois `Object.isFrozen(core.APPEARANCE_DEFAULTS)` é `true`.
   - `MigrateConfig_LogoGradAntigo_NaoMigra`: `fakeStorage({ 'layers-cfg': JSON.stringify({ theme: 'Dark', logoGrad: 'x' }) })` → `migrateConfig(s).ui` é `{ theme: 'Dark' }`.
 
-Run: `npx vitest run test/layers-core.test.js -t "AppearanceDefaults|MigrateConfig_LogoGrad"`
-Expected: FAIL (`APPEARANCE_DEFAULTS` indefinido; `logoGrad` migrado).
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && npx vitest run test/layers-core.test.js -t "AppearanceDefaults|MigrateConfig_LogoGrad"`
+Expected: 4 FAIL (`APPEARANCE_DEFAULTS` indefinido; `logoGrad` migrado).
 
 - [ ] **Step 2: Implementar**
 
@@ -213,13 +258,13 @@ Exportar `APPEARANCE_DEFAULTS: APPEARANCE_DEFAULTS,` logo depois de `CFG_KEYS: C
 
 - [ ] **Step 3: Rodar e ver passar**
 
-Run: `npm test`
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && npm test`
 Expected: PASS; `DepoisDaMigracao_PreservaMigratedFrom` e `RoundTrip_PreservaUiProjectsSession` seguem verdes.
 
 - [ ] **Step 4: Commit**
 
 ```bash
-git add lib/layers-core.js test/layers-core.test.js
+cd /c/Development/Layers/.claude/worktrees/s3-4 && git add lib/layers-core.js test/layers-core.test.js
 git commit -m "refactor: add APPEARANCE_DEFAULTS and drop logoGrad from CFG_KEYS (S3.4)"
 ```
 
@@ -231,13 +276,27 @@ git commit -m "refactor: add APPEARANCE_DEFAULTS and drop logoGrad from CFG_KEYS
 **Interfaces:**
 - Consumes: `LayersCore.APPEARANCE_DEFAULTS`, `LayersCore.CFG_KEYS` (Task 2).
 
-Cada substituição: contar os matches da âncora antes (`grep -c`), esperar 1.
+Cada substituição: contar os matches da âncora antes (`grep -c`), esperar 1. Os Steps 1-6 viram um commit só (Step 8).
 
-- [ ] **Step 1: Constante e código morto (`:944-948`)**
+- [ ] **Step 1: `data-props` (`:800`) primeiro e guarda vermelha**
+
+Substituir o valor inteiro do atributo por exatamente:
+
+```
+data-props="{&quot;fixture&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Dev&quot;},&quot;histMax&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:10,&quot;min&quot;:3,&quot;max&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Projetos&quot;}}"
+```
+
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && node -e "const h=require('fs').readFileSync('index.html','utf8');const m=h.match(/data-props=\"([^\"]*)\"/);console.log(Object.keys(JSON.parse(m[1].replace(/&quot;/g,'\"'))).join(','))"`
+Expected: `fixture,histMax`.
+
+Run (dentro do Wrapper E2E): `npx playwright test e2e/appearance-defaults.spec.js --project=chromium`
+Expected: 3 FAIL e 4 PASS. Falham os três casos originais (`NoStorage`: `--bg0` `#0e1116`; `StoredThemeOnly`: `--acc`/`--sel` do Dark; `EmptyUi`: rótulos `Dark`). Passam os de cabeçalho (o `?? 'B'` de `:2293` ainda vale) e `StoredThemeDark` (o valor salvo vence). Outro resultado: parar, a guarda não está vendo o fallback.
+
+- [ ] **Step 2: Constante e código morto (`:944-948`)**
 
 Depois de `const CFG_KEYS = LayersCore.CFG_KEYS;`, adicionar `const APPEARANCE_DEFAULTS = LayersCore.APPEARANCE_DEFAULTS;`. Remover `const DEFAULT_GRAD = …`, o comentário `// degradê aleatório …` e `const randGrad = …` (3 linhas).
 
-- [ ] **Step 2: `cfg()` e `applyTheme` (`:1572-1581`)**
+- [ ] **Step 3: `cfg()` e `applyTheme` (`:1572-1581`)**
 
 - Comentário `:1572` ("último que mudou") → `// Appearance: a value saved from the Aparência menu wins, else APPEARANCE_DEFAULTS (S3.4)`.
 - `cfg(k) { const c = this.state.cfg; return c[k] !== undefined ? c[k] : APPEARANCE_DEFAULTS[k]; }`
@@ -245,11 +304,11 @@ Depois de `const CFG_KEYS = LayersCore.CFG_KEYS;`, adicionar `const APPEARANCE_D
 - `:1581`: `const sliderS = (APPEARANCE_DEFAULTS.sliderScale / 100).toFixed(2);` (o resto da linha igual).
 - `:1578-1579` ficam como estão: com `cfg()` caindo na constante, `|| t.acc` só cobre `Padrão do tema` (comportamento atual) e `|| ''` vira inalcançável sem mudar resultado.
 
-- [ ] **Step 3: `componentDidUpdate` (`:1593-1595`)**
+- [ ] **Step 4: `componentDidUpdate` (`:1593-1595`)**
 
 Remover as três linhas (`const changed = …`, o `if` que apaga `state.cfg`, o `if` que chama `applyTheme` por `accent`/`sliderScale`). A linha do `fixture` (`:1596`) fica.
 
-- [ ] **Step 4: Render (`:2277`, `:2293`, `:2335-2342`, `:2354`)**
+- [ ] **Step 5: Render (`:2277`, `:2293`, `:2335-2342`, `:2354`)**
 
 - `:2277`: `const sliderS = APPEARANCE_DEFAULTS.sliderScale / 100;`
 - `:2293`: `ph = String(this.cfg('panelHeader'))[0]` (sai `?? 'B'`; `ph` continua vivo, ver `[!DECISION] panelHeader`).
@@ -258,17 +317,6 @@ Remover as três linhas (`const changed = …`, o `if` que apaga `state.cfg`, o 
 - `:2342`: remover `, logoGrad: s.cfg.logoGrad || DEFAULT_GRAD` (sem uso no template; conferir com `grep -c "{{ logoGrad" index.html` = 0).
 - `:2354` (se `[!DECISION] bmAlpha` = A): `const bmA = APPEARANCE_DEFAULTS.bmAlpha / 100;`
 
-- [ ] **Step 5: `data-props` (`:800`)**
-
-Substituir o valor inteiro do atributo por exatamente:
-
-```
-data-props="{&quot;fixture&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;,&quot;section&quot;:&quot;Dev&quot;},&quot;histMax&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:10,&quot;min&quot;:3,&quot;max&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Projetos&quot;}}"
-```
-
-Run: `node -e "const h=require('fs').readFileSync('index.html','utf8');const m=h.match(/data-props=\"([^\"]*)\"/);console.log(Object.keys(JSON.parse(m[1].replace(/&quot;/g,'\"'))).join(','))"`
-Expected: `fixture,histMax`.
-
 - [ ] **Step 6: Strings com "tweak" (só texto)**
 
 - `:102` `title`: `Volta aos valores dos tweaks e limpa o que foi salvo neste navegador` → `Volta aos valores padrão e limpa o que foi salvo neste navegador`.
@@ -276,13 +324,16 @@ Expected: `fixture,histMax`.
 
 - [ ] **Step 7: Rodar**
 
-Run: `npm test && npx playwright test e2e/appearance-defaults.spec.js e2e/menu-open.spec.js --project=chromium`
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && npm test`
 Expected: PASS.
+
+Run (dentro do Wrapper E2E): `npx playwright test e2e/appearance-defaults.spec.js e2e/menu-open.spec.js --project=chromium`
+Expected: PASS (os 7 de `appearance-defaults` verdes).
 
 - [ ] **Step 8: Commit**
 
 ```bash
-git add index.html
+cd /c/Development/Layers/.claude/worktrees/s3-4 && git add index.html
 git commit -m "refactor: read appearance defaults from APPEARANCE_DEFAULTS, drop host tweaks (S3.4)"
 ```
 
@@ -292,32 +343,35 @@ git commit -m "refactor: read appearance defaults from APPEARANCE_DEFAULTS, drop
 
 - [ ] **Step 1: Greps de fallback e de props**
 
-Run: `grep -nE "\|\| 'Dark'|THEMES\.Dark|theme: 'Dark'|\|\| 85|DEFAULT_GRAD|randGrad|logoGrad|último que mudou" index.html lib/layers-core.js`
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && grep -nE "\|\| 'Dark'|THEMES\.Dark|theme: 'Dark'|\|\| 85|DEFAULT_GRAD|randGrad|logoGrad|último que mudou" index.html lib/layers-core.js`
 Expected: nenhuma saída (exit 1).
 
-Run: `grep -oE "this\.props(\.[A-Za-z]+|\[)" index.html | sort | uniq -c`
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && grep -oE "this\.props(\.[A-Za-z]+|\[)" index.html | sort | uniq -c`
 Expected: só `this.props.fixture` e `this.props.histMax` (mais `this.props.bmAlpha` se `[!DECISION] bmAlpha` = B).
 
-- [ ] **Step 2: Dump "depois" e diff**
+- [ ] **Step 2: Dump "depois" e comparação**
 
-Run (com `npm run dev` na 5180): `node "$D/s3-4-dump.cjs" "$D/after.json" && diff "$D/before.json" "$D/after.json" && echo IDENTICAL`
-Expected: `173 combos` e `IDENTICAL`.
+Run: Wrapper do dump com `<saida>` = `after`.
+Expected: `173 combos, $probe=true` e `port after: 000`. `$probe=false` aqui é árvore errada: parar.
+
+Run (aspas simples para o bash não expandir `$probe`): `cd /c/Development/Layers/.claude/worktrees/s3-4 && D="${TMPDIR:-/tmp}/layers-s3-4"; node -e 'const f=p=>JSON.parse(require("fs").readFileSync(p,"utf8")),b=f(process.argv[1]),a=f(process.argv[2]);console.log(b.$probe,a.$probe);delete b.$probe;delete a.$probe;console.log(JSON.stringify(b)===JSON.stringify(a)?"IDENTICAL":"DIFF")' "$D/before.json" "$D/after.json"`
+Expected: `false true` e `IDENTICAL`.
 
 - [ ] **Step 3: Pixels**
 
-Run: `LAYERS_VISUAL=1 npx playwright test e2e/menu-visual.spec.js --project=chromium`
+Run (dentro do Wrapper E2E): `LAYERS_VISUAL=1 npx playwright test e2e/menu-visual.spec.js --project=chromium`
 Expected: 9 PASS contra as baselines do Task 1 (`maxDiffPixels: 0`). Nunca usar `--update-snapshots` aqui.
 
 - [ ] **Step 4: Regressão completa**
 
-Run: `npm test && npx playwright test --project=chromium`
-Expected: PASS (os `test.fail` existentes de `e2e/perf.spec.js` seguem como estão).
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && npm test`; depois, dentro do Wrapper E2E: `npx playwright test --project=chromium`
+Expected: PASS (os `test.fail` existentes de `e2e/perf.spec.js` seguem como estão). Os JSON novos em `bench/results/` ficam untracked.
 
 - [ ] **Step 5: Revisão Architect**
 
-`adversarial-reviewer` sobre `git diff develop...HEAD -- index.html lib/layers-core.js`, com foco no Review Focus (fallbacks, `ph`, `logoGrad`) e nos números dos Steps 1-3.
+`adversarial-reviewer` sobre `git diff develop...HEAD -- index.html lib/layers-core.js`, com foco no Review Focus (fallbacks, `ph`, `logoGrad`) e nos números dos Steps 1-3 (incluindo `$probe` `false`/`true`).
 
-### Task 5: Docs, ADR, changelog e roadmap
+### Task 5: Docs, ADR, changelog e coluna `report`
 
 **Files:**
 - Modify: `docs/LOCAL-SETUP.md`, `docs/ARCHITECTURE.md`, `docs/architecture-decisions.md`, `docs/RELEASE-CHECKLIST.md`, `docs/roadmap.md`
@@ -327,7 +381,7 @@ Expected: PASS (os `test.fail` existentes de `e2e/perf.spec.js` seguem como est�
 
 - `LOCAL-SETUP.md` § Defaults visuais reais (`:94-107`): "Sem `localStorage`, valem os `LayersCore.APPEARANCE_DEFAULTS` (`lib/layers-core.js`)…"; coluna `Prop` → `Chave`; linha `bmAlpha` se aplicada. O snippet de limpeza e o parágrafo da migração ficam.
 - `ARCHITECTURE.md:74`: `- Aparência: \`cfg\` (só o que o usuário mudou no menu Aparência; o resto vem de \`LayersCore.APPEARANCE_DEFAULTS\`).`
-- `architecture-decisions.md`: entrada nova no topo (mais nova em cima), ≤ 1.200 B, no formato do arquivo: `## 2026-10-16 · Código é dono dos defaults de aparência` — Contexto (defaults em `data-props` e repetidos em fallbacks; regra "último que mudou"), Decisão (`APPEARANCE_DEFAULTS`; precedência `localStorage` › constante › `:root`; `data-props` só com `fixture`/`histMax`; `accent` e `sliderScale` fixos), Alternativas descartadas (B: controles novos no menu, muda o popover; C: só deduplicar, mantém os tweaks), Consequências (mudar default = editar a constante; o host de design não muda mais acento nem slider). Na entrada de 2026-09-12 (`:130`), emendar no lugar: primeira linha do corpo `> Superada pela entrada de 2026-10-16 (\`APPEARANCE_DEFAULTS\`).`; sem correção datada no fim.
+- `architecture-decisions.md`: entrada nova no topo (mais nova em cima), no `## Formato` do arquivo (`:151-159`), com título no imperativo: `## 2026-10-16 · Manter os defaults de aparência no código`. Contexto (defaults em `data-props` e repetidos em fallbacks; regra "último que mudou"; supera a entrada `2026-09-12 · \`data-props\` é a fonte de verdade dos defaults visuais`). Decisão (`APPEARANCE_DEFAULTS`; precedência `localStorage` › constante › `:root`; `data-props` só com `fixture`/`histMax`; `accent` e `sliderScale` fixos). **Alternativas descartadas** em tabela `opção | por que não` (B: controles novos no menu, muda o popover; C: só deduplicar, mantém os tweaks). Consequências (mudar default = editar a constante; o host de design perde as seis props `theme`, `accent`, `selectColor`, `originColors`, `sliderScale` e `panelHeader`; `accent` e `sliderScale` deixam de ser ajustáveis fora do código; um `logoGrad` salvo deixa de ser lido). Sem teto de bytes. Na entrada `## 2026-09-12 · \`data-props\` é a fonte de verdade dos defaults visuais` (`:130`; há duas entradas com essa data, por isso citar o título), emendar no lugar: primeira linha do corpo `> Superada pela entrada **Manter os defaults de aparência no código** (2026-10-16).`; sem correção datada no fim.
 - `RELEASE-CHECKLIST.md:15`: `valem os \`data-props\`, não o \`:root\`` → `valem os \`APPEARANCE_DEFAULTS\`, não o \`:root\``. `:44` → `[x]` com `(\`LayersCore.APPEARANCE_DEFAULTS\`; \`e2e/appearance-defaults.spec.js\`, visual inalterado em \`e2e/menu-visual.spec.js\`)`. Linha 8 intocada.
 - `README.md:114-118` (Defaults visuais) ainda cita `data-props`: fica para o release (CLAUDE.md § Manutenção); anotar no PR. Se `retrofit_docs.py` anexar o bloco "Related" ao `README.md`, reverter.
 
@@ -345,41 +399,41 @@ adr: updated
 - Código morto `DEFAULT_GRAD`, `randGrad` e a chave `logoGrad` (fora de `CFG_KEYS`): um `logoGrad` salvo deixa de ser lido.
 
 ### Tests
-- `AppearanceDefaults_*` e `MigrateConfig_LogoGradAntigo_NaoMigra` (Vitest); `e2e/appearance-defaults.spec.js` (3 casos).
+- `AppearanceDefaults_*` e `MigrateConfig_LogoGradAntigo_NaoMigra` (Vitest); `e2e/appearance-defaults.spec.js` (7 casos, incluindo os cabeçalhos A/B/C do painel).
 
 ### Perf
 - N/A — `applyTheme` faz os mesmos `setProperty`; só a origem do default muda (constante em vez de prop).
 ```
 
-- [ ] **Step 3: Leaf**
+- [ ] **Step 3: Coluna `report`**
 
-`docs/roadmap.md` S3.4: `report` = `[](../changelog.d/refactor-261016-0-s3-4-appearance-source.md)`, status `done` (via `phase-close-gate`, Task E do plano geral). Rebuild: `python ~/.claude/design/_build_proto.py .`
+`docs/roadmap.md` S3.4: só a coluna `report` = `[](../changelog.d/refactor-261016-0-s3-4-appearance-source.md)`. O status fica `in-progress` e não há rebuild aqui: `done` e o rebuild ficam para a Task E do plano geral (`phase-close-gate`), depois que o usuário autorizar o merge.
 
 - [ ] **Step 4: Rodar e commitar**
 
-Run: `npm test && python -X utf8 ~/.claude/scripts/docs-linkcheck.py . && python -X utf8 ~/.claude/scripts/adr-body-check.py docs/architecture-decisions.md --base develop`
-Expected: PASS; `0 broken link(s)`; `adr-body-check` com exit 0 (o arquivo usa o formato próprio `## AAAA-MM-DD · Título`, que o checker não analisa; a entrada de 2026-09-12 tem 972 B e continua < 1.200 B com a linha de supersessão).
+Run: `cd /c/Development/Layers/.claude/worktrees/s3-4 && npm test && python -X utf8 ~/.claude/scripts/docs-linkcheck.py .`
+Expected: PASS; `0 broken link(s)`.
 
 ```bash
-git add docs/_index.md docs/LOCAL-SETUP.md docs/ARCHITECTURE.md docs/architecture-decisions.md docs/RELEASE-CHECKLIST.md docs/roadmap.md docs/roadmap.data.json changelog.d/refactor-261016-0-s3-4-appearance-source.md
-git commit -m "docs: record APPEARANCE_DEFAULTS as the appearance source and close S3.4 (S3.4)"
+cd /c/Development/Layers/.claude/worktrees/s3-4 && git add docs/_index.md docs/LOCAL-SETUP.md docs/ARCHITECTURE.md docs/architecture-decisions.md docs/RELEASE-CHECKLIST.md docs/roadmap.md changelog.d/refactor-261016-0-s3-4-appearance-source.md
+git commit -m "docs: record APPEARANCE_DEFAULTS as the appearance source (S3.4)"
 ```
 
 ## Model Routing
 
 | Step | Role | Tier | Model | Rationale |
 |---|---|---|---|---|
-| Task 0. reserva da leaf | gen | Standard | Workhorse | edição de tracker com rebuild |
-| Task 1.1-1.3. baselines, script dado e dump "antes" | gen | Mechanical | Executor | arquivo verbatim + comandos dados; caller valida `exit_code`, `173 combos` e os 5 PNGs |
+| Task 0. worktree e reserva da leaf | gen | Standard | Workhorse | edição de tracker com rebuild |
+| Task 1.1-1.3. baselines, script dado e dump "antes" | gen | Mechanical | Executor | heredoc verbatim + comandos dados; caller valida `exit_code`, `SCRIPT-OK`, `173 combos, $probe=false`, `port after: 000` e os 5 PNGs |
 | Task 1.4, 2, 3. guarda E2E, core e `index.html` | gen | Standard | Workhorse | autoria de testes e edição por âncora |
-| Task 4.1-4.4. greps, diff, pixels | gen | Mechanical | Executor | comandos dados; saída esperada exata (`IDENTICAL`, exit 1, 9 PASS) |
+| Task 4.1-4.4. greps, comparação, pixels | gen | Mechanical | Executor | comandos dados; saída esperada exata (`false true`, `IDENTICAL`, exit 1, 9 PASS) |
 | Task 4.5. revisão do fallback e do dump | review | Architectural | Architect | regressão visual silenciosa; verificador ≥ gerador |
 | Task 5. docs, ADR, changelog | gen | Standard | Workhorse | prosa de docs |
 
 Executor: Task 1.1-1.3 e 4.1-4.4, sempre com formato, tokens de recusa (`COULD NOT RUN`) e validação pelo caller; desvio refaz no Workhorse.
 
 > [!DECISION] panelHeader — `ph` não é código morto
-> `ph` (`:2293`) lê `panelHeader` e escolhe o cabeçalho do painel direito (`phA/phB/phC`, `:393`, `:458`, `:528`); só `hs` (`hdrA/hdrB/hdrC`) é fixo. Remover `ph` muda o visual de quem tem A ou C salvo, e o gate de pixels não vê (os blocos só aparecem com projeto carregado, `:392`).
+> `ph` (`:2293`) lê `panelHeader` e escolhe o cabeçalho do painel direito (`phA/phB/phC`, `:393`, `:458`, `:528`); só `hs` (`hdrA/hdrB/hdrC`) é fixo. Remover `ph` muda o visual de quem tem A ou C salvo, e o gate de pixels não vê (os blocos só aparecem com projeto carregado, `:392`); os três casos de cabeçalho do Task 1 Step 4 cobrem isso.
 > - **Opção A (aplicada neste plano)**: manter `ph` e `panelHeader` em `CFG_KEYS`; só o default sai de `data-props` para a constante. Zero mudança visual.
 > - **Opção B**: remover `ph` e fixar `B`; o combo "Cabeçalho do painel" vira inerte de fato. Muda o painel de quem salvou A ou C.
 > `hdrA`/`hdrC` (`:2364`) não têm uso no template: código morto fora do escopo, só registrado.
