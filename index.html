@@ -228,7 +228,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Camadas</span>
       <button onClick="{{ allLayers }}" title="Mostrar todas as camadas" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ allBdr }};background:{{ allBg }};color:{{ allColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">Todas</button>
       <sc-for list="{{ rail }}" as="r" hint-placeholder-count="6">
-        <button onClick="{{ r.pick }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="min-width:{{ railMinW }};height:24px;padding:{{ railPad }};border-radius:4px;border:1px solid {{ r.bdr }};background:{{ r.bg }};color:{{ r.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">L{{ r.d }} <span style="font-weight:400;opacity:.6;display:inline">{{ r.count }}</span><span style="color:var(--sel);margin-left:3px">{{ r.mark }}</span></button>
+        <button onClick="{{ r.pick }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="min-width:{{ railMinW }};height:24px;padding:{{ railPad }};border-radius:4px;border:1px solid {{ r.bdr }};background:{{ r.bg }};color:{{ r.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">L{{ r.d }} <span style="font-weight:400;opacity:.6;display:inline">{{ r.count }}</span><span style="color:var(--sel);margin-left:{{ r.markGap }}">{{ r.mark }}</span></button>
       </sc-for>
     </div></div>
     </sc-if>
@@ -1248,8 +1248,8 @@ class Component extends DCLogic {
     // nunca roda sem gesto — so o botao do painel de erro, que e sempre um clique fresco.
     this.dirViaClick = !!viaClick;
     this.zip = null; this.repo = null;
-    const id = 'folder:' + dir.name; this.projectId = id; this.markTab();
-    this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
+    const id = 'folder:' + dir.name; const switched = this.projectId !== id; this.projectId = id; this.markTab(); // S3.5: outro projeto nao herda o ramo do anterior (restore e retry de permissao mantem o id)
+    this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
   resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
@@ -1483,8 +1483,8 @@ class Component extends DCLogic {
     catch (e) { this.toast('Não deu para ler o .zip: ' + e.message); return; }
     const root = LayersCore.zipRoot(z.files);
     this.zip = { files: z.files, root }; this.repo = null;
-    const id = 'zip:' + file.name; this.projectId = id; this.markTab();
-    this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
+    const id = 'zip:' + file.name; const switched = this.projectId !== id; this.projectId = id; this.markTab();
+    this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     this.touchHist({ id, kind: 'zip', name: file.name, path: file.name });
     if (z.skipped.length) this.toast(z.skipped.length + ' entrada(s) do .zip recusada(s) por caminho inseguro: ' + z.skipped[0], 'warn');
   }
@@ -1508,8 +1508,8 @@ class Component extends DCLogic {
       ref = (await meta.json()).default_branch || 'HEAD';
     } catch (e) { this.toast('Sem resposta do GitHub: ' + e.message); return; }
     this.repo = { owner: r.owner, repo: r.repo, ref }; this.zip = null;
-    this.projectId = 'repo:' + name; this.markTab();
-    this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null }, () => this.loadProject());
+    const switched = this.projectId !== 'repo:' + name; this.projectId = 'repo:' + name; this.markTab();
+    this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name, label: ref });
   }
   // Origem somente leitura (.zip, repositorio) nao tem onde gravar. Recusa nomeando a origem,
@@ -2286,7 +2286,7 @@ class Component extends DCLogic {
     const EXP_TITLE = 'Explodido a partir daqui (vista plana). Botão direito › Recolher até aqui desfaz.';
     for (let d = 0; d <= vmax; d++) {
       const count = s.nodes.filter(n => n.depth === d && (!s.isoId || n.id === s.isoId || n.id.startsWith(s.isoId + '.'))).length; const on = d === s.active;
-      rail.push({ d, count, title: 'Camada L' + d + ' — ' + count + ' elemento(s). Clique para isolar a camada e selecionar nela', bg: on ? (s.solo ? 'rgba(var(--accRgb),.28)' : 'rgba(var(--accRgb),.15)') : 'transparent', bdr: on && s.solo ? 'var(--acc)' : on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', mark: d === exD ? '▧' : '', pick: () => this.setState({ active: d, solo: true }), hover: () => { if (s.layerFocus) this.setState({ hoverLayer: d }); }, unhover: () => this.setState({ hoverLayer: null }) });
+      rail.push({ d, count, title: 'Camada L' + d + ' — ' + count + ' elemento(s). Clique para isolar a camada e selecionar nela', bg: on ? (s.solo ? 'rgba(var(--accRgb),.28)' : 'rgba(var(--accRgb),.15)') : 'transparent', bdr: on && s.solo ? 'var(--acc)' : on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', mark: d === exD ? '▧' : '', markGap: d === exD ? '3px' : '0', pick: () => this.setState({ active: d, solo: true }), hover: () => { if (s.layerFocus) this.setState({ hoverLayer: d }); }, unhover: () => this.setState({ hoverLayer: null }) });
     }
     const treeRows = []; const kidsOf = {}; s.nodes.forEach(n => { if (n.parent) (kidsOf[n.parent] = kidsOf[n.parent] || []).push(n); });
     const tq = s.treeQ.trim().toLowerCase(); const tFilter = tq && s.treeMode === 'filter'; const tHit = {}; let treeHits = 0;
