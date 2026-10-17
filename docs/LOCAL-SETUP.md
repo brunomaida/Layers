@@ -131,10 +131,10 @@ de pasta, que exige gesto. A confirmação em disco real é manual e roda uma ve
 ([RELEASE-CHECKLIST.md](RELEASE-CHECKLIST.md) § B):
 
 1. Copie `fixtures/dc-template/` para uma pasta fora do repositório e rode `git init && git add -A && git commit -m base` nela.
-2. No Layers (`npm run dev`, porta 5180), Projetos → Conectar pasta e escolha essa pasta; a árvore mostra `.card` com `h1`, `p`, `button` e `span`.
+2. No Layers, aberto no Chrome ou Edge (`npm run dev`, porta 5180), Projetos → Conectar pasta e escolha essa pasta; a árvore mostra `.card` com `h1`, `p`, `button` e `span`.
 3. Selecione o `h1` (origem `tpl:3`), mude Tamanho de 20 para 22 e abra Ações → Aplicar nos arquivos → Gerar rascunho paralelo → Aprovar, substituir e commitar.
 4. Na pasta, `git diff` deve mostrar uma linha só em `index.html`: `font-size:20px` virou `font-size:22px` dentro do `style=""` do `h1`. Devem existir `index.html.bak` e uma entrada em `.design-history/`, e nenhum `index.design-draft.html`.
-5. Recarregue o projeto, selecione o `button`, mude Padding e gere o rascunho: o log recusa com `VALUE_HAS_BINDING` e `git status` não muda. Marque o item no checklist.
+5. Recarregue o projeto, selecione o `button`, mude Padding e gere o rascunho: o log recusa com `VALUE_HAS_BINDING` e `git status` fica igual ao do passo 4. Marque o item no checklist.
 
 ## Hooks do git
 
