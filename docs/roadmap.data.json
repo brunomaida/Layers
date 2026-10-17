@@ -2489,6 +2489,12 @@
     "progress": 0,
     "docs": [
       {
+        "name": "2026-10-17-s9-1-layouts-newlogic.md",
+        "type": "spec",
+        "path": "/docs/text-specs/2026-10-17-s9-1-layouts-newlogic.md",
+        "title": "Text spec — S9.1 layouts newlogic"
+      },
+      {
         "name": "layers-specs.md",
         "type": "spec",
         "path": "/docs/text-specs/layers-specs.md",
@@ -2517,6 +2523,12 @@
         "type": "report",
         "path": "/changelog.d/docs-261013-23-roadmap-claude-md-perf-plan.md",
         "title": "Added"
+      },
+      {
+        "name": "docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
+        "type": "report",
+        "path": "/changelog.d/docs-261017-0-s9-1-layouts-newlogic-text-spec.md",
+        "title": "Docs"
       }
     ],
     "children": []
