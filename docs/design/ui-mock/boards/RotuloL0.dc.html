@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>S2.22c rótulo de L0</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#60a5fa}a:hover{color:#7db8ff}
+</style>
+</helmet>
+<div style="{{ vars }}width:960px;height:760px;box-sizing:border-box;padding:24px 28px;display:flex;flex-direction:column;gap:16px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px">
+  <div style="display:flex;align-items:baseline;gap:12px">
+    <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sel)">(c) G12</span>
+    <h2 style="margin:0;font:600 16px/1.3 'Inter',sans-serif;color:var(--fg0)">L0 diz o que é num mock de snapshot</h2>
+  </div>
+  <p style="margin:0;max-width:760px;font:500 11.5px/1.5 'Inter',sans-serif;color:var(--fg2)">No mock do WAVE o único filho do &lt;body&gt; é &lt;div id="app"&gt;. O loader o torna L0 e aplica root.name ".shell" do layers.json (index.html:1028). O .shell real aparece de novo em L1, e root.src aponta shell.ts para o elemento errado.</p>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px">
+    <sc-for list="{{ cols }}" as="k" hint-placeholder-count="3">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">{{ k.label }}</span>
+        <span style="height:18px;display:inline-flex;align-items:center;padding:0 6px;border-radius:3px;border:1px solid {{ k.tagBdr }};color:{{ k.tagColor }};font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.06em;white-space:nowrap">{{ k.tag }}</span>
+      </div>
+      <div style="position:relative;display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px;box-shadow:0 12px 32px var(--shadow)">
+        <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1)">
+          <span style="color:var(--fg2);font:600 12px/1 'JetBrains Mono',monospace;width:14px">▾</span>
+          <span style="flex:1;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Árvore de camadas</span>
+        </div>
+        <div style="display:flex;height:32px;border-bottom:1px solid var(--line1);background:var(--bg0)">
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;color:var(--fg0);font:600 10px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase;box-shadow:inset 0 -2px 0 var(--sel)">Hierarquia <span style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:0;opacity:.7">412</span></span>
+          <span style="flex:1;display:flex;align-items:center;justify-content:center;gap:6px;border-left:1px solid var(--line1);color:var(--fg2);font:500 10px/1 'Inter',sans-serif;letter-spacing:.1em;text-transform:uppercase">Elementos <span style="font:500 9px/1 'JetBrains Mono',monospace;letter-spacing:0;opacity:.7">186</span></span>
+        </div>
+        <div style="padding:4px 0">
+          <sc-for list="{{ k.rows }}" as="t" hint-placeholder-count="6">
+          <div title="{{ t.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ t.indent }};background:{{ t.bg }};color:{{ t.color }};font:500 11px/1 'JetBrains Mono',monospace;white-space:nowrap;overflow:hidden">
+            <span style="width:12px;flex:0 0 12px;text-align:center;color:var(--fg3)">▾</span>
+            <span style="flex:0 0 auto;font-size:9px;color:var(--fg3)">L{{ t.depth }}</span>
+            <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;color:{{ t.nameColor }}">{{ t.name }}</span>
+            <span style="flex:0 0 auto;font-weight:400;color:var(--fg3)">{{ t.countLabel }}</span>
+            <span style="flex:1"></span>
+            <span style="flex:0 0 auto;color:var(--warn)">{{ t.flag }}</span>
+          </div>
+          </sc-for>
+        </div>
+        <sc-if value="{{ k.hasTip }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;left:56px;top:96px;right:-6px;padding:5px 7px;background:var(--bg2);border:1px solid var(--line2);box-shadow:0 4px 12px var(--shadow);color:var(--fg1);font:400 11px/1.35 'Segoe UI',system-ui,sans-serif;white-space:pre-line">{{ k.tip }}</div>
+        </sc-if>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;margin-top:40px">
+        <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3)">Onde aparece</span>
+        <span style="font:500 11px/1.5 'Inter',sans-serif;color:var(--fg2)">{{ k.where }}</span>
+        <span style="font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);margin-top:6px">root.name / root.src</span>
+        <span style="font:500 11px/1.5 'Inter',sans-serif;color:var(--fg2)">{{ k.root }}</span>
+      </div>
+    </div>
+    </sc-for>
+  </div>
+  <span style="font:500 10px/1.45 'Inter',sans-serif;color:var(--fg3)">Contagens de Hierarquia e Elementos são de exemplo. O nome do projeto na barra (Traval) e o menu Interagir › Estado do mock não mudam. Mocks que não são snapshot mantêm o rótulo atual.</span>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Dark","Bright · 1 Papel"],"default":"Dark"},"$preview":{"width":960,"height":760}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#60a5fa', warn: '#f5a623', ok: '#26c281', err: '#ef5350', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg1Rgb: '22,27,34', accRgb: '96,165,250' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#4f5fb8', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg1Rgb: '244,245,247', accRgb: '79,95,184' }
+    };
+    const t = { ...(T[this.props.tema] || T['Dark']), sel: '#60a5fa', selRgb: '96,165,250' };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const row = (depth, name, o) => ({ depth, name, indent: (8 + depth * 10) + 'px', countLabel: (o && o.count) || '', flag: (o && o.flag) || '', title: (o && o.title) || '', nameColor: (o && o.dim) ? 'var(--fg2)' : 'inherit', bg: (o && o.sel) ? 'rgba(var(--selRgb),.12)' : 'transparent', color: (o && o.sel) ? 'var(--fg0)' : 'var(--fg1)' });
+    const tail = [row(2, '.toolbar'), row(3, '.brand'), row(2, '.tab-bar'), row(2, '.dashboard')];
+    return {
+      vars,
+      cols: [
+        { label: 'Hoje', tag: '.shell duas vezes', tagBdr: 'rgba(245,166,35,.5)', tagColor: 'var(--warn)', hasTip: false, tip: '',
+          rows: [row(0, '.shell', { sel: true, flag: '≠' }), row(1, '.shell', { flag: '≠' })].concat(tail),
+          where: 'Linha L0 da árvore. O nome vem de layers.json › root.name, mas o elemento é #app.',
+          root: 'Aplicados ao #app: Aplicar numa regra de L0 mira .shell em shell.ts sem ser .shell.' },
+        { label: 'Variante A', tag: '#app · snapshot', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', hasTip: true,
+          tip: 'Raiz do snapshot: <div id="app">\nlocalhost:5173/gallery.html#/csv-loaded\n16/10/2026 14:57 · viewport 1280×760',
+          rows: [row(0, '#app', { sel: true, count: '· snapshot' }), row(1, '.shell', { title: 'src/ui/shell.ts|.shell|3' })].concat(tail),
+          where: 'Linha L0: nome real do elemento + sufixo “· snapshot” no slot de contagem (cinza). Origem da captura no title.',
+          root: 'Vão para o elemento que casa com root.name (.shell, em L1). L0 fica sem data-src.' },
+        { label: 'Variante B', tag: 'mock · estado', tagBdr: 'rgba(var(--selRgb),.45)', tagColor: 'var(--sel)', hasTip: true,
+          tip: 'Snapshot do estado csv-loaded · raiz <div id="app">\nlocalhost:5173/gallery.html#/csv-loaded\n16/10/2026 14:57 · viewport 1280×760',
+          rows: [row(0, 'mock · csv-loaded', { sel: true, dim: false }), row(1, '.shell', { title: 'src/ui/shell.ts|.shell|3' })].concat(tail),
+          where: 'Linha L0: “mock · ” + nome do estado escolhido no Interagir (S2.22b). Sem states no manifesto: “mock · snapshot”.',
+          root: 'Iguais à A: vão para .shell em L1. L0 vira um rótulo sintético, sem data-src.' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
