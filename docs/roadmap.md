@@ -88,7 +88,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S7.7 | 2 | S7 | Hook pre-push valida o ref de destino | Review S7.6: push HEAD:develop passa; delete de branch estando em develop é recusado | — | — | [](../changelog.d/fix-261013-23-s7-7-pre-push-dest-ref.md) | #23 | done |
 | S7.8 | 2 | S7 | Reconciliar contadores, versão e colunas do tracker | Varredura 2026-10-13: contador do checklist, S5.1, package.json, S7.2 e S4.4a fora do tracker | — | — | [](../changelog.d/docs-261013-0-s7-8-tracker-reconcile.md) | — | done |
 | S7.8a | 3 | S7.8 | Recontar o contador do checklist após a Onda 1 | Linha 8 dizia 31/3/13; os itens contam 38/1/8 depois de S2.19, S4.5, S5.6, S6.2 e S7.1 | — | — | [](../changelog.d/docs-261014-0-s7-8a-counter-recount.md) | — | done |
-| S7.9 | 2 | S7 | Remover Claude-Session dos docs e travar o trailer | Reescrita de histórico de 2026-10-17; planos mandavam o trailer e o CLAUDE.md proíbe | — | — | [](../changelog.d/docs-261017-0-s7-9-drop-session-trailer-refs.md) | — | in-progress |
+| S7.9 | 2 | S7 | Remover Claude-Session dos docs e travar o trailer | Reescrita de histórico de 2026-10-17; planos mandavam o trailer e o CLAUDE.md proíbe | — | — | [](../changelog.d/docs-261017-0-s7-9-drop-session-trailer-refs.md) | — | done |
 | S8 | 1 | — | Trilha MCP e plugin | Ideia gravada no checkpoint de 2026-09-18 | [](superpowers/reports/2026-09-18-wnext-checkpoint-mcp-plugin-track.md) | — | — | — | registered |
 | S8.1 | 2 | S8 | Spike de servidor MCP stdio sobre o core | find_rule, get_rule_text, propose_css_patch | — | — | — | — | registered |
 | S8.2 | 2 | S8 | Spike Playwright: data-vite-dev-id sobrevive | Apps Vite com React | — | — | — | — | registered |
