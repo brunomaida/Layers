@@ -1235,7 +1235,7 @@
     "type": "phase",
     "name": "Performance",
     "start": "2026-10-13",
-    "end": "2026-10-21",
+    "end": "2026-10-22",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -1245,7 +1245,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 87,
+    "progress": 83,
     "docs": [],
     "children": [
       {
@@ -1485,21 +1485,27 @@
         "name": "Árvore virtualizada",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s4-7-virtual-tree.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-16-s4-7-virtual-tree.md)",
             "title": "2026-10-16-s4-7-virtual-tree.md)"
+          },
+          {
+            "name": "feature-261016-0-s4-7-virtual-tree.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261016-0-s4-7-virtual-tree.md)",
+            "title": "feature-261016-0-s4-7-virtual-tree.md)"
           }
         ],
-        "reason": "checklist D",
+        "reason": "medido-negativo no Traval: teto da árvore 2,6 % do frame (memo ≈ 0); em 1.500 tags 23,8 %, encaminhado para S4.10",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -1551,6 +1557,25 @@
         "progress": 0,
         "docs": [],
         "reason": "origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test",
+        "is_branch": false,
+        "start_synthetic": true,
+        "end_synthetic": true,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S4.10",
+        "type": "spec",
+        "name": "Janela da árvore para projetos grandes (1500+ tags)",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [],
+        "reason": "origem S4.7: com 1.500 tags a montagem e o diff de ~1.650 linhas custam 25 ms/frame no orbit (teto 23,8 %), select de linha 486 ms e scroll da árvore 271 ms/frame; no Traval o teto é 2,6 % e o memo ≈ 0",
         "is_branch": false,
         "start_synthetic": true,
         "end_synthetic": true,
