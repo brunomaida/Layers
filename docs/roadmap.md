@@ -82,7 +82,7 @@ Tracker de fases e leaves do Layers. Prioridade de trabalho: checklist B (loader
 | S7.1 | 2 | S7 | README atualizado | checklist G | — | [](superpowers/plans/2026-10-14-s7-1-readme.md) | [](../changelog.d/docs-261014-0-s7-1-readme.md) | — | done |
 | S7.2 | 2 | S7 | CHANGELOG por versão | checklist G | — | — | [](../changelog.d/docs-261013-23-s7-2-changelog-checklist.md) | #23 | done |
 | S7.3 | 2 | S7 | Matriz de suporte | checklist G | — | — | — | — | registered |
-| S7.4 | 2 | S7 | docs/shortcuts.md | checklist G | — | [](superpowers/plans/2026-10-16-s7-4-shortcuts-doc.md) | — | — | in-progress |
+| S7.4 | 2 | S7 | docs/shortcuts.md | checklist G | — | [](superpowers/plans/2026-10-16-s7-4-shortcuts-doc.md) | [](../changelog.d/docs-261016-0-s7-4-shortcuts-doc.md) | — | done |
 | S7.5 | 2 | S7 | Bootstrap do roadmap | Este tracker | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/docs-261013-23-s7-5-roadmap-bootstrap.md) | #23 | done |
 | S7.6 | 2 | S7 | CLAUDE.md enxuto | Revisão de duplicatas e fatos stale | [](superpowers/specs/2026-10-13-roadmap-claude-md-enxuto-testes-design.md) | [](superpowers/plans/2026-10-13-roadmap-claude-md-enxuto-testes.md) | [](../changelog.d/docs-261013-23-s7-6-claude-md-lean.md) | #23 | done |
 | S7.7 | 2 | S7 | Hook pre-push valida o ref de destino | Review S7.6: push HEAD:develop passa; delete de branch estando em develop é recusado | — | — | [](../changelog.d/fix-261013-23-s7-7-pre-push-dest-ref.md) | #23 | done |
