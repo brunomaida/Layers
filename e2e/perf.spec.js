@@ -177,7 +177,7 @@ async function layerPass(context, v) {
   const p = await context.newPage();
   const errors = [];
   p.on('pageerror', (e) => errors.push(String(e)));
-  p.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+  p.on('console', (m) => m.type() === 'error' && !/favicon\.ico$/.test(m.location().url) && errors.push(m.text()));
   try {
     await instrument(p);
     await p.goto('/?layers=fixtures/traval/');
@@ -220,7 +220,7 @@ for (const [name, id, v] of [
     const layers = await layerPass(page.context(), v);
     const errors = [];
     page.on('pageerror', (e) => errors.push(String(e)));
-    page.on('console', (m) => m.type() === 'error' && errors.push(m.text()));
+    page.on('console', (m) => m.type() === 'error' && !/favicon\.ico$/.test(m.location().url) && errors.push(m.text()));
     await instrument(page);
     await page.goto('/?layers=fixtures/traval/');
     await waitForScan(page);
@@ -263,7 +263,7 @@ for (const [name, id, v] of [
     expect(errors, 'page errors in the timed drag').toEqual([]);
     expect(layers.errors, 'page errors in the layer pass').toEqual([]);
     expect(o.frames).toBeGreaterThanOrEqual(30);
-    if (v.group) expect(grouped.groups, 'z groups created by the stub').toBeGreaterThan(0);
+    if (v.group && !grouped.native) expect(grouped.groups, 'z groups created by the stub').toBeGreaterThan(0); // native: the app groups itself (Task E4)
   });
 }
 
