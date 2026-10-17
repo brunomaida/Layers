@@ -267,3 +267,22 @@ test('Explode_FailedLoad_DoesNotLeaveBranchInSession', async ({ page }) => {
   expect((await session(page)).explodeFrom).toBeNull();
   expect((await session(page)).lastProjectId).toBe(id);
 });
+
+// The mark span sits in every rail chip: unmarked it must take no room (frozen visual), marked it gets its gap.
+const markBox = (page) => page.evaluate(() => [...document.querySelectorAll('button[title^="Camada L"]')].map((b) => {
+  const s = b.lastElementChild; const r = s.getBoundingClientRect();
+  return { d: b.title.slice(7, 9).trim(), text: s.textContent, ml: getComputedStyle(s).marginLeft, w: Math.round(r.width) };
+}));
+
+test('Explode_RailChips_UnmarkedTakeNoRoom', async ({ page }) => {
+  await open(page);
+  const none = await markBox(page);
+  expect(none.length).toBeGreaterThan(3);
+  for (const c of none) expect(c, c.d).toMatchObject({ text: '', ml: '0px', w: 0 });
+  await goFlat(page);
+  await act(page, 'explodeHere', ROOT);
+  await expect.poll(async () => (await markBox(page)).find((c) => c.d === 'L3').text).toBe('▧');
+  const marked = await markBox(page);
+  expect(marked.find((c) => c.d === 'L3').ml).toBe('3px');
+  for (const c of marked.filter((c) => c.d !== 'L3')) expect(c, c.d).toMatchObject({ text: '', ml: '0px', w: 0 });
+});
