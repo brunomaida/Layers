@@ -61,6 +61,7 @@ export async function waitForScan(page, minNodes = 5, timeout = 20_000) {
 // gcsPerFrame counts getComputedStyle calls between mousedown and mouseup.
 // opts.afterFirstMove (S4.9): awaited right after the first drag mousemove; dragStartMs is then the largest
 // of the 8 frame intervals that start at that move (the hitch a DOM regroup would cause).
+// opts.afterFirstMove / opts.beforeUp also make the result carry dragEndMs.
 // opts.beforeUp (S4.9): awaited after the timed loop and before mouseup; frames recorded while the hook sets
 // window.__orbit.paused are dropped, so an undo done there stays out of the frame statistics.
 export async function orbitDrag(page, durationMs = 1500, opts = {}) {
@@ -95,6 +96,7 @@ export async function orbitDrag(page, durationMs = 1500, opts = {}) {
   const t0 = Date.now();
   let i = 0;
   let startIdx = null;
+  let endIdx = null;
   while (Date.now() - t0 < durationMs) {
     if (i === 0 && opts.afterFirstMove) startIdx = await page.evaluate(() => window.__orbit.times.length);
     await page.mouse.move(r.x + (i % 60) * 2, r.y + Math.sin(i / 8) * 40);
@@ -103,10 +105,11 @@ export async function orbitDrag(page, durationMs = 1500, opts = {}) {
   }
   const gcsCalls = await page.evaluate(() => window.__perf.calls - window.__perf.calls0);
   if (opts.beforeUp) await opts.beforeUp();
+  if (opts.afterFirstMove || opts.beforeUp) endIdx = await page.evaluate(() => window.__orbit.times.length);
   await page.mouse.up();
   const m1 = await metrics();
   await cdp.detach();
-  const res = await page.evaluate((startIdx) => {
+  const res = await page.evaluate(([startIdx, endIdx]) => {
     window.__orbit.stop = true;
     const p = window.__perf;
     if (p.obs) {
@@ -128,8 +131,10 @@ export async function orbitDrag(page, durationMs = 1500, opts = {}) {
       loafCount: p.loaf.length,
       loafScriptShare: loafTotal ? loafScript / loafTotal : 0,
       ...(startIdx === null ? {} : { dragStartMs: Math.max(...window.__orbit.times.slice(startIdx, startIdx + 8)) }),
+      // largest of the 8 frames from mouseup on: the release render (remount of the planes on an S4.9 app)
+      ...(endIdx === null ? {} : { dragEndMs: Math.max(...window.__orbit.times.slice(endIdx, endIdx + 8)) }),
     };
-  }, startIdx);
+  }, [startIdx, endIdx]);
   const per = (k) => ((m1[k] - m0[k]) * 1000) / res.frames;
   return {
     ...res,
@@ -157,6 +162,8 @@ export async function planeCensus(page, hide = false) {
       (el) => el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)),
     );
     const c = { total: planes.length, offscreen: 0, partial: 0, opBelow005: 0, opZero: 0, bare: 0, empty: 0 };
+    // ids of the empty planes survive the remount an S4.9 app does at the first drag move (reapplyMarks)
+    const st = (window.__s48 = { empty: [], hide: [] });
     for (const el of planes) {
       const r = el.getBoundingClientRect();
       const out = r.right < sb.left || r.left > sb.right || r.bottom < sb.top || r.top > sb.bottom;
@@ -176,6 +183,7 @@ export async function planeCensus(page, hide = false) {
       if (bare && cs.outlineStyle === 'none') {
         c.empty++;
         el.setAttribute('data-s48-empty', '');
+        st.empty.push(el.getAttribute('data-plane'));
       }
     }
     return c;
@@ -267,10 +275,12 @@ export async function hidePlanes(page, which) {
   const n = await page.evaluate((which) => {
     const planes = [...document.querySelectorAll('[data-s48-plane]')];
     let n = 0;
+    const st = (window.__s48 = window.__s48 || { empty: [], hide: [] });
     planes.forEach((el, i) => {
       const hide = which === 'odd' ? i % 2 === 1 : el.hasAttribute('data-s48-empty');
       if (hide) {
         el.setAttribute('data-s48-hide', '');
+        st.hide.push(el.getAttribute('data-plane'));
         n++;
       }
     });
@@ -278,6 +288,27 @@ export async function hidePlanes(page, which) {
   }, which);
   await page.addStyleTag({ content: '[data-s48-hide]{display:none!important}' });
   return n;
+}
+
+// S4.8 marks live on plane nodes; an app with data-plane (S4.9) remounts the planes under div[data-plane-group]
+// at the first drag mousemove and the marks are gone. Call this from orbitDrag's afterFirstMove: it waits for
+// the groups, re-applies data-s48-plane / -empty / -hide by plane id and returns how many planes are hidden
+// now. On an app without data-plane the nodes persist and it only counts.
+export async function reapplyMarks(page) {
+  return page.evaluate(async () => {
+    if (document.querySelector('[data-plane]')) {
+      for (let i = 0; i < 60 && !document.querySelector('[data-plane-group]'); i++) await new Promise((r) => requestAnimationFrame(r));
+      const st = window.__s48 || { empty: [], hide: [] };
+      const empty = new Set(st.empty), hide = new Set(st.hide);
+      for (const el of document.querySelectorAll('[data-plane]')) {
+        const id = el.getAttribute('data-plane');
+        el.setAttribute('data-s48-plane', '');
+        if (empty.has(id)) el.setAttribute('data-s48-empty', '');
+        if (hide.has(id)) el.setAttribute('data-s48-hide', '');
+      }
+    }
+    return document.querySelectorAll('[data-s48-hide]').length;
+  });
 }
 
 // Sets the "Intensidade dos frames" slider (wireAlpha, index.html:123) through React's onChange; 0 turns

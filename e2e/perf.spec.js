@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers, reapplyMarks } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
 
 const EXPECTED = [
@@ -128,9 +128,12 @@ for (const [name, id, box] of [
 // S4.8 diagnosis, no app change: each variant overrides the scene before the drag. wire-off is the control
 // for V3 (V3 compares against it, not against orbit/traval); V4 only checks that plane cost is linear.
 // aa is a plain orbit run last: its delta against orbit/traval is the order bias of this fixed sequence.
+// S4.9: an app with data-plane groups the planes at the first drag move (remount), which drops per-node marks:
+// the css targets [data-plane] / the groups as well, and the hide variants re-apply their marks by plane id
+// in the first-move hook (reapplyMarks) and count `hidden` after it, so they work on the base sha and later.
 for (const [name, id, v] of [
-  ['Orbit_NoHitTest_RecordsFrameInterval', 'orbit/traval-v1-no-hit/mean-frame-ms', { css: '[data-s48-plane]{pointer-events:none!important}' }],
-  ['Orbit_PlanesNoWillChange_RecordsFrameInterval', 'orbit/traval-v2a-planes-no-will-change/mean-frame-ms', { css: '[data-s48-plane]{will-change:auto!important}' }],
+  ['Orbit_NoHitTest_RecordsFrameInterval', 'orbit/traval-v1-no-hit/mean-frame-ms', { css: '[data-s48-plane],[data-plane]{pointer-events:none!important}', noHit: true }],
+  ['Orbit_PlanesNoWillChange_RecordsFrameInterval', 'orbit/traval-v2a-planes-no-will-change/mean-frame-ms', { css: '[data-s48-plane],[data-plane-group]{will-change:auto!important}' }],
   ['Orbit_WorldNoWillChange_RecordsFrameInterval', 'orbit/traval-v2b-world-no-will-change/mean-frame-ms', { css: '[data-s48-world]{will-change:auto!important}' }],
   ['Orbit_WireOff_RecordsFrameInterval', 'orbit/traval-wire-off/mean-frame-ms', { wireOff: true }],
   ['Orbit_WireOffEmptyHidden_RecordsFrameInterval', 'orbit/traval-v3-empty-hidden/mean-frame-ms', { wireOff: true, hide: 'empty' }],
@@ -144,10 +147,11 @@ for (const [name, id, v] of [
     if (v.wireOff) await setWireAlpha(page, 0);
     await markScene(page);
     const census = await planeCensus(page);
-    const hidden = v.hide ? await hidePlanes(page, v.hide) : 0;
+    let hidden = v.hide ? await hidePlanes(page, v.hide) : 0;
     if (v.css) await page.addStyleTag({ content: v.css });
     const swaps = await countPlaneHovers(page);
-    const o = await orbitDrag(page, 1500);
+    const o = await orbitDrag(page, 1500, v.hide ? { afterFirstMove: async () => (hidden = await reapplyMarks(page)) } : {});
+    const hoverSwapsPerFrame = (await swaps()) / o.frames;
     rec(id, o.meanFrameMs, {
       fps: o.fps,
       p95FrameMs: o.p95FrameMs,
@@ -156,11 +160,12 @@ for (const [name, id, v] of [
       loafScriptShare: o.loafScriptShare,
       gcsPerFrame: o.gcsPerFrame,
       main: o.main,
-      hoverSwapsPerFrame: (await swaps()) / o.frames,
+      hoverSwapsPerFrame,
       census,
       hidden,
     });
     expect(o.frames).toBeGreaterThanOrEqual(30);
+    if (v.noHit) expect(hoverSwapsPerFrame, 'no plane hit-test: hoverId must not swap during the drag').toBeLessThanOrEqual(0.005);
     if (v.hide) expect(hidden, 'planes hidden by the stub').toBeGreaterThan(0);
   });
 }
@@ -245,7 +250,10 @@ for (const [name, id, v] of [
       main: o.main,
       hoverSwapsPerFrame: (await swaps()) / o.frames,
       census,
+      // true: the app groups the planes itself (S4.9 Task E4), so G1/G2 no longer simulate grouping and equal A/A
+      native: await page.evaluate(() => !!document.querySelector('[data-plane]')),
       dragStartMs: o.dragStartMs,
+      dragEndMs: o.dragEndMs,
       pairedWith: 'orbit/traval/mean-frame-ms',
       deltaVsOrbitMs: orbit ? o.meanFrameMs - orbit.meanFrameMs : null,
       layersBefore: layers.before.total,
@@ -333,16 +341,18 @@ for (const [name, id, tags, mode, v1] of [
     if (v1) await noPlaneHits(page);
     const swaps = await countHoverSwaps(page);
     const o = await orbitDrag(page, 1500);
+    const hoverSwapsPerFrame = (await swaps()) / o.frames;
     rec(id, o.meanFrameMs, {
       fps: o.fps,
       p95FrameMs: o.p95FrameMs,
       frames: o.frames,
       loafCount: o.loafCount,
       main: o.main,
-      hoverSwapsPerFrame: (await swaps()) / o.frames,
+      hoverSwapsPerFrame,
       treeRowsMounted: await page.locator('[data-node-id]').count(),
     });
     expect(o.frames).toBeGreaterThanOrEqual(30);
+    if (v1) expect(hoverSwapsPerFrame, 'V1 simulates no plane hit-test: hoverId must not swap during the drag').toBeLessThanOrEqual(0.005);
   });
 }
 
