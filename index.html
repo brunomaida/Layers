@@ -228,7 +228,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Camadas</span>
       <button onClick="{{ allLayers }}" title="Mostrar todas as camadas" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ allBdr }};background:{{ allBg }};color:{{ allColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">Todas</button>
       <sc-for list="{{ rail }}" as="r" hint-placeholder-count="6">
-        <button onClick="{{ r.pick }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="min-width:{{ railMinW }};height:24px;padding:{{ railPad }};border-radius:4px;border:1px solid {{ r.bdr }};background:{{ r.bg }};color:{{ r.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">L{{ r.d }} <span style="font-weight:400;opacity:.6;display:inline">{{ r.count }}</span><span style="color:var(--sel)">{{ r.mark }}</span></button>
+        <button onClick="{{ r.pick }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="min-width:{{ railMinW }};height:24px;padding:{{ railPad }};border-radius:4px;border:1px solid {{ r.bdr }};background:{{ r.bg }};color:{{ r.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">L{{ r.d }} <span style="font-weight:400;opacity:.6;display:inline">{{ r.count }}</span><span style="color:var(--sel);margin-left:3px">{{ r.mark }}</span></button>
       </sc-for>
     </div></div>
     </sc-if>
@@ -1115,7 +1115,7 @@ class Component extends DCLogic {
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
   // do state, que ja e a fonte de verdade — nao existe copia paralela para dessincronizar.
   uiSnapshot() { const s = this.state; const ui = { ...s.cfg }; UI_KEYS.forEach(k => { ui[k] = s[k]; }); return ui; }
-  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat }, explodeFrom: s.explodeFrom, collapseAt: s.collapseAt }; }
+  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat }, explodeFrom: this.fixtureBase ? null : s.explodeFrom, collapseAt: this.fixtureBase ? null : s.collapseAt }; }
   // Uma escrita por rajada, não uma por evento: orbitar a câmera dispara ~60 setState por
   // segundo e todos caem no mesmo trailing de 400 ms.
   persistSoon() { clearTimeout(this.persistT); this.persistT = setTimeout(() => this.writeConfig(), 400); }
@@ -1171,8 +1171,8 @@ class Component extends DCLogic {
     const own = !!id && sess.lastProjectId === id;
     const cam = own ? sess.camera : null;
     if (cam && !this.fixtureBase) this.setState({ yaw: +cam.yaw || 0, tilt: +cam.tilt || 0, zoom: +cam.zoom || 1, panX: +cam.panX || 0, panY: +cam.panY || 0, flat: !!cam.flat });
-    // S3.5: ramo explodido; um fixture sem projeto herda o da propria sessao (o id e validado no scan)
-    if ((own || (this.fixtureBase && !id)) && typeof sess.explodeFrom === 'string') this.setState({ explodeFrom: sess.explodeFrom, collapseAt: typeof sess.collapseAt === 'number' && isFinite(sess.collapseAt) ? sess.collapseAt : null });
+    // S3.5: ramo explodido, como a camera: so do projeto da aba e nunca em fixture (o id e validado no scan)
+    if (own && !this.fixtureBase && typeof sess.explodeFrom === 'string') this.setState({ explodeFrom: sess.explodeFrom, collapseAt: typeof sess.collapseAt === 'number' && isFinite(sess.collapseAt) ? sess.collapseAt : null });
     if (this.fixtureBase || !id) return; // #layers= manda no projeto
     const entry = (this.state.hist || []).find(x => x.id === id); if (!entry) return;
     this.markTab();
@@ -1333,7 +1333,7 @@ class Component extends DCLogic {
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep || this.fixtureBase ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -1391,7 +1391,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1778,11 +1778,11 @@ class Component extends DCLogic {
     const s = this.state; if (!s.flat || !s.explodeFrom) return null;
     const c = this._br; if (c && c.nodes === s.nodes && c.from === s.explodeFrom && c.at === s.collapseAt) return c.v;
     const root = s.byId[s.explodeFrom]; const set = root ? LayersCore.branchOf(s.nodes, s.byId, s.explodeFrom) : null; let v = null;
-    if (set) { let m = root.depth; s.nodes.forEach(n => { if (set.has(n.id) && n.depth > m) m = n.depth; }); v = { set, root, span: Math.max(0, Math.min(m, s.collapseAt == null ? Infinity : s.collapseAt) - root.depth) }; }
+    if (set) { let m = root.depth; s.nodes.forEach(n => { if (set.has(n.id) && n.depth > m) m = n.depth; }); const ca = Number.isInteger(s.collapseAt) && s.collapseAt >= root.depth ? s.collapseAt : null; v = { set, root, collapseAt: ca, span: Math.min(m, ca == null ? Infinity : ca) - root.depth }; }
     this._br = { nodes: s.nodes, from: s.explodeFrom, at: s.collapseAt, v }; return v;
   }
   explodeHere(id) { if (!this.state.flat || !this.state.byId[id]) return; this.setState({ explodeFrom: id, collapseAt: null }); }
-  collapseHere(id) { const s = this.state; if (!s.explodeFrom || !s.byId[id]) return; if (id === s.explodeFrom) this.setState({ explodeFrom: null, collapseAt: null }); else this.setState({ collapseAt: s.byId[id].depth }); }
+  collapseHere(id) { const s = this.state; if (!s.explodeFrom || !s.byId[id] || !LayersCore.inBranchOf(id, s.explodeFrom)) return; if (id === s.explodeFrom) this.setState({ explodeFrom: null, collapseAt: null }); else this.setState({ collapseAt: s.byId[id].depth }); }
   cam() {
     const s = this.state; const ba = -32;
     const k = s.flat + '|' + s.spacing + '|' + s.yaw + '|' + s.zoom + '|' + s.stageW + '|' + s.stageH + '|' + (s.focus ? 1 : 0) + '|' + s.isoId + '|' + ba + '|' + s.pageW + '|' + s.pageH + '|' + s.explodeFrom + '|' + s.collapseAt;
@@ -2191,7 +2191,7 @@ class Component extends DCLogic {
       if (hL != null) { z = n.depth * spacing; dim = !layerSet.has(n.id); }
       else if (onPath(n.id) || inBranch(n.id) || (solo && n.depth === active)) z = n.depth * spacing;
       else { const parts = n.id.split('.'); let a = null; for (let i = parts.length - 1; i > 0; i--) { const pid = parts.slice(0, i).join('.'); if (onPath(pid)) { a = byId[pid]; break; } } const ad = a ? a.depth : 0; z = ad * spacing + (n.depth - ad) * 0.5; dim = true; }
-      const inBr = !!br && br.set.has(n.id); const sp = inBr ? s.spacing : spacing; if (inBr) z = LayersCore.branchZ(n.depth, br.root.depth, s.collapseAt, s.spacing); // S3.5: so o ramo ganha profundidade na vista plana
+      const inBr = !!br && br.set.has(n.id); const sp = inBr ? s.spacing : spacing; if (inBr) z = LayersCore.branchZ(n.depth, br.root.depth, br.collapseAt, s.spacing); // S3.5: so o ramo ganha profundidade na vista plana
       const sel = n.id === selId, hov = n.id === hoverId, soloOff = solo && n.depth !== active;
       const culled = !!cull && !sel && !hov && !(sp === 0 && n.shadow !== 'none') && cull(n.x, n.y, n.w, n.h, z);
       let op = n.opacity; if (hL != null) { if (dim) op *= oo; } else { if (dim && dimOthers && sp > 0) op *= 0.35; if (spacing > 0 && z > activeZ + spacing * 0.5) op *= 0.3; if (soloOff) op = Math.min(op, 0.08); }
