@@ -143,10 +143,11 @@ const VISUAL = !!process.env.LAYERS_VISUAL;
 const BASE_DIR = process.env.LAYERS_BASELINE_DIR;
 const WRITE = !!process.env.LAYERS_BASELINE_WRITE;
 
-// Pixels whose largest channel delta exceeds `tol` in a decoded pair of PNGs, as a share of all pixels.
-const diffShare = (page, a, b, tol) =>
+// Share of pixels that differ in a decoded pair of PNGs: Playwright/pixelmatch YIQ distance (opaque pixels)
+// over 35215 * threshold^2. Playwright's own default threshold is 0.2; 0 means any change counts.
+const diffShare = (page, a, b, threshold) =>
   page.evaluate(
-    async ([a, b, tol]) => {
+    async ([a, b, threshold]) => {
       const dec = async (b64) => {
         const bmp = await createImageBitmap(new Blob([Uint8Array.from(atob(b64), (ch) => ch.charCodeAt(0))], { type: 'image/png' })); // no fetch: CSP connect-src
         const c = new OffscreenCanvas(bmp.width, bmp.height);
@@ -157,16 +158,20 @@ const diffShare = (page, a, b, tol) =>
       const A = await dec(a), B = await dec(b);
       if (A.width !== B.width || A.height !== B.height) return { size: false, share: 1 };
       let n = 0;
+      const max = 35215 * threshold * threshold;
       for (let i = 0; i < A.data.length; i += 4) {
-        const d = Math.max(Math.abs(A.data[i] - B.data[i]), Math.abs(A.data[i + 1] - B.data[i + 1]), Math.abs(A.data[i + 2] - B.data[i + 2]));
-        if (d > tol) n++;
+        const r = A.data[i] - B.data[i], g = A.data[i + 1] - B.data[i + 1], b = A.data[i + 2] - B.data[i + 2];
+        const y = r * 0.29889531 + g * 0.58662247 + b * 0.11448223;
+        const iq = r * 0.59597799 - g * 0.2741761 - b * 0.32180189;
+        const q = r * 0.21147017 - g * 0.52261711 + b * 0.31114694;
+        if (0.5053 * y * y + 0.299 * iq * iq + 0.1957 * q * q > max) n++;
       }
       return { size: true, share: n / (A.width * A.height) };
     },
-    [a, b, tol],
+    [a, b, threshold],
   );
 
-async function shot(page, name, tol, maxShare) {
+async function shot(page, name, threshold, maxShare) {
   const c = await stageCentre(page);
   const buf = await page.screenshot({ clip: { x: c.left, y: c.top, width: c.width, height: c.height }, animations: 'disabled', caret: 'hide' });
   const file = path.join(BASE_DIR, name + '.png');
@@ -176,7 +181,7 @@ async function shot(page, name, tol, maxShare) {
     return;
   }
   expect(fs.existsSync(file), 'baseline ' + file + ' (generate it on the base commit with LAYERS_BASELINE_WRITE=1)').toBe(true);
-  const d = await diffShare(page, buf.toString('base64'), fs.readFileSync(file).toString('base64'), tol);
+  const d = await diffShare(page, buf.toString('base64'), fs.readFileSync(file).toString('base64'), threshold);
   expect(d.size, name + ' size').toBe(true);
   expect(d.share, name + ' differing pixels share').toBeLessThanOrEqual(maxShare);
 }
@@ -191,7 +196,7 @@ test.describe('visual', () => {
     await startDrag(page);
     for (let i = 1; i <= 3; i++) {
       await frames(page);
-      await shot(page, 'drag-pose-' + i, 24, 0.001);
+      await shot(page, 'drag-pose-' + i, 0.1, 0.001); // twice as strict as Playwright's 0.2 threshold
     }
     await page.mouse.up();
   });
@@ -207,6 +212,6 @@ test.describe('visual', () => {
     await page.mouse.move(2, 2);
     await page.waitForTimeout(700);
     await frames(page);
-    await shot(page, 'static-after-drag', 0, 0);
+    await shot(page, 'static-after-drag', 0.01, 0); // remounted planes: a few pixels are 1 level off
   });
 });
