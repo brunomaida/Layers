@@ -34,7 +34,8 @@ export async function noPlaneHits(page) {
     return ps.length;
   });
   expect(n, 'planes marked for V1').toBeGreaterThan(0);
-  await page.addStyleTag({ content: '[data-s47-v1]{pointer-events:none!important}' });
+  // [data-plane]: an S4.9 app remounts the planes at the first drag move and the marks are gone
+  await page.addStyleTag({ content: '[data-s47-v1],[data-plane]{pointer-events:none!important}' });
 }
 
 // Counts plane-to-plane pointer transitions (each is a hoverId change, index.html H.enter) until the
