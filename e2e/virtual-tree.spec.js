@@ -61,9 +61,12 @@ const topRowId = (page) => box(page).evaluate((el) => {
   return [...el.querySelectorAll('[data-node-id]')].find((r) => r.getBoundingClientRect().top >= bt - 1).dataset.nodeId;
 });
 
-// Hover the row, then its `{ }` button (display:none until the row is hovered or selected).
+// Hover the row, then its `{ }` button (display:none until the row is hovered or selected). The mouse
+// leaves the tree first: after a jump the node under a parked cursor is the same slot (index keys), so
+// no mouseenter would fire.
 async function openCode(page, id) {
   const row = page.locator(`[data-node-id="${id}"]`);
+  await page.mouse.move(2, 2);
   await row.hover();
   await row.locator('button[title^="Expandir o código do estilo"]').click();
   await frames2(page);
@@ -81,12 +84,16 @@ test('VirtualTree_1500Nos_MontaPoucasLinhas', async ({ page }) => {
 });
 
 test('VirtualTree_RolagemEmPassos_FaixaCobreAVista', async ({ page }) => {
+  test.setTimeout(300_000); // ~370 steps, each one a full render() at 1500 tags
   await open(page);
   const bad = [];
   const max = await box(page).evaluate((el) => el.scrollHeight - el.clientHeight);
+  // 97 px: neither a multiple of 22 nor of 110, and below the 110 px rebuild step + overscan margin
   for (let y = 0; y <= max + 97; y += 97) {
     await scrollTo(page, Math.min(y, max));
-    const st = await treeWindowState(page);
+    // the rebuild is a React task that can land after the 2 frames: give it a few more before calling the slice stale
+    let st = await treeWindowState(page);
+    for (let i = 0; i < 12 && !(st.covers && st.contiguous); i++) { await frames2(page); st = await treeWindowState(page); }
     if (!st.covers || !st.contiguous) bad.push({ y, covers: st.covers, contiguous: st.contiguous, padTop: st.padTop, padBot: st.padBot });
   }
   expect(bad, 'steps where the mounted slice leaves the view empty').toEqual([]);

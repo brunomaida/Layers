@@ -267,9 +267,10 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ collapseAllCode }}" disabled="{{ noCodeOpen }}" title="{{ collapseCodeTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ collapseCodeColor }};font:700 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ collapseCodeCursor }};flex:0 0 auto">{ }</button>
           <button onClick="{{ treeCollapseAll }}" disabled="{{ treeAllClosed }}" title="{{ treeCollapseTitle }}" style="width:24px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:1px solid var(--line1);border-radius:4px;background:transparent;color:{{ treeCollapseColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:{{ treeCollapseCursor }};flex:0 0 auto">{{ treeCollapseGlyph }}</button>
         </div>
-        <div ref="{{ treeScrollRef }}" style="overflow-y:auto;min-height:0;padding:4px 0">
+        <div ref="{{ treeScrollRef }}" onScroll="{{ treeScroll }}" onBlur="{{ treeBlur }}" style="overflow-y:auto;min-height:0;padding:4px 0">
           <sc-if value="{{ showHint }}" hint-placeholder-val="{{ false }}"><div style="display:flex;flex-direction:column;gap:6px;padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty"><span style="color:var(--fg2);font-weight:600">{{ emptyTitle }}</span><span style="white-space:pre-wrap">{{ emptyBody }}</span><sc-if value="{{ emptyShowCreateBtn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ emptyCreateAction }}" style="align-self:flex-start;margin-top:4px;height:24px;padding:0 10px;border:1px solid var(--line1);border-radius:4px;background:transparent;color:var(--fg1);font:600 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="border-color:rgba(var(--selRgb),.55);color:var(--sel)">Criar layers.json</button></sc-if></div></sc-if>
           <sc-if value="{{ treeHier }}" hint-placeholder-val="{{ true }}">
+          <div data-tree-pad="top" style="height:{{ treePadTop }}"></div>
           <sc-for list="{{ treeRows }}" as="t" hint-placeholder-count="8">
             <sc-if value="{{ t.isNode }}" hint-placeholder-val="{{ true }}">
             <div data-node-id="{{ t.id }}" onClick="{{ t.select }}" onDoubleClick="{{ t.isolate }}" onMouseEnter="{{ t.hover }}" onMouseLeave="{{ t.unhover }}" title="{{ t.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ t.indent }};background:{{ t.bg }};color:{{ t.color }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;overflow:hidden">
@@ -285,7 +286,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
             </div>
             </sc-if>
             <sc-if value="{{ t.isCode }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px {{ t.indent }};border-bottom:1px solid var(--line0)">
+              <div data-code-key="{{ t.codeKey }}" style="display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px {{ t.indent }};border-bottom:1px solid var(--line0)">
                 <div style="display:flex;align-items:center;gap:6px;height:20px;font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">
                   <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ t.codeLabel }}</span><span style="flex:1"></span>
                   <sc-if value="{{ t.dirty }}" hint-placeholder-val="{{ false }}">
@@ -299,8 +300,10 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               </div>
             </sc-if>
           </sc-for>
+          <div data-tree-pad="bottom" style="height:{{ treePadBot }}"></div>
           </sc-if>
           <sc-if value="{{ treeElems }}" hint-placeholder-val="{{ false }}">
+          <div data-tree-pad="top" style="height:{{ treePadTop }}"></div>
           <sc-for list="{{ elemRows }}" as="r" hint-placeholder-count="6">
             <sc-if value="{{ r.isNode }}" hint-placeholder-val="{{ true }}">
               <div data-node-id="{{ r.nodeId }}" onClick="{{ r.click }}" onDoubleClick="{{ r.dbl }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ r.indent }};background:{{ r.bg }};color:{{ r.color }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;overflow:hidden">
@@ -314,7 +317,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               </div>
             </sc-if>
             <sc-if value="{{ r.isCode }}" hint-placeholder-val="{{ false }}">
-              <div style="display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px {{ r.indent }}">
+              <div data-code-key="{{ r.codeKey }}" style="display:flex;flex-direction:column;gap:4px;padding:4px 8px 8px {{ r.indent }}">
                 <div style="display:flex;align-items:center;gap:6px;height:20px;font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">
                   <span style="min-width:0;overflow:hidden;text-overflow:ellipsis">{{ r.codeLabel }}</span><span style="flex:1"></span>
                   <sc-if value="{{ r.dirty }}" hint-placeholder-val="{{ false }}">
@@ -327,6 +330,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               </div>
             </sc-if>
           </sc-for>
+          <div data-tree-pad="bottom" style="height:{{ treePadBot }}"></div>
           </sc-if>
         </div>
       </sc-if>
@@ -896,6 +900,8 @@ async function writeInto(dir, path, text) { const ok = LayersCore.safePath(path)
 // S4.5: durante o arrasto, plano cuja projeção cai inteira fora do palco (+ CULL_MARGIN) fica display:none (LayersCore.viewCuller).
 // Opacidade não corta (v2.7-b): esmaecidos ficam em 0.30/0.35, visíveis; o solo (0.08) é inalcançável: as pastilhas chamam isolate().
 const CULL_MARGIN = 0.15; // fraction of the larger stage side kept around the viewport (outline); flat-mode shadows are exempt
+// S4.10: janela de linhas da árvore (LayersCore.treeWindow): altura da linha, padding vertical do contêiner, sobra em linhas e passo de scroll (meia sobra) que reconstrói a faixa
+const TREE_ROW_H = 22, TREE_PAD = 4, TREE_OVERSCAN = 10, TREE_SCROLL_STEP = TREE_OVERSCAN / 2 * TREE_ROW_H;
 // plano memoizado: só re-renderiza quando a geometria/estado derivado dele muda
 const Plane = React.memo(function Plane(p) {
   const { n, z, dim, op, sel, hov, onLayer, showWire, soloOff, tr, interact, fs, wa, spacing, H, dragging, culled } = p;
@@ -1081,7 +1087,7 @@ class Component extends DCLogic {
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
-    toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
+    toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
   // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
@@ -1089,6 +1095,7 @@ class Component extends DCLogic {
   // S2.22b: estado do mock escolhido por projeto (chave = pendingKey), guardado na sessao para o reload voltar ao mesmo estado
   stateMap = CONF.session.states && typeof CONF.session.states === 'object' ? { ...CONF.session.states } : {};
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
+  codeH = {}; codeObs = new WeakMap(); _treeAll = []; _treeH = []; _treeCodeN = 0; _treeBox = null; // S4.10: alturas medidas das linhas de código por codeKey; lista completa e alturas da aba ativa
   treeScrollRef = React.createRef(); colRef = React.createRef(); topBarRef = React.createRef(); gearRef = React.createRef();
   interDdRef = React.createRef();
   saveInter = sz => { this.setState({ interSize: sz }); };
@@ -1580,7 +1587,7 @@ class Component extends DCLogic {
     requestAnimationFrame(measure); if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   }
   componentDidUpdate(pp) {
-    this.observeTopBar();
+    this.observeTopBar(); this.observeTree();
     if (pp.fixture !== this.props.fixture && this.fixtureBase && !this.state.dir) this.setState({ dirName: this.fixtureBase.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject());
     // Um ponto de gravação em vez de um por editor: a assinatura do que é persistido decide.
     const sig = JSON.stringify([this.uiSnapshot(), this.state.hist, this.sessionSnapshot()]);
@@ -1590,7 +1597,9 @@ class Component extends DCLogic {
   componentDidMount() {
     this.applyTheme();
     this.ro = new ResizeObserver(() => { const s = this.stageRef.current; const tb = this.topBarRef.current; const topBarH = tb ? tb.offsetHeight : this.state.topBarH; if (s) this.setState({ stageW: s.clientWidth, stageH: s.clientHeight, topBarH }); });
-    this.observeTopBar();
+    // linha desmontada reporta altura 0: o callback nunca sobrescreve a medida com ela
+    this.treeRO = new ResizeObserver(es => { let ch = false, h = null; es.forEach(e => { if (e.target === this._treeBox) { const v = e.target.clientHeight; if (v !== this.state.treeWin.h) h = v; } else { const k = e.target.dataset.codeKey, v = e.borderBoxSize && e.borderBoxSize[0] ? e.borderBoxSize[0].blockSize : e.target.offsetHeight; if (k && e.target.isConnected && v > 0 && Math.abs(v - (this.codeH[k] || 0)) >= 0.25) { this.codeH[k] = v; ch = true; } } }); if (ch || h !== null) this.setState(st => ({ treeWin: { ...st.treeWin, h: h !== null ? h : st.treeWin.h, v: st.treeWin.v + 1 } })); });
+    this.observeTopBar(); this.observeTree();
     if (this.stageRef.current) this.ro.observe(this.stageRef.current);
     this.restoreSession();
     if (this.fixtureBase && !this.state.dir) { const base = this.fixtureBase; this.setState({ dirName: base.replace(/\/$/, '').split('/').pop() + ' (fixture)' }, () => this.loadProject()); }
@@ -1699,7 +1708,7 @@ class Component extends DCLogic {
     }
   }
   doReload() { const s = this.state; this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
-  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('pointerdown', this.onDocDown, true); clearTimeout(this.menuT); this.ro && this.ro.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
+  componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('pointerdown', this.onDocDown, true); clearTimeout(this.menuT); this.ro && this.ro.disconnect(); this.treeRO && this.treeRO.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
     e.preventDefault(); e.stopPropagation(); const x0 = e.clientX, w0 = this.state.rightPx;
@@ -1786,7 +1795,7 @@ class Component extends DCLogic {
   // linha de código (textarea) para uma regra — usada nas abas Elementos e Hierarquia
   codeRow(rule, indent, scopeNote) {
     const s = this.state; const cf = this.codeFor(rule); const buf = s.codeBuf[rule.key]; const code = buf !== undefined ? buf : cf.text; const dirty = buf !== undefined && buf !== cf.text; const isCss = /\.css$/.test(rule.file);
-    return { isNode: false, isCode: true, indent, code, rows: Math.min(16, Math.max(3, code.split('\n').length + 1)), dirty, codeBdr: dirty ? 'var(--sel)' : cf.real ? 'rgba(var(--selRgb),.45)' : 'var(--line1)',
+    return { isNode: false, isCode: true, codeKey: rule.key, indent, code, rows: Math.min(16, Math.max(3, code.split('\n').length + 1)), dirty, codeBdr: dirty ? 'var(--sel)' : cf.real ? 'rgba(var(--selRgb),.45)' : 'var(--line1)',
       codeLabel: (cf.real ? 'arquivo real · ' : 'síntese do mock · ') + rule.file + (rule.line ? ' L' + rule.line : ''),
       note: !isCss ? 'Fonte TS/JS: o código é referência — declarações "prop: valor;" dentro de { } são aplicadas ao mock e registradas em Ajustes (patch manual no .ts).' : (cf.real ? 'Edite as declarações e Aplicar: ' : 'Regra reconstruída dos estilos do mock (conecte a pasta 📁 para ver o bloco real). Aplicar: ') + (scopeNote || 'vale para todos os ' + rule.ids.length + ' uso(s) e entra em Ajustes (De → Para).'),
       set: e => { const v = e.target.value; this.setState(st => ({ codeBuf: { ...st.codeBuf, [rule.key]: v } })); }, key: e => { e.stopPropagation(); if (e.key === 'Escape') e.target.blur(); if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') this.applyCode(rule); },
@@ -1813,9 +1822,30 @@ class Component extends DCLogic {
   }
   revealInTree(id) {
     const box = this.treeScrollRef.current; if (!box) return; // árvore recolhida: fica como está
-    const row = box.querySelector('[data-node-id="' + id + '"]'); if (!row) return;
-    const rb = row.getBoundingClientRect(), bb = box.getBoundingClientRect(); const pad = 22;
-    if (rb.top < bb.top + pad) box.scrollTop -= (bb.top + pad) - rb.top; else if (rb.bottom > bb.bottom - pad) box.scrollTop += rb.bottom - (bb.bottom - pad);
+    const i = this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === id); if (i < 0) return;
+    const w = LayersCore.treeWindow({ scrollTop: box.scrollTop - TREE_PAD, viewH: box.clientHeight, rowH: TREE_ROW_H, rows: this._treeH, overscan: 0, reveal: i });
+    if (w.scrollTo === null) return; box.scrollTop = w.scrollTo + TREE_PAD; const top = box.scrollTop; // a faixa acompanha no mesmo lote, sem quadro vazio
+    this.setState(st => st.treeWin.top === top ? null : { treeWin: { ...st.treeWin, top } });
+  }
+  // S4.10: scroll da árvore -> faixa de linhas; só reconstrói a cada TREE_SCROLL_STEP (ou nas pontas), congela com foco de teclado/textarea (key por índice no sc-for reaproveita os nós)
+  treeSync(box, force) {
+    const top = box.scrollTop, st = this.state.treeWin; if (top === st.top) return;
+    if (!force) {
+      if (Math.abs(top - st.top) < TREE_SCROLL_STEP && top > 0 && top < box.scrollHeight - box.clientHeight - 1) return;
+      const ae = document.activeElement;
+      if (ae && ae !== box && box.contains(ae)) { if (ae.localName === 'textarea' || ae.matches(':focus-visible')) return; ae.blur(); }
+    }
+    const hov = this.state.hoverId; let out = false;
+    if (hov != null) { const hi = this._treeAll.findIndex(r => (r.id !== undefined ? r.id : r.nodeId) === hov);
+      if (hi >= 0) { const w = LayersCore.treeWindow({ scrollTop: top - TREE_PAD, viewH: box.clientHeight, rowH: TREE_ROW_H, rows: this._treeH, overscan: TREE_OVERSCAN }); out = hi < w.start || hi >= w.end; } } // linha desmontada nunca recebe mouseleave
+    this.setState(s2 => ({ treeWin: { ...s2.treeWin, top }, ...(out ? { hoverId: null } : null) }));
+  }
+  // S4.10: observa o contêiner e as linhas de código montadas; a chave é lida no callback (o mesmo div passa a mostrar outra regra)
+  observeTree() {
+    if (!this.treeRO) return; const box = this.treeScrollRef.current;
+    if (box !== this._treeBox) { if (this._treeBox) this.treeRO.unobserve(this._treeBox); this._treeBox = box; if (box) { this.treeRO.observe(box); if (box.scrollTop !== this.state.treeWin.top) this.setState(st => ({ treeWin: { ...st.treeWin, top: box.scrollTop } })); } }
+    if (!box || !this._treeCodeN) return;
+    box.querySelectorAll('[data-code-key]').forEach(el => { const k = el.dataset.codeKey; if (this.codeObs.get(el) === k) return; if (this.codeObs.has(el)) this.treeRO.unobserve(el); this.codeObs.set(el, k); this.treeRO.observe(el); });
   }
   // com a pasta conectada, lê a regra real do .css e guarda o conjunto de propriedades declaradas
   async loadRule(n) {
@@ -2250,6 +2280,11 @@ class Component extends DCLogic {
         if (cOpen) elemRows.push(this.codeRow(r, '30px'));
       });
     });
+    // S4.10: as linhas seguem construídas inline acima; a janela só fatia a lista da aba ativa (alturas: nó = null, código = medida ou estimativa)
+    const tAll = s.treeTab === 'hier' ? treeRows : elemRows;
+    const tH = tAll.map(r => r.isCode ? (this.codeH[r.codeKey] || 80 + r.rows * 15) : null);
+    const tw = LayersCore.treeWindow({ scrollTop: s.treeWin.top - TREE_PAD, viewH: s.treeWin.h || 600, rowH: TREE_ROW_H, rows: tH, overscan: TREE_OVERSCAN });
+    const treeSlice = tAll.slice(tw.start, tw.end); this._treeAll = tAll; this._treeH = tH; this._treeCodeN = treeSlice.filter(r => r.isCode).length;
     // recolher / expandir tudo (Hierarquia: raiz + filhos L1 ficam visíveis; Elementos: arquivos e regras)
     const collapsible = s.nodes.filter(n => n.depth >= 1 && kidsOf[n.id] && kidsOf[n.id].length);
     const hierAllClosed = collapsible.length > 0 && collapsible.every(n => s.treeClosed[n.id]);
@@ -2369,7 +2404,7 @@ class Component extends DCLogic {
       treeQ: s.treeQ, setTreeQ: e => this.setState({ treeQ: e.target.value }), clearTreeQ: () => this.setState({ treeQ: '' }), treeQOn: !!tq, treeQKey: e => { if (e.key === 'Escape') { this.setState({ treeQ: '' }); e.target.blur(); } e.stopPropagation(); },
       treeQHits: tq ? (s.treeTab === 'hier' ? treeHits + ' de ' + s.nodes.length : elemHits + ' de ' + ruleCount) : '', treeQPlaceholder: s.treeTab === 'hier' ? 'Buscar camada…' : 'Buscar arquivo, regra ou uso…',
       collapseAllCode: () => this.setState(s.treeTab === 'hier' ? { hierCode: {} } : { elCode: {} }), noCodeOpen, collapseCodeColor: noCodeOpen ? 'var(--line2)' : 'var(--fg2)', collapseCodeCursor: noCodeOpen ? 'default' : 'pointer', collapseCodeTitle: noCodeOpen ? 'Nenhum código aberto' : (s.treeTab === 'hier' ? 'Recolher todos os códigos abertos na árvore' : 'Recolher todos os códigos de regra abertos'),
-      treeHier: s.treeTab === 'hier', treeElems: s.treeTab === 'elems', elemRows, ruleCount, tabHier: () => this.setState({ treeTab: 'hier' }), tabElems: () => { this.setState({ treeTab: 'elems' }); this.loadFile(selFile); },
+      treeHier: s.treeTab === 'hier', treeElems: s.treeTab === 'elems', elemRows: s.treeTab === 'elems' ? treeSlice : [], ruleCount, tabHier: () => this.setState({ treeTab: 'hier' }), tabElems: () => { this.setState({ treeTab: 'elems' }); this.loadFile(selFile); },
       hierColor: s.treeTab === 'hier' ? 'var(--fg0)' : 'var(--fg3)', hierFont: (s.treeTab === 'hier' ? '700' : '600') + " calc(10px*var(--fs))/1 'JetBrains Mono',monospace", hierShadow: s.treeTab === 'hier' ? 'inset 0 -2px 0 var(--acc)' : 'none',
       elemsColor: s.treeTab === 'elems' ? 'var(--fg0)' : 'var(--fg3)', elemsFont: (s.treeTab === 'elems' ? '700' : '600') + " calc(10px*var(--fs))/1 'JetBrains Mono',monospace", elemsShadow: s.treeTab === 'elems' ? 'inset 0 -2px 0 var(--acc)' : 'none', treeQBdr: tq ? 'rgba(var(--warnRgb),.55)' : 'var(--line1)',
       treeModeHl: () => this.setState({ treeMode: 'hl' }), treeModeFilter: () => this.setState({ treeMode: 'filter' }), treeHlBg: s.treeMode === 'hl' ? 'rgba(var(--accRgb),.15)' : 'transparent', treeHlColor: s.treeMode === 'hl' ? 'var(--acc)' : 'var(--fg2)', treeFlBg: s.treeMode === 'filter' ? 'rgba(var(--accRgb),.15)' : 'transparent', treeFlColor: s.treeMode === 'filter' ? 'var(--acc)' : 'var(--fg2)',
@@ -2382,7 +2417,8 @@ class Component extends DCLogic {
       allGroupsGlyph: Object.values(s.grpClosed).filter(Boolean).length >= GROUPS.length ? '⊞' : '⊟', allGroupsTitle: Object.values(s.grpClosed).filter(Boolean).length >= GROUPS.length ? 'Expandir todas as seções' : 'Recolher todas as seções',
       toggleAllGroups: () => this.setState(st => { const allClosed = Object.values(st.grpClosed).filter(Boolean).length >= GROUPS.length; const g = {}; if (!allClosed) GROUPS.forEach(([t]) => { g[t] = true; }); return { grpClosed: g }; }),
       treeScrollRef: this.treeScrollRef, declaredCount: nDecl, inheritedCount: nInh, originSource: s.dir && /\.css$/.test(selFile) ? 'origem: ' + selFile : LayersCore.isManualSource(selFile) ? 'origem: ' + selFile + ' — patch manual (a fonte não é .css)' : 'origem: estilos do mock (conecte a pasta para ler o .css)',
-      treeRows, treeOpen: s.treeOpen, treeChevron: s.treeOpen ? '▾' : '▸', toggleTree: () => this.setState(st => ({ treeOpen: !st.treeOpen })),
+      treeRows: s.treeTab === 'hier' ? treeSlice : [], treePadTop: tw.top + 'px', treePadBot: tw.bottom + 'px', treeScroll: e => this.treeSync(e.currentTarget, false), treeBlur: e => { if (e.relatedTarget && e.currentTarget.contains(e.relatedTarget)) return; this.treeSync(e.currentTarget, true); },
+      treeOpen: s.treeOpen, treeChevron: s.treeOpen ? '▾' : '▸', toggleTree: () => this.setState(st => ({ treeOpen: !st.treeOpen })),
       treeCollapseAll, treeCollapseGlyph: '⊟', treeCollapseColor: treeAllClosed ? 'var(--line2)' : 'var(--fg2)', treeCollapseCursor: treeAllClosed ? 'default' : 'pointer', treeAllClosed, treeCollapseTitle: treeAllClosed ? 'Tudo já recolhido' : (s.treeTab === 'hier' ? 'Recolher todas as linhas (mantém raiz e L1 visíveis)' : 'Recolher todos os arquivos e regras'),
       colRef: this.colRef, topBarRef: this.topBarRef, colTop: (s.topBarH + 12) + 'px', colOpen: s.colOpen, colClosed: !s.colOpen, toggleCol: () => this.setState(st => ({ colOpen: !st.colOpen })),
       colW: s.colOpen ? 'calc(clamp(290px, 45%, 384px) * ' + s.colScale.toFixed(3) + ')' : '30px', startColResize: e => this.startColResize(e), resetColW: () => this.setState({ colScale: 1 }), colGripBg: s.colDrag ? 'rgba(var(--selRgb),.4)' : 'transparent', treeFlex: splitOn ? s.splitPct + ' 1 0px' : s.treeOpen ? '1 1 0px' : '0 0 auto', ajFlex: splitOn ? (100 - s.splitPct) + ' 1 0px' : s.ajOpen ? '1 1 0px' : '0 0 auto',
