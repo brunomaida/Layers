@@ -31,7 +31,7 @@ created: 2026-10-17
 
 1. Board listado no README sem arquivo em `boards/` (ou o inverso): o teste deve falhar nomeando o board.
 2. `canvas.json` com board ausente de `boards/` ou duas caixas sobrepostas: falha nomeando o par.
-3. Board com `<script src>`/`<link href>` `http(s)` : quebra a regra de nenhuma requisição externa.
+3. Board com `<script src>` externo (`http(s)`): quebra a regra de nenhuma requisição externa. O `<link>` do Google Fonts nos boards é permitido pelo contrato do README.
 4. Export velho: board editado no canvas e não reexportado (não testável; mitigado pelo passo "reexportar só os boards alterados" da skill).
 5. Decisão `states` × layouts perdida: registrada em `docs/superpowers/specs/` antes do plan-mode de S9.1.
 
