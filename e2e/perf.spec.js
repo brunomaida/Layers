@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers } from './perf-helpers.js';
+import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
@@ -17,6 +18,20 @@ const EXPECTED = [
   'orbit/traval-aa/mean-frame-ms',
   'orbit/traval-zoom/mean-frame-ms',
   'orbit/traval-zoom-ideal/mean-frame-ms',
+  'orbit/traval-tree-closed/mean-frame-ms',
+  'orbit/traval-tree-ideal/mean-frame-ms',
+  'orbit/traval-v1/mean-frame-ms',
+  'orbit/traval-v1-tree-ideal/mean-frame-ms',
+  'orbit/1500-tags/mean-frame-ms',
+  'orbit/1500-tags-tree-closed/mean-frame-ms',
+  'orbit/1500-tags-tree-ideal/mean-frame-ms',
+  'orbit/1500-tags-v1/mean-frame-ms',
+  'orbit/1500-tags-v1-tree-ideal/mean-frame-ms',
+  'tree/traval/hover-ms',
+  'tree/traval/select-ms',
+  'tree/1500-tags/hover-ms',
+  'tree/1500-tags/select-ms',
+  'tree/1500-tags/scroll-frame-ms',
   'explode/traval/toggle-ms',
 ];
 const results = [];
@@ -190,12 +205,76 @@ test('Orbit_ZoomedIdeal_RecordsFrameInterval', async ({ page }) => {
   expect(z.frames).toBeGreaterThanOrEqual(30);
 });
 
+// S4.7 go/no-go: the tree's share of the orbit frame and of hover/select renders. 'closed' collapses
+// the tree panel (rows built, not mounted); 'root' collapses the L0 row (one row built and mounted);
+// v1 simulates S4.8 V1 (no plane hit-test, so no hoverId churn during the drag).
+for (const [name, id, tags, mode, v1] of [
+  ['Orbit_TreeClosed_RecordsFrameInterval', 'orbit/traval-tree-closed/mean-frame-ms', 0, 'closed', false],
+  ['Orbit_TreeIdeal_RecordsFrameInterval', 'orbit/traval-tree-ideal/mean-frame-ms', 0, 'root', false],
+  ['Orbit_V1_RecordsFrameInterval', 'orbit/traval-v1/mean-frame-ms', 0, 'open', true],
+  ['Orbit_V1TreeIdeal_RecordsFrameInterval', 'orbit/traval-v1-tree-ideal/mean-frame-ms', 0, 'root', true],
+  ['Orbit_1500Tags_RecordsFrameInterval', 'orbit/1500-tags/mean-frame-ms', 1500, 'open', false],
+  ['Orbit_1500TagsTreeClosed_RecordsFrameInterval', 'orbit/1500-tags-tree-closed/mean-frame-ms', 1500, 'closed', false],
+  ['Orbit_1500TagsTreeIdeal_RecordsFrameInterval', 'orbit/1500-tags-tree-ideal/mean-frame-ms', 1500, 'root', false],
+  ['Orbit_1500TagsV1_RecordsFrameInterval', 'orbit/1500-tags-v1/mean-frame-ms', 1500, 'open', true],
+  ['Orbit_1500TagsV1TreeIdeal_RecordsFrameInterval', 'orbit/1500-tags-v1-tree-ideal/mean-frame-ms', 1500, 'root', true],
+]) {
+  test(name, async ({ page }) => {
+    await instrument(page);
+    if (tags) await inflateTraval(page, tags);
+    await page.goto('/?layers=fixtures/traval/');
+    await waitForScan(page, tags ? 1000 : 5, tags ? 40_000 : 20_000);
+    await treeMode(page, mode);
+    if (v1) await noPlaneHits(page);
+    const swaps = await countHoverSwaps(page);
+    const o = await orbitDrag(page, 1500);
+    rec(id, o.meanFrameMs, {
+      fps: o.fps,
+      p95FrameMs: o.p95FrameMs,
+      frames: o.frames,
+      loafCount: o.loafCount,
+      main: o.main,
+      hoverSwapsPerFrame: (await swaps()) / o.frames,
+      treeRowsMounted: await page.locator('[data-node-id]').count(),
+    });
+    expect(o.frames).toBeGreaterThanOrEqual(30);
+  });
+}
+
+for (const [name, id, tags, kind] of [
+  ['Tree_HoverRow_ReportsFrameCost', 'tree/traval/hover-ms', 0, 'hover'],
+  ['Tree_SelectRow_ReportsFrameCost', 'tree/traval/select-ms', 0, 'select'],
+  ['Tree_1500TagsHoverRow_ReportsFrameCost', 'tree/1500-tags/hover-ms', 1500, 'hover'],
+  ['Tree_1500TagsSelectRow_ReportsFrameCost', 'tree/1500-tags/select-ms', 1500, 'select'],
+]) {
+  test(name, async ({ page }) => {
+    await instrument(page);
+    if (tags) await inflateTraval(page, tags);
+    await page.goto('/?layers=fixtures/traval/');
+    await waitForScan(page, tags ? 1000 : 5, tags ? 40_000 : 20_000);
+    const c = await rowInputCost(page, kind);
+    rec(id, c.medianMs, { samples: c.samples, treeRowsMounted: await page.locator('[data-node-id]').count() });
+  });
+}
+
+// Baseline for the S4.7 window: with it, scrolling re-renders every 110 px (Task 6 guards this id).
+test('Tree_1500TagsScroll_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await inflateTraval(page, 1500);
+  await page.goto('/?layers=fixtures/traval/');
+  await waitForScan(page, 1000, 40_000);
+  await page.mouse.move(2, 2);
+  const o = await scrollFrames(page);
+  rec('tree/1500-tags/scroll-frame-ms', o.meanFrameMs, { p95FrameMs: o.p95FrameMs, frames: o.frames, scrolled: o.scrolled, treeRowsMounted: await page.locator('[data-node-id]').count() });
+  expect(o.scrolled).toBeGreaterThan(3000);
+});
+
 test('Orbit_Budget_Above50Fps', async () => {
   test.skip(!orbit, 'orbit measurement missing');
-  // Known gap (checklist D, S4.7 and S4.9): about 42 fps on the Traval mock; S4.8 measured plane attributes off the critical path.
+  // Known gap (checklist D, S4.9): about 42 fps on the Traval mock; S4.8 measured plane attributes off the critical path.
   // Flips to a hard failure once it passes, which is the signal to drop this line and keep the
   // budget enforced.
-  test.fail(true, 'orbit budget not met yet: S4.7 (virtual tree) and S4.9 (leaf grouping) are open');
+  test.fail(true, 'orbit budget not met yet: S4.9 (composited layers) is open; S4.10 (tree window at scale) does not move the Traval budget');
   expect(orbit.fps, `mean frame ${orbit.meanFrameMs.toFixed(1)} ms, p95 ${orbit.p95FrameMs.toFixed(1)} ms`).toBeGreaterThan(50);
 });
 
