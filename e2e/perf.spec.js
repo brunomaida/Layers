@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox } from './perf-helpers.js';
+import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers } from './perf-helpers.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
@@ -8,6 +8,13 @@ const EXPECTED = [
   'orbit/traval/mean-frame-ms',
   'orbit/traval-gcs-ideal/mean-frame-ms',
   'orbit/traval-panel-ideal/mean-frame-ms',
+  'orbit/traval-v1-no-hit/mean-frame-ms',
+  'orbit/traval-v2a-planes-no-will-change/mean-frame-ms',
+  'orbit/traval-v2b-world-no-will-change/mean-frame-ms',
+  'orbit/traval-wire-off/mean-frame-ms',
+  'orbit/traval-v3-empty-hidden/mean-frame-ms',
+  'orbit/traval-v4-half-hidden/mean-frame-ms',
+  'orbit/traval-aa/mean-frame-ms',
   'orbit/traval-zoom/mean-frame-ms',
   'orbit/traval-zoom-ideal/mean-frame-ms',
   'explode/traval/toggle-ms',
@@ -97,6 +104,46 @@ for (const [name, id, box] of [
     });
     expect(o.frames).toBeGreaterThanOrEqual(30);
     expect(o.gcsPerFrame, 'the memo stub must remove live reads during the drag').toBeLessThanOrEqual(0.05);
+  });
+}
+
+// S4.8 diagnosis, no app change: each variant overrides the scene before the drag. wire-off is the control
+// for V3 (V3 compares against it, not against orbit/traval); V4 only checks that plane cost is linear.
+// aa is a plain orbit run last: its delta against orbit/traval is the order bias of this fixed sequence.
+for (const [name, id, v] of [
+  ['Orbit_NoHitTest_RecordsFrameInterval', 'orbit/traval-v1-no-hit/mean-frame-ms', { css: '[data-s48-plane]{pointer-events:none!important}' }],
+  ['Orbit_PlanesNoWillChange_RecordsFrameInterval', 'orbit/traval-v2a-planes-no-will-change/mean-frame-ms', { css: '[data-s48-plane]{will-change:auto!important}' }],
+  ['Orbit_WorldNoWillChange_RecordsFrameInterval', 'orbit/traval-v2b-world-no-will-change/mean-frame-ms', { css: '[data-s48-world]{will-change:auto!important}' }],
+  ['Orbit_WireOff_RecordsFrameInterval', 'orbit/traval-wire-off/mean-frame-ms', { wireOff: true }],
+  ['Orbit_WireOffEmptyHidden_RecordsFrameInterval', 'orbit/traval-v3-empty-hidden/mean-frame-ms', { wireOff: true, hide: 'empty' }],
+  ['Orbit_HalfHidden_RecordsFrameInterval', 'orbit/traval-v4-half-hidden/mean-frame-ms', { hide: 'odd' }],
+  ['Orbit_AA_RecordsFrameInterval', 'orbit/traval-aa/mean-frame-ms', {}],
+]) {
+  test(name, async ({ page }) => {
+    await instrument(page);
+    await page.goto('/?layers=fixtures/traval/');
+    await waitForScan(page);
+    if (v.wireOff) await setWireAlpha(page, 0);
+    await markScene(page);
+    const census = await planeCensus(page);
+    const hidden = v.hide ? await hidePlanes(page, v.hide) : 0;
+    if (v.css) await page.addStyleTag({ content: v.css });
+    const swaps = await countPlaneHovers(page);
+    const o = await orbitDrag(page, 1500);
+    rec(id, o.meanFrameMs, {
+      fps: o.fps,
+      p95FrameMs: o.p95FrameMs,
+      frames: o.frames,
+      loafCount: o.loafCount,
+      loafScriptShare: o.loafScriptShare,
+      gcsPerFrame: o.gcsPerFrame,
+      main: o.main,
+      hoverSwapsPerFrame: (await swaps()) / o.frames,
+      census,
+      hidden,
+    });
+    expect(o.frames).toBeGreaterThanOrEqual(30);
+    if (v.hide) expect(hidden, 'planes hidden by the stub').toBeGreaterThan(0);
   });
 }
 
