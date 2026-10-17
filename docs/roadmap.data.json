@@ -98,7 +98,7 @@
     "type": "phase",
     "name": "Loader de projeto",
     "start": "2026-09-12",
-    "end": "2026-10-19",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
@@ -616,8 +616,8 @@
         "id": "S2.18",
         "type": "spec",
         "name": "Verificação manual da gravação real do template dc",
-        "start": "2026-10-17",
-        "end": "2026-10-19",
+        "start": "2026-10-18",
+        "end": "2026-10-20",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -864,9 +864,15 @@
             "type": "report",
             "path": "/[](../changelog.d/feature-261016-62-s2-22-loader-checkchanges.md)",
             "title": "feature-261016-62-s2-22-loader-checkchanges.md)"
+          },
+          {
+            "name": "docs-261017-62-s2-22-closeout-tracker.md",
+            "type": "report",
+            "path": "/changelog.d/docs-261017-62-s2-22-closeout-tracker.md",
+            "title": "Docs"
           }
         ],
-        "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–e no design; a parte WAVE (estados novos da gallery) fica fora deste repo",
+        "reason": "Workspace e CSV do Traval não aparecem no Layers: snapshot grava só o estado vazio e a cópia de CSS mascara as folhas reais; fatias a–f no design; a parte WAVE (estados novos da gallery) fica fora deste repo",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
