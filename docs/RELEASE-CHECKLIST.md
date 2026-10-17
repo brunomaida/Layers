@@ -5,7 +5,7 @@ solution: Layers
 
 # LAYERS — Checklist de release v1
 
-Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 42 concluídos, 3 parciais, 5 abertos.
+Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 51 concluídos, 2 parciais, 1 aberto.
 
 ## A. Setup local (visual idêntico)
 
