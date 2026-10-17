@@ -2398,9 +2398,9 @@ describe('BranchOf', () => {
     { id: '0', depth: 0 }, { id: '0.0', depth: 1 }, { id: '0.0.0', depth: 2 },
     { id: '0.1', depth: 1 }, { id: '0.10', depth: 1 }
   ];
-  const byId = new Map(nodes.map((n) => [n.id, n]));
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
 
-  it('Raiz_InclueRaizEDescendentesPorPrefixo', () => {
+  it('Raiz_IncluiRaizEDescendentesPorPrefixo', () => {
     expect([...core.branchOf(nodes, byId, '0.0')].sort()).toEqual(['0.0', '0.0.0']);
   });
 
@@ -2408,10 +2408,22 @@ describe('BranchOf', () => {
     expect([...core.branchOf(nodes, byId, '0.1')]).toEqual(['0.1']);
   });
 
+  it('ByIdObjetoSimples_NaoLanca', () => {
+    expect([...core.branchOf(nodes, {}, '0.1')]).toEqual(['0.1']);
+  });
+
   it('BranchOf_RaizInexistente_Null', () => {
     expect(core.branchOf(nodes, byId, '9.9')).toBeNull();
     expect(core.branchOf(nodes, byId, null)).toBeNull();
     expect(core.branchOf(nodes, byId, '')).toBeNull();
+  });
+});
+
+describe('InBranchOf', () => {
+  it('RaizEDescendentes_PorPrefixoComPonto', () => {
+    expect(core.inBranchOf('0.1', '0.1')).toBe(true);
+    expect(core.inBranchOf('0.1.2', '0.1')).toBe(true);
+    expect(core.inBranchOf('0.10', '0.1')).toBe(false);
   });
 });
 
@@ -2463,10 +2475,23 @@ describe('CtxMenuModel', () => {
 
   it('LayersKinds_AncestorSelectedDescendantOutside', () => {
     const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: null, collapseAt: null });
-    expect(m.layers.map((l) => [l.d, l.kind, l.count])).toEqual([
-      [0, 'ancestor', 1], [1, 'ancestor', 1], [2, 'ancestor', 2], [3, 'selected', 2],
-      [4, 'descendant', 2], [5, 'descendant', 1]
+    expect(m.layers).toEqual([
+      { d: 0, kind: 'ancestor', count: 1 }, { d: 1, kind: 'ancestor', count: 1 },
+      { d: 2, kind: 'ancestor', count: 2 }, { d: 3, kind: 'selected', count: 2 },
+      { d: 4, kind: 'descendant', count: 2, inBranch: 2 }, { d: 5, kind: 'descendant', count: 1, inBranch: 1 }
     ]);
+    const o = core.ctxMenuModel({ nodes, selId: '0.0.1', flat: true, explodeFrom: null, collapseAt: null });
+    expect(o.layers.map((l) => [l.d, l.kind, l.count, l.inBranch])).toEqual([
+      [0, 'ancestor', 1, undefined], [1, 'ancestor', 1, undefined], [2, 'selected', 2, undefined],
+      [3, 'descendant', 2, 1], [4, 'outside', 2, undefined], [5, 'outside', 1, undefined]
+    ]);
+  });
+
+  it('GhostPlane_DeeperThanCollapseAt_NoCollapseItem', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
+    expect(ids(m)).toEqual(['request']);
+    const at = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
+    expect(ids(at)).toEqual(['collapse', 'request']);
   });
 
   it('DepthsSemDescendentes_Outside', () => {
