@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, treeRow } from './tree-helpers.js';
 
 // S2.15: an origin that points at TS/JS is marked "manual" in the properties header and in the
 // Ajustes list. Traval maps its root (`.shell`) to `src/ui/shell.ts|.shell|3`, a file the fixture
@@ -27,12 +27,12 @@ const fits = (loc) => loc.evaluate((el) => {
 async function select(page, pick) {
   await page.goto('/?layers=fixtures/traval/');
   await readNodes(page);
-  await pick(page).first().click();
+  await (await pick(page)).click();
 }
 
 const NODES = [
-  ['ShortOrigin', (page) => page.locator('[data-node-id][title^=".shell"]')],
-  ['LongOrigin', (page) => page.locator('[data-node-id]').filter({ hasText: 'origin marker' })],
+  ['ShortOrigin', (page) => treeRow(page, { title: '.shell' })],
+  ['LongOrigin', (page) => treeRow(page, { text: 'origin marker' })],
 ];
 
 for (const [label, pick] of NODES) {
@@ -51,6 +51,6 @@ for (const [label, pick] of NODES) {
 test('Marker_CssOrigin_NoManualMark', async ({ page }) => {
   await page.goto('/?layers=fixtures/axai/');
   await readNodes(page);
-  await page.locator('[data-node-id][title^=".sum-stat"]').first().click();
+  await (await treeRow(page, { title: '.sum-stat' })).click();
   await expect(page.locator('[data-manual-mark]').filter({ hasText: 'manual' })).toHaveCount(0);
 });
