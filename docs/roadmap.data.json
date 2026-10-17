@@ -1309,7 +1309,7 @@
       "scaffold",
       "tests"
     ],
-    "progress": 88,
+    "progress": 92,
     "docs": [],
     "children": [
       {
@@ -1613,21 +1613,27 @@
         "name": "Agrupamento de folhas para reduzir camadas compostas no orbit",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s2-s4-closeout.md)",
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-17-s2-s4-closeout.md)",
             "title": "2026-10-17-s2-s4-closeout.md)"
+          },
+          {
+            "name": "feature-261017-0-s4-9-leaf-grouping.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261017-0-s4-9-leaf-grouping.md)",
+            "title": "feature-261017-0-s4-9-leaf-grouping.md)"
           }
         ],
-        "reason": "origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test",
+        "reason": "origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test; entregue: planos agrupados por z no arrasto, camadas compostas 429 para 31 e orbit do Traval 23,8 para 17,7 ms/frame (56,5 fps, orçamento fechado)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
