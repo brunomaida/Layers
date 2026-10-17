@@ -31,7 +31,7 @@ created: 2026-10-17
 
 1. Board listado no README sem arquivo em `boards/` (ou o inverso): o teste deve falhar nomeando o board.
 2. `canvas.json` com board ausente de `boards/` ou duas caixas sobrepostas: falha nomeando o par.
-3. Board com `<script src>`/`<link href>` `http(s)` : quebra a regra de nenhuma requisição externa.
+3. Board com `<script src>` externo (`http(s)`): quebra a regra de nenhuma requisição externa. O `<link>` do Google Fonts nos boards é permitido pelo contrato do README.
 4. Export velho: board editado no canvas e não reexportado (não testável; mitigado pelo passo "reexportar só os boards alterados" da skill).
 5. Decisão `states` × layouts perdida: registrada em `docs/superpowers/specs/` antes do plan-mode de S9.1.
 
@@ -44,7 +44,8 @@ created: 2026-10-17
 | `docs/design/ui-mock/boards/*.dc.html` | Export dos boards do canvas |
 | `docs/design/ui-mock/canvas.json` | Posições e títulos das caixas |
 | `test/uiMockCoverage.test.js` | Guarda de consistência README × canvas × boards |
-| `.claude/skills/layers-ui-mock/SKILL.md` | Fluxo "board primeiro, código depois" |
+| `.claude/skills/layers-ui-mock/SKILL.md` | Perfil do projeto sobre a skill genérica (T7) |
+| `~/.claude/skills/web-ui-mock/SKILL.md` | Skill genérica de mock de UI web (T7) |
 | `docs/superpowers/specs/2026-10-17-s3-5-s9-1-design-decisions.md` | Escolha V1/V2/V3 e decisão `states` × layouts |
 | `changelog.d/docs-261017-0-s3-5-ui-mock.md` | Fragmento da branch da infra |
 
@@ -141,6 +142,41 @@ created: 2026-10-17
 
 ---
 
+### Task 6: Alinhar os boards ao padrão visual do Layers
+
+**Files:**
+- Modify (canvas): `Main`, `Tema`, `Canvas`, `RotuloL0` (padrão do Traval da S2.22c) e `Base` (fidelidade)
+- Modify: `docs/design/ui-mock/boards/*.dc.html`, `docs/design/ui-mock/canvas.json`, `docs/design/ui-mock/README.md`
+
+**Interfaces:**
+- Consumes: `Base.dc.html` como referência do padrão (motor de tokens com `tema`/`selecao`, cromo dos painéis, cabeçalho de board) e os valores reais de `THEMES`/`ACCENTS`/`SELECTS` em `index.html` e os defaults de `docs/LOCAL-SETUP.md` (tema Gray · 1 Grafite, acento 5 · Cinza médio).
+- Produces: README § "Contrato de autoria" com o padrão concreto (tokens, props, cabeçalho, grade de tamanhos); 9 boards no mesmo padrão.
+
+- [ ] **Step 1:** Fixar o padrão no README § Contrato de autoria: motor de tokens copiado do `Base`, props `tema` (Gray · 1 Grafite padrão, Dark, Bright · 1 Papel) e `selecao`, cromo de painel (borda 1px `--line1`, raio 6px, cabeçalho mono caixa-alta 11px), cabeçalho de board (rótulo da leaf + título), tamanhos 960/1240 de largura.
+- [ ] **Step 2:** Despachar subagente `model: "opus"` para editar no canvas os 4 boards da S2.22c para o padrão (tokens reais em vez de `#60a5fa`/Dark fixo; conteúdo e decisões da S2.22c intactos; o mock Traval/WAVE dentro dos quadros continua sendo o assunto) e corrigir o `Base` (larguras de painel e logo reais a 1440×900; defaults do app; sem inventar elementos).
+- [ ] **Step 3:** Conferir com `Artifact read` cada board alterado; recusar mudança de conteúdo da S2.22c ou de cor/medida fora do padrão.
+- [ ] **Step 4:** Reexportar os boards alterados e `canvas.json`; rodar `npx vitest run test/uiMockCoverage.test.js`. Expected: PASS.
+- [ ] **Step 5:** Commit `docs(design): align the ui-mock boards to the Layers pattern`.
+
+---
+
+### Task 7: Skill genérica de mock de UI web
+
+**Files:**
+- Create: `~/.claude/skills/web-ui-mock/SKILL.md` (global, Tier 2 em `fact-setup-tiers`)
+- Modify: `.claude/skills/layers-ui-mock/SKILL.md` (vira perfil fino do projeto)
+
+**Interfaces:**
+- Produces: contrato de perfil que cada projeto web declara no README do seu `docs/design/ui-mock/`: URL do canvas, caminho do teste de cobertura, matriz região → board, fonte dos tokens, regra de visual congelado. `traval-ui-mock` (WAVE) não é editada: passa a poder referenciar a skill genérica quando o WAVE quiser.
+
+- [ ] **Step 1:** Verificar sobreposição (`fact-setup-tiers`): `wpf-ui-review` cobre WPF/`.uispec.json`, `traval-ui-mock` é skill de projeto do WAVE; nenhuma cobre web genérica. Veredito Tier 2, sem merge necessário.
+- [ ] **Step 2:** Escrever `web-ui-mock/SKILL.md`: quando usar (mudança visível em app web com mock `/design`), passos genéricos (localizar board na matriz, editar via `/design` Opus, reexportar só alterados, atualizar matriz, código e boards no mesmo commit, rodar o teste de cobertura do perfil), seção "Perfil do projeto" com os campos acima e a instrução de criar infra nova (README com Boards/Matriz, `canvas.json`, teste de cobertura nos moldes de `test/uiMockCoverage.test.js`).
+- [ ] **Step 3:** Reduzir `layers-ui-mock/SKILL.md` a perfil: aponta para `web-ui-mock` e lista os valores do Layers (canvas, teste, regiões, regra de visual congelado).
+- [ ] **Step 4:** `npm test`. Expected: PASS.
+- [ ] **Step 5:** Commit do perfil no repo (`docs: make layers-ui-mock a profile of the generic web-ui-mock skill`); a skill global fica em `~/.claude` e o commit lá segue a regra de branch daquele repo (reportar ao usuário se estiver em branch protegida).
+
+---
+
 ## Self-review
 
 - Cobertura da spec de sequenciamento: passos 1 (T1), 2 (T2-T3, T5), 3 (T4), 4 (T4 Step 6); passos 5-6 saem como plan-modes seguintes.
@@ -155,13 +191,15 @@ created: 2026-10-17
 | T2, T3, T5 | gen | Standard | Workhorse | teste, export e skill |
 | T4 passo 2 | gen | Architectural | Architect (Opus) | pedido do usuário: `/design` com Opus; decisões de produto |
 | T4 passos 1, 3-7 | gen | Standard | Workhorse | captura, conferência, export |
+| T6 passo 2 | gen | Architectural | Architect (Opus) | `/design` com Opus (pedido do usuário) |
+| T6 passos 1, 3-5; T7 | gen | Standard | Workhorse | padrão no README, conferência, export, skills |
 | Revisão pré-merge | review | Architectural | Architect | `adversarial-reviewer` (verifier ≥ generator) |
 
 > [!DECISION] gh-issue-gate
 > Issue-worthy: **No** — infra de docs/teste e design; as issues de feature nascem nos plan-modes de código de S3.5 e S9.1.
 
 > [!DECISION] phase-intake
-> Classificação: S3.5 = meso (leaf de S3); **S9 = macro nova** (Layouts múltiplos) com S9.1 = meso. Correção ao desenho anterior que dizia "sem fase nova".
+> Classificação: S3.5 = meso (leaf de S3); **S9 = macro nova** (Layouts múltiplos) com S9.1 = meso. Correção ao desenho anterior que dizia "sem fase nova". T6 e T7 (pedido de 2026-10-17) entram na S3.5 como parte da fatia da base do mock: sem nova linha no tracker.
 
 > [!DECISION] execution
-> Method: **Native** (Workhorse executa T1-T3, T5 na sessão; T4 passo 2 despacha um subagente Opus; revisão final por `adversarial-reviewer`). Poucas tarefas, dependências lineares, sem hot path.
+> Method: **Subagent-driven** (pedido do usuário, para o Atlas mostrar as tasks). Um implementador por task (T6 Opus para o design, T7 Workhorse) e revisor fresco por task; cada `description` de dispatch começa com o token da leaf (`S3.5 Task 6 …`) e cada commit de task leva `(S3.5 Task <id>)`. O plano está ligado às linhas S3.5 e S9.1 do tracker, então as duas leaves o mostram; dispatches de `S9.1 Task <id>` aparecem quando o plano de código da S9.1 existir.
