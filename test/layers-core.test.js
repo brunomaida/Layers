@@ -416,6 +416,11 @@ describe('MigrateConfig', () => {
     expect(JSON.parse(s.getItem('layers/v1/meta')).migratedFrom).toContain('layers-cfg');
   });
 
+  it('MigrateConfig_LogoGradAntigo_NaoMigra', () => {
+    const s = fakeStorage({ 'layers-cfg': JSON.stringify({ theme: 'Dark', logoGrad: 'x' }) });
+    expect(core.migrateConfig(s).ui).toEqual({ theme: 'Dark' });
+  });
+
   it('JaMigrado_NaoRefaz', () => {
     const s = fakeStorage({
       'layers/v1/meta': JSON.stringify({ schema: 1, savedAt: 1 }),
@@ -2203,5 +2208,24 @@ describe('AttrAction', () => {
       { label: 'Ruim', attr: { selector: '.nada2', name: 'onclick', value: 'x' } },
     ] }] }];
     expect(core.deadInteractions(items, count)).toEqual([{ label: 'Dock › Dir', sel: '.nada' }]);
+  });
+});
+
+describe('AppearanceDefaults', () => {
+  it('AppearanceDefaults_Valores_IguaisAosDataPropsAntigos', () => {
+    expect(core.APPEARANCE_DEFAULTS).toEqual({
+      theme: 'Gray · 1 Grafite', accent: '5 · Cinza médio', selectColor: 'Coral', originColors: 'Mono · cor de seleção',
+      panelHeader: 'B · Faixas rotuladas', sliderScale: 85, fontScale: 1, bmAlpha: 15,
+    });
+  });
+
+  it('AppearanceDefaults_CfgKeys_TodaChaveTemDefault', () => {
+    expect(core.CFG_KEYS).not.toContain('logoGrad');
+    for (const k of core.CFG_KEYS) expect(core.APPEARANCE_DEFAULTS).toHaveProperty(k);
+  });
+
+  it('AppearanceDefaults_Objeto_Congelado', () => {
+    expect(core.APPEARANCE_DEFAULTS).toBeTypeOf('object');
+    expect(Object.isFrozen(core.APPEARANCE_DEFAULTS)).toBe(true);
   });
 });

@@ -93,10 +93,11 @@ entrega. Detalhes em [../fonts/README.md](../fonts/README.md).
 
 ## Defaults visuais reais
 
-Sem `localStorage`, valem os `data-props` do `index.html` — **não** os literais do
-`:root` no `<style>`, que são apenas placeholders antes do `applyTheme()` rodar.
+Sem `localStorage`, valem os `LayersCore.APPEARANCE_DEFAULTS` (`lib/layers-core.js`) — **não** os
+literais do `:root` no `<style>`, que são apenas placeholders antes do `applyTheme()` rodar. O menu
+Aparência grava por cima (`layers/v1/ui`).
 
-| Prop | Default | Variável resolvida |
+| Chave | Default | Variável resolvida |
 |---|---|---|
 | `theme` | Gray · 1 Grafite | `--bg0: #2a2e34` |
 | `accent` | 5 · Cinza médio | `--acc: #8b96a3` |
@@ -105,6 +106,7 @@ Sem `localStorage`, valem os `data-props` do `index.html` — **não** os litera
 | `panelHeader` | B · Faixas rotuladas | — |
 | `sliderScale` | 85 | `--sliderS: 0.85` |
 | `fontScale` | 1 | `--fs: 1` |
+| `bmAlpha` | 15 | — |
 
 Se o seu render estiver diferente, o motivo mais provável é preferência salva no
 browser. Limpe e recarregue:

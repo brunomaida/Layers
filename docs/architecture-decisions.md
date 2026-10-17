@@ -10,6 +10,35 @@ Registrar o que foi **descartado** e por quê — é o que evita refazer a anál
 
 ---
 
+## 2026-10-16 · Manter os defaults de aparência no código
+
+**Contexto.** Os defaults de aparência moravam em `data-props` do `<script data-dc-script>` e eram
+repetidos em fallbacks do `index.html` (`THEMES.Dark`, `theme: 'Dark'`, `|| 'Dark'`, `|| 85`).
+A regra "último que mudou" apagava `state.cfg[k]` quando um tweak do host mudava. Isso supera a
+entrada **2026-09-12 · `data-props` é a fonte de verdade dos defaults visuais**.
+
+**Decisão.** `LayersCore.APPEARANCE_DEFAULTS` (congelado, em `lib/layers-core.js`) é o único dono dos
+defaults; `cfg(k)` lê `state.cfg` e cai nele. Precedência: `localStorage` (menu Aparência) ›
+constante › literais do `:root` (placeholder antes do `applyTheme()`). `data-props` fica só com
+`fixture` e `histMax`. `accent` e `sliderScale` ficam fixos na constante.
+
+**Alternativas descartadas.**
+
+| Opção | Por que não |
+|---|---|
+| B: controles novos de `accent` e `sliderScale` no menu Aparência | Muda o popover (visual congelado) e cria chave nova em `layers/v1/ui` |
+| C: só deduplicar os fallbacks e manter os tweaks | Não cumpre o item do checklist ("tweaks do host saem") e mantém duas fontes |
+
+**Consequências.**
+
+- Mudar um default visual = editar a constante, não o `index.html` nem o `:root`.
+- O host de design perde as seis props `theme`, `accent`, `selectColor`, `originColors`, `sliderScale` e `panelHeader`.
+- `accent` e `sliderScale` deixam de ser ajustáveis fora do código.
+- Um `logoGrad` salvo deixa de ser lido (a chave saiu de `CFG_KEYS`; nunca teve UI).
+- Um `theme` salvo inválido cai em Grafite (o default real), não mais em Dark.
+
+---
+
 ## 2026-09-18 · Ler apps renderizados por JS em processo separado; nunca iframe, nunca mesma origem
 
 **Contexto.** O editor é ele próprio um app dc (`<x-dc>` + `support.js`): o DOM só existe depois do
@@ -128,6 +157,8 @@ function loadReactUmd() {
 ---
 
 ## 2026-09-12 · `data-props` é a fonte de verdade dos defaults visuais
+
+> Superada pela entrada **Manter os defaults de aparência no código** (2026-10-16).
 
 **Contexto.** Três lugares descreviam o tema inicial e discordavam: o `README.md`
 (`Dark / acento 1 Aço / seleção Azul`), os literais do `:root` no `<style>`
