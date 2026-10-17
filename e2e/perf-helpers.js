@@ -154,7 +154,7 @@ export async function planeCensus(page, hide = false) {
     const m = 0.15 * Math.max(s.width, s.height);
     const sb = { left: s.left - m, right: s.right + m, top: s.top - m, bottom: s.bottom + m };
     const planes = [...stage.querySelectorAll('div')].filter(
-      (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+      (el) => el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)),
     );
     const c = { total: planes.length, offscreen: 0, partial: 0, opBelow005: 0, opZero: 0, bare: 0, empty: 0 };
     for (const el of planes) {
@@ -250,12 +250,13 @@ export async function markScene(page) {
     );
     if (!stage) throw new Error('stage element not found');
     const planes = [...stage.querySelectorAll('div')].filter(
-      (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+      (el) => el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)),
     );
     if (!planes.length) throw new Error('no planes found');
     planes.forEach((el) => el.setAttribute('data-s48-plane', ''));
     // Plane -> page -> world (index.html:2159-2160)
-    planes[0].parentElement.parentElement.setAttribute('data-s48-world', '');
+    const pg = planes[0].parentElement;
+    (pg.hasAttribute('data-plane-group') ? pg.parentElement : pg).parentElement.setAttribute('data-s48-world', '');
     return planes.length;
   });
 }
@@ -298,7 +299,7 @@ export async function countPlaneHovers(page) {
   await page.evaluate(() => {
     const st = (window.__s48hov = { n: 0, last: null });
     const plane = (el) => {
-      for (; el; el = el.parentElement) if (el.style && ((el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)) || el.hasAttribute('data-s49-plane'))) return el;
+      for (; el; el = el.parentElement) if (el.style && (el.hasAttribute('data-plane') || el.hasAttribute('data-s49-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)))) return el;
       return null;
     };
     st.fn = (e) => {
@@ -329,9 +330,11 @@ export async function groupPlanesByZ(page, { dropContain = false, probe = false 
       );
       if (!stage) throw new Error('stage element not found');
       const planes = [...stage.querySelectorAll('div')].filter(
-        (el) => el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor),
+        (el) => el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)),
       );
       if (!planes.length) throw new Error('no planes found');
+      // an app with data-plane groups natively while dragging (S4.9 Task E4): wrapping again would fight React
+      if (planes[0].hasAttribute('data-plane')) return { planes: planes.length, groups: stage.querySelectorAll('[data-plane-group]').length, ms: 0, probe: null, native: true };
       const pageEl = planes[0].parentElement;
       const pts = [];
       let before = null;

@@ -29,7 +29,7 @@ export async function treeMode(page, mode) {
 // disables their hit-test, so the drag no longer swaps hoverId.
 export async function noPlaneHits(page) {
   const n = await page.evaluate(() => {
-    const ps = [...document.querySelectorAll('*')].filter((el) => el.style && el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor));
+    const ps = [...document.querySelectorAll('*')].filter((el) => el.style && (el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor))));
     ps.forEach((el) => el.setAttribute('data-s47-v1', ''));
     return ps.length;
   });
@@ -43,7 +43,7 @@ export async function countHoverSwaps(page) {
   await page.evaluate(() => {
     const st = (window.__hov = { n: 0, last: null });
     const plane = (el) => {
-      for (; el; el = el.parentElement) if (el.style && el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)) return el;
+      for (; el; el = el.parentElement) if (el.style && (el.hasAttribute('data-plane') || (el.style.transform.startsWith('translateZ(') && /pointer|crosshair/.test(el.style.cursor)))) return el;
       return null;
     };
     st.fn = (e) => {
