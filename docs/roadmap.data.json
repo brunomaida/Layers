@@ -1096,7 +1096,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 50,
+    "progress": 65,
     "docs": [
       {
         "name": "2026-10-16-s3-5-visual-functions-new.md",
@@ -1202,18 +1202,18 @@
         "name": "Fonte única de aparência",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [
           {
-            "name": "2026-10-16-s3-4-appearance-source.md",
+            "name": "2026-10-16-s3-4-appearance-source.md)",
             "type": "spec",
-            "path": "/docs/superpowers/plans/2026-10-16-s3-4-appearance-source.md",
-            "title": "S3.4 — Fonte única de aparência (APPEARANCE_DEFAULTS) — Implementation Plan"
+            "path": "/[](superpowers/plans/2026-10-16-s3-4-appearance-source.md)",
+            "title": "2026-10-16-s3-4-appearance-source.md)"
           }
         ],
         "reason": "checklist C",
