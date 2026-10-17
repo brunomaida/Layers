@@ -1272,10 +1272,10 @@
             "title": "2026-10-16-s3-5-visual-functions-new.md)"
           },
           {
-            "name": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md)",
+            "name": "2026-10-17-s3-5-menu-de-contexto-explodir.md)",
             "type": "spec",
-            "path": "/[](superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md)",
-            "title": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md)"
+            "path": "/[](superpowers/plans/2026-10-17-s3-5-menu-de-contexto-explodir.md)",
+            "title": "2026-10-17-s3-5-menu-de-contexto-explodir.md)"
           },
           {
             "name": "2026-10-17-s3-5-s9-1-design-decisions.md",
@@ -1288,6 +1288,12 @@
             "type": "spec",
             "path": "/docs/superpowers/specs/2026-10-17-s3-5-s9-1-sequencing-design.md",
             "title": "S3.5 × S9.1 — ordem, fusão e mock /design"
+          },
+          {
+            "name": "2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
+            "type": "spec",
+            "path": "/docs/superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
+            "title": "Plano S3.5 × S9.1 — base local do mock e design conjunto"
           },
           {
             "name": "docs-261017-0-s3-5-ui-mock.md",
