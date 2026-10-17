@@ -2,7 +2,14 @@ import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 
 // S3.3: native `title` of the action buttons comes from LayersCore.tooltip(id) ("Action (K)").
-const NAV_IDS = ['orbitLeft', 'panUp', 'orbitRight', 'panLeft', 'frame', 'panRight', 'tiltUp', 'panDown', 'tiltDown', 'zoomOut', 'center', 'zoomIn', 'layerDown', 'resetView', 'layerUp'];
+// Literal glyph -> title table of the dock (not derived from the registry: a swapped id must fail here).
+const DOCK = [
+  ['↺', 'Girar à esquerda (Q)'], ['▲', 'Pan para cima (↑)'], ['↻', 'Girar à direita (E)'],
+  ['◀', 'Pan para a esquerda (←)'], ['⊕', 'Enquadrar seleção: centralizar + zoom (F)'], ['▶', 'Pan para a direita (→)'],
+  ['⇡', 'Inclinar para cima (W)'], ['▼', 'Pan para baixo (↓)'], ['⇣', 'Inclinar para baixo (S)'],
+  ['−', 'Zoom − (−)'], ['◎', 'Centralizar seleção sem mudar o zoom (C)'], ['+', 'Zoom + (+)'],
+  ['L−', 'Camada anterior (PgDn)'], ['0', 'Recentrar câmera (0)'], ['L+', 'Próxima camada (PgUp)'],
+];
 
 // The console listener goes up before goto: keyRun is built in componentDidMount, during the load.
 async function load(page, errors) {
@@ -13,11 +20,9 @@ async function load(page, errors) {
 
 test('Tooltip_NavBtns_NomeiaAcaoEAtalho', async ({ page }) => {
   await load(page);
-  const tips = await page.evaluate((ids) => ids.map((id) => LayersCore.tooltip(id)), NAV_IDS);
-  expect(new Set(tips).size).toBe(NAV_IDS.length);
-  for (const tip of tips) {
-    expect(tip).toMatch(/^.+ \(.+\)/);
-    await expect(page.locator('button[title="' + tip + '"]:visible').first(), tip).toBeVisible();
+  const grid = page.locator('div[style*="grid-template-columns: repeat(3, 28px)"]').first();
+  for (const [glyph, title] of DOCK) {
+    await expect(grid.getByRole('button', { name: glyph, exact: true }), glyph).toHaveAttribute('title', title);
   }
 });
 
@@ -69,6 +74,16 @@ test('Tooltip_ControleDeAcao_TemTitleNaoVazio', async ({ page }) => {
   await page.locator('[data-node-id][title^=".sum-stat"]').first().click();
   await page.getByText('Só este', { exact: false }).first().click();
   expect(await page.evaluate(untitledGlyphButtons)).toEqual([]);
+
+  // 1b. Elementos tab: a file row and a rule row opened, so file, rule and usage chevrons are all on screen
+  await page.getByRole('button', { name: 'Elementos' }).click();
+  const rules = page.locator('[data-node-id^="r:"]');
+  await expect(page.locator('[data-node-id^="f:"]').first()).toBeVisible();
+  if (!(await rules.count())) await page.locator('[data-node-id^="f:"]').first().click(); // the selected file may already be open
+  await rules.first().click();
+  expect(await page.locator('[data-node-id]').evaluateAll((rows) => rows.map((r) => r.dataset.nodeId[0]))).toEqual(expect.arrayContaining(['f', 'r']));
+  expect(await page.evaluate(untitledGlyphButtons)).toEqual([]);
+  await page.getByRole('button', { name: 'Hierarquia' }).click();
 
   // 2. the ? panel: Close names Esc and Escape closes it
   await page.keyboard.press('?');
