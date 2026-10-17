@@ -33,6 +33,7 @@ Estados: `[ ]` aberto · `[~]` parcial · `[x]` concluído. Hoje: 42 concluídos
 - [x] Ação `attr` em `interactions` (S2.22e): `e2e/attr-action.spec.js` cobre alternar `data-*` com o CSS reagindo, alternar `aria-*` entre `value` e `off`, o nome proibido (`onclick`) inerte e marcado, e o seletor sem alvo avisado; `LayersCore.attrAction`/`attrIsOn`/`attrToggle` e `deadInteractions` com `attr` estão em Vitest.
 - [x] Persistência de `changes` pendentes entre reloads (com aviso ao reabrir): `layers/v1/pending`, validade por hash das fontes (tudo-ou-nada), toast de restaurados/descartados; `e2e/pending-persist.spec.js`.
 - [x] Patch em `.css` por recorte de bytes no intervalo da declaração (`patchCssAt`): round-trip validado por teste, formatação e `!important` preservados, `@media` acerta o bloco. Origem TS/JS aparece como "manual" no cabeçalho do painel de propriedades e na lista de Ajustes (S2.15; `e2e/manual-marker.spec.js`).
+- [ ] Gravação dc em pasta real conferida à mão (conectar pasta → editar → aprovar → diff), passos em [LOCAL-SETUP.md](LOCAL-SETUP.md) § Verificação manual da gravação dc. O E2E `e2e/dc-write.spec.js` cobre o mesmo caminho em pasta OPFS (S2.18); falta só o disco real, que o Playwright não alcança (o seletor nativo exige gesto).
 
 ## C. Consistência de interface
 
