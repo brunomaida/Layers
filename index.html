@@ -78,7 +78,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div onClick="{{ exportCfg }}" title="Salvar tema, painéis e histórico num arquivo layers-config.json" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↑</span>Exportar configuração…</div>
           <div onClick="{{ importCfg }}" title="Carregar um layers-config.json; pastas locais precisam ser reconectadas" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
           <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histReset }}" title="Descarrega o projeto e volta à interface limpa (mantém tema e histórico)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div></sc-if>
-          <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="Relê do disco os arquivos do projeto (atalho R)" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
+          <sc-if value="{{ hasDir }}" hint-placeholder-val="{{ false }}"><div onClick="{{ reloadItem }}" title="{{ tipReload }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div></sc-if>
           <sc-if value="{{ hasDirProject }}" hint-placeholder-val="{{ false }}"><div onClick="{{ restructureItem }}" title="Relê tudo do 0: guarda o layout atual em .design-history/ e descarta ajustes, seleção e câmera" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)"><span style="width:16px;text-align:center;color:var(--fg3)">⟲</span>Reanalisar do 0</div></sc-if>
           <sc-if value="{{ histHasItems }}" hint-placeholder-val="{{ false }}"><div onClick="{{ histClear }}" style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 calc(10.5px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--err)"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div></sc-if>
         </div>
@@ -104,7 +104,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           </div>
         </sc-if>
       </div>
-      <button onClick="{{ openShortcuts }}" title="Atalhos de teclado e mouse (?)" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5"/><path d="M4 7h1M6.5 7h1M9 7h1M11.5 7h1M4 9.5h1M6.5 9.5h3M11.5 9.5h1"/></svg></button>
+      <button onClick="{{ openShortcuts }}" title="{{ tipShortcuts }}" style="height:24px;width:26px;display:flex;align-items:center;justify-content:center;border-radius:4px;border:0;background:transparent;color:var(--fg2);cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="1.5" y="4" width="13" height="8.5" rx="1.5"/><path d="M4 7h1M6.5 7h1M9 7h1M11.5 7h1M4 9.5h1M6.5 9.5h3M11.5 9.5h1"/></svg></button>
       <button onClick="{{ cancelAll }}" style="height:24px;padding:0 9px;border-radius:4px;border:1px solid transparent;background:transparent;color:var(--fg2);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Cancelar</button>
       <button onClick="{{ openSave }}" style="height:24px;padding:0 12px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:600 calc(12px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--sel);border-color:var(--sel);color:var(--onSel)">Salvar {{ changeBadge }}</button>
     </div>
@@ -258,7 +258,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
             <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
             <input type="text" value="{{ treeQ }}" onChange="{{ setTreeQ }}" onKeyDown="{{ treeQKey }}" placeholder="{{ treeQPlaceholder }}" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
             <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ treeQHits }}</span>
-            <sc-if value="{{ treeQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearTreeQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+            <sc-if value="{{ treeQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearTreeQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
           </div>
           <div style="display:inline-flex;height:22px;border:1px solid var(--line1);border-radius:4px;overflow:hidden;flex:0 0 auto">
             <button onClick="{{ treeModeHl }}" title="Só destacar as camadas que casam" style="height:100%;padding:0 7px;border:0;background:{{ treeHlBg }};color:{{ treeHlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Destacar</button>
@@ -379,14 +379,14 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
   <sc-if value="{{ rightOpen }}" hint-placeholder-val="{{ true }}"><div onMouseDown="{{ startRightResize }}" onDoubleClick="{{ resetRightW }}" title="Arrastar para ampliar o painel (até +25%) · duplo clique: largura padrão" style="position:absolute;left:-3px;top:0;bottom:0;width:6px;cursor:col-resize;z-index:7;background:{{ rightGripBg }}" style-hover="background:rgba(var(--selRgb),.4)"></div></sc-if>
   <sc-if value="{{ rightClosed }}" hint-placeholder-val="{{ false }}">
     <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:10px;padding:8px 0">
-      <button onClick="{{ toggleRight }}" title="Expandir o painel de propriedades (P)" style="all:unset;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg2);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">«</button>
+      <button onClick="{{ toggleRight }}" title="{{ tipRightOpen }}" style="all:unset;cursor:pointer;width:22px;height:22px;display:flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg2);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace" style-hover="background:var(--faint);color:var(--fg0)">«</button>
       <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 4px;border-radius:3px">L{{ selDepth }}</span>
       <span style="writing-mode:vertical-rl;font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">Propriedades &nbsp;·&nbsp; {{ selName }}</span>
     </div>
   </sc-if>
   <sc-if value="{{ rightOpen }}" hint-placeholder-val="{{ true }}">
     <sc-if value="{{ noProject }}" hint-placeholder-val="{{ false }}">
-    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--line1)"><span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Propriedades</span><button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--bg2);border-bottom:1px solid var(--line1)"><span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Propriedades</span><button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button></div>
     <div style="padding:16px 14px;font:500 calc(11px*var(--fs))/1.5 'Inter',sans-serif;color:var(--fg3);text-wrap:pretty">Sem projeto carregado não há elemento selecionado nem propriedades a editar.</div>
     </sc-if>
     <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ true }}">
@@ -396,7 +396,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="flex:1;min-width:0;font:700 calc(14px*var(--fs))/1.25 'JetBrains Mono',monospace;color:var(--fg0);overflow-wrap:anywhere;text-wrap:pretty">{{ selName }}</span>
         <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:4px 6px;border-radius:3px;white-space:nowrap">L{{ selDepth }}</span>
         <button onClick="{{ toggleRightWide }}" title="{{ rightWideTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:{{ rightWideColor }};font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">⇔</button>
-        <button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
+        <button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:8px">
         <span title="Arquivo de origem" style="display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 8px;border-radius:999px;background:rgba(var(--selRgb),.12);color:var(--sel);font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;min-width:0;max-width:100%"><span style="width:5px;height:5px;border-radius:50%;background:var(--violet);flex:0 0 auto"></span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ selFile }}</span></span>
@@ -406,7 +406,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <div style="display:flex;gap:2px;margin:8px 0 0 -7px;white-space:nowrap">
         <button onClick="{{ selectParent }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">↑ Pai</button>
         <button onClick="{{ isolateSel }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">{{ isoLabel }}</button>
-        <button onClick="{{ frameSel }}" title="Centralizar e ajustar o zoom na seleção (F)" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">⊕ Enquadrar</button>
+        <button onClick="{{ frameSel }}" title="{{ tipFrame }}" style="height:22px;padding:0 7px;border-radius:4px;border:0;background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer" style-hover="background:var(--faint);color:var(--fg0)">⊕ Enquadrar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">
         <div style="display:flex;align-items:center;gap:6px;height:20px;white-space:nowrap">
@@ -414,7 +414,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:1"></span>
           <sc-if value="{{ pcDirty }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ pcDiscard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar</button>
-            <button onClick="{{ pcApply }}" title="Aplicar (Ctrl+Enter)" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
+            <button onClick="{{ pcApply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
           </sc-if>
         </div>
         <sc-if value="{{ pcOpen }}" hint-placeholder-val="{{ false }}">
@@ -440,7 +440,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
           <input type="text" value="{{ propQ }}" onChange="{{ setPropQ }}" onKeyDown="{{ propQKey }}" placeholder="Buscar propriedade ou seção…" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
           <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ propQHits }}</span>
-          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
         </div>
         <button onClick="{{ toggleAllGroups }}" title="{{ allGroupsTitle }}" style="width:22px;height:22px;padding:0;display:inline-flex;align-items:center;justify-content:center;border:0;border-radius:4px;background:transparent;color:var(--fg2);font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;flex:0 0 auto">{{ allGroupsGlyph }}</button>
       </div>
@@ -462,7 +462,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="flex:1;height:1px;background:var(--line1)"></span>
         <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc)">L{{ selDepth }}</span>
         <button onClick="{{ toggleRightWide }}" title="{{ rightWideTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:{{ rightWideColor }};font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">⇔</button>
-        <button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
+        <button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
       </div>
       <div style="margin-top:6px;font:600 calc(15px*var(--fs))/1.25 'Inter',sans-serif;color:var(--fg0);overflow-wrap:anywhere;text-wrap:pretty">{{ selName }}</div>
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 6px;margin-top:5px;font:500 calc(10px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg2)">
@@ -474,7 +474,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);white-space:nowrap;margin-right:4px">Ações</span>
         <button onClick="{{ selectParent }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">↑ Pai</button>
         <button onClick="{{ isolateSel }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">{{ isoLabel }}</button>
-        <button onClick="{{ frameSel }}" title="Centralizar e ajustar o zoom na seleção (F)" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⊕ Enquadrar</button>
+        <button onClick="{{ frameSel }}" title="{{ tipFrame }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⊕ Enquadrar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:0">
         <div style="display:flex;align-items:center;gap:6px;height:20px;white-space:nowrap">
@@ -482,7 +482,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:1"></span>
           <sc-if value="{{ pcDirty }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ pcDiscard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar</button>
-            <button onClick="{{ pcApply }}" title="Aplicar (Ctrl+Enter)" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
+            <button onClick="{{ pcApply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
           </sc-if>
         </div>
         <sc-if value="{{ pcOpen }}" hint-placeholder-val="{{ false }}">
@@ -516,7 +516,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
           <input type="text" value="{{ propQ }}" onChange="{{ setPropQ }}" onKeyDown="{{ propQKey }}" placeholder="Buscar propriedade ou seção…" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
           <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ propQHits }}</span>
-          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
       </div>
         <div style="display:inline-flex;height:22px;border:1px solid var(--line1);border-radius:4px;overflow:hidden;flex:0 0 auto">
           <button onClick="{{ propModeHl }}" title="Só destacar o que casa" style="height:100%;padding:0 7px;border:0;background:{{ propHlBg }};color:{{ propHlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Destacar</button>
@@ -532,7 +532,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="flex:1;min-width:0;font:700 calc(13px*var(--fs))/1.2 'JetBrains Mono',monospace;color:var(--fg0);overflow-wrap:anywhere">{{ selName }}</span>
         <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:nowrap">{{ selSize }}</span>
         <button onClick="{{ toggleRightWide }}" title="{{ rightWideTitle }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:{{ rightWideColor }};font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">⇔</button>
-        <button onClick="{{ toggleRight }}" title="Recolher o painel de propriedades (P)" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
+        <button onClick="{{ toggleRight }}" title="{{ tipRightClose }}" style="all:unset;cursor:pointer;width:20px;height:20px;display:inline-flex;align-items:center;justify-content:center;border-radius:4px;color:var(--fg3);font:600 calc(14px*var(--fs))/1 'JetBrains Mono',monospace;flex:0 0 auto" style-hover="background:var(--faint);color:var(--fg0)">»</button>
       </div>
       <div style="display:flex;flex-wrap:wrap;align-items:baseline;gap:2px 8px;margin-top:5px;padding-left:32px">
         <span title="Arquivo de origem" style="font:italic 500 calc(10px*var(--fs))/1.4 'Inter',sans-serif;color:var(--sel);overflow-wrap:anywhere">{{ selFile }}</span>
@@ -541,7 +541,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <div style="display:flex;align-items:center;gap:12px;margin-top:8px;padding-left:32px;white-space:nowrap">
         <button onClick="{{ selectParent }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">↑ Pai</button>
         <button onClick="{{ isolateSel }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">{{ isoLabel }}</button>
-        <button onClick="{{ frameSel }}" title="Centralizar e ajustar o zoom na seleção (F)" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">⊕ Enquadrar</button>
+        <button onClick="{{ frameSel }}" title="{{ tipFrame }}" style="all:unset;cursor:pointer;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg2);padding-bottom:2px;border-bottom:1px dotted var(--line2)" style-hover="color:var(--fg0);border-color:var(--acc)">⊕ Enquadrar</button>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;margin-top:8px">
         <div style="display:flex;align-items:center;gap:6px;height:20px;white-space:nowrap">
@@ -549,7 +549,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:1"></span>
           <sc-if value="{{ pcDirty }}" hint-placeholder-val="{{ false }}">
             <button onClick="{{ pcDiscard }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Descartar</button>
-            <button onClick="{{ pcApply }}" title="Aplicar (Ctrl+Enter)" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
+            <button onClick="{{ pcApply }}" title="{{ tipCodeApply }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid transparent;background:var(--pri);color:var(--onPri);font:700 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Aplicar</button>
           </sc-if>
         </div>
         <sc-if value="{{ pcOpen }}" hint-placeholder-val="{{ false }}">
@@ -578,7 +578,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="color:var(--fg3);font-size:calc(11px*var(--fs));flex:0 0 auto">⌕</span>
           <input type="text" value="{{ propQ }}" onChange="{{ setPropQ }}" onKeyDown="{{ propQKey }}" placeholder="Buscar propriedade ou seção…" spellCheck="false" style="flex:1;min-width:0;height:20px;border:0;background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;outline:none">
           <span style="flex:0 0 auto;font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg2)">{{ propQHits }}</span>
-          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="Limpar (Esc)" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
+          <sc-if value="{{ propQOn }}" hint-placeholder-val="{{ false }}"><button onClick="{{ clearPropQ }}" title="{{ tipClear }}" style="all:unset;cursor:pointer;color:var(--fg2);font-size:calc(11px*var(--fs));line-height:1;flex:0 0 auto">✕</button></sc-if>
       </div>
         <button onClick="{{ propModeHl }}" title="Só destacar o que casa" style="height:20px;padding:0 6px;border:0;border-radius:3px;background:{{ propHlBg }};color:{{ propHlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;flex:0 0 auto">Destacar</button>
         <button onClick="{{ propModeFilter }}" title="Mostrar só o que casa" style="height:20px;padding:0 6px;border:0;border-radius:3px;background:{{ propFlBg }};color:{{ propFlColor }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer;flex:0 0 auto">Filtrar</button>
@@ -825,6 +825,8 @@ const GROUPS = [
   ['Tipografia', [['Fonte','fontFamily','enum'],['Tamanho','fontSize','len',{min:6,max:48,step:.25}],['Peso','fontWeight','enum'],['Estilo','fontStyle','enum'],['Espaçamento','letterSpacing','len',{min:-2,max:8,step:.1}],['Line height','lineHeight','len',{min:0,max:48,step:.05,units:LH_UNITS}],['Transform','textTransform','enum'],['Decoração','textDecorationLine','enum'],['Alinhamento','textAlign','enum'],['White space','whiteSpace','enum'],['Word break','wordBreak','enum'],['Text overflow','textOverflow','enum']]],
   ['Efeitos', [['Transform','transform','text'],['Filter','filter','text'],['Backdrop filter','backdropFilter','text'],['Transition','transition','text']]],
 ];
+// S3.3: action titles are built once from the core registry (LayersCore.tooltip)
+const TIP = { shortcuts: LayersCore.tooltip('shortcuts'), reload: LayersCore.tooltip('reload'), rightOpen: LayersCore.tooltip('rightPanel', 'Expandir o painel de propriedades'), rightClose: LayersCore.tooltip('rightPanel', 'Recolher o painel de propriedades'), frame: LayersCore.tooltip('frame'), codeApply: LayersCore.tooltip('codeApply'), clear: LayersCore.tooltip('fieldClear'), measOn: LayersCore.tooltip('measure', 'Medidas ligadas') + ' — distâncias entre a seleção e o elemento sob o cursor; sem hover, até o pai', measOff: LayersCore.tooltip('measure', 'Medidas desligadas') + ' — clique para mostrar distâncias no palco', closeEsc: LayersCore.tooltip('escape', 'Fechar'), isoExit: LayersCore.tooltip('escape', 'Sair do isolamento'), isolate: LayersCore.tooltip('isolate'), node: LayersCore.tooltip('toggleNode'), repoAdd: LayersCore.tooltip('fieldEnter', 'Registrar'), repoCancel: LayersCore.tooltip('fieldClear', 'Cancelar') };
 const UNDO_CAP = 100;
 const kebab = p => p.replace(/[A-Z]/g, m => '-' + m.toLowerCase());
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -2264,15 +2266,15 @@ class Component extends DCLogic {
     const pcApply = () => { const text = s.codeBuf[pcRule.key]; if (text === undefined) return; this.applyCodeText(pcRule, text, pcText); };
     const splitOn = s.treeOpen && s.ajOpen;
     const shortcutGroups = LayersCore.SHORTCUTS.map(([title, rows]) => ({ title, rows: rows.map(([keys, desc]) => ({ keys, desc })) }));
-    const nb = (glyph, title, go, on) => ({ glyph, title, go, bdr: on ? 'transparent' : 'var(--line1)', bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', color: on ? 'var(--acc)' : 'var(--fg2)' });
+    const nb = (glyph, id, go, on) => ({ glyph, title: LayersCore.tooltip(id), go, bdr: on ? 'transparent' : 'var(--line1)', bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', color: on ? 'var(--acc)' : 'var(--fg2)' });
     const sliderS = APPEARANCE_DEFAULTS.sliderScale / 100;
     const sl = (k, v, mn, mx) => { const pct = clamp((v - mn) / (mx - mn), 0, 1); const hov = s.hovSl === k; return { [k + 'Pos']: 'calc(' + (pct * 100).toFixed(2) + '% + ' + ((0.5 - pct) * 12 * sliderS).toFixed(1) + 'px)', [k + 'Hint']: hov ? 1 : 0, [k + 'ValColor']: hov ? '#ffffff' : 'var(--fg1)', [k + 'Glow']: hov ? '0 0 8px rgba(var(--selRgb),.95), 0 0 2px rgba(var(--selRgb),.7)' : 'none', [k + 'In']: () => this.setState({ hovSl: k }), [k + 'Out']: () => this.setState({ hovSl: null }) }; };
     const navBtns = [
-      nb('↺', 'Girar à esquerda (Q)', () => this.orbit(-10, 0)), nb('▲', 'Pan para cima (↑) · shift: no plano', () => this.pan(0, -40)), nb('↻', 'Girar à direita (E)', () => this.orbit(10, 0)),
-      nb('◀', 'Pan para a esquerda (←)', () => this.pan(-40, 0)), nb('⊕', 'Enquadrar seleção: centralizar + zoom (F)', () => this.frame(s.selId), true), nb('▶', 'Pan para a direita (→)', () => this.pan(40, 0)),
-      nb('⇡', 'Inclinar para cima (W)', () => this.orbit(0, 10)), nb('▼', 'Pan para baixo (↓)', () => this.pan(0, 40)), nb('⇣', 'Inclinar para baixo (S)', () => this.orbit(0, -10)),
-      nb('−', 'Zoom − (−)', () => this.zoomBy(1 / 1.2)), nb('◎', 'Centralizar seleção sem mudar o zoom (C)', () => this.frame(s.selId, true)), nb('+', 'Zoom + (+)', () => this.zoomBy(1.2)),
-      nb('L−', 'Camada anterior (PgDn)', () => this.stepActive(-1)), nb('0', 'Recentrar câmera (0)', () => this.resetView()), nb('L+', 'Próxima camada (PgUp)', () => this.stepActive(1)),
+      nb('↺', 'orbitLeft', () => this.orbit(-10, 0)), nb('▲', 'panUp', () => this.pan(0, -40)), nb('↻', 'orbitRight', () => this.orbit(10, 0)),
+      nb('◀', 'panLeft', () => this.pan(-40, 0)), nb('⊕', 'frame', () => this.frame(s.selId), true), nb('▶', 'panRight', () => this.pan(40, 0)),
+      nb('⇡', 'tiltUp', () => this.orbit(0, 10)), nb('▼', 'panDown', () => this.pan(0, 40)), nb('⇣', 'tiltDown', () => this.orbit(0, -10)),
+      nb('−', 'zoomOut', () => this.zoomBy(1 / 1.2)), nb('◎', 'center', () => this.frame(s.selId, true)), nb('+', 'zoomIn', () => this.zoomBy(1.2)),
+      nb('L−', 'layerDown', () => this.stepActive(-1)), nb('0', 'resetView', () => this.resetView()), nb('L+', 'layerUp', () => this.stepActive(1)),
     ];
     const m = s.modal; const sibs = this.sharedIds(s.selId); const hasSibs = sibs.length > 1;
     const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }) }; });
@@ -2360,7 +2362,7 @@ class Component extends DCLogic {
       ...sl('wire', s.wireAlpha, 0, 100), ...sl('dist', s.spacing, 30, 200), ...sl('persp', s.persp, 600, 3000), ...sl('fstr', s.focusStr, 0, 100), ...sl('oth', s.othersOp, 0, 100),
       explBg: 'transparent', explColor: s.flat ? 'var(--fg2)' : 'var(--sel)', explBdr: s.flat ? 'var(--line1)' : 'var(--sel)', focusBdr2: s.layerFocus ? 'var(--sel)' : 'var(--line1)', focusColor2: s.layerFocus ? 'var(--sel)' : 'var(--fg2)', explLabel: 'Explodido', explGlyph: s.flat ? '▤' : '▧',
       explTitle: s.flat ? 'Vista plana (camadas no mesmo plano) — clique para explodir' : 'Vista explodida (camadas separadas em profundidade) — clique para achatar', toggleFlat: () => this.setState(st => ({ flat: !st.flat })),
-      measOn: s.measure, toggleMeasure: () => this.setState(st => ({ measure: !st.measure })), measBdr: s.measure ? 'var(--sel)' : 'var(--line1)', measColor: s.measure ? 'var(--sel)' : 'var(--fg2)', measTitle: s.measure ? 'Medidas ligadas (M) — distâncias entre a seleção e o elemento sob o cursor; sem hover, até o pai' : 'Medidas desligadas (M) — clique para mostrar distâncias no palco',
+      measOn: s.measure, toggleMeasure: () => this.setState(st => ({ measure: !st.measure })), measBdr: s.measure ? 'var(--sel)' : 'var(--line1)', measColor: s.measure ? 'var(--sel)' : 'var(--fg2)', measTitle: s.measure ? TIP.measOn : TIP.measOff, tipShortcuts: TIP.shortcuts, tipReload: TIP.reload, tipRightOpen: TIP.rightOpen, tipRightClose: TIP.rightClose, tipFrame: TIP.frame, tipCodeApply: TIP.codeApply, tipClear: TIP.clear,
       scene: this.scene(), stageRef: this.stageRef, pageRef: this.pageRef,
       treeQ: s.treeQ, setTreeQ: e => this.setState({ treeQ: e.target.value }), clearTreeQ: () => this.setState({ treeQ: '' }), treeQOn: !!tq, treeQKey: e => { if (e.key === 'Escape') { this.setState({ treeQ: '' }); e.target.blur(); } e.stopPropagation(); },
       treeQHits: tq ? (s.treeTab === 'hier' ? treeHits + ' de ' + s.nodes.length : elemHits + ' de ' + ruleCount) : '', treeQPlaceholder: s.treeTab === 'hier' ? 'Buscar camada…' : 'Buscar arquivo, regra ou uso…',
