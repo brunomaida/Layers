@@ -2161,9 +2161,9 @@ class Component extends DCLogic {
     const el = this.els[s.selId]; const cs = el ? getComputedStyle(el) : null;
     const delBuf = k => this.setState(st => { const b = { ...st.buf }; delete b[k]; return { buf: b }; });
     const textH = (k, cur, prop) => ({ value: s.buf[k] !== undefined ? s.buf[k] : cur,
-      set: e => { const v = e.target.value; this.setState(st => ({ buf: { ...st.buf, [k]: v } })); },
-      commit: () => { if (s.buf[k] !== undefined && s.buf[k] !== cur) this.applyEdit(prop, s.buf[k]); else if (s.buf[k] !== undefined) delBuf(k); },
-      key: e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { delBuf(k); e.target.blur(); } } });
+      set: e => { const v = e.target.value; this._escField = null; this.setState(st => ({ buf: { ...st.buf, [k]: v } })); },
+      commit: () => { if (this._escField === k) { this._escField = null; return; } if (s.buf[k] !== undefined && s.buf[k] !== cur) this.applyEdit(prop, s.buf[k]); else if (s.buf[k] !== undefined) delBuf(k); },
+      key: e => { if (e.key === 'Enter') e.target.blur(); if (e.key === 'Escape') { this._escField = k; delBuf(k); e.target.blur(); } } });
     let nDecl = 0, nInh = 0, nEdit = 0, propHits = 0;
     const pq = s.propQ.trim().toLowerCase(); const pFilter = pq && s.propMode === 'filter'; const oSel = Object.keys(s.originSel).filter(k => s.originSel[k]); const oOn = oSel.length > 0;
     const orgKey = prop => s.changes.some(c => c.prop === prop && c.ids.includes(s.selId)) ? 'edited' : this.originOf(s.selId, prop);
