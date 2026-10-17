@@ -1357,6 +1357,18 @@ describe('TreeWindow', () => {
     expect(at(5)).toBe(88); // above: top edge lands rowH below the view top
     expect(at(25)).toBeNull(); // inside the padded view
   });
+
+  it('TreeWindow_RevelarLinhaZero_NaoMoveDoTopo', () => {
+    const at = (scrollTop, reveal) => core.treeWindow({ scrollTop, viewH: 220, rowH: 22, rows: rows(100, null), overscan: 0, reveal }).scrollTo;
+    expect(at(0, 0)).toBeNull(); // already at the top: the 4 px padding must stay visible
+    expect(at(-50, 0)).toBeNull(); // negative scrollTop clamps to 0
+    expect(at(300, 0)).toBe(0); // far below: the top edge lands at 0
+  });
+
+  it('TreeWindow_ListaVazia_JanelaVazia', () => {
+    expect(core.treeWindow({ scrollTop: 0, viewH: 220, rowH: 22, rows: [], overscan: 10, reveal: 0 }))
+      .toEqual({ start: 0, end: 0, top: 0, bottom: 0, total: 0, scrollTo: null });
+  });
 });
 
 describe('MovedSince', () => {
