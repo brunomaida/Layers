@@ -200,6 +200,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         </sc-if>
   <div ref="{{ stageRef }}" tabIndex="0" onWheel="{{ onWheel }}" onMouseMove="{{ onMove }}" onMouseDown="{{ onDown }}" onMouseUp="{{ onUp }}" onMouseLeave="{{ onUp }}" onDoubleClick="{{ onStageDbl }}" onContextMenu="{{ noCtx }}" style="position:relative;overflow:hidden;outline:none;background:radial-gradient(ellipse at 50% 40%, var(--stageA) 0%, var(--bg0) 70%);cursor:{{ stageCursor }}">
     {{ scene }}
+    <sc-if value="{{ branchOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:8px;bottom:8px;z-index:6;height:18px;display:inline-flex;align-items:center;padding:0 6px;border:1px solid var(--line1);border-radius:4px;background:rgba(var(--bg1Rgb),.9);font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2);pointer-events:none">▤ Plana · ▧ ramo</span></sc-if>
 
     
 
@@ -227,7 +228,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Camadas</span>
       <button onClick="{{ allLayers }}" title="Mostrar todas as camadas" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ allBdr }};background:{{ allBg }};color:{{ allColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">Todas</button>
       <sc-for list="{{ rail }}" as="r" hint-placeholder-count="6">
-        <button onClick="{{ r.pick }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="min-width:{{ railMinW }};height:24px;padding:{{ railPad }};border-radius:4px;border:1px solid {{ r.bdr }};background:{{ r.bg }};color:{{ r.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">L{{ r.d }} <span style="font-weight:400;opacity:.6;display:inline">{{ r.count }}</span></button>
+        <button onClick="{{ r.pick }}" onMouseEnter="{{ r.hover }}" onMouseLeave="{{ r.unhover }}" title="{{ r.title }}" style="min-width:{{ railMinW }};height:24px;padding:{{ railPad }};border-radius:4px;border:1px solid {{ r.bdr }};background:{{ r.bg }};color:{{ r.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">L{{ r.d }} <span style="font-weight:400;opacity:.6;display:inline">{{ r.count }}</span><span style="color:var(--sel)">{{ r.mark }}</span></button>
       </sc-for>
     </div></div>
     </sc-if>
@@ -1084,7 +1085,7 @@ const useLocalFaces = (href, warn) => {
 const loadInterSize = () => { const o = CONF.ui.interSize; return o && o.w ? { split: 210, ...o } : { w: 580, h: 0, split: 210 }; };
 class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
-    yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, dragging: false, stageW: 800, stageH: 600, interact: false,
+    yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
@@ -1114,7 +1115,7 @@ class Component extends DCLogic {
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
   // do state, que ja e a fonte de verdade — nao existe copia paralela para dessincronizar.
   uiSnapshot() { const s = this.state; const ui = { ...s.cfg }; UI_KEYS.forEach(k => { ui[k] = s[k]; }); return ui; }
-  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat } }; }
+  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat }, explodeFrom: s.explodeFrom, collapseAt: s.collapseAt }; }
   // Uma escrita por rajada, não uma por evento: orbitar a câmera dispara ~60 setState por
   // segundo e todos caem no mesmo trailing de 400 ms.
   persistSoon() { clearTimeout(this.persistT); this.persistT = setTimeout(() => this.writeConfig(), 400); }
@@ -1170,6 +1171,8 @@ class Component extends DCLogic {
     const own = !!id && sess.lastProjectId === id;
     const cam = own ? sess.camera : null;
     if (cam && !this.fixtureBase) this.setState({ yaw: +cam.yaw || 0, tilt: +cam.tilt || 0, zoom: +cam.zoom || 1, panX: +cam.panX || 0, panY: +cam.panY || 0, flat: !!cam.flat });
+    // S3.5: ramo explodido; um fixture sem projeto herda o da propria sessao (o id e validado no scan)
+    if ((own || (this.fixtureBase && !id)) && typeof sess.explodeFrom === 'string') this.setState({ explodeFrom: sess.explodeFrom, collapseAt: typeof sess.collapseAt === 'number' && isFinite(sess.collapseAt) ? sess.collapseAt : null });
     if (this.fixtureBase || !id) return; // #layers= manda no projeto
     const entry = (this.state.hist || []).find(x => x.id === id); if (!entry) return;
     this.markTab();
@@ -1330,7 +1333,7 @@ class Component extends DCLogic {
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep || this.fixtureBase ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -1691,7 +1694,7 @@ class Component extends DCLogic {
     if (seq !== this.loadSeq) return;
     this.bakNote = 'layout anterior salvo em ' + saved + '/'; this.ackDrift();
     this.dropPending(); if (this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
-    this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject();
+    this.pendingSel = null; this.setState({ stale: null, drift: null, explodeFrom: null, collapseAt: null }); this.loadProject();
   }
   async backupLayout() {
     const L = this.loaded; if (!L) throw new Error('nenhum layout carregado');
@@ -1760,7 +1763,8 @@ class Component extends DCLogic {
     walk(root, '0', 0, null, root.dataset.src || '');
     this.els = els;
     const selId = byId[this.state.selId] ? this.state.selId : '0';
-    this.setState({ nodes, byId, maxDepth, selId, isoId: this.state.isoId && byId[this.state.isoId] ? this.state.isoId : null });
+    const ef = this.state.explodeFrom; // S3.5: raiz do ramo que sumiu no scan desfaz o ramo
+    this.setState({ nodes, byId, maxDepth, selId, isoId: this.state.isoId && byId[this.state.isoId] ? this.state.isoId : null, ...(ef && !byId[ef] ? { explodeFrom: null, collapseAt: null } : {}) });
   }
 
   // memoizados: cam() é chamado várias vezes por render e visibleMax() percorre todos os nós
@@ -1769,12 +1773,22 @@ class Component extends DCLogic {
     let m = 0; nodes.forEach(n => { if (!isoId || n.id === isoId || n.id.startsWith(isoId + '.')) m = Math.max(m, n.depth); });
     this._vm = { nodes: nodes, isoId: isoId, m: m }; return m;
   }
+  // S3.5: ramo explodido na vista plana (null sem ramo); memoizado por nodes/raiz/corte como visibleMax
+  branchInfo() {
+    const s = this.state; if (!s.flat || !s.explodeFrom) return null;
+    const c = this._br; if (c && c.nodes === s.nodes && c.from === s.explodeFrom && c.at === s.collapseAt) return c.v;
+    const root = s.byId[s.explodeFrom]; const set = root ? LayersCore.branchOf(s.nodes, s.byId, s.explodeFrom) : null; let v = null;
+    if (set) { let m = root.depth; s.nodes.forEach(n => { if (set.has(n.id) && n.depth > m) m = n.depth; }); v = { set, root, span: Math.max(0, Math.min(m, s.collapseAt == null ? Infinity : s.collapseAt) - root.depth) }; }
+    this._br = { nodes: s.nodes, from: s.explodeFrom, at: s.collapseAt, v }; return v;
+  }
+  explodeHere(id) { if (!this.state.flat || !this.state.byId[id]) return; this.setState({ explodeFrom: id, collapseAt: null }); }
+  collapseHere(id) { const s = this.state; if (!s.explodeFrom || !s.byId[id]) return; if (id === s.explodeFrom) this.setState({ explodeFrom: null, collapseAt: null }); else this.setState({ collapseAt: s.byId[id].depth }); }
   cam() {
     const s = this.state; const ba = -32;
-    const k = s.flat + '|' + s.spacing + '|' + s.yaw + '|' + s.zoom + '|' + s.stageW + '|' + s.stageH + '|' + (s.focus ? 1 : 0) + '|' + s.isoId + '|' + ba + '|' + s.pageW + '|' + s.pageH;
+    const k = s.flat + '|' + s.spacing + '|' + s.yaw + '|' + s.zoom + '|' + s.stageW + '|' + s.stageH + '|' + (s.focus ? 1 : 0) + '|' + s.isoId + '|' + ba + '|' + s.pageW + '|' + s.pageH + '|' + s.explodeFrom + '|' + s.collapseAt;
     const c = this._cam; if (c && c.k === k && c.nodes === s.nodes) return c.v;
     const spacing = s.flat ? 0 : s.spacing; const base = s.flat ? 0 : ba; const yawT = clamp(base + s.yaw, -85, 85); const yr = Math.abs(yawT) * Math.PI / 180;
-    const spreadX = Math.sin(yr) * spacing * this.visibleMax(); const footW = s.pageW * Math.cos(yr) + spreadX; const fit = Math.min(s.stageW / (footW * 1.18 + 80), s.stageH / (s.pageH + 200)) || 0.5;
+    const br = this.branchInfo(); const spreadX = Math.sin(yr) * (spacing * this.visibleMax() + (br ? s.spacing * br.span : 0)); const footW = s.pageW * Math.cos(yr) + spreadX; const fit = Math.min(s.stageW / (footW * 1.18 + 80), s.stageH / (s.pageH + 200)) || 0.5;
     const v = { spacing, base, yawT, yr, fit, S: fit * s.zoom, shiftX: s.focus ? 0 : Math.sign(yawT || -1) * -spreadX * fit * 0.5 };
     this._cam = { k: k, nodes: s.nodes, v: v }; return v;
   }
@@ -2162,7 +2176,7 @@ class Component extends DCLogic {
 
   scene() {
     const s = this.state; const { nodes, byId, selId, hoverId, isoId, active, solo, tilt, zoom, panX, panY, focus, dragging, interact } = s;
-    const { spacing, yawT, fit, shiftX } = this.cam(); const P = s.persp; const wire = s.wire; const wa = s.wireAlpha / 100; const dimOthers = true; const fs = s.focusStr / 100; const hL = s.layerFocus ? (s.hoverLayer != null ? s.hoverLayer : (solo ? active : null)) : null; const oo = s.othersOp / 100;
+    const { spacing, yawT, fit, shiftX } = this.cam(); const br = this.branchInfo(); const P = s.persp; const wire = s.wire; const wa = s.wireAlpha / 100; const dimOthers = true; const fs = s.focusStr / 100; const hL = s.layerFocus ? (s.hoverLayer != null ? s.hoverLayer : (solo ? active : null)) : null; const oo = s.othersOp / 100;
     const scopeId = isoId || (selId !== '0' ? selId : null); let layerSet = null;
     if (hL != null) { layerSet = new Set(); const all = []; nodes.forEach(n => { if (n.depth !== hL || (isoId && !(n.id === isoId || n.id.startsWith(isoId + '.')))) return; all.push(n.id); if (!scopeId || n.id === scopeId || n.id.startsWith(scopeId + '.')) layerSet.add(n.id); }); if (!layerSet.size) all.forEach(i => layerSet.add(i)); }
     const fx = focus ? focus.x - s.pageW / 2 : 0, fy = focus ? focus.y - s.pageH / 2 : 0, fz = focus && focus.zd != null ? focus.zd * spacing : active * spacing;
@@ -2177,13 +2191,14 @@ class Component extends DCLogic {
       if (hL != null) { z = n.depth * spacing; dim = !layerSet.has(n.id); }
       else if (onPath(n.id) || inBranch(n.id) || (solo && n.depth === active)) z = n.depth * spacing;
       else { const parts = n.id.split('.'); let a = null; for (let i = parts.length - 1; i > 0; i--) { const pid = parts.slice(0, i).join('.'); if (onPath(pid)) { a = byId[pid]; break; } } const ad = a ? a.depth : 0; z = ad * spacing + (n.depth - ad) * 0.5; dim = true; }
+      const inBr = !!br && br.set.has(n.id); const sp = inBr ? s.spacing : spacing; if (inBr) z = LayersCore.branchZ(n.depth, br.root.depth, s.collapseAt, s.spacing); // S3.5: so o ramo ganha profundidade na vista plana
       const sel = n.id === selId, hov = n.id === hoverId, soloOff = solo && n.depth !== active;
-      const culled = !!cull && !sel && !hov && !(spacing === 0 && n.shadow !== 'none') && cull(n.x, n.y, n.w, n.h, z);
-      let op = n.opacity; if (hL != null) { if (dim) op *= oo; } else { if (dim && dimOthers && spacing > 0) op *= 0.35; if (spacing > 0 && z > activeZ + spacing * 0.5) op *= 0.3; if (soloOff) op = Math.min(op, 0.08); }
-      const onLayer = hL != null && layerSet.has(n.id); const showWire = wire && wa > 0 && !n.hasBg && !n.hasBorder && !n.text && !n.svg && !dim && spacing > 0 && !soloOff;
+      const culled = !!cull && !sel && !hov && !(sp === 0 && n.shadow !== 'none') && cull(n.x, n.y, n.w, n.h, z);
+      let op = n.opacity; if (hL != null) { if (dim) op *= oo; } else { if (dim && dimOthers && sp > 0) op *= 0.35; if (spacing > 0 && z > activeZ + spacing * 0.5) op *= 0.3; if (soloOff) op = Math.min(op, 0.08); }
+      const onLayer = hL != null && layerSet.has(n.id); const showWire = wire && wa > 0 && !n.hasBg && !n.hasBorder && !n.text && !n.svg && !dim && sp > 0 && !soloOff;
       const pv = prev[n.id]; const dz = !pv || pv.z !== z; const dop = !pv || pv.op !== op; nextPrev[n.id] = { z: z, op: op };
       const ptr = (dragging || (!dz && !dop)) ? 'none' : (dz && dop) ? tr : dz ? 'transform .35s ease' : 'opacity .3s ease';
-      zOf[n.id] = z; const pl = React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, culled: culled, interact: interact, fs: fs, wa: wa, spacing: spacing, H: this.H }); if (dragging) leaf.push({ id: n.id, z: z, el: pl }); else planes.push(pl);
+      zOf[n.id] = z; const pl = React.createElement(Plane, { key: n.id, n: n, z: z, dim: dim, op: op, sel: sel, hov: hov, onLayer: onLayer, showWire: showWire, soloOff: soloOff, tr: ptr, dragging: dragging, culled: culled, interact: interact, fs: fs, wa: wa, spacing: sp, H: this.H }); if (dragging) leaf.push({ id: n.id, z: z, el: pl }); else planes.push(pl);
       if (sel) label = React.createElement('div', { key: 'lbl', style: { position: 'absolute', left: n.x, top: n.y - 24, transform: 'translateZ(' + (z + 2) + 'px)', padding: '3px 7px', background: 'var(--sel)', color: 'var(--onSel)', font: '700 11px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none', transition: dragging ? 'none' : 'transform .35s ease' } }, n.name + '  ·  L' + n.depth);
     });
     this._prev = nextPrev;
@@ -2267,10 +2282,11 @@ class Component extends DCLogic {
       return { ...base, kText: true, ...textH(k, cur, prop) };
     }) }));
     propGroups.forEach(g => { g.dD = g.nD ? g.nD + 'D' : ''; g.dH = g.nH ? g.nH + 'H' : ''; g.dE = g.nE ? g.nE + 'E' : ''; g.hasAny = !!(g.nD || g.nH || g.nE); g.hasD = !!g.nD; g.hasH = !!g.nH; g.hasE = !!g.nE; g.sumTitle = g.total + ' propriedades · ' + g.nD + ' declarada(s) · ' + g.nH + ' herdada(s) · ' + g.nE + ' editada(s)'; });
-    const vmax = this.visibleMax(); const rail = [];
+    const vmax = this.visibleMax(); const rail = []; const exBr = this.branchInfo(); const exId = exBr ? exBr.root.id : null, exD = exBr ? exBr.root.depth : -1; // S3.5: raiz do ramo explodido
+    const EXP_TITLE = 'Explodido a partir daqui (vista plana). Botão direito › Recolher até aqui desfaz.';
     for (let d = 0; d <= vmax; d++) {
       const count = s.nodes.filter(n => n.depth === d && (!s.isoId || n.id === s.isoId || n.id.startsWith(s.isoId + '.'))).length; const on = d === s.active;
-      rail.push({ d, count, title: 'Camada L' + d + ' — ' + count + ' elemento(s). Clique para isolar a camada e selecionar nela', bg: on ? (s.solo ? 'rgba(var(--accRgb),.28)' : 'rgba(var(--accRgb),.15)') : 'transparent', bdr: on && s.solo ? 'var(--acc)' : on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ active: d, solo: true }), hover: () => { if (s.layerFocus) this.setState({ hoverLayer: d }); }, unhover: () => this.setState({ hoverLayer: null }) });
+      rail.push({ d, count, title: 'Camada L' + d + ' — ' + count + ' elemento(s). Clique para isolar a camada e selecionar nela', bg: on ? (s.solo ? 'rgba(var(--accRgb),.28)' : 'rgba(var(--accRgb),.15)') : 'transparent', bdr: on && s.solo ? 'var(--acc)' : on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', mark: d === exD ? '▧' : '', pick: () => this.setState({ active: d, solo: true }), hover: () => { if (s.layerFocus) this.setState({ hoverLayer: d }); }, unhover: () => this.setState({ hoverLayer: null }) });
     }
     const treeRows = []; const kidsOf = {}; s.nodes.forEach(n => { if (n.parent) (kidsOf[n.parent] = kidsOf[n.parent] || []).push(n); });
     const tq = s.treeQ.trim().toLowerCase(); const tFilter = tq && s.treeMode === 'filter'; const tHit = {}; let treeHits = 0;
@@ -2278,11 +2294,11 @@ class Component extends DCLogic {
     const pushRow = n => { if (tFilter && !tHit[n.id]) return; const kids = kidsOf[n.id] || []; const closed = !!s.treeClosed[n.id] && !(tFilter && tHit[n.id] === 'anc'); const hit = tHit[n.id] === 'hit'; const isSel = n.id === s.selId; const isHov = n.id === s.hoverId; const isIso = n.id === s.isoId; const kidsFoldable = kids.filter(k => (kidsOf[k.id] || []).length);
       const hc = !!s.hierCode[n.id];
       treeRows.push({ isNode: true, id: n.id, codeDisp: isSel || isHov || hc ? 'inline-flex' : 'none', codeTitle: hc ? 'Recolher o código do estilo' : 'Expandir o código do estilo abaixo desta linha', codeBdr: hc ? 'rgba(var(--accRgb),.55)' : 'var(--line1)', codeBg: hc ? 'rgba(var(--accRgb),.15)' : 'transparent', codeColor: hc ? 'var(--acc)' : 'var(--fg2)', toggleCode: e => { e.stopPropagation(); this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: !st.hierCode[n.id] } })); }, closeCode: () => this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: false } })),
-        hlBg: hit ? 'rgba(var(--warnRgb),.28)' : 'transparent', hlColor: hit ? 'var(--hlFg)' : 'inherit', op: tq && !hit && !tFilter ? .45 : 1, depth: n.depth, name: n.name, indent: (6 + n.depth * 12) + 'px', chev: kids.length ? (closed ? '▸' : '▾') : '·', chevTitle: kids.length ? TIP.node : 'Nada para expandir', countLabel: kids.length ? '(' + kids.length + ')' : '', badge: isIso ? 'isolado' : isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : '',
+        hlBg: hit ? 'rgba(var(--warnRgb),.28)' : 'transparent', hlColor: hit ? 'var(--hlFg)' : 'inherit', op: tq && !hit && !tFilter ? .45 : 1, depth: n.depth, name: n.name, indent: (6 + n.depth * 12) + 'px', chev: kids.length ? (closed ? '▸' : '▾') : '·', chevTitle: kids.length ? TIP.node : 'Nada para expandir', countLabel: kids.length ? '(' + kids.length + ')' : '', badge: (n.id === exId ? '▧ ' : '') + (isIso ? 'isolado' : isSel ? (n.frozen ? 'IMG ●' : '●') : n.frozen ? 'IMG' : ''),
         foldMark: kidsFoldable.length && kidsFoldable.every(k => s.treeClosed[k.id]) ? '⊞' : '⊟', foldTitle: kidsFoldable.length ? (kidsFoldable.every(k => s.treeClosed[k.id]) ? 'Expandir os filhos (um nível)' : 'Recolher os filhos (um nível)') : 'Sem filhos com subníveis',
         foldKids: e => { e.stopPropagation(); if (!kidsFoldable.length) return; const allClosed = kidsFoldable.every(k => s.treeClosed[k.id]); this.setState(st => { const tc = { ...st.treeClosed }; kidsFoldable.forEach(k => { tc[k.id] = !allClosed; }); if (!allClosed) tc[n.id] = false; return { treeClosed: tc }; }); },
         isoBtn: e => { e.stopPropagation(); if (isIso) this.setState({ isoId: null }, () => this.resetView()); else this.isolate(n.id); }, isoTitle: isIso ? TIP.isoExit : 'Isolar este elemento (= duplo clique)', isoBdr: isIso ? 'rgba(var(--selRgb),.55)' : 'var(--line1)', isoBg: isIso ? 'rgba(var(--selRgb),.15)' : 'transparent', isoColor: isIso ? 'var(--sel)' : 'var(--fg2)',
-        title: n.name + ' · L' + n.depth + (kids.length ? ' · ' + kids.length + ' filho(s)' : '') + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar', bg: isSel ? 'rgba(var(--selRgb),.15)' : isHov ? 'rgba(var(--selRgb),.08)' : 'transparent', color: isSel || isIso ? 'var(--sel)' : 'var(--fg0)',
+        title: n.name + ' · L' + n.depth + (kids.length ? ' · ' + kids.length + ' filho(s)' : '') + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar' + (n.id === exId ? ' — ' + EXP_TITLE : ''), bg: isSel ? 'rgba(var(--selRgb),.15)' : isHov ? 'rgba(var(--selRgb),.08)' : 'transparent', color: isSel || isIso ? 'var(--sel)' : 'var(--fg0)',
         select: () => this.select(n.id), isolate: e => { e.stopPropagation(); this.isolate(n.id); }, hover: () => this.setState({ hoverId: n.id }), unhover: () => this.setState({ hoverId: null }),
         toggle: e => { e.stopPropagation(); this.setState(st => ({ treeClosed: { ...st.treeClosed, [n.id]: !st.treeClosed[n.id] } })); } });
       if (hc && this.els[n.id]) { const [file, selector, line] = ruleOf(n); const one = s.scope === 'one'; const ids = one ? [n.id] : [n.id, ...s.nodes.filter(m => m.own && m.src === n.src && m.id !== n.id).map(m => m.id)];
@@ -2441,7 +2457,7 @@ class Component extends DCLogic {
       explBg: 'transparent', explColor: s.flat ? 'var(--fg2)' : 'var(--sel)', explBdr: s.flat ? 'var(--line1)' : 'var(--sel)', focusBdr2: s.layerFocus ? 'var(--sel)' : 'var(--line1)', focusColor2: s.layerFocus ? 'var(--sel)' : 'var(--fg2)', explLabel: 'Explodido', explGlyph: s.flat ? '▤' : '▧',
       explTitle: s.flat ? 'Vista plana (camadas no mesmo plano) — clique para explodir' : 'Vista explodida (camadas separadas em profundidade) — clique para achatar', toggleFlat: () => this.setState(st => ({ flat: !st.flat })),
       measOn: s.measure, toggleMeasure: () => this.setState(st => ({ measure: !st.measure })), measBdr: s.measure ? 'var(--sel)' : 'var(--line1)', measColor: s.measure ? 'var(--sel)' : 'var(--fg2)', measTitle: s.measure ? TIP.measOn : TIP.measOff, tipShortcuts: TIP.shortcuts, tipReload: TIP.reload, tipRightOpen: TIP.rightOpen, tipRightClose: TIP.rightClose, tipFrame: TIP.frame, tipCodeApply: TIP.codeApply, tipClear: TIP.clear,
-      scene: this.scene(), stageRef: this.stageRef, pageRef: this.pageRef,
+      branchOn: !!exBr, explodeHere: id => this.explodeHere(id), collapseHere: id => this.collapseHere(id), scene: this.scene(), stageRef: this.stageRef, pageRef: this.pageRef,
       treeQ: s.treeQ, setTreeQ: e => this.setState({ treeQ: e.target.value }), clearTreeQ: () => this.setState({ treeQ: '' }), treeQOn: !!tq, treeQKey: e => { if (e.key === 'Escape') { this.setState({ treeQ: '' }); e.target.blur(); } e.stopPropagation(); },
       treeQHits: tq ? (s.treeTab === 'hier' ? treeHits + ' de ' + s.nodes.length : elemHits + ' de ' + ruleCount) : '', treeQPlaceholder: s.treeTab === 'hier' ? 'Buscar camada…' : 'Buscar arquivo, regra ou uso…',
       collapseAllCode: () => this.setState(s.treeTab === 'hier' ? { hierCode: {} } : { elCode: {} }), noCodeOpen, collapseCodeColor: noCodeOpen ? 'var(--line2)' : 'var(--fg2)', collapseCodeCursor: noCodeOpen ? 'default' : 'pointer', collapseCodeTitle: noCodeOpen ? 'Nenhum código aberto' : (s.treeTab === 'hier' ? 'Recolher todos os códigos abertos na árvore' : 'Recolher todos os códigos de regra abertos'),
