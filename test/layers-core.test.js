@@ -2257,6 +2257,16 @@ describe('LayoutBackupPaths', () => {
   it('MockNaRaiz_MantemONome', () => {
     expect(core.layoutBackupPaths('s', 'mock.html').mock).toBe('.design-history/layout-s/mock.html');
   });
+
+  it('MocksDeMesmoBasenameEmLayoutsDistintos_NaoColidem', () => {
+    const a = core.layoutBackupPaths('s', 'app/index.html');
+    const b = core.layoutBackupPaths('s', 'admin/index.html', 'admin');
+    const c = core.layoutBackupPaths('s', 'shop/index.html', 'shop');
+    expect(b.mock).toBe('.design-history/layout-s/layouts/admin/index.html');
+    expect(new Set([a.mock, b.mock, c.mock]).size).toBe(3);
+    expect(b.dir).toBe(a.dir);
+    expect(b.manifest).toBe(a.manifest);
+  });
 });
 
 describe('SnapshotOriginCovered', () => {

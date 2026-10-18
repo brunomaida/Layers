@@ -1389,7 +1389,8 @@ class Component extends DCLogic {
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
-  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(true); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
+  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(true); const bk = this.baseKey; LayersCore.clearLayoutEntries(LS_STORE, bk); delete this.layoutMap[bk || '-']; this.unloadProject(); // S9.1a: sibling layouts' pending entries and the remembered layout go too (unloadProject clears viewCache, badges, otherRequests, reqFloor)
+ this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
     const pv = this.pendingView; this.pendingView = null; // consumido ja aqui: uma carga superada nunca o vaza para a seguinte (S9.1a)
@@ -1853,19 +1854,29 @@ class Component extends DCLogic {
     const seq = this.loadSeq;
     let saved; try { saved = await this.backupLayout(); } catch (e) { this.toast('Reanálise cancelada: o backup do layout falhou — ' + e.message, 'warn'); return; }
     if (seq !== this.loadSeq) return;
-    this.bakNote = 'layout anterior salvo em ' + saved + '/'; this.ackDrift();
+    this.bakNote = 'layout anterior salvo em ' + saved.dir + '/' + (saved.files.length ? ' (+ ' + saved.files.join(', ') + ')' : '') + (saved.warns.length ? ' · mock não lido, fora do backup: ' + saved.warns.join(', ') : ''); this.ackDrift();
+    delete this.viewCache[LayersCore.stateMapKey(this.baseKey, this.state.project.layoutId)]; // S9.1a: the active layout restarts on the default view; layoutMap keeps it mounted
     this.dropPending(); if (this.pendingKey) this.rewritePending(); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
     this.pendingSel = null; this.setState({ stale: null, drift: null, explodeFrom: null, collapseAt: null }); this.loadProject();
   }
   async backupLayout() {
     const L = this.loaded; if (!L) throw new Error('nenhum layout carregado');
     const at = new Date().toISOString().slice(0, 19).replace(/[-:]/g, '').replace('T', '-'); const p = LayersCore.layoutBackupPaths(at, L.mockPath);
-    const dir = this.state.dir; // as duas gravacoes valem para a pasta do clique, nao para uma conectada depois
+    const dir = this.state.dir; // as gravacoes valem para a pasta do clique, nao para uma conectada depois
+    // S9.1a: mock of every OTHER declared layout; a failed read is a warning, a failed write cancels like the rest
+    const P = this.state.project, base = P.man.base ? String(P.man.base).replace(/^\/+|\/+$/g, '') + '/' : '', extra = [], warns = [];
+    for (const l of LayersCore.projectLayouts(P.man)) {
+      if (l.id === P.layoutId) continue;
+      const st = LayersCore.pickState(l.states, this.stateMap[LayersCore.stateMapKey(this.baseKey, l.id)]), src = joinPath(base, st ? st.mock : l.mock || 'layers/mock.html');
+      if (src === L.mockPath) continue;
+      try { extra.push({ dest: LayersCore.layoutBackupPaths(at, src, l.id).mock, text: await (await (await this.fileHandle(src, false)).getFile()).text() }); } catch (e) { warns.push(l.name); }
+    }
     try {
       await this.writeText(p.manifest, L.manifest);
       if (this.state.dir !== dir) throw new Error('a pasta conectada mudou durante o backup');
       await this.writeText(p.mock, L.mock);
-      return p.dir;
+      for (const x of extra) await this.writeText(x.dest, x.text);
+      return { dir: p.dir, files: extra.map(x => x.dest.slice(p.dir.length + 1)), warns };
     } catch (e) {
       // backup parcial nao conta: remove o carimbo meio escrito (melhor esforco)
       try { const h = await dir.getDirectoryHandle('.design-history'); await h.removeEntry(p.dir.split('/').pop(), { recursive: true }); } catch (e2) {}

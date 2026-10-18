@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes, lastTreeRow } from './tree-helpers.js';
 import { act, open, reloadWith } from './ctx-helpers.js';
+import { listDisk, readDisk } from './folder-helpers.js';
 
 // S9.1a Task 2: layers.json › layouts mounts ONE layout at a time (one shadow root). No strip yet: switchLayout is
 // reached through the component instance (`act`); the keys it writes are part of the contract (docs: Chaves).
@@ -554,4 +555,74 @@ test('Layouts_Interactions_FilteredByLayout', async ({ page }) => {
   await settled(page, 'replay');
   expect(await inter()).toEqual([[0, 'hint'], [2, 'rpl']]);
   expect(await labels()).toEqual({ all: 1, cfg: 0, rpl: 1 });
+});
+
+// S9.1a Task 6: Reanalisar backs up every declared layout's mock, keeps the mounted layout; Zerar interface closes the layout keys.
+// Test-local project: the shared fixture's config/replay mocks move to two folders under the SAME basename (index.html).
+async function sameBasenameProject(page) {
+  await open(page, 'multi-layout');
+  await page.evaluate(async () => {
+    const put = async (dir, name, text) => { const w = await (await dir.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+    const layers = await window.__proj.getDirectoryHandle('layers');
+    const man = JSON.parse(await (await (await window.__proj.getFileHandle('layers.json')).getFile()).text());
+    man.layouts.find((l) => l.id === 'config').mock = 'layers/cfg/index.html';
+    man.layouts.find((l) => l.id === 'replay').mock = 'layers/rpl/index.html';
+    await put(await layers.getDirectoryHandle('cfg', { create: true }), 'index.html', '<!doctype html><html><body><div id="cfg-title">Config</div></body></html>');
+    await put(await layers.getDirectoryHandle('rpl', { create: true }), 'index.html', '<!doctype html><html><body><div id="rpl-bar">Replay</div></body></html>');
+    await put(window.__proj, 'layers.json', JSON.stringify(man));
+  });
+  await reloadWith(page);
+  await act(page);
+  await settled(page, 'main');
+}
+
+test('Layouts_Reanalisar_BacksUpAllLayoutMocks', async ({ page }) => {
+  await sameBasenameProject(page);
+  await act(page, 'doRestructure');
+  await expect.poll(async () => (await listDisk(page, '.design-history')).length).toBe(1);
+  const stamp = '.design-history/' + (await listDisk(page, '.design-history'))[0];
+  await expect.poll(() => listDisk(page, stamp + '/layouts/replay')).toEqual(['index.html']);
+  expect(await listDisk(page, stamp)).toEqual(['layers.json', 'layouts', 'main.html']);
+  expect(await listDisk(page, stamp + '/layouts')).toEqual(['config', 'replay']);
+  expect(await readDisk(page, stamp + '/layouts/config/index.html')).toContain('cfg-title');
+  expect(await readDisk(page, stamp + '/layouts/replay/index.html')).toContain('rpl-bar');
+  // the unreadable `broken` mock is a warning in the toast, not a failure
+  await expect(page.getByText(/layouts\/config\/index\.html, layouts\/replay\/index\.html\)/)).toBeVisible({ timeout: 10000 });
+  await expect(page.getByText(/mock não lido, fora do backup: Broken/)).toBeVisible();
+});
+
+test('Layouts_Reanalisar_KeepsActiveLayout', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  const keys = () => page.evaluate(() => Object.keys(window.__logic.viewCache).sort());
+  expect(await keys()).toEqual(['folder:proj', 'folder:proj|config', 'folder:proj|replay']);
+  await act(page, 'doRestructure');
+  await expect(page.getByText(/layout anterior salvo em \.design-history\/layout-/)).toBeVisible({ timeout: 10000 });
+  await settled(page, 'config');
+  expect(await layoutId(page)).toBe('config');
+  expect((await mounted(page)).ids).toEqual(['cfg-field', 'cfg-panel', 'cfg-title']);
+  expect(await page.evaluate(() => window.__logic.layoutMap['folder:proj'])).toBe('config');
+  // only the active layout's remembered view goes; the others keep theirs
+  expect(await keys()).toEqual(['folder:proj', 'folder:proj|replay']);
+});
+
+test('Layouts_ResetUi_ClearsLayoutKeys', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await seedPending(page, { 'folder:proj|replay': 0, 'folder:proj|broken': 0, 'folder:proj': 0 });
+  await act(page, 'addRequest', '0.1');
+  await expect.poll(async () => Object.keys(await storedPending(page)).sort()).toEqual(['folder:proj', 'folder:proj|broken', 'folder:proj|config', 'folder:proj|replay']);
+  await act(page, 'resetUI');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project)).toBeNull();
+  expect(await page.evaluate(() => ({ map: window.__logic.layoutMap['folder:proj'], cache: window.__logic.viewCache, other: window.__logic.otherRequests, floor: window.__logic.reqFloor, badges: window.__logic.state.layoutBadges }))).toEqual({ map: undefined, cache: {}, other: {}, floor: 0, badges: {} });
+  // `<base>|*` is gone; the exact `<base>` entry (main's) is left alone while another layout was active
+  expect(Object.keys(await storedPending(page))).toEqual(['folder:proj']);
 });
