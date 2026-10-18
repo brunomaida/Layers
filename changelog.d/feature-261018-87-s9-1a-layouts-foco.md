@@ -8,7 +8,7 @@ adr: none
 - Helpers puros em `LayersCore` (`projectLayouts`, `pickLayout`, `layoutPendingKey`, `stateMapKey`, `interactionsFor`, `mergeLayoutRequests`, `touchLayoutEntries`, `clearLayoutEntries`) e a fixture `multi-layout`.
 
 ### Changed
-- Chaves por layout: `pending` e `stateMap` em `<projeto>|<layout>` (o `main` e o projeto sem `layouts` mantêm as de antes); `session` ganha `layouts` e `viewLayout` só com 2+ layouts. Zerar interface limpa `<projeto>|*`.
+- Chaves por layout: `pending` e `stateMap` em `<projeto>|<layout>` (o `main` e o projeto sem `layouts` mantêm as de antes); `session` ganha `layouts` (com o mapa não vazio) e `viewLayout` (só com 2+ layouts). Zerar interface limpa `<projeto>|*`.
 
 ### Tests
 - Vitest: helpers de layout. Playwright: `layouts` (faixa, chaves, vista, pendentes, requisições, backup) e `perf`.
