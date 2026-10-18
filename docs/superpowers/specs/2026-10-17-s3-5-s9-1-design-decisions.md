@@ -34,6 +34,20 @@ Decisões do usuário sobre os boards do canvas `https://claude.ai/artifact/YAjn
 | `interactions` | só o mock único | `interactions[].layout` opcional; `deadInteractions` por layout |
 | botão direito | `onContextMenu = noCtx` bloqueia (`index.html` ~201) | a S3.5 troca `noCtx` pelo menu de contexto |
 
+## Divergências do código (S3.5)
+
+Onde o que foi entregue difere dos boards `S35Menu` e `S35Requisicao`. Os boards continuam sendo a referência visual; as linhas abaixo são desvios conhecidos, não decisões novas.
+
+| Item do board | Como ficou no código | Motivo |
+|---|---|---|
+| Selo do ramo explodido no canto inferior esquerdo | Canto inferior direito (`▤ Plana · ▧ ramo`) | O canto esquerdo fica sob a coluna da Árvore; o superior direito fica sob o dock |
+| Dica do submenu cabe em 164 px (`L6+ → L5`) | A linha "Recolher até aqui" com a dica passa dos 164 px e a dica encosta no recuo direito | Mesmos estilos do board; a geometria desenhada já estourava. Largura congelada, não alterada |
+| Planos recolhidos fantasma/tracejados e irmãos do ramo sem esmaecimento | Não implementados | Fora do escopo da fatia; o ramo só ganha profundidade (`branchZ`) e os planos recolhidos voltam ao plano daquele nível |
+| `caminho` com `:nth-of-type` | Só os nomes das camadas L0..nó, unidos por ` > ` | O índice por tipo não existe no modelo de nós; o `nodeKey` (`arquivo\|seletor\|linha`) já ancora a busca |
+| Nome do estado do mock no registro da requisição | Ausente do registro | A S9.1 traz o layout/estado como parte do escopo (`layoutId`, hoje fixo em `'main'`) |
+| Versão do app no cabeçalho do Markdown | Travessão (`—`) | A interface não mostra versão em lugar nenhum |
+| `Mostrar no palco` sempre ativo | Desabilitado quando a requisição está "alvo a confirmar" | O id posicional (`nodeId`) só descreve o DOM de um hash igual e é removido no restauro com deriva |
+
 ## Limites conhecidos dos boards
 
 - `Base` reproduz a UI a 1440×900 com larguras de painel (340 px, coluna de 384 px) e logo reais, medidos no app.

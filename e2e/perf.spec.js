@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers, reapplyMarks } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
+import { act, goFlat } from './ctx-helpers.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
@@ -30,6 +31,7 @@ const EXPECTED = [
   'orbit/1500-tags-tree-ideal/mean-frame-ms',
   'orbit/1500-tags-v1/mean-frame-ms',
   'orbit/1500-tags-v1-tree-ideal/mean-frame-ms',
+  'orbit/1500-tags-branch-exploded/mean-frame-ms',
   'tree/traval/hover-ms',
   'tree/traval/select-ms',
   'tree/1500-tags/hover-ms',
@@ -387,6 +389,46 @@ test('Tree_1500TagsScroll_RecordsFrameInterval', async ({ page }) => {
 test('Orbit_Budget_Above50Fps', async () => {
   test.skip(!orbit, 'orbit measurement missing');
   expect(orbit.fps, `mean frame ${orbit.meanFrameMs.toFixed(1)} ms, p95 ${orbit.p95FrameMs.toFixed(1)} ms`).toBeGreaterThan(50);
+});
+
+// S3.5: flat view at ~1,500 tags with the largest branch exploded (explodeFrom, set through the same `act` helper the
+// context-menu spec uses): only that branch gets depth, and the orbit must keep the same budget as the plain drag.
+test('Orbit_BranchExploded_Above50Fps', async ({ page }) => {
+  await instrument(page);
+  await inflateTraval(page, 1500);
+  await page.goto('/?layers=fixtures/traval/');
+  await waitForScan(page, 1000, 40_000);
+  await goFlat(page);
+  await act(page);
+  // root = the non-root node with the largest subtree (ids are dotted paths, a descendant starts with `root.`)
+  const { root, size } = await page.evaluate(() => {
+    const ids = window.__logic.state.nodes.map((n) => n.id);
+    let best = { root: null, size: 0 };
+    for (const id of ids) {
+      if (id === '0') continue;
+      const size = ids.filter((x) => x === id || x.startsWith(id + '.')).length;
+      if (size > best.size) best = { root: id, size };
+    }
+    return best;
+  });
+  expect(size, `branch ${root} must be big enough to matter`).toBeGreaterThan(100);
+  const st = await act(page, 'explodeHere', root);
+  expect(st.explodeFrom).toBe(root);
+  await page.waitForTimeout(600); // let the plane transforms (.35s) settle before the timed drag
+  const o = await orbitDrag(page, 1500);
+  rec('orbit/1500-tags-branch-exploded/mean-frame-ms', o.meanFrameMs, {
+    fps: o.fps,
+    p95FrameMs: o.p95FrameMs,
+    frames: o.frames,
+    loafCount: o.loafCount,
+    loafScriptShare: o.loafScriptShare,
+    gcsPerFrame: o.gcsPerFrame,
+    main: o.main,
+    branchRoot: root,
+    branchSize: size,
+  });
+  expect(o.frames).toBeGreaterThanOrEqual(30);
+  expect(o.fps, `mean frame ${o.meanFrameMs.toFixed(1)} ms, p95 ${o.p95FrameMs.toFixed(1)} ms, branch ${root} (${size} nodes)`).toBeGreaterThan(50);
 });
 
 test('Explode_Toggle_ReportsFrameCost', async ({ page }) => {
