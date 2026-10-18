@@ -224,3 +224,53 @@ test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({
   expect(await page.evaluate(() => ({ key: window.__logic.pendingKey, id: window.__logic.state.project.layoutId }))).toEqual({ key: 'fx:fixtures/multi-layout|replay', id: 'replay' });
   expect((await mounted(page)).ids).toEqual(['rpl-bar', 'rpl-frame', 'rpl-frame2', 'rpl-title']);
 });
+
+// S9.1a Task 3: the LAYOUTS strip (bottom bar). Chips are native buttons; the badge is read once per load.
+const chip = (page, id) => page.locator('[data-layout-chip="' + id + '"]');
+
+test('Layouts_Strip_HiddenForSingleLayout', async ({ page }) => {
+  await loaded(page, '/?layers=fixtures/multi-state/');
+  await expect(page.getByText('Camadas', { exact: true }).first()).toBeVisible();
+  await expect(page.getByText('Layouts', { exact: true })).toHaveCount(0);
+  await expect(page.locator('[data-layout-chip]')).toHaveCount(0);
+  await loaded(page, '/?layers=fixtures/traval/');
+  await expect(page.locator('[data-layout-chip]')).toHaveCount(0);
+});
+
+test('Layouts_Strip_ClickSwitchesLayout', async ({ page }) => {
+  await loaded(page);
+  await expect(page.locator('[data-layout-chip]')).toHaveCount(4);
+  await expect(chip(page, 'main')).toHaveAttribute('aria-pressed', 'true');
+  await expect(chip(page, 'config')).toHaveAttribute('aria-pressed', 'false');
+  await expect(chip(page, 'config')).toHaveAttribute('title', 'Config');
+  await chip(page, 'config').click();
+  await expect.poll(() => layoutId(page)).toBe('config');
+  await expect.poll(async () => (await mounted(page)).ids).toEqual(['cfg-field', 'cfg-panel', 'cfg-title']);
+  await expect(chip(page, 'config')).toHaveAttribute('aria-pressed', 'true');
+  await expect(chip(page, 'main')).toHaveAttribute('aria-pressed', 'false');
+  await expect(chip(page, 'config')).toContainText('●');
+  await chip(page, 'main').click();
+  await expect.poll(() => layoutId(page)).toBe('main');
+  await expect.poll(async () => (await mounted(page)).ids).toEqual(['main-a', 'main-title']);
+  await expect(chip(page, 'main')).toHaveAttribute('aria-pressed', 'true');
+});
+
+test('Layouts_Strip_BadgeShowsPendingOfOtherLayout', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await expect(page.locator('[data-layout-badge]')).toHaveCount(0);
+  await chip(page, 'config').click();
+  await expect.poll(() => layoutId(page)).toBe('config');
+  await typeShadow(page);
+  await chip(page, 'main').click();
+  await expect.poll(() => layoutId(page)).toBe('main');
+  await expect(page.locator('[data-layout-badge="config"]')).toHaveText('1');
+  await expect(chip(page, 'config')).toHaveAttribute('title', /Config — 1 pendente/);
+  await expect(page.locator('[data-layout-badge="main"]')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__logic.state.layoutBadges)).toEqual({ config: 1 });
+  expect(await page.evaluate(() => window.__logic.reqFloor)).toBe(0);
+  // the active layout never carries a badge: back on config its own count disappears
+  await chip(page, 'config').click();
+  await expect.poll(() => layoutId(page)).toBe('config');
+  await expect(page.locator('[data-layout-badge]')).toHaveCount(0);
+});

@@ -225,6 +225,14 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     <div style="position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(180deg, rgba(var(--bg0Rgb),0), rgba(var(--bg0Rgb),.9));pointer-events:none"></div>
     <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;left:12px;right:12px;bottom:0;z-index:8;display:flex;justify-content:center;padding:10px 12px;pointer-events:none"><div style="pointer-events:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px;max-width:100%;padding:3px 6px;border-radius:6px;background:rgba(var(--bg0Rgb),.82)">
+      <sc-if value="{{ hasLayouts }}" hint-placeholder-val="{{ false }}">
+      <div style="flex-basis:100%;display:flex;flex-wrap:wrap;align-items:center;gap:4px">
+        <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Layouts</span>
+        <sc-for list="{{ layoutChips }}" as="c" hint-placeholder-count="3">
+          <button onClick="{{ c.pick }}" title="{{ c.title }}" aria-pressed="{{ c.pressed }}" data-layout-chip="{{ c.id }}" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ c.bdr }};background:{{ c.bg }};color:{{ c.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">{{ c.mark }}{{ c.name }}<sc-if value="{{ c.hasBadge }}" hint-placeholder-val="{{ false }}"> <span data-layout-badge="{{ c.id }}" style="font-weight:400;opacity:.6">{{ c.badge }}</span></sc-if></button>
+        </sc-for>
+      </div>
+      </sc-if>
       <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Camadas</span>
       <button onClick="{{ allLayers }}" title="Mostrar todas as camadas" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ allBdr }};background:{{ allBg }};color:{{ allColor }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">Todas</button>
       <sc-for list="{{ rail }}" as="r" hint-placeholder-count="6">
@@ -1194,7 +1202,7 @@ class Component extends DCLogic {
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], reqSel: null, mdOpen: false,
-    toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
+    layoutBadges: {}, toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
   // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
@@ -1217,7 +1225,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
+  reqFloor = 0; pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1441,6 +1449,10 @@ class Component extends DCLogic {
     const hs = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null, ph: { html: this.partHash(html), css: phCss, dc: this.partHash(dcText) } };
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
+    // S9.1a: badge and R<n> floor of the OTHER layouts, read once per load (never in writeConfig: it runs on every camera burst)
+    const layoutBadges = {}; let reqFloor = 0;
+    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
+    this.reqFloor = reqFloor;
     // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
     const plan0 = LayersCore.restorePlan(saved, hash);
     const plan = incomplete ? { keep: [], dropped: 0, requests: plan0.requests, confirm: plan0.requests.length > 0 } : plan0;
@@ -1457,7 +1469,7 @@ class Component extends DCLogic {
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -1515,7 +1527,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: {}, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -2534,6 +2546,8 @@ class Component extends DCLogic {
     }) }));
     propGroups.forEach(g => { g.dD = g.nD ? g.nD + 'D' : ''; g.dH = g.nH ? g.nH + 'H' : ''; g.dE = g.nE ? g.nE + 'E' : ''; g.hasAny = !!(g.nD || g.nH || g.nE); g.hasD = !!g.nD; g.hasH = !!g.nH; g.hasE = !!g.nE; g.sumTitle = g.total + ' propriedades · ' + g.nD + ' declarada(s) · ' + g.nH + ' herdada(s) · ' + g.nE + ' editada(s)'; });
     const vmax = this.visibleMax(); const rail = []; const exBr = this.branchInfo(); const exId = exBr ? exBr.root.id : null, exD = exBr ? exBr.root.depth : -1; // S3.5: raiz do ramo explodido
+    const lay = (s.project && s.project.layouts) || []; const hasLayouts = lay.length >= 2; // S9.1a: faixa LAYOUTS so com 2+ layouts
+    const layoutChips = hasLayouts ? lay.map(l => { const on = l.id === s.project.layoutId; const nb = on ? 0 : (s.layoutBadges || {})[l.id] || 0; return { id: l.id, name: l.name, mark: on ? '● ' : '', pressed: on ? 'true' : 'false', hasBadge: nb > 0, badge: String(nb), title: l.name + (nb ? ' — ' + nb + ' pendente(s)' : ''), bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.switchLayout(l.id) }; }) : [];
     const EXP_TITLE = 'Explodido a partir daqui (vista plana). Botão direito › Recolher até aqui desfaz.';
     for (let d = 0; d <= vmax; d++) {
       const count = s.nodes.filter(n => n.depth === d && (!s.isoId || n.id === s.isoId || n.id.startsWith(s.isoId + '.'))).length; const on = d === s.active;
@@ -2739,7 +2753,7 @@ class Component extends DCLogic {
       wireMark: s.wire ? '●' : '○', toggleWire: () => this.setState(st => ({ wire: !st.wire })), wireAlpha: s.wireAlpha, setWireAlpha: e => this.setState({ wireAlpha: +e.target.value, wire: true }),
       focusMark: s.layerFocus ? '●' : '○', toggleFocus: () => this.setState(st => ({ layerFocus: !st.layerFocus, hoverLayer: null })), focusStr: s.focusStr, setFocusStr: e => this.setState({ focusStr: +e.target.value, layerFocus: true }), othersOp: s.othersOp, setOthersOp: e => this.setState({ othersOp: +e.target.value, layerFocus: true }),
       shortcutsOpen: s.shortcuts, openShortcuts: () => this.setState({ shortcuts: true }), closeShortcuts: () => this.setState({ shortcuts: false }), shortcutGroups,
-      layerCount: s.nodes.length ? vmax + 1 : 0, nodeCount: s.nodes.length, spacing: s.spacing, rail, navBtns, railMinW: vmax >= 9 ? 'auto' : '44px', railPad: vmax >= 9 ? '0 6px' : '0 8px',
+      hasLayouts, layoutChips, layerCount: s.nodes.length ? vmax + 1 : 0, nodeCount: s.nodes.length, spacing: s.spacing, rail, navBtns, railMinW: vmax >= 9 ? 'auto' : '44px', railPad: vmax >= 9 ? '0 6px' : '0 8px',
       allLayers: () => this.setState({ solo: false }), allBg: !s.solo ? 'rgba(var(--accRgb),.15)' : 'transparent', allBdr: !s.solo ? 'transparent' : 'var(--line1)', allColor: !s.solo ? 'var(--acc)' : 'var(--fg2)',
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
       tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
