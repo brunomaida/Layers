@@ -56,6 +56,14 @@ mostra o botão **Criar layers.json**. Um `layers.json` existente nunca é sobre
 Revise `mock`, `base` e `styles` se a heurística errar. Apps renderizados por JS precisam
 de snapshot: `tools/layers-snapshot.js` (ver [docs/layers-json.md](docs/layers-json.md)).
 
+### Menu de contexto e requisições
+Botão direito num componente do palco ou da Árvore abre o menu de contexto: as camadas L0–Ln com o
+selecionado em destaque, **Explodir daqui** / **Recolher até aqui** (na vista plana, só o ramo ganha
+profundidade) e **Requisição**, que cria no painel **Ajustes** uma entrada com o componente e um
+campo livre para o pedido. As requisições não entram em **Salvar** nem em **Aplicar**; em
+**Ações ▾** saem como Markdown ("Requisições Manuais"), copiado ou gravado em `layers-requests.md`
+na pasta conectada.
+
 ### Gravar alterações
 Só com pasta local conectada. No painel **Ajustes**, menu **Ações ▾**:
 1. **Ver diff** — revisa o patch de cada arquivo.
@@ -104,8 +112,8 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 ## Preferências persistidas (localStorage)
 - layers/v1/ui — tema, cor de seleção, cores de origem, cabeçalho, escala de fonte, painéis, navegação, árvore, escopo
 - layers/v1/projects — histórico de projetos (pasta, .zip, repositório)
-- layers/v1/session — último projeto, seleção e câmera; `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
-- layers/v1/pending — ajustes ainda não gravados, por projeto; voltam ao reabrir se as fontes não mudaram
+- layers/v1/session — último projeto, seleção, câmera e ramo explodido; `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
+- layers/v1/pending — por projeto: ajustes ainda não gravados (voltam ao reabrir se as fontes não mudaram) e requisições manuais (sempre voltam; com a fonte mudada, marcadas "alvo a confirmar")
 - layers/v1/meta — schema e data da última gravação
 
 Nada de conteúdo de arquivo aqui: o handle da pasta conectada mora no IndexedDB
@@ -113,8 +121,8 @@ Nada de conteúdo de arquivo aqui: o handle da pasta conectada mora no IndexedDB
 dropdown de projetos.
 
 ## Defaults visuais
-Sem localStorage valem os `data-props` do index.html (os literais do `:root` são
-placeholders pré-`applyTheme()`):
+Sem localStorage valem os `LayersCore.APPEARANCE_DEFAULTS` (`lib/layers-core.js`; os literais do
+`:root` são placeholders pré-`applyTheme()`):
 
 Tema **Gray · 1 Grafite** · acento **5 · Cinza médio** · seleção **Coral** ·
 cores de origem Mono · cabeçalho B · sliderScale 85 · fontScale 1
