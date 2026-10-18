@@ -39,6 +39,8 @@ const EXPECTED = [
   'tree/1500-tags/select-ms',
   'tree/1500-tags/scroll-frame-ms',
   'explode/traval/toggle-ms',
+  'layout-switch/multi-layout-1500/switch-ms',
+  'layout-switch/multi-layout-1500/reload-ms',
 ];
 const results = [];
 let runtime = 'chromium';
@@ -462,6 +464,125 @@ test('Explode_Toggle_ReportsFrameCost', async ({ page }) => {
     return performance.now() - t0;
   });
   rec('explode/traval/toggle-ms', ms);
+});
+
+// S9.1a Task 7a: layout switch vs a reload of the active layout, in the same page, on ~1,500-node mocks. The multi-layout mocks are
+// tiny, so the main and config mocks are replaced through page.route (like inflateTraval; no fixture file changes) with two big,
+// different bodies. The control is doReload (loadProject of the layout already mounted); switchLayout does the same work plus the
+// view snapshot, so it must not cost meaningfully more. Both are timed from the call until loadProject has finished and the scan
+// it triggers has run. Completion is seen through a counter on the instance's scan(), so a reload of the same layout cannot
+// "finish" on the nodes of the previous load.
+const median = (a) => [...a].sort((x, y) => x - y)[Math.floor(a.length / 2)];
+const bigBody = (cls, tags) => {
+  const copy = `<div class="${cls}-row"><div class="${cls}-cell"><span class="${cls}-a">x</span><span class="${cls}-b">y</span><p class="${cls}-c">z</p></div></div>`; // 5 tags
+  return `<body>${copy.repeat(Math.ceil(tags / 5))}</body>`;
+};
+
+test('LayoutSwitch_CostsNoMoreThanColdLoad', async ({ page }) => {
+  await instrument(page);
+  for (const [file, cls] of [['main', 'mm'], ['config', 'cc']]) {
+    await page.route(`**/fixtures/multi-layout/layers/${file}.html`, async (route) => {
+      const html = await (await route.fetch()).text();
+      await route.fulfill({ body: html.replace(/<body[\s\S]*<\/body>/i, bigBody(cls, 1500)), contentType: 'text/html' });
+    });
+  }
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await waitForScan(page, 1000, 40_000);
+  await act(page);
+  await page.evaluate(() => {
+    const lg = window.__logic;
+    window.__scanN = 0;
+    const scan = lg.scan.bind(lg);
+    lg.scan = () => { const r = scan(); window.__scanN++; return r; };
+  });
+  // wait for the app to settle (debounced rescans from ResizeObserver and fonts.ready) before every timed call
+  const settle = () => page.evaluate(async () => {
+    let quiet = 0, last = window.__scanN;
+    while (quiet < 12) { await new Promise((r) => setTimeout(r, 50)); if (window.__scanN === last) quiet++; else { quiet = 0; last = window.__scanN; } }
+  });
+  // method: 'doReload' (control) or 'switchLayout'; returns ms until loadedSeq === loadSeq and a scan has run since the call
+  const timed = (method, arg) => page.evaluate(async ([method, arg]) => {
+    const lg = window.__logic, n0 = window.__scanN, seq0 = lg.loadSeq;
+    const t0 = performance.now();
+    lg[method](arg);
+    for (;;) {
+      if (lg.loadSeq > seq0 && lg.loadedSeq === lg.loadSeq && window.__scanN > n0 && lg.state.nodes.length > 1) break;
+      if (performance.now() - t0 > 30_000) throw new Error(`${method} never finished`);
+      await new Promise((r) => setTimeout(r, 0));
+    }
+    const ms = performance.now() - t0;
+    return { ms, nodes: lg.state.nodes.length, layoutId: lg.state.project.layoutId };
+  }, [method, arg]);
+  const other = (id) => (id === 'main' ? 'config' : 'main');
+  let cur = await page.evaluate(() => window.__logic.state.project.layoutId);
+  expect(cur).toBe('main');
+  // warm-up round trip: fetches, JIT and style caches of both mocks, not timed
+  await settle(); await timed('switchLayout', other(cur)); cur = other(cur);
+  await settle(); await timed('switchLayout', other(cur)); cur = other(cur);
+  const reload = [], sw = [];
+  let nodes = 0;
+  for (let i = 0; i < 3; i++) {
+    await settle();
+    const r = await timed('doReload');
+    expect(r.layoutId).toBe(cur);
+    reload.push(r.ms); nodes = r.nodes;
+    await settle();
+    const s = await timed('switchLayout', other(cur));
+    cur = other(cur);
+    expect(s.layoutId).toBe(cur);
+    sw.push(s.ms);
+    expect(s.nodes, 'switched layout must be big too').toBeGreaterThanOrEqual(1000);
+  }
+  const reloadMs = median(reload), switchMs = median(sw);
+  rec('layout-switch/multi-layout-1500/reload-ms', reloadMs, { runs: reload, nodes });
+  rec('layout-switch/multi-layout-1500/switch-ms', switchMs, { runs: sw, nodes });
+  expect(nodes, 'reload control must be big').toBeGreaterThanOrEqual(1000);
+  // Relative guard only (no absolute ms): the switch is a reload plus the view snapshot, so 1.5x is the noise margin of a single machine;
+  // tag `latency` is not gated across runs (docs/bench-methodology.md), this is the only gate.
+  expect(switchMs, `switch ${switchMs.toFixed(1)} ms (${sw.map((x) => x.toFixed(0))}) vs reload control ${reloadMs.toFixed(1)} ms (${reload.map((x) => x.toFixed(0))})`).toBeLessThanOrEqual(reloadMs * 1.5);
+});
+
+// S9.1a Task 7a: A->B->A->B keeps ONE shadow root, the plane count of each layout, and does not grow the <style> nodes hoistFaces
+// appends to document.head. The shared sheet is given an @font-face (data: URL, no network) so hoistFaces has something to hoist.
+test('LayoutSwitch_NoLeak_AcrossRoundTrips', async ({ page }) => {
+  await page.route('**/fixtures/multi-layout/layers/shared.css', async (route) => {
+    const css = await (await route.fetch()).text();
+    await route.fulfill({ body: css + '\n@font-face{font-family:"LeakProbe";src:url(data:font/woff2;base64,AAAA)}\n', contentType: 'text/css' });
+  });
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await expect.poll(() => page.locator('[data-plane]').count(), { timeout: 15_000 }).toBeGreaterThan(0);
+  await act(page);
+  const snap = () => page.evaluate(() => {
+    const lg = window.__logic;
+    const hosts = [...document.querySelectorAll('*')].filter((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+    return {
+      layoutId: lg.state.project ? lg.state.project.layoutId : null,
+      settled: lg.loadedSeq === lg.loadSeq,
+      roots: hosts.length,
+      planes: document.querySelectorAll('[data-plane]').length,
+      nodes: lg.state.nodes.length,
+      headStyles: document.head.querySelectorAll('style').length,
+      faceStyles: document.head.querySelectorAll('style[data-layers-face]').length,
+    };
+  });
+  const arrive = async (id) => {
+    await expect.poll(async () => { const s = await snap(); return s.layoutId === id && s.settled && s.planes > 0 && s.planes === s.nodes; }, { timeout: 15_000 }).toBe(true);
+    return snap();
+  };
+  const first = { main: await arrive('main') };
+  expect(first.main.faceStyles, 'the probe @font-face must be hoisted').toBe(1);
+  const headBefore = first.main.headStyles;
+  for (const id of ['config', 'main', 'replay', 'config', 'main']) {
+    await act(page, 'switchLayout', id);
+    const s = await arrive(id);
+    const census = await planeCensus(page);
+    expect(s.roots, `shadow roots after switching to ${id}`).toBe(1);
+    expect(census.total, `planeCensus after switching to ${id}`).toBe(s.planes);
+    if (first[id]) expect(s.planes, `planes of ${id} vs its first visit`).toBe(first[id].planes);
+    else first[id] = s;
+    expect(s.faceStyles, `hoisted face <style> after switching to ${id}`).toBe(1);
+    expect(s.headStyles, `document.head <style> count after switching to ${id}`).toBe(headBefore);
+  }
 });
 
 test.afterAll(() => {
