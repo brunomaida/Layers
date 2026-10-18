@@ -1115,13 +1115,13 @@
     "name": "Ferramentas e UI",
     "start": "2026-09-16",
     "end": "2026-10-19",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "bug",
       "scaffold"
     ],
-    "progress": 93,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -1258,12 +1258,12 @@
         "name": "Funções visuais novas",
         "start": "2026-10-16",
         "end": "2026-10-18",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-16-s3-5-visual-functions-new.md)",
@@ -1294,6 +1294,12 @@
             "type": "spec",
             "path": "/docs/superpowers/plans/2026-10-17-s3-5-s9-1-ui-mock-and-design.md",
             "title": "Plano S3.5 × S9.1 — base local do mock e design conjunto"
+          },
+          {
+            "name": "feature-261017-85-s3-5-context-menu.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261017-85-s3-5-context-menu.md)",
+            "title": "feature-261017-85-s3-5-context-menu.md)"
           },
           {
             "name": "docs-261017-0-s3-5-ui-mock.md",
