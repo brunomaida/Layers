@@ -1391,7 +1391,7 @@ class Component extends DCLogic {
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
   resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; const incomplete = !this.pendingReady && !!this.pendingKey; this.dropPending(true); const P = this.state.project, bk = this.baseKey === this.pendingKeyNow() ? this.baseKey : null; // baseKey only moves after layers.json parses: elsewhere it still names the PREVIOUS project
-    if (bk !== null) { if (!incomplete) LayersCore.clearLayoutEntries(LS_STORE, bk, !P || P.layouts.some(l => l.id === 'main')); delete this.layoutMap[bk || '-']; } this.unloadProject(); // S9.1a: the whole project goes: sibling pending entries, main's too when it is not the active layout, and the remembered layout (unloadProject clears viewCache, badges, otherRequests, reqFloor)
+    if (bk !== null) { if (!incomplete) LayersCore.clearLayoutEntries(LS_STORE, bk, !P || P.layouts.some(l => l.id === 'main')); delete this.layoutMap[bk || '-']; } this.unloadProject(); // S9.1a: the whole project goes (sibling entries, plus the base entry when main is declared or nothing is mounted) unless the load was incomplete, then only the remembered layout
  this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {

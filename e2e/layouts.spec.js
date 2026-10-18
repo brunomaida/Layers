@@ -271,17 +271,15 @@ test('Layouts_SiblingTouchFails_WarnsAndKeepsTheStoredEntries', async ({ page })
 
 test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({ page }) => {
   await loaded(page);
-  let n = 0, aDone = false;
+  let n = 0;
   await page.route('**/multi-layout/layers.json*', async (route) => {
     n += 1;
-    const slow = n === 1;
-    if (slow) await new Promise((r) => setTimeout(r, 1500)); // load A: slow
+    if (n === 1) await new Promise((r) => setTimeout(r, 1500)); // load A: slow
     await route.continue();
-    if (slow) aDone = true;
   });
   await page.evaluate(() => {
     const l = window.__logic;
-    l.loadProject(); // A (slow)
+    l.loadProject().then(() => { window.__aDone = true; }); // A (slow)
     l.layoutMap[l.baseKey] = 'replay';
     l.loadProject(); // B (fast, supersedes A)
   });
@@ -289,8 +287,7 @@ test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({
   expect(await page.evaluate(() => window.__logic.pendingKey)).toBe('fx:fixtures/multi-layout|replay');
   // A resolves now; had it passed the parse it would resolve main and overwrite the live keys
   await page.evaluate(() => { window.__logic.layoutMap['fx:fixtures/multi-layout'] = 'main'; });
-  await expect.poll(() => aDone, { timeout: 10_000 }).toBe(true);
-  await page.waitForTimeout(500); // A's remaining steps run after its layers.json answer
+  await expect.poll(() => page.evaluate(() => window.__aDone === true), { timeout: 10_000 }).toBe(true);
   expect(await page.evaluate(() => ({ key: window.__logic.pendingKey, id: window.__logic.state.project.layoutId }))).toEqual({ key: 'fx:fixtures/multi-layout|replay', id: 'replay' });
   expect((await mounted(page)).ids).toEqual(['rpl-bar', 'rpl-frame', 'rpl-frame2', 'rpl-title']);
 });
@@ -495,12 +492,16 @@ test('Layouts_ViewState_UseDirRoundTripKeepsViewsPerProject', async ({ page }) =
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
   await act(page, 'select', '0.2');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
   await page.evaluate(() => window.__logic.useDir(window.__proj));
   await expect.poll(() => page.evaluate(() => window.__logic.projectId)).toBe('folder:proj');
   await settled(page, 'config');
   await act(page, 'switchLayout', 'main');
   await settled(page, 'main');
   expect((await viewOf(page)).selId).toBe('0.1');
+  // both projects keep their own config view under their own key
+  expect(await page.evaluate(() => ({ other: window.__logic.viewCache['folder:other|config'].selId, proj: window.__logic.viewCache['folder:proj|config'].selId }))).toEqual({ other: '0.2', proj: '0' });
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
   expect((await viewOf(page)).selId).toBe('0');
