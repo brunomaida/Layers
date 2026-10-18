@@ -3030,6 +3030,14 @@ describe('MergeLayoutRequests', () => {
     expect(out.map((x) => x.id)).toEqual(['a1', 'b1']);
   });
 
+  it('IdsComNomeDePrototype_NaoVazamMembrosDoObject', () => {
+    const none = core.mergeLayoutRequests(['constructor', '__proto__', 'toString', 'a'], 'a', [r('a1')], {});
+    expect(none.map((x) => x.id)).toEqual(['a1']);
+    const others = Object.create(null); others.constructor = [r('c1')]; others.__proto__ = [r('p1')];
+    expect(core.mergeLayoutRequests(['constructor', '__proto__', 'a'], 'a', [r('a1')], others).map((x) => x.id)).toEqual(['c1', 'p1', 'a1']);
+    expect(core.mergeLayoutRequests(['constructor'], 'constructor', [r('c1')], undefined).map((x) => x.id)).toEqual(['c1']);
+  });
+
   it('EntradasAusentes_Vazio', () => {
     expect(core.mergeLayoutRequests(['a', 'b'], 'a', undefined, undefined)).toEqual([]);
     expect(core.mergeLayoutRequests(undefined, 'a', [r('a1')], { b: [r('b1')] }).map((x) => x.id)).toEqual(['a1', 'b1']);
