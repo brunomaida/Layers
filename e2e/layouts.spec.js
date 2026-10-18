@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readNodes, lastTreeRow } from './tree-helpers.js';
-import { act, open } from './ctx-helpers.js';
+import { act, open, reloadWith } from './ctx-helpers.js';
 
 // S9.1a Task 2: layers.json › layouts mounts ONE layout at a time (one shadow root). No strip yet: switchLayout is
 // reached through the component instance (`act`); the keys it writes are part of the contract (docs: Chaves).
@@ -315,4 +315,158 @@ test('Layouts_Strip_ReqFloorReadsRequestsOfOtherLayouts', async ({ page }) => {
   });
   await expect(page.locator('[data-layout-badge="config"]')).toHaveText('1');
   expect(await page.evaluate(() => window.__logic.reqFloor)).toBe(7);
+});
+
+// S9.1a Task 4: per-layout view state (memory only), pending across switches, session stamp, TTL renewal of sibling entries.
+const DAY = 24 * 60 * 60 * 1000;
+const viewOf = (page) => page.evaluate(() => { const s = window.__logic.state; return { selId: s.selId, isoId: s.isoId, yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat, explodeFrom: s.explodeFrom, collapseAt: s.collapseAt }; });
+const settled = (page, id) => expect.poll(async () => { await act(page); return page.evaluate((id) => { const l = window.__logic; return !!l.state.project && l.state.project.layoutId === id && l.loadedSeq === l.loadSeq; }, id); }).toBe(true);
+const storedPending = (page) => page.evaluate(() => { const raw = localStorage.getItem('layers/v1/pending'); return raw ? (JSON.parse(raw).byProject || {}) : {}; });
+const seedPending = (page, ages) => page.evaluate((ages) => {
+  const k = 'layers/v1/pending'; const cur = JSON.parse(localStorage.getItem(k) || '{"schema":1,"byProject":{}}');
+  Object.keys(ages).forEach((key) => { cur.byProject[key] = { savedAt: Date.now() - ages[key], hash: 'x', changes: [], requests: [{ id: 'R7', layoutId: 'x', nodeKey: 'n', path: 'p', text: 't', createdAt: 1 }] }; });
+  localStorage.setItem(k, JSON.stringify(cur));
+}, ages);
+const shiftClock = (page, ms) => page.evaluate((ms) => { const o = Date.now; Date.now = () => o.call(Date) + ms; }, ms);
+
+test('Layouts_ViewState_PerLayoutSelectionAndExplode', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  // main (state empty) has 0.0 and 0.1; config has 0.0, 0.1 and 0.2
+  await act(page, 'setState', { flat: true, yaw: 0.5, tilt: 0.25, zoom: 1.5, panX: 10, panY: 5 });
+  await act(page, 'select', '0.1');
+  await act(page, 'explodeHere', '0.1');
+  const mainView = await viewOf(page);
+  expect(mainView).toMatchObject({ selId: '0.1', explodeFrom: '0.1', yaw: 0.5, zoom: 1.5, panX: 10, flat: true });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  // config has no view of its own: nothing of main's selection or explode leaks in, the camera is the default one
+  expect(await viewOf(page)).toMatchObject({ selId: '0', explodeFrom: null, collapseAt: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 });
+  await act(page, 'setState', { yaw: -0.7, zoom: 2 });
+  await act(page, 'select', '0.2');
+  await act(page, 'explodeHere', '0.2');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await viewOf(page)).toEqual(mainView);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await viewOf(page)).toMatchObject({ selId: '0.2', explodeFrom: '0.2', yaw: -0.7, zoom: 2 });
+  // a cached id the layout no longer has falls back to the root / no explode instead of leaking
+  await page.evaluate(() => { const l = window.__logic; l.viewCache['folder:proj'] = { ...l.viewCache['folder:proj'], selId: '0.9', isoId: '0.9', explodeFrom: '0.9' }; });
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await viewOf(page)).toMatchObject({ selId: '0', isoId: null, explodeFrom: null, yaw: 0.5 });
+});
+
+test('Layouts_PendingChange_SurvivesSwitchAndReturn', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await typeShadow(page);
+  const change = await page.evaluate(() => window.__logic.state.changes[0]);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(0);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.state.changes[0])).toEqual(change);
+  expect(await page.evaluate(() => window.__logic.state.modal)).toBeNull();
+  expect(Object.keys(await storedPending(page))).toEqual(['folder:proj|config']);
+});
+
+test('Layouts_CodeBuf_AsksBeforeSwitch', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await typeShadow(page);
+  await act(page, 'setState', { codeBuf: { 'layers/shared.css': '.title{color:red}' } });
+  await act(page, 'switchLayout', 'config');
+  await expect(page.getByText('Há código não salvo; trocar de layout descarta o código editado.')).toBeVisible();
+  expect(await layoutId(page)).toBe('main');
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await settled(page, 'config');
+  expect(await page.evaluate(() => Object.keys(window.__logic.state.codeBuf))).toEqual([]);
+  expect((await storedPending(page))['folder:proj'].changes).toHaveLength(1);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+});
+
+test('Layouts_Reload_RestoresActiveLayout', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  await act(page, 'select', '0.3');
+  await act(page, 'setState', { yaw: 0.4, zoom: 1.8 });
+  await expect.poll(() => page.evaluate(() => { const s = JSON.parse(localStorage.getItem('layers/v1/session') || '{}'); return [s.viewLayout, s.selId, s.camera && s.camera.yaw]; })).toEqual(['replay', '0.3', 0.4]);
+  await reloadWith(page);
+  await settled(page, 'replay');
+  expect(await viewOf(page)).toMatchObject({ selId: '0.3', yaw: 0.4, zoom: 1.8 });
+});
+
+test('Layouts_Reload_IgnoresViewStampedWithAnotherLayout', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  // tab closed mid-switch: `layouts` already names replay, the camera/selection still belong to main
+  await reloadWith(page, { viewLayout: 'main', layouts: { 'folder:proj': 'replay' }, selId: '0.1', camera: { yaw: 0.9, zoom: 2 } });
+  await settled(page, 'replay');
+  expect(await viewOf(page)).toMatchObject({ selId: '0', yaw: 0, zoom: 1 });
+});
+
+test('Layouts_SingleLayoutSession_HasNoLayoutKeys', async ({ page }) => {
+  await open(page, 'multi-state');
+  await act(page);
+  const snap = await page.evaluate(() => window.__logic.sessionSnapshot());
+  expect('viewLayout' in snap).toBe(false);
+  expect('layouts' in snap).toBe(false);
+  expect(Object.keys(snap)).toEqual(['lastProjectId', 'states', 'selId', 'isoId', 'camera', 'explodeFrom', 'collapseAt']);
+});
+
+test('Layouts_ProjectSwitch_ClearsViewCache', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'select', '0.1');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => Object.keys(window.__logic.viewCache))).toEqual(['folder:proj']);
+  // a view stamped with another project never applies, even for the same layout id
+  await page.evaluate(() => { const l = window.__logic; l.pendingView = { projectId: 'folder:other', layoutId: 'config', view: { selId: '0.2', isoId: null, yaw: 0.7, tilt: 0, zoom: 3, panX: 0, panY: 0, flat: false, explodeFrom: null, collapseAt: null } }; l.loadProject(); });
+  await settled(page, 'config');
+  expect(await viewOf(page)).toMatchObject({ selId: '0', yaw: 0, zoom: 1 });
+  expect(await page.evaluate(() => window.__logic.pendingView)).toBeNull();
+  // unloading (reset / failed load) empties the cache
+  await act(page, 'unloadProject');
+  expect(await page.evaluate(() => window.__logic.viewCache)).toEqual({});
+});
+
+// The active layout's own write renews the entries of layouts nobody opened; a second write 29 simulated days later
+// would find them expired (58 days old) had the first one not renewed them.
+const rewrite = (page) => page.evaluate(() => { window.__logic.pendingDirty = true; window.__logic.writePending(); });
+
+test('Layouts_UnopenedLayoutRequests_SurviveTtl', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await seedPending(page, { 'folder:proj|config': 29 * DAY, 'folder:proj|replay': 29 * DAY });
+  await typeShadow(page); // main is active: writes folder:proj
+  await expect.poll(async () => { const s = await storedPending(page); const now = await page.evaluate(() => Date.now()); return ['folder:proj|config', 'folder:proj|replay'].map((k) => s[k] ? now - s[k].savedAt < DAY : null); }).toEqual([true, true]);
+  await shiftClock(page, 29 * DAY);
+  await rewrite(page);
+  const stored = await storedPending(page);
+  expect(Object.keys(stored).sort()).toEqual(['folder:proj', 'folder:proj|config', 'folder:proj|replay']);
+  expect((await page.evaluate(() => Date.now())) - stored['folder:proj|config'].savedAt).toBeLessThan(DAY);
+});
+
+test('Layouts_UnopenedLayoutRequests_MainEntrySurvivesWhileWorkingElsewhere', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await seedPending(page, { 'folder:proj': 29 * DAY });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await typeShadow(page); // config is active: writes folder:proj|config; `main` is declared, so the base entry is renewed too
+  await expect.poll(async () => { const s = await storedPending(page); return s['folder:proj'] ? (await page.evaluate(() => Date.now())) - s['folder:proj'].savedAt < DAY : null; }).toBe(true);
+  await shiftClock(page, 29 * DAY);
+  await rewrite(page);
+  expect(Object.keys(await storedPending(page)).sort()).toEqual(['folder:proj', 'folder:proj|config']);
 });
