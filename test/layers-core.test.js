@@ -1649,12 +1649,12 @@ describe('ValidRequest', () => {
   });
 
   it('AncorasOpcionaisValidas_Aceita', () => {
-    expect(core.validRequest(pendingRequest({ name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p', confirm: true }))).toBe(true);
+    expect(core.validRequest(pendingRequest({ nodeId: '0.1.2', name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p', confirm: true }))).toBe(true);
     expect(core.validRequest(pendingRequest({ pendente: null }))).toBe(true);
   });
 
   it('AncoraOpcionalTipoErrado_Rejeita', () => {
-    const bad = { name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1, confirm: 'true' };
+    const bad = { nodeId: 1, name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1, confirm: 'true' };
     Object.keys(bad).forEach((k) => {
       expect(core.validRequest(pendingRequest({ [k]: bad[k] }))).toBe(false);
     });
@@ -1772,10 +1772,29 @@ describe('SetPending / GetPending', () => {
     expect(core.getPending(st, 'fx:a').requests).toEqual([]);
   });
 
-  it('ChangeInvalidaComRequests_DevolveNull', () => {
+  it('GetPending_ChangeInvalida_MantemRequests', () => {
     const st = memStorage();
-    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ ids: 'x' })], requests: [pendingRequest({})] } } }));
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 7, hash: 'h', changes: [pendingChange({ ids: 'x' })], requests: [pendingRequest({}), pendingRequest({ id: 5 })] } } }));
+    const e = core.getPending(st, 'fx:a');
+    expect(e.changes).toEqual([]);
+    expect(e.requests.map((r) => r.id)).toEqual(['r1']);
+    expect(e.hash).toBe('h');
+    expect(e.savedAt).toBe(7);
+  });
+
+  it('GetPending_ChangeInvalidaSemRequestsValidas_Null', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ ids: 'x' })], requests: [pendingRequest({ id: 5 })] } } }));
     expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('GetPending_EnvelopeInvalido_Null', () => {
+    const st = memStorage();
+    const bad = [{ savedAt: 1, changes: [], requests: [pendingRequest({})] }, { savedAt: 1, hash: 5, changes: [], requests: [pendingRequest({})] }, { savedAt: '1', hash: 'h', changes: [], requests: [pendingRequest({})] }, { hash: 'h', changes: [], requests: [pendingRequest({})] }, 'x'];
+    bad.forEach((e) => {
+      st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': e } }));
+      expect(core.getPending(st, 'fx:a')).toBeNull();
+    });
   });
 
   it('RoundTripRequests_PreservaAncoras', () => {
@@ -2667,7 +2686,9 @@ describe('CtxMenuModel', () => {
     const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
     expect(ids(m)).toEqual(['request']);
     const at = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
-    expect(ids(at)).toEqual(['collapse', 'request']);
+    expect(ids(at)).toEqual(['request']); // already the collapse plane: collapsing there would do nothing
+    const above = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
+    expect(ids(above)).toEqual(['collapse', 'request']);
   });
 
   it('DepthsSemDescendentes_Outside', () => {

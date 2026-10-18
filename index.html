@@ -1215,7 +1215,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false;
+  pendingReady = false; pendingReqOnly = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1236,21 +1236,26 @@ class Component extends DCLogic {
   // Desce mockRoot pelo caminho do id: no de tamanho zero fica fora de this.els, o caminho segue valido.
   elAtPath(id) { let el = this.mockRoot; if (!el) return null; const p = String(id).split('.'); for (let k = 1; k < p.length && el; k++) el = el.children[+p[k]]; return el || null; }
   writePending() {
-    if (!this.pendingReady || !this.pendingKey || !this.pendingDirty) return;
+    if ((!this.pendingReady && !this.pendingReqOnly) || !this.pendingKey || !this.pendingDirty) return;
     const ch = this.state.changes, rq = this.state.requests;
-    const over = ch.length > LayersCore.PENDING_CAP;
+    // pendingReqOnly (fonte nao lida): so o texto das requisicoes e gravado; hash e ajustes ficam como estao no armazenamento
+    const over = this.pendingReady && ch.length > LayersCore.PENDING_CAP;
     if (over && !this.pendingCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' ajustes pendentes: não serão restaurados ao reabrir.', 'warn');
     this.pendingCapWarned = over;
     const overR = rq.length > LayersCore.PENDING_CAP;
     if (overR && !this.pendingReqCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' requisições: as excedentes não serão restauradas ao reabrir.', 'warn');
     this.pendingReqCapWarned = overR;
-    LayersCore.setPending(LS_STORE, this.pendingKey, ch.length || rq.length ? { hash: this.pendingHash, changes: ch, requests: rq } : null, Date.now());
+    let ok;
+    if (this.pendingReady) ok = LayersCore.setPending(LS_STORE, this.pendingKey, ch.length || rq.length ? { hash: this.pendingHash, changes: ch, requests: rq } : null, Date.now());
+    else { const saved = LayersCore.getPending(LS_STORE, this.pendingKey); ok = LayersCore.setPending(LS_STORE, this.pendingKey, { hash: saved ? saved.hash : this.pendingHash, changes: saved ? saved.changes : [], requests: rq }, Date.now()); }
+    if (!ok && !this.pendingQuotaWarned) this.toast('Não foi possível salvar os ajustes e requisições pendentes: armazenamento cheio.', 'warn');
+    this.pendingQuotaWarned = !ok;
     this.pendingDirty = false;
   }
   // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
   // As requisicoes sao texto do usuario: sobrevivem ao descarte dos ajustes; so `clearReq` (zerar interface) as apaga.
   rewritePending(clearReq) { const rq = clearReq ? [] : this.state.requests; LayersCore.setPending(LS_STORE, this.pendingKey, rq.length ? { hash: this.pendingHash, changes: [], requests: rq } : null, Date.now()); }
-  dropPending(clearReq) { if (this.pendingReady && this.pendingKey) this.rewritePending(clearReq); this.pendingDirty = false; this.pendingReady = false; }
+  dropPending(clearReq) { if (this.pendingReady && this.pendingKey) this.rewritePending(clearReq); this.pendingDirty = false; this.pendingReady = false; this.pendingReqOnly = false; }
   // approve/rollback reescrevem arquivos sem recarregar: so as partes gravadas (`paths`) entram no hash novo.
   // Durante a releitura a sessao nao grava, para que uma edicao logo apos "Aplicar" nao saia com o hash antigo.
   async refreshPendingHash(paths) {
@@ -1266,7 +1271,7 @@ class Component extends DCLogic {
       if (seq !== this.loadSeq) return;
       this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec);
       this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
-    } catch (e) { this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos.', 'warn'); } // pendingReady fica falso: a entrada antiga permanece e a proxima carga a descarta
+    } catch (e) { this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos (requisições continuam salvas).', 'warn'); this.pendingReqOnly = true; this.pendingDirty = true; this.persistSoon(); } // pendingReady fica falso: ajustes e hash antigos permanecem e a proxima carga os descarta; so as requisicoes seguem gravando
   }
   // sessionStorage vence o session ao restaurar: N abas, N projetos.
   markTab() { try { SS_STORE.setItem(TAB_LS, JSON.stringify({ projectId: this.projectId || null })); } catch (e) {} }
@@ -1366,7 +1371,7 @@ class Component extends DCLogic {
   resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(true); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
-    this.writeConfig(); this.pendingReady = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
+    this.writeConfig(); this.pendingReady = false; this.pendingReqOnly = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
     this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
     const bak = this.bakNote ? ' · ' + this.bakNote : ''; this.bakNote = null; // so a carga que o Reanalisar disparou mostra a nota; carga falha ou superada a descarta
     this.mtimes = {}; // mtimes sao por projeto: sem isto o watch herda os da pasta anterior e o 1o foco acusa um aviso falso
@@ -1441,10 +1446,10 @@ class Component extends DCLogic {
     const anyConfirm = reqs.some(r => r.confirm === true);
     plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
     const restored = plan.keep, dropped = plan.dropped;
-    const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete ? (saved ? ' · ajustes salvos mantidos: fonte não lida' : ' · ajustes desta sessão não serão salvos: fonte não lida') : '';
+    const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete ? (saved ? ' · ajustes salvos mantidos (requisições seguem salvas): fonte não lida' : ' · ajustes desta sessão não serão salvos (requisições seguem salvas): fonte não lida') : '';
     const reqNote = reqs.length ? ' · ' + reqs.length + ' requisição(ões) restaurada(s)' + (anyConfirm ? ' · alvo a confirmar' : '') : '';
     this.hashSpec = hs;
-    this.pendingHash = hash; this.pendingSeen = restored; this.pendingReqSeen = reqs; this.pendingDirty = dropped > 0 || reqs.length > 0; this.pendingReady = !incomplete && !!this.pendingKey;
+    this.pendingHash = hash; this.pendingSeen = restored; this.pendingReqSeen = reqs; this.pendingDirty = dropped > 0 || reqs.length > 0; this.pendingReady = !incomplete && !!this.pendingKey; this.pendingReqOnly = incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
@@ -1507,7 +1512,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1712,7 +1717,7 @@ class Component extends DCLogic {
     // Um ponto de gravação em vez de um por editor: a assinatura do que é persistido decide.
     const sig = JSON.stringify([this.uiSnapshot(), this.state.hist, this.sessionSnapshot()]);
     if (sig !== this.persistSig) { this.persistSig = sig; this.persistSoon(); }
-    if (this.pendingReady && (this.state.changes !== this.pendingSeen || this.state.requests !== this.pendingReqSeen)) { this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingDirty = true; this.persistSoon(); }
+    if ((this.pendingReady && (this.state.changes !== this.pendingSeen || this.state.requests !== this.pendingReqSeen)) || (!this.pendingReady && this.pendingReqOnly && this.state.requests !== this.pendingReqSeen)) { this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingDirty = true; this.persistSoon(); }
   }
   componentDidMount() {
     this.applyTheme();
@@ -2001,7 +2006,7 @@ class Component extends DCLogic {
       const conf = r.confirm === true, open = s.reqSel === r.id, canShow = !!r.nodeId && !conf;
       const chips = open && r.estilos ? r.estilos.split('; ').map(p => { const i = p.indexOf(':'); const k = i < 0 ? p : p.slice(0, i), v = i < 0 ? '' : p.slice(i + 1); return { k: k + ' ', v, hasSw: /^(#|rgb|hsl)/.test(v), sw: v }; }) : [];
       const meta = [Array.isArray(r.texts) && r.texts.length ? 'texto: ' + r.texts.map(t => '“' + t + '”').join(', ') : '', r.pendente ? 'ajuste pendente: ' + r.pendente : ''].filter(Boolean).join(' · ');
-      return { id: r.id, name: r.name || r.id, dLabel: typeof r.depth === 'number' ? 'L' + r.depth : '', open, closed: !open, confirm: conf, preview: r.text.replace(/\s+/g, ' ').trim() || '(sem pedido ainda)',
+      return { id: r.id, name: r.name || r.id, dLabel: Number.isFinite(r.depth) ? 'L' + r.depth : '', open, closed: !open, confirm: conf, preview: r.text.replace(/\s+/g, ' ').trim() || '(sem pedido ainda)',
         path: r.path, alvo: r.alvo || '', caixa: r.caixa || '', hasAlvo: !!r.alvo, chips, hasChips: chips.length > 0, meta, hasMeta: !!meta, taId: 'req-' + r.id, taLabel: 'O que mudar — ' + r.id, text: r.text, count: r.text.length,
         showOff: !canShow, showTitle: conf ? 'Alvo a confirmar: as fontes mudaram, o id da camada já não vale.' : canShow ? 'Selecionar e enquadrar este componente no palco' : 'Esta requisição não guarda a camada',
         toggle: () => this.setState({ reqSel: r.id }), remove: e => { e.stopPropagation(); this.removeRequest(r.id); }, set: e => this.setRequestText(r.id, e.target.value),

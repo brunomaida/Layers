@@ -387,6 +387,7 @@ test.describe('ContextMenu_Ui', () => {
   // The 3px cut compares the contextmenu position with the right mousedown; it relies on Windows Chromium firing contextmenu on
   // mouseup (macOS fires it on mousedown, where no drag can be told apart yet).
   test('ContextMenu_RightDrag_DoesNotOpen', async ({ page }) => {
+    test.skip(process.platform !== 'win32', 'contextmenu fires on mousedown outside Windows');
     await open(page);
     await goFlat(page);
     const { x, y } = await planePoint(page, C4);

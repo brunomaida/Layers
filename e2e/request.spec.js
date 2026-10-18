@@ -302,6 +302,55 @@ test('Request_OnlyRequests_PendingEntryNotErased', async ({ page }) => {
   expect(e2.requests[0].text).toBe('So requisicao, sem ajuste.');
 });
 
+test('Request_IncompleteLoad_StillSavesRequestsKeepsChanges', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  await box(page, 'R1').fill('Antes da leitura incompleta.');
+  await makeChange(page);
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.text).toBe('Antes da leitura incompleta.');
+  const before = await stored(page);
+  expect(before.changes).toHaveLength(1);
+  // a stylesheet the manifest lists becomes unreadable: the next load is incomplete (pendingReady stays false)
+  await page.evaluate(async () => {
+    const d = await window.__proj.getDirectoryHandle('wwwroot');
+    await d.removeEntry('painel.css');
+  });
+  await reloadWith(page);
+  await expect(page.getByText(/ajustes salvos mantidos \(requisições seguem salvas\): fonte não lida/)).toBeVisible();
+  await page.locator('[data-req-row="R1"]').click();
+  await box(page, 'R1').fill('Digitado com a fonte nao lida.');
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.text).toBe('Digitado com a fonte nao lida.');
+  const after = await stored(page);
+  expect(after.hash).toBe(before.hash); // saved hash and changes are untouched
+  expect(after.changes).toEqual(before.changes);
+  expect(after.requests[0].confirm).toBe(true);
+});
+
+test('Request_NonFiniteDepth_NoLNaN', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  await expect(entry(page, 'R1')).toContainText('L6');
+  await act(page);
+  await page.evaluate(() => window.__logic.setState((st) => ({ requests: st.requests.map((r) => ({ ...r, depth: NaN })) })));
+  await expect(entry(page, 'R1')).not.toContainText('L6');
+  await expect(entry(page, 'R1')).not.toContainText('NaN');
+});
+
+test('Request_StorageFull_WarnsOnce', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  // quota: every write of the pending key throws
+  await page.evaluate((k) => {
+    const set = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (key, v) { if (key === k) throw new Error('QuotaExceededError'); return set.call(this, key, v); };
+  }, PENDING);
+  await box(page, 'R1').fill('Primeira tentativa.');
+  await expect(page.getByText(/armazenamento cheio/)).toBeVisible();
+  await box(page, 'R1').fill('Segunda tentativa.');
+  await page.waitForTimeout(800); // past the 400 ms trailing write
+  expect(await page.getByText(/armazenamento cheio/).count()).toBe(1);
+});
+
 test('Request_BadStoredRequest_Ignored', async ({ page }) => {
   await openFlat(page);
   await addVia(page, C6);
@@ -386,6 +435,9 @@ test('Request_ConfirmedStateSwitch_KeepsRequests', async ({ page }) => {
   const e = await stored(page);
   expect(e.requests).toHaveLength(1);
   expect(e.requests[0].text).toBe('Fica depois de trocar de estado.');
+  // pins today's behaviour: pendingKey is per project, the hash per state, so a state switch flags every request (written after the reload)
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.confirm).toBe(true);
+  expect((await requests(page))[0].confirm).toBe(true);
   await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
 });
 
