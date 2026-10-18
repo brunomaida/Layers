@@ -1828,8 +1828,8 @@ class Component extends DCLogic {
     if (this.loadedSeq !== this.loadSeq) return;
     const go = () => { const c = this.state; this.viewCache[LayersCore.stateMapKey(this.baseKey, s.project.layoutId)] = { selId: c.selId, isoId: c.isoId, yaw: c.yaw, tilt: c.tilt, zoom: c.zoom, panX: c.panX, panY: c.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; this.pendingView = { projectId: this.projectId, layoutId: id, view: this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject(); };
     // pendentes salvaveis ficam na chave do layout antigo; so os que o dreno nao persiste (carga incompleta, sem chave) se perdem
-    const lost = !this.pendingReady && (s.changes || []).length > 0;
-    if (LayersCore.hasUnsaved(this.pendingReady ? [] : s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
+    const lost = (s.changes || []).length > 0 && (!this.pendingReady || s.changes.length > LayersCore.PENDING_CAP || this.pendingQuotaWarned);
+    if (LayersCore.hasUnsaved(lost ? s.changes : [], s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
     go();
   }
   // S2.21: Reanalisar do 0 = backup do layout carregado + recarga como projeto novo (sem selecao, camera nem ajustes salvos).
