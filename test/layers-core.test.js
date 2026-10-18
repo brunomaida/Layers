@@ -3295,3 +3295,129 @@ describe('CoverageScope', () => {
     expect(core.coverageScope('other/index.html', 'app')).toBe(false);
   });
 });
+
+describe('HtmlRegionsHardening', () => {
+  const pick = (r, sel) => r.regions.find((x) => x.sel === sel);
+
+  it('DialogFechadoComFilhos_SoDialogViraRegiao', () => {
+    const r = core.htmlRegions('<body><dialog id="dlg"><p class="msg">q</p><button class="ok"></button></dialog></body>');
+    expect(r.regions).toHaveLength(1);
+    expect(r.regions[0]).toMatchObject({ sel: 'dialog#dlg', kind: 'diálogo', hidden: true, el: 3 });
+    expect(r.visibleNodes).toBe(0);
+    expect(r.tokens['p.msg']).toBe(true);
+  });
+
+  it('ClasseRepetidaSoContaRegioes_OrdinalIgnoraInstanciaVisivel', () => {
+    const r = core.htmlRegions('<body><div class="row"></div><div class="row" hidden></div><div class="row" hidden></div></body>');
+    expect(r.regions.map((x) => x.sel)).toEqual(['div.row', 'div.row~2']);
+  });
+
+  it('TabpanelSemIdClasse_SelPorRole', () => {
+    const r = core.htmlRegions('<body><div role="tabpanel"><b>x</b></div><section role="tabpanel" hidden></section></body>');
+    expect(r.regions.map((x) => x.sel)).toEqual(['div[role=tabpanel]', 'section[role=tabpanel]']);
+    expect(r.tokens['div[role=tabpanel]']).toBe(false);
+    expect(r.tokens['section[role=tabpanel]']).toBe(true);
+  });
+
+  it('DialogSemId_SelDialogETokenVisivelVence', () => {
+    const r = core.htmlRegions('<body><dialog></dialog><dialog open></dialog></body>');
+    expect(r.regions.map((x) => x.sel)).toEqual(['dialog', 'dialog~2']);
+    expect(r.tokens.dialog).toBe(false);
+  });
+
+  it('AriaModalSemIdClasse_SelAriaModal', () => {
+    const r = core.htmlRegions('<body><div aria-modal="true"><p>x</p></div></body>');
+    expect(r.regions[0]).toMatchObject({ sel: 'div[aria-modal]', kind: 'diálogo', hidden: false, el: 2 });
+    expect(r.tokens['div[aria-modal]']).toBe(false);
+  });
+
+  it('AriaModalTrue_Dialogo', () => {
+    const r = core.htmlRegions('<body><div id="m" aria-modal="true"></div></body>');
+    expect(r.regions[0]).toMatchObject({ sel: 'div#m', kind: 'diálogo', hidden: false });
+  });
+
+  it('ClasseModal_Dialogo', () => {
+    const r = core.htmlRegions('<body><div class="box modal"></div></body>');
+    expect(r.regions[0]).toMatchObject({ sel: 'div.box.modal', kind: 'diálogo' });
+  });
+
+  it('ClasseEmHiddenSels_OcultaElementoComClasse', () => {
+    const r = core.htmlRegions('<body><div class="fold"><p>x</p></div></body>', ['.fold']);
+    expect(r.regions[0]).toMatchObject({ sel: 'div.fold', kind: 'painel', hidden: true, el: 2 });
+  });
+
+  it('ElementoVoidNaRegiao_NaoAbrePilha', () => {
+    const r = core.htmlRegions('<body><div id="p" hidden><br><img src="a.png"><span></span></div><p>x</p></body>');
+    expect(r.regions[0]).toMatchObject({ sel: 'div#p', el: 4 });
+    expect(r.rootEl).toBe(1);
+  });
+
+  it('TagsEmMaiuscula_Normalizadas', () => {
+    const r = core.htmlRegions('<BODY><DIV ID="a" HIDDEN><P>x</P></DIV></BODY>');
+    expect(r.nodes).toBe(2);
+    expect(r.regions[0]).toMatchObject({ sel: 'div#a', kind: 'painel', hidden: true, el: 2 });
+  });
+
+  it('ValorDeAtributoComMaiorQue_NaoQuebraTag', () => {
+    const r = core.htmlRegions('<body><div title="a>b" id="x" hidden><p>q</p></div></body>');
+    expect(r.nodes).toBe(2);
+    expect(r.regions[0]).toMatchObject({ sel: 'div#x', kind: 'painel', el: 2 });
+  });
+
+  it('SemBody_DisplayNoneInline', () => {
+    const r = core.htmlRegions('<div class="box a" style="color:red; display: none"><i>1</i></div>');
+    expect(r.regions[0]).toMatchObject({ sel: 'div.box.a', kind: 'painel', hidden: true, el: 2 });
+  });
+
+  it('SemBody_AncestralOculto', () => {
+    const r = core.htmlRegions('<div id="p" hidden><dialog open id="d"></dialog></div>');
+    expect(pick(r, 'dialog#d').hidden).toBe(true);
+    expect(pick(r, 'div#p')).toMatchObject({ hidden: true, el: 1 });
+  });
+
+  it('ScriptComAbreComentario_NaoEngoleOResto', () => {
+    const r = core.htmlRegions('<body><script>var x=\'<!--\'</script><div id="p" hidden><p>x</p></div></body>');
+    expect(r.regions[0]).toMatchObject({ sel: 'div#p', el: 2 });
+  });
+
+  it('TemplateAninhado_RemovidoPorInteiro', () => {
+    const r = core.htmlRegions('<body><template><template><p>a</p></template><p>b</p></template><p>ok</p></body>');
+    expect(r.nodes).toBe(1);
+  });
+
+  it('CustomElementTemplateCard_NaoEhTemplate', () => {
+    const r = core.htmlRegions('<body><template-card id="c"><p>x</p></template-card></body>');
+    expect(r.nodes).toBe(2);
+    expect(r.tokens['template-card#c']).toBe(false);
+  });
+
+  it.each([
+    ['AbreTagRepetido', () => '<a'.repeat(100000)],
+    ['ScriptRepetido', () => '<script'.repeat(30000)],
+    ['ComentarioRepetido', () => '<!--'.repeat(50000)]
+  ])('Patologico_%s_RapidoESemExcecao', (_n, make) => {
+    const text = make();
+    const t0 = performance.now();
+    expect(() => core.htmlRegions(text)).not.toThrow();
+    expect(performance.now() - t0).toBeLessThan(500);
+  });
+});
+
+describe('ScanScriptMarkersHardening', () => {
+  it('RotaConstructor_NaoColideComPrototipo', () => {
+    const out = core.scanScriptMarkers('a.js', 'go("#/constructor"); go("#/constructor");');
+    expect(out.map((x) => x.key)).toEqual(['a.js:route:constructor']);
+  });
+});
+
+describe('CoverageScopeBase', () => {
+  it('BaseIgualASegmentoExcluido_Dentro', () => {
+    expect(core.coverageScope('docs/index.html', 'docs')).toBe(true);
+    expect(core.coverageScope('docs/tests/a.html', 'docs')).toBe(false);
+  });
+
+  it('BaseComBarraInicial_Normalizada', () => {
+    expect(core.coverageScope('web/index.html', '/web')).toBe(true);
+    expect(core.coverageScope('web/index.html', '/web/')).toBe(true);
+  });
+});
