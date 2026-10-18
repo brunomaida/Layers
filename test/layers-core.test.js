@@ -2907,6 +2907,11 @@ describe('ProjectLayouts', () => {
     expect(out[1].name).toBe('A_b-1');
   });
 
+  it('IdsQueDiferemSoNaCaixa_SaoDuplicadosPrimeiroFica', () => {
+    const out = core.projectLayouts({ layouts: [{ id: 'Admin', name: 'Um', mock: 'a.html' }, { id: 'admin', name: 'Dois', mock: 'b.html' }, { id: 'ADMIN', mock: 'c.html' }, { id: 'shop', mock: 's.html' }] });
+    expect(out.map((l) => l.id)).toEqual(['Admin', 'shop']);
+  });
+
   it('NomeNaoStringOuVazio_CaiNoId', () => {
     const out = core.projectLayouts({ layouts: [{ id: 'a', name: '', mock: 'a.html' }, { id: 'b', name: 7, mock: 'b.html' }, { id: 'c', name: 'Cee', mock: 'c.html' }] });
     expect(out.map((l) => l.name)).toEqual(['a', 'b', 'Cee']);
@@ -3133,6 +3138,16 @@ describe('TouchLayoutEntries / ClearLayoutEntries', () => {
     expect(core.getPending(st, 'fx:a|mobile')).toBeNull();
     expect(core.getPending(st, 'fx:a|tablet')).toBeNull();
     expect(core.getPending(st, 'fx:a')).not.toBeNull();
+    expect(core.getPending(st, 'fx:ab|mobile')).not.toBeNull();
+    expect(core.getPending(st, 'fx:b')).not.toBeNull();
+  });
+
+  it('Clear_IncludeBase_RemoveBaseEIrmasPoupaOutrosProjetos', () => {
+    const st = memStorage();
+    put(st, 'fx:a', 1000); put(st, 'fx:a|mobile', 1000); put(st, 'fx:ab|mobile', 1000); put(st, 'fx:b', 1000);
+    expect(core.clearLayoutEntries(st, 'fx:a', true)).toBe(true);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+    expect(core.getPending(st, 'fx:a|mobile')).toBeNull();
     expect(core.getPending(st, 'fx:ab|mobile')).not.toBeNull();
     expect(core.getPending(st, 'fx:b')).not.toBeNull();
   });

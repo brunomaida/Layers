@@ -623,6 +623,22 @@ test('Layouts_ResetUi_ClearsLayoutKeys', async ({ page }) => {
   await act(page, 'resetUI');
   await expect.poll(() => page.evaluate(() => window.__logic.state.project)).toBeNull();
   expect(await page.evaluate(() => ({ map: window.__logic.layoutMap['folder:proj'], cache: window.__logic.viewCache, other: window.__logic.otherRequests, floor: window.__logic.reqFloor, badges: window.__logic.state.layoutBadges }))).toEqual({ map: undefined, cache: {}, other: {}, floor: 0, badges: {} });
-  // `<base>|*` is gone; the exact `<base>` entry (main's) is left alone while another layout was active
-  expect(Object.keys(await storedPending(page))).toEqual(['folder:proj']);
+  // the whole project goes: `<base>|*` and, because `main` is declared but not the active layout, the exact `<base>` entry too
+  expect(Object.keys(await storedPending(page))).toEqual([]);
+});
+
+// baseKey only moves once layers.json parses: after a failed load of ANOTHER source it still names the previous project, whose entries Zerar must not touch.
+test('Layouts_ResetUi_AfterFailedLoadOfAnotherSource_KeepsPreviousProjectEntries', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await seedPending(page, { 'folder:proj|x': 0 });
+  await page.evaluate(async () => {
+    const w = await (await window.__proj.getFileHandle('layers.json')).createWritable(); await w.write('{ not json'); await w.close();
+    window.__logic.projectId = 'folder:other'; // what connecting another source does before its load
+    window.__logic.loadProject();
+  });
+  await expect(page.getByText('layers.json inválido.')).toBeVisible({ timeout: 10000 });
+  expect(await page.evaluate(() => window.__logic.baseKey)).toBe('folder:proj');
+  await page.evaluate(() => window.__logic.resetUI()); // no plane is mounted after the failed load, so `act` cannot find the instance
+  expect(Object.keys(await storedPending(page))).toContain('folder:proj|x');
 });
