@@ -1212,6 +1212,8 @@ class Component extends DCLogic {
   stateMap = CONF.session.states && typeof CONF.session.states === 'object' ? { ...CONF.session.states } : {};
   // S9.1a: layout ativo por projeto (chave = base do projeto), guardado na sessao so quando ha algum
   layoutMap = CONF.session.layouts && typeof CONF.session.layouts === 'object' && !Array.isArray(CONF.session.layouts) ? { ...CONF.session.layouts } : {};
+  // S9.1a: vista (selecao, camera, ramo explodido) por layout, so em memoria; chave = stateMapKey(base, layout). pendingView leva a vista alvo de switchLayout ate o loadProject que a consome.
+  viewCache = {}; pendingView = null;
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
   codeH = {}; codeObs = new Map(); _treeAll = []; _treeH = []; _treeCodeN = 0; _treeBox = null; // S4.10: alturas medidas das linhas de código por codeKey; lista completa e alturas da aba ativa
   _treeA = 0; _treeB = 0; _treeFrozen = null; _treePtr = false; _treeWinOn = false; _treeWasOn = false; _codeSig = ''; // faixa montada, congelamento por foco, origem do foco (ponteiro x teclado), janela ligada, assinatura que invalida codeH
@@ -1232,7 +1234,9 @@ class Component extends DCLogic {
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
   // do state, que ja e a fonte de verdade — nao existe copia paralela para dessincronizar.
   uiSnapshot() { const s = this.state; const ui = { ...s.cfg }; UI_KEYS.forEach(k => { ui[k] = s[k]; }); return ui; }
-  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, ...(Object.keys(this.layoutMap).length ? { layouts: this.layoutMap } : {}), selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat }, explodeFrom: this.fixtureBase ? null : s.explodeFrom, collapseAt: this.fixtureBase ? null : s.collapseAt }; }
+  sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, ...(Object.keys(this.layoutMap).length ? { layouts: this.layoutMap } : {}), ...(this.multiLayout() ? { viewLayout: s.project.layoutId } : {}), selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat }, explodeFrom: this.fixtureBase ? null : s.explodeFrom, collapseAt: this.fixtureBase ? null : s.collapseAt }; }
+  // S9.1a: o projeto montado declara 2+ layouts (unico caso em que a sessao e as chaves de pendentes ganham o layout)
+  multiLayout() { const p = this.state.project; return !!(p && p.layouts && p.layouts.length >= 2); }
   // Uma escrita por rajada, não uma por evento: orbitar a câmera dispara ~60 setState por
   // segundo e todos caem no mesmo trailing de 400 ms.
   persistSoon() { clearTimeout(this.persistT); this.persistT = setTimeout(() => this.writeConfig(), 400); }
@@ -1256,6 +1260,7 @@ class Component extends DCLogic {
     const overR = rq.length > LayersCore.PENDING_CAP;
     if (overR && !this.pendingReqCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' requisições: as excedentes não serão restauradas ao reabrir.', 'warn');
     this.pendingReqCapWarned = overR;
+    this.touchSiblings();
     let ok;
     if (this.pendingReady) ok = LayersCore.setPending(LS_STORE, this.pendingKey, ch.length || rq.length ? { hash: this.pendingHash, changes: ch, requests: rq } : null, Date.now());
     else { const saved = LayersCore.getPending(LS_STORE, this.pendingKey); ok = LayersCore.setPending(LS_STORE, this.pendingKey, { hash: saved ? saved.hash : this.pendingHash, changes: saved ? saved.changes : [], requests: rq }, Date.now()); }
@@ -1263,9 +1268,11 @@ class Component extends DCLogic {
     this.pendingQuotaWarned = !ok;
     this.pendingDirty = false;
   }
+  // S9.1a: a escrita da chave ativa renova os irmaos `base|*` (e `base` se `main` e declarado) antes do prune do setPending: pendentes de layout nao aberto nao expiram enquanto o usuario trabalha em outro.
+  touchSiblings() { if (this.multiLayout() && this.baseKey !== null && this.baseKey !== undefined) LayersCore.touchLayoutEntries(LS_STORE, this.baseKey, Date.now(), this.state.project.layouts.some(l => l.id === 'main')); }
   // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
   // As requisicoes sao texto do usuario: sobrevivem ao descarte dos ajustes; so `clearReq` (zerar interface) as apaga.
-  rewritePending(clearReq) { const rq = clearReq ? [] : this.state.requests; LayersCore.setPending(LS_STORE, this.pendingKey, rq.length ? { hash: this.pendingHash, changes: [], requests: rq } : null, Date.now()); }
+  rewritePending(clearReq) { const rq = clearReq ? [] : this.state.requests; this.touchSiblings(); LayersCore.setPending(LS_STORE, this.pendingKey, rq.length ? { hash: this.pendingHash, changes: [], requests: rq } : null, Date.now()); }
   dropPending(clearReq) { if (this.pendingReady && this.pendingKey) this.rewritePending(clearReq); this.pendingDirty = false; this.pendingReady = false; this.pendingReqOnly = false; }
   // approve/rollback reescrevem arquivos sem recarregar: so as partes gravadas (`paths`) entram no hash novo.
   // Durante a releitura a sessao nao grava, para que uma edicao logo apos "Aplicar" nao saia com o hash antigo.
@@ -1295,7 +1302,9 @@ class Component extends DCLogic {
     this.projectId = id || null;
     // Camera e selecao moram na chave compartilhada: valem para a aba que as gravou, nao para
     // outra aba que esta em outro projeto. Em modo fixture nem entram — loadProject zera a vista.
-    const own = !!id && sess.lastProjectId === id;
+    // S9.1a: a vista carimbada com outro layout que o ativo (aba fechada no meio da troca) nao vale
+    const vl = this.layoutMap[id || '-'];
+    const own = !!id && sess.lastProjectId === id && (!sess.viewLayout || !vl || sess.viewLayout === vl);
     const cam = own ? sess.camera : null;
     if (cam && !this.fixtureBase) this.setState({ yaw: +cam.yaw || 0, tilt: +cam.tilt || 0, zoom: +cam.zoom || 1, panX: +cam.panX || 0, panY: +cam.panY || 0, flat: !!cam.flat });
     // S3.5: ramo explodido, como a camera: so do projeto da aba e nunca em fixture (o id e validado no scan)
@@ -1382,6 +1391,7 @@ class Component extends DCLogic {
   resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(true); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
+    const pv = this.pendingView; this.pendingView = null; // consumido ja aqui: uma carga superada nunca o vaza para a seguinte (S9.1a)
     this.writeConfig(); this.pendingReady = false; this.pendingReqOnly = false; const baseKey = this.pendingKeyNow(); this.pendingKey = null; // drena a rajada na chave antiga antes de recalcular; pendingKey so volta com o layout resolvido (S9.1a)
     this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
     const bak = this.bakNote ? ' · ' + this.bakNote : ''; this.bakNote = null; // so a carga que o Reanalisar disparou mostra a nota; carga falha ou superada a descarta
@@ -1441,6 +1451,7 @@ class Component extends DCLogic {
     // O id carimbado e o que impede a selecao de um projeto vazar para o proximo: quando a
     // restauracao para no meio (sem permissao, .zip, repositorio), o pendingSel nao casa.
     const keep = this.pendingSel && this.pendingSel.id === this.projectId ? this.pendingSel : null; this.pendingSel = null;
+    const vw = !keep && pv && pv.projectId === this.projectId && pv.layoutId === curLayout.id ? pv.view : null; // vista do layout alvo; selId/isoId/explodeFrom sao validados pelo scan()
     if (autoNote) warn.unshift(autoNote); // warn[0] e o unico aviso que entra no toast final
     if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
     // S2.14: so a carga vencedora chega aqui. Fonte que falhou na leitura torna o hash nao confiavel:
@@ -1470,7 +1481,7 @@ class Component extends DCLogic {
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -1528,7 +1539,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: {}, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.viewCache = {}; this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: {}, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1811,7 +1822,7 @@ class Component extends DCLogic {
     const s = this.state; if (!s.project || (s.project.layouts || []).length < 2 || s.project.layoutId === id || !s.project.layouts.some(l => l.id === id)) return;
     if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de trocar de layout'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
-    const go = () => { this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject(); };
+    const go = () => { const c = this.state; this.viewCache[LayersCore.stateMapKey(this.baseKey, s.project.layoutId)] = { selId: c.selId, isoId: c.isoId, yaw: c.yaw, tilt: c.tilt, zoom: c.zoom, panX: c.panX, panY: c.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; this.pendingView = { projectId: this.projectId, layoutId: id, view: this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject(); };
     // pendentes salvaveis ficam na chave do layout antigo; so os que o dreno nao persiste (carga incompleta, sem chave) se perdem
     const lost = !this.pendingReady && (s.changes || []).length > 0;
     if (LayersCore.hasUnsaved(this.pendingReady ? [] : s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
