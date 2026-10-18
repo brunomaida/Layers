@@ -292,6 +292,7 @@ test('Explode_RailChips_UnmarkedTakeNoRoom', async ({ page }) => {
 const C4 = '0.0.2.0.4';
 const C5 = '0.0.2.0.4.0';
 const C6 = '0.0.2.0.4.0.0';
+const LAST = '0.0.2.0.4.0.1'; // last child of C5: removing it frees its id (removing C6 would renumber its sibling into C6)
 const SHALLOW = '0.1';
 // Every trigger is a REAL right-click (page.mouse at a point that hits the plane, or
 // locator.click({button:'right'}) on a tree row): 3D transforms make the plane's centre unreliable, so `planePoint`
@@ -374,7 +375,7 @@ test.describe('ContextMenu_Ui', () => {
     await expect(panel(page).locator('[data-ctx-d]')).toHaveCount(info.max + 1);
     await expect(layerRow(page, 1)).toHaveAttribute('aria-current', 'true');
     await expect(layerRow(page, 1)).toContainText(info.selName);
-    await expect(layerRow(page, 1)).toContainText(String(info.total1));
+    await expect(layerRow(page, 1).locator('[data-ctx-n]')).toHaveText(String(info.total1));
     for (const d of [0, 2, 3, 4]) await expect(layerRow(page, d)).not.toHaveAttribute('aria-current', 'true');
     await expect(layerRow(page, 0)).toContainText(info.rootName); // ancestor named
     await expect(layerRow(page, 2)).toContainText(info.d2 + ' no ramo'); // descendant level
@@ -398,9 +399,14 @@ test.describe('ContextMenu_Ui', () => {
     const z = await zs(page);
     expect(z[C6]).toBe(3 * sp);
     expect(z['0.1']).toBeLessThanOrEqual(0.5); // outside the branch: the flat off-path rule only (0 or 0.5), no branch depth
-    // inside an exploded branch the item is replaced by Recolher
+    // inside an exploded branch the item is replaced by Recolher (assert the menu is really open before the absence)
     await rightClick(page, C5);
+    await expect(panel(page)).toBeVisible();
+    await expect(item(page, /Recolher/)).toBeVisible();
     await expect(item(page, /Explodir daqui/)).toHaveCount(0);
+    // the branch mark sits only on the row of the exploded root (L3), not on its descendants' rows or other ancestors
+    await expect(layerRow(page, 3)).toContainText('▧');
+    for (const d of [0, 1, 2, 4, 5]) await expect(layerRow(page, d)).not.toContainText('▧');
   });
 
   test('ContextMenu_RecolherAteAqui_InBranch', async ({ page }) => {
@@ -469,6 +475,8 @@ test.describe('ContextMenu_Ui', () => {
     await expect(layerRow(page, 4)).toHaveAttribute('aria-current', 'true');
   });
 
+  // The 3px cut compares the contextmenu position with the right mousedown; it relies on Windows Chromium firing contextmenu on
+  // mouseup (macOS fires it on mousedown, where no drag can be told apart yet).
   test('ContextMenu_RightDrag_DoesNotOpen', async ({ page }) => {
     await open(page);
     await goFlat(page);
@@ -490,9 +498,9 @@ test.describe('ContextMenu_Ui', () => {
     await page.setViewportSize({ width: 900, height: 420 });
     await open(page);
     await goFlat(page);
-    // cursor near the right edge: the pair (panel + submenu) must flip and fit; then near the bottom edge
+    // right edge: the submenu flips to the left of the panel (panel.x + 8 >= its right edge); bottom edge: it stays on the right and the pair moves up
     // synthetic contextmenu on the plane: the only way to put the cursor at an exact edge coordinate over a tiny plane
-    for (const [cx, cy] of [[890, 150], [300, 410]]) {
+    for (const [cx, cy, flipped] of [[890, 150, true], [300, 410, false]]) {
       await page.evaluate(([x, y, id]) => document.querySelector(`[data-plane="${id}"]`).dispatchEvent(new MouseEvent('contextmenu', { bubbles: true, cancelable: true, button: 2, clientX: x, clientY: y })), [cx, cy, C6]);
       const vp = page.viewportSize();
       for (const loc of [panel(page), sub(page)]) {
@@ -503,7 +511,38 @@ test.describe('ContextMenu_Ui', () => {
         expect(b.x + b.width, 'right').toBeLessThanOrEqual(vp.width);
         expect(b.y + b.height, 'bottom').toBeLessThanOrEqual(vp.height);
       }
+      await expect.poll(async () => {
+        const p = await panel(page).boundingBox(), q = await sub(page).boundingBox();
+        return flipped ? q.x + q.width <= p.x + 8 : q.x >= p.x + p.width - 8;
+      }, { message: flipped ? 'submenu flipped to the left' : 'submenu on the right' }).toBe(true);
     }
+  });
+
+  test('ContextMenu_GlobalKey_ClosesMenu', async ({ page }) => {
+    await open(page);
+    await goFlat(page);
+    await rightClick(page, C4);
+    await expect(panel(page)).toBeVisible();
+    await page.keyboard.press('ArrowRight'); // a global camera key: the menu must not stay open over a moving scene
+    await expect(panel(page)).toHaveCount(0);
+  });
+
+  test('ContextMenu_TargetGone_ScanClosesIt', async ({ page }) => {
+    await open(page);
+    await goFlat(page);
+    await rightClick(page, LAST);
+    await expect(panel(page)).toBeVisible();
+    await act(page, 'scan');
+    await expect(panel(page)).toBeVisible(); // control: a scan that keeps the id leaves the menu open
+    // drop the target element from the mounted mock (shadow root): the next scan no longer finds LAST (the last child, so no sibling takes its id)
+    await page.evaluate((path) => {
+      const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+      let el = [...host.shadowRoot.children].find((e) => e.localName !== 'style');
+      for (const i of path.split('.').slice(1)) el = el.children[+i];
+      el.remove();
+    }, LAST);
+    await act(page, 'scan');
+    await expect(panel(page)).toHaveCount(0);
   });
 
   test('ContextMenu_Explodido_NoExplodeItem', async ({ page }) => {
