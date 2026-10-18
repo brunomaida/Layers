@@ -3108,7 +3108,25 @@ describe('TouchLayoutEntries / ClearLayoutEntries', () => {
     expect(empty.getItem('layers/v1/pending')).toBeNull();
   });
 
-  it('TouchEClear_GravacaoFalha_RemoveAChaveERetornaFalse', () => {
+  it('Touch_BaseNula_NaoPodaEntradaExpiradaNemGrava', () => {
+    const st = memStorage();
+    seed(st, 'fx:a|mobile', 0);
+    const before = st.getItem('layers/v1/pending');
+    expect(core.touchLayoutEntries(st, null, 31 * DAY, true)).toBe(true);
+    expect(st.getItem('layers/v1/pending')).toBe(before);
+  });
+
+  it('Touch_GravacaoFalha_RetornaFalseEMantemAsEntradasIntactas', () => {
+    const m = new Map(); let full = false;
+    const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (full) throw new Error('quota'); m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
+    seed(st, 'fx:a|mobile', 5); seed(st, 'fx:b', 5);
+    const before = st.getItem('layers/v1/pending');
+    full = true;
+    expect(core.touchLayoutEntries(st, 'fx:a', 1000)).toBe(false);
+    expect(st.getItem('layers/v1/pending')).toBe(before);
+  });
+
+  it('Clear_GravacaoFalha_RemoveAChaveERetornaFalse', () => {
     const throwing = () => {
       const m = new Map(); let full = false;
       const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (full) throw new Error('quota'); m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
@@ -3116,9 +3134,6 @@ describe('TouchLayoutEntries / ClearLayoutEntries', () => {
       full = true;
       return st;
     };
-    const t = throwing();
-    expect(core.touchLayoutEntries(t, 'fx:a', 1000)).toBe(false);
-    expect(t.getItem('layers/v1/pending')).toBeNull();
     const c = throwing();
     expect(core.clearLayoutEntries(c, 'fx:a')).toBe(false);
     expect(c.getItem('layers/v1/pending')).toBeNull();

@@ -1261,19 +1261,20 @@ class Component extends DCLogic {
     const overR = rq.length > LayersCore.PENDING_CAP;
     if (overR && !this.pendingReqCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' requisições: as excedentes não serão restauradas ao reabrir.', 'warn');
     this.pendingReqCapWarned = overR;
-    this.touchSiblings();
+    const touched = this.touchSiblings();
     let ok;
     if (this.pendingReady) ok = LayersCore.setPending(LS_STORE, this.pendingKey, ch.length || rq.length ? { hash: this.pendingHash, changes: ch, requests: rq } : null, Date.now());
     else { const saved = LayersCore.getPending(LS_STORE, this.pendingKey); ok = LayersCore.setPending(LS_STORE, this.pendingKey, { hash: saved ? saved.hash : this.pendingHash, changes: saved ? saved.changes : [], requests: rq }, Date.now()); }
+    ok = ok && touched; // a failed sibling touch leaves the other layouts' entries unrenewed: same warning path
     if (!ok && !this.pendingQuotaWarned) this.toast('Não foi possível salvar os ajustes e requisições pendentes: armazenamento cheio.', 'warn');
     this.pendingQuotaWarned = !ok;
     this.pendingDirty = false;
   }
   // S9.1a: a escrita da chave ativa renova os irmaos `base|*` (e `base` se `main` e declarado) antes do prune do setPending: pendentes de layout nao aberto nao expiram enquanto o usuario trabalha em outro.
-  touchSiblings() { if (this.multiLayout() && this.baseKey !== null && this.baseKey !== undefined) LayersCore.touchLayoutEntries(LS_STORE, this.baseKey, Date.now(), this.state.project.layouts.some(l => l.id === 'main')); }
+  touchSiblings() { return !(this.multiLayout() && this.baseKey !== null && this.baseKey !== undefined) || LayersCore.touchLayoutEntries(LS_STORE, this.baseKey, Date.now(), this.state.project.layouts.some(l => l.id === 'main')); }
   // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
   // As requisicoes sao texto do usuario: sobrevivem ao descarte dos ajustes; so `clearReq` (zerar interface) as apaga.
-  rewritePending(clearReq) { const rq = clearReq ? [] : this.state.requests; this.touchSiblings(); LayersCore.setPending(LS_STORE, this.pendingKey, rq.length ? { hash: this.pendingHash, changes: [], requests: rq } : null, Date.now()); }
+  rewritePending(clearReq) { const rq = clearReq ? [] : this.state.requests; const touched = this.touchSiblings(); const ok = LayersCore.setPending(LS_STORE, this.pendingKey, rq.length ? { hash: this.pendingHash, changes: [], requests: rq } : null, Date.now()); if (!(ok && touched)) this.toast('Não foi possível salvar os ajustes e requisições pendentes: armazenamento cheio.', 'warn'); }
   dropPending(clearReq) { if (this.pendingReady && this.pendingKey) this.rewritePending(clearReq); this.pendingDirty = false; this.pendingReady = false; this.pendingReqOnly = false; }
   // approve/rollback reescrevem arquivos sem recarregar: so as partes gravadas (`paths`) entram no hash novo.
   // Durante a releitura a sessao nao grava, para que uma edicao logo apos "Aplicar" nao saia com o hash antigo.
