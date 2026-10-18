@@ -1308,7 +1308,7 @@
             "title": "Docs"
           }
         ],
-        "reason": "Menu de botão direito (Explodir daqui, Recolher até aqui) e Requisição no painel Ajustes; inclui a base local do mock",
+        "reason": "Menu de botão direito (Explodir daqui, Recolher até aqui) e Requisição no painel Ajustes; inclui a cópia local do mock /design (docs/design/ui-mock)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
