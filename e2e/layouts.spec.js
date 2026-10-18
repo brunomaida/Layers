@@ -274,3 +274,45 @@ test('Layouts_Strip_BadgeShowsPendingOfOtherLayout', async ({ page }) => {
   await expect.poll(() => layoutId(page)).toBe('config');
   await expect(page.locator('[data-layout-badge]')).toHaveCount(0);
 });
+
+// Fix round 1: the strip is its own pill above the Camadas bar, so neither row stretches the other (no empty band).
+// Widths captured from the unchanged bar (before the strip existed) on the 1280x760 viewport.
+const bar = (page) => page.getByTitle('Mostrar todas as camadas').locator('xpath=..');
+const right = async (loc) => { const b = await loc.boundingBox(); return b.x + b.width; };
+
+test('Layouts_Strip_RowsHugTheirContent', async ({ page }) => {
+  await loaded(page);
+  const chips = page.locator('[data-layout-chip]');
+  const strip = page.locator('[data-layout-strip]');
+  expect((await right(strip)) - (await right(chips.last()))).toBeLessThanOrEqual(12);
+  const rail = bar(page).locator('button').last();
+  expect((await right(bar(page))) - (await right(rail))).toBeLessThanOrEqual(12);
+  // the pill sits above the bar (column), it does not widen it
+  const sb = await strip.boundingBox(); const bb = await bar(page).boundingBox();
+  expect(sb.y + sb.height).toBeLessThanOrEqual(bb.y);
+});
+
+test('Layouts_Strip_SingleLayoutBarKeepsItsWidth', async ({ page }) => {
+  await loaded(page, '/?layers=fixtures/traval/');
+  await expect(page.locator('[data-layout-strip]')).toHaveCount(0);
+  const tb = await bar(page).boundingBox();
+  expect(Math.abs(tb.width - 675.28)).toBeLessThan(1.5);
+  expect(tb.height).toBe(30);
+  await loaded(page, '/?layers=fixtures/multi-state/');
+  const mb = await bar(page).boundingBox();
+  expect(Math.abs(mb.width - 168.94)).toBeLessThan(1.5);
+  expect(mb.height).toBe(30);
+});
+
+test('Layouts_Strip_ReqFloorReadsRequestsOfOtherLayouts', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => {
+    const k = 'layers/v1/pending'; const cur = JSON.parse(localStorage.getItem(k) || '{"schema":1,"byProject":{}}');
+    cur.byProject['folder:proj|config'] = { savedAt: Date.now(), hash: 'x', changes: [{ bad: 1 }], requests: [{ id: 'R7', layoutId: 'config', nodeKey: 'n', path: 'p', text: 't', createdAt: 1 }] };
+    localStorage.setItem(k, JSON.stringify(cur));
+    window.__logic.loadProject();
+  });
+  await expect(page.locator('[data-layout-badge="config"]')).toHaveText('1');
+  expect(await page.evaluate(() => window.__logic.reqFloor)).toBe(7);
+});
