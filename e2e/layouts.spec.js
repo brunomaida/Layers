@@ -462,6 +462,21 @@ test('Layouts_Reload_IgnoresViewStampedWithAnotherLayout', async ({ page }) => {
   expect(await viewOf(page)).toMatchObject({ selId: '0', yaw: 0, zoom: 1 });
 });
 
+test('Layouts_Reload_StaleLayoutIdIsDroppedSoTheViewRestoresNextTime', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  // `layouts` names a layout that no longer exists: the load falls back to the first one and forgets the stale id
+  await reloadWith(page, { layouts: { 'folder:proj': 'ghost' } });
+  await settled(page, 'main');
+  expect(await page.evaluate(() => Object.keys(window.__logic.layoutMap))).toEqual([]);
+  await act(page, 'select', '0.1');
+  await act(page, 'setState', { yaw: 0.6, zoom: 1.7 });
+  await expect.poll(() => page.evaluate(() => { const s = JSON.parse(localStorage.getItem('layers/v1/session') || '{}'); return [s.viewLayout, 'layouts' in s, s.selId, s.camera && s.camera.yaw]; })).toEqual(['main', false, '0.1', 0.6]);
+  await reloadWith(page);
+  await settled(page, 'main');
+  expect(await viewOf(page)).toMatchObject({ selId: '0.1', yaw: 0.6, zoom: 1.7 });
+});
+
 test('Layouts_SingleLayoutSession_HasNoLayoutKeys', async ({ page }) => {
   await open(page, 'multi-state');
   await act(page);
