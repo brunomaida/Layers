@@ -3548,6 +3548,42 @@ describe('CoverageModel', () => {
   });
 });
 
+describe('CoverageModelMerge', () => {
+  it('FusaoMantemCaminhoMaisCurtoEPaineisDoOutro', () => {
+    const sparse = '<body><div id="app"><p>a</p></div></body>';
+    const zeta = '<body><div id="app"><p>a</p></div><div id="p1" hidden><i>1</i></div><div id="p2" hidden><i>2</i></div><div id="p3" hidden><i>3</i></div></body>';
+    const files = [{ path: 'zeta.html', kind: 'html', text: zeta }, { path: 'a.html', kind: 'html', text: sparse }];
+    const m = core.coverageModel({ man: { mock: 'a.html' }, files, mocks: { 'a.html': sparse } });
+    expect(m.sharedStates).toEqual([['a.html', 'zeta.html']]);
+    expect(m.regions.map((r) => r.key)).toEqual(['a.html', 'a.html#div#p1', 'a.html#div#p2', 'a.html#div#p3']);
+    expect(m.models.mono.cobReg).toBeCloseTo(0.25, 5);
+    expect(core.coverageVerdict(m).verdict).not.toBe('Monovisual');
+  });
+
+  it('FusaoDeduplicaPaineisPorSel', () => {
+    const a = '<body><div id="app"><p>a</p></div><div id="p1" hidden><i>1</i></div></body>';
+    const b = '<body><div id="app"><p>a</p></div><div id="p1" hidden><i>1</i></div><div id="p2" hidden><i>2</i></div></body>';
+    const files = [{ path: 'a.html', kind: 'html', text: a }, { path: 'b.html', kind: 'html', text: b }];
+    const m = core.coverageModel({ man: { mock: 'a.html' }, files, mocks: { 'a.html': a } });
+    expect(m.regions.map((r) => r.key)).toEqual(['a.html', 'a.html#div#p1', 'a.html#div#p2']);
+  });
+
+  it('FusaoCaminhoMaisCurto_IndexVence', () => {
+    const body = '<body><div id="x"><p class="y">q</p></div></body>';
+    const files = [{ path: 'about/index.html', kind: 'html', text: body }, { path: 'index.html', kind: 'html', text: body }];
+    const m = core.coverageModel({ man: { mock: 'index.html' }, files, mocks: { 'index.html': body } });
+    expect(m.regions.map((r) => r.key)).toEqual(['index.html']);
+    expect(m.sharedStates).toEqual([['index.html', 'about/index.html']]);
+  });
+
+  it('MockRaizIlegivel_NaoResgatadoPeloTextoDoArquivo', () => {
+    const m = core.coverageModel({ man: { mock: 'main.html' }, files: covFiles(), mocks: {} });
+    expect(m.unreadable).toEqual(['main.html']);
+    expect(m.models.multi.mocks).toEqual(['config.html', 'replay.html']);
+    expect(m.models.multi.mocks).not.toContain('main.html');
+  });
+});
+
 describe('CoverageVerdict', () => {
   const model = (man, files, mocks, extra) => core.coverageModel({ man, files, mocks, ...extra });
 
@@ -3586,6 +3622,36 @@ describe('CoverageVerdict', () => {
     const v = core.coverageVerdict(model(man, files, { 'a.html': COV_CONFIG, 'b.html': COV_CONFIG }));
     expect(v).toMatchObject({ verdict: 'Monovisual (layouts não ajudam)', rule: 3, split: false });
     expect(v.gainPp).toBeCloseTo(0, 5);
+  });
+
+  describe('Limites', () => {
+    const built = (best, multi, maxPlanes) => ({
+      regions: [{}],
+      models: {
+        mono: { cobReg: best, maxPlanes }, monoStates: { cobReg: best, maxPlanes }, multi: { cobReg: multi, maxPlanes: 0 }
+      }
+    });
+
+    it('MelhorExatamente085_Monovisual', () => {
+      expect(core.coverageVerdict(built(0.85, 0.85, 10))).toMatchObject({ verdict: 'Monovisual', rule: 2 });
+    });
+
+    it('PlanosExatamente1500_Monovisual', () => {
+      expect(core.coverageVerdict(built(1, 1, 1500))).toMatchObject({ rule: 2, split: false });
+    });
+
+    it('Planos1501_Regra4', () => {
+      expect(core.coverageVerdict(built(1, 1, 1501))).toMatchObject({ rule: 4, split: true });
+    });
+
+    it('GanhoExatamente015_MultiplosLayouts', () => {
+      expect(0.7 - 0.55).toBeLessThan(0.15);
+      expect(core.coverageVerdict(built(0.55, 0.7, 10))).toMatchObject({ verdict: 'Múltiplos layouts', rule: 3 });
+    });
+
+    it('GanhoAbaixoDe015_LayoutsNaoAjudam', () => {
+      expect(core.coverageVerdict(built(0.56, 0.7, 10))).toMatchObject({ rule: 3, verdict: 'Monovisual (layouts não ajudam)' });
+    });
   });
 });
 
@@ -3631,6 +3697,32 @@ describe('SuggestLayouts', () => {
     const out = run(man, covFiles(), { 'config.html': COV_CONFIG });
     expect(out.map((l) => l.mock)).toEqual(['main.html', 'replay.html']);
     expect(out.map((l) => l.id)).toEqual(['main', 'replay']);
+  });
+
+  it('TresColisoes_SufixosNaoEmpilham', () => {
+    const files = [
+      { path: 'main.html', kind: 'html', text: COV_MAIN },
+      { path: 'a/config.html', kind: 'html', text: COV_CONFIG },
+      { path: 'b/config.html', kind: 'html', text: COV_REPLAY },
+      { path: 'c/config.html', kind: 'html', text: '<body><nav id="n"><a>q</a></nav></body>' }
+    ];
+    const out = run({ mock: 'main.html' }, files, { 'main.html': COV_MAIN });
+    expect(out.map((l) => l.id)).toEqual(['main', 'config', 'config-2', 'config-3']);
+  });
+
+  it('Slug45Colidindo_TotalAte40SemEmpilhar', () => {
+    const slug = 'y'.repeat(45);
+    const bodies = [COV_CONFIG, COV_REPLAY, '<body><nav id="n"><a>q</a></nav></body>'];
+    const files = [{ path: 'main.html', kind: 'html', text: COV_MAIN }]
+      .concat(['a', 'b', 'c'].map((d, i) => ({ path: d + '/' + slug + '.html', kind: 'html', text: bodies[i] })));
+    const ids = run({ mock: 'main.html' }, files, { 'main.html': COV_MAIN }).map((l) => l.id).slice(1);
+    expect(ids).toEqual(['y'.repeat(40), 'y'.repeat(38) + '-2', 'y'.repeat(38) + '-3']);
+  });
+
+  it('LayoutDeclaradoCobreTelaPorTokens_NaoSugere', () => {
+    const man = { layouts: [{ id: 'main', mock: 'main.html' }, { id: 'cfg', mock: 'mocks/cfg-mock.html' }] };
+    const out = run(man, covFiles(), { 'main.html': COV_MAIN, 'mocks/cfg-mock.html': COV_CONFIG.replace('<p>d', '<p>other') });
+    expect(out.map((l) => l.mock)).toEqual(['replay.html']);
   });
 
   it('IdLongo_Trunca40ESufixoCabe', () => {
