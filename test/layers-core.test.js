@@ -3182,3 +3182,116 @@ describe('TouchLayoutEntries / ClearLayoutEntries', () => {
     expect(st.getItem('layers/v1/pending')).toBeNull();
   });
 });
+
+describe('HtmlRegions', () => {
+  const pick = (r, sel) => r.regions.find((x) => x.sel === sel);
+
+  it('TabpanelEDialog_ClassificaRegioes', () => {
+    const html = '<body><div role="tablist"><button role="tab">A</button></div>'
+      + '<div id="p1" role="tabpanel"><span>x</span></div>'
+      + '<div id="p2" role="tabpanel" hidden><b>y</b><i>z</i></div>'
+      + '<dialog id="dlg"><p>q</p></dialog></body>';
+    const r = core.htmlRegions(html);
+    expect(r.nodes).toBe(9);
+    expect(r.visibleNodes).toBe(4);
+    expect(r.rootEl).toBe(2);
+    expect(pick(r, 'div#p1')).toMatchObject({ kind: 'aba', hidden: false, el: 2 });
+    expect(pick(r, 'div#p2')).toMatchObject({ kind: 'aba', hidden: true, el: 3 });
+    expect(pick(r, 'dialog#dlg')).toMatchObject({ kind: 'diálogo', hidden: true, el: 2 });
+    expect(r.tokens['div#p1']).toBe(false);
+    expect(r.tokens['div#p2']).toBe(true);
+  });
+
+  it('ScriptStyleComentarioTemplate_NaoContam', () => {
+    const r = core.htmlRegions('<body><!-- <dialog id="x"> --><script>var s=\'<dialog id="y">\'</script>'
+      + '<style>.a{}</style><template><dialog id="t"></dialog></template><p>ok</p></body>');
+    expect(r.regions).toEqual([]);
+    expect(r.nodes).toBe(1);
+  });
+
+  it('TagNaoFechadaEFechamentoSolto_NaoLancaEContaRegiao', () => {
+    let r;
+    expect(() => { r = core.htmlRegions('<body></span><div id="a"><p>x<div hidden id="b"><span>'); }).not.toThrow();
+    expect(r.nodes).toBe(4);
+    expect(r.regions).toHaveLength(1);
+    expect(r.regions[0]).toMatchObject({ sel: 'div#b', kind: 'painel', hidden: true, el: 2 });
+  });
+
+  it('OcultoPorCss_PainelOculto', () => {
+    const r = core.htmlRegions('<body><div id="empty"><p>x</p></div></body>', ['#empty']);
+    expect(r.regions).toHaveLength(1);
+    expect(r.regions[0]).toMatchObject({ sel: 'div#empty', kind: 'painel', hidden: true, el: 2 });
+  });
+
+  it('DisplayNoneInline_PainelOculto', () => {
+    const r = core.htmlRegions('<body><div class="box a" style="color:red; display: none"><i>1</i></div></body>');
+    expect(r.regions).toHaveLength(1);
+    expect(r.regions[0]).toMatchObject({ sel: 'div.box.a', kind: 'painel', hidden: true });
+  });
+
+  it('DialogComOpen_Visivel', () => {
+    const r = core.htmlRegions('<body><dialog open id="d"><p>x</p></dialog></body>');
+    expect(r.regions[0]).toMatchObject({ sel: 'dialog#d', kind: 'diálogo', hidden: false });
+  });
+
+  it('AncestralOculto_FilhoHerdaOculto', () => {
+    const r = core.htmlRegions('<body><div id="p" hidden><dialog open id="d"></dialog></div></body>');
+    expect(pick(r, 'dialog#d').hidden).toBe(true);
+    expect(pick(r, 'div#p')).toMatchObject({ hidden: true, el: 1 });
+  });
+
+  it('ClasseRepetida_GanhaOrdinal', () => {
+    const r = core.htmlRegions('<body><div class="row" hidden></div><div class="row" hidden></div></body>');
+    expect(r.regions.map((x) => x.sel)).toEqual(['div.row', 'div.row~2']);
+  });
+
+  it('TokenRepetido_VisivelSeAlgumaInstanciaVisivel', () => {
+    const r = core.htmlRegions('<body><div class="row" hidden></div><div class="row"></div></body>');
+    expect(r.tokens['div.row']).toBe(false);
+  });
+});
+
+describe('CssHiddenSelectors', () => {
+  it('RegrasDeTopoComDisplayNone_ListaIdEClasse', () => {
+    const css = '#empty{display:none}.modal,.dlg { display : none !important }.x{color:red}'
+      + 'a:hover{display:none}@media print{.p{display:none}}';
+    expect(core.cssHiddenSelectors([css])).toEqual(['#empty', '.modal', '.dlg']);
+  });
+
+  it('Duplicata_Unica', () => {
+    expect(core.cssHiddenSelectors(['.a{display:none}', '.a{display:none}.b{display:none}'])).toEqual(['.a', '.b']);
+  });
+});
+
+describe('ScanScriptMarkers', () => {
+  it('AbaDialogRotas_ChavesBaixaConfianca', () => {
+    const text = 'render(\'<button role="tab">\'); open(\'<dialog>\'); href(\'#/config\'); href(\'#/replay\'); href(\'#/config\');';
+    const out = core.scanScriptMarkers('src/ui.ts', text);
+    expect(out.map((x) => x.key)).toEqual(['src/ui.ts:aba', 'src/ui.ts:dialog', 'src/ui.ts:route:config', 'src/ui.ts:route:replay']);
+    expect(out.every((x) => x.lowConf === true && x.el === null)).toBe(true);
+    expect(out.map((x) => x.kind)).toEqual(['aba', 'diálogo', 'tela', 'tela']);
+    expect(out.map((x) => x.marker)).toEqual(['tab', 'dialog', '#/config', '#/replay']);
+  });
+
+  it('SemMarcadores_Vazio', () => {
+    expect(core.scanScriptMarkers('a.js', 'var x = 1; role="tabpanel"')).toEqual([]);
+  });
+});
+
+describe('CoverageScope', () => {
+  it('ArquivosDeApp_Dentro', () => {
+    expect(core.coverageScope('src/index.html', '')).toBe(true);
+    expect(core.coverageScope('layers/mock.html', '')).toBe(true);
+  });
+
+  it('PastasEArquivosAuxiliares_Fora', () => {
+    ['docs/superpowers/reports/a.html', 'test/x.html', 'tests/x.html', 'e2e/x.html', 'fixtures/x/y.html',
+      'bench/a.html', 'tools/a.html', 'vendor/a.html', 'node_modules/a.html', '.design-history/a.html',
+      'boards/S.dc.html'].forEach((p) => expect(core.coverageScope(p, '')).toBe(false));
+  });
+
+  it('BaseNaoVazia_ExigePrefixo', () => {
+    expect(core.coverageScope('app/index.html', 'app')).toBe(true);
+    expect(core.coverageScope('other/index.html', 'app')).toBe(false);
+  });
+});
