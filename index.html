@@ -1211,9 +1211,9 @@ class Component extends DCLogic {
   projectId = CONF.session.lastProjectId || null;
   // S2.22b: estado do mock escolhido por projeto (chave = pendingKey), guardado na sessao para o reload voltar ao mesmo estado
   stateMap = CONF.session.states && typeof CONF.session.states === 'object' ? { ...CONF.session.states } : {};
-  // S9.1a: layout ativo por projeto (chave = base do projeto), guardado na sessao so quando ha algum
+  // S9.1a: active layout per project (key = project base), stored in the session only when the map is non-empty
   layoutMap = CONF.session.layouts && typeof CONF.session.layouts === 'object' && !Array.isArray(CONF.session.layouts) ? { ...CONF.session.layouts } : {};
-  // S9.1a: vista (selecao, camera, ramo explodido) por layout, so em memoria; chave = stateMapKey(base, layout). pendingView leva a vista alvo de switchLayout ate o loadProject que a consome.
+  // S9.1a: per-layout view (selection, camera, explode branch), memory only, key = stateMapKey(base, layout); pendingView carries switchLayout's target view to the loadProject that consumes it
   viewCache = Object.create(null); pendingView = null; // null-prototype maps keyed by layout id: ids like `constructor` must not hit Object.prototype
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
   codeH = {}; codeObs = new Map(); _treeAll = []; _treeH = []; _treeCodeN = 0; _treeBox = null; // S4.10: alturas medidas das linhas de código por codeKey; lista completa e alturas da aba ativa
@@ -1236,7 +1236,7 @@ class Component extends DCLogic {
   // do state, que ja e a fonte de verdade — nao existe copia paralela para dessincronizar.
   uiSnapshot() { const s = this.state; const ui = { ...s.cfg }; UI_KEYS.forEach(k => { ui[k] = s[k]; }); return ui; }
   sessionSnapshot() { const s = this.state; return { lastProjectId: this.projectId || null, states: this.stateMap, ...(Object.keys(this.layoutMap).length ? { layouts: this.layoutMap } : {}), ...(this.multiLayout() ? { viewLayout: s.project.layoutId } : {}), selId: s.selId, isoId: s.isoId, camera: { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, flat: s.flat }, explodeFrom: this.fixtureBase ? null : s.explodeFrom, collapseAt: this.fixtureBase ? null : s.collapseAt }; }
-  // S9.1a: o projeto montado declara 2+ layouts (unico caso em que a sessao e as chaves de pendentes ganham o layout)
+  // S9.1a: the mounted project declares 2+ layouts (the only case where the session stamp and pending keys carry the layout)
   multiLayout() { const p = this.state.project; return !!(p && p.layouts && p.layouts.length >= 2); }
   // Uma escrita por rajada, não uma por evento: orbitar a câmera dispara ~60 setState por
   // segundo e todos caem no mesmo trailing de 400 ms.
@@ -1270,7 +1270,7 @@ class Component extends DCLogic {
     this.pendingQuotaWarned = !ok;
     this.pendingDirty = false;
   }
-  // S9.1a: a escrita da chave ativa renova os irmaos `base|*` (e `base` se `main` e declarado) antes do prune do setPending: pendentes de layout nao aberto nao expiram enquanto o usuario trabalha em outro.
+  // S9.1a: writing the active key renews the `base|*` siblings (and `base` when `main` is declared) before setPending prunes, so unopened layouts do not expire
   touchSiblings() { return !(this.multiLayout() && this.baseKey !== null && this.baseKey !== undefined) || LayersCore.touchLayoutEntries(LS_STORE, this.baseKey, Date.now(), this.state.project.layouts.some(l => l.id === 'main')); }
   // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
   // As requisicoes sao texto do usuario: sobrevivem ao descarte dos ajustes; so `clearReq` (zerar interface) as apaga.
@@ -1304,7 +1304,7 @@ class Component extends DCLogic {
     this.projectId = id || null;
     // Camera e selecao moram na chave compartilhada: valem para a aba que as gravou, nao para
     // outra aba que esta em outro projeto. Em modo fixture nem entram — loadProject zera a vista.
-    // S9.1a: a vista carimbada com outro layout que o ativo (aba fechada no meio da troca) nao vale
+    // S9.1a: a view stamped with another layout than the active one (tab closed mid-switch) does not apply
     const vl = this.layoutMap[id || '-'];
     const own = !!id && sess.lastProjectId === id && (!sess.viewLayout || !vl || sess.viewLayout === vl);
     const cam = own ? sess.camera : null;
@@ -1822,13 +1822,13 @@ class Component extends DCLogic {
     if (LayersCore.hasUnsaved(s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de estado?', label: 'Trocar', text: 'Há edições não salvas; trocar de estado descarta todas.', onYes: () => { this.dropPending(); go(); } } }); return; }
     go();
   }
-  // S9.1a: troca o layout montado (layers.json › layouts). pendentes ficam na chave do layout antigo (ruling a): o modal so descarta o codeBuf.
+  // S9.1a: swaps the mounted layout (layers.json › layouts); pending stays under the old layout's key (ruling a), the modal only discards codeBuf
   switchLayout(id) {
     const s = this.state; if (!s.project || (s.project.layouts || []).length < 2 || s.project.layoutId === id || !s.project.layouts.some(l => l.id === id)) return;
     if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de trocar de layout'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
     const go = () => { const c = this.state; this.viewCache[LayersCore.stateMapKey(this.baseKey, s.project.layoutId)] = { selId: c.selId, isoId: c.isoId, yaw: c.yaw, tilt: c.tilt, zoom: c.zoom, panX: c.panX, panY: c.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; this.pendingView = { projectId: this.projectId, layoutId: id, view: this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject(); };
-    // pendentes salvaveis ficam na chave do layout antigo; so os que o dreno nao persiste (carga incompleta, sem chave) se perdem
+    // storable pending stays under the old layout's key; only what the drain cannot persist (incomplete load, over the cap, storage full) is lost
     const lost = (s.changes || []).length > 0 && (!this.pendingReady || s.changes.length > LayersCore.PENDING_CAP || this.pendingQuotaWarned);
     if (LayersCore.hasUnsaved(lost ? s.changes : [], s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
     go();
@@ -1878,7 +1878,7 @@ class Component extends DCLogic {
       await this.writeText(p.manifest, L.manifest);
       if (this.state.dir !== dir) throw new Error('a pasta conectada mudou durante o backup');
       await this.writeText(p.mock, L.mock);
-      for (const x of extra) await this.writeText(x.dest, x.text);
+      for (const x of extra) { if (this.state.dir !== dir) throw new Error('a pasta conectada mudou durante o backup'); await this.writeText(x.dest, x.text); }
       return { dir: p.dir, files: extra.map(x => x.dest.slice(p.dir.length + 1)), warns };
     } catch (e) {
       // backup parcial nao conta: remove o carimbo meio escrito (melhor esforco)
@@ -2581,7 +2581,7 @@ class Component extends DCLogic {
     }) }));
     propGroups.forEach(g => { g.dD = g.nD ? g.nD + 'D' : ''; g.dH = g.nH ? g.nH + 'H' : ''; g.dE = g.nE ? g.nE + 'E' : ''; g.hasAny = !!(g.nD || g.nH || g.nE); g.hasD = !!g.nD; g.hasH = !!g.nH; g.hasE = !!g.nE; g.sumTitle = g.total + ' propriedades · ' + g.nD + ' declarada(s) · ' + g.nH + ' herdada(s) · ' + g.nE + ' editada(s)'; });
     const vmax = this.visibleMax(); const rail = []; const exBr = this.branchInfo(); const exId = exBr ? exBr.root.id : null, exD = exBr ? exBr.root.depth : -1; // S3.5: raiz do ramo explodido
-    const lay = (s.project && s.project.layouts) || []; const hasLayouts = lay.length >= 2; // S9.1a: faixa LAYOUTS so com 2+ layouts
+    const lay = (s.project && s.project.layouts) || []; const hasLayouts = lay.length >= 2; // S9.1a: the LAYOUTS strip only shows with 2+ layouts
     const layoutChips = hasLayouts ? lay.map(l => { const on = l.id === s.project.layoutId; const nb = on ? 0 : (s.layoutBadges || {})[l.id] || 0; return { id: l.id, name: l.name, mark: on ? '● ' : '', pressed: on ? 'true' : 'false', hasBadge: nb > 0, badge: String(nb), title: l.name + (nb ? ' — ' + nb + ' pendente(s)' : ''), bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.switchLayout(l.id) }; }) : [];
     const EXP_TITLE = 'Explodido a partir daqui (vista plana). Botão direito › Recolher até aqui desfaz.';
     for (let d = 0; d <= vmax; d++) {
@@ -2704,7 +2704,7 @@ class Component extends DCLogic {
         ...(s.project && (s.project.states || []).length > 1 ? [{ label: 'Estado do mock', items: s.project.states.map(st => item(st.name, st.name === s.project.stateName, () => this.switchState(st.name)))}] : []) ] },
       ...manInter.map(({ item: it, index: i }) => { if (it.sep !== undefined) return { key: 'sep' + i, label: typeof it.sep === 'string' ? it.sep : (it.label || ''), sep: true };
         return { key: it.key || 'i' + i, label: it.label || 'Item ' + (i + 1), kind: it.show ? 'surface' : 'action', hint: it.show && isShown(it.show) === null ? 'sem alvo' : '', on: it.show ? isShown(it.show) : null, eye: it.show ? act({ toggle: it.show }) : null, desc: it.desc || '',
-          groups: (Array.isArray(it.groups) ? it.groups : []).map(g => ({ label: g.label || '', items: (Array.isArray(g.items) ? g.items : []).map(a => item(a.label || '', hasAct(a) ? actOn(a) : null, hasAct(a) ? act(a) : null, a.hint || (a.attr && !LayersCore.attrAction(a.attr) ? 'attr inválido' : ''))) })) }; }).filter(Boolean),
+          groups: (Array.isArray(it.groups) ? it.groups : []).map(g => ({ label: g.label || '', items: (Array.isArray(g.items) ? g.items : []).map(a => item(a.label || '', hasAct(a) ? actOn(a) : null, hasAct(a) ? act(a) : null, a.hint || (a.attr && !LayersCore.attrAction(a.attr) ? 'attr inválido' : ''))) })) }; }),
     ];
     const curInter = INTER.find(i => i.key === s.interSel && !i.sep) || INTER[0];
     const interModel = {
