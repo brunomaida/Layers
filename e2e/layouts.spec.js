@@ -688,6 +688,21 @@ test('Layouts_ResetUi_ClearsLayoutKeys', async ({ page }) => {
   expect(Object.keys(await storedPending(page))).toEqual([]);
 });
 
+// An incomplete load (pendingReady false, key set) never wrote the saved entry: Zerar must leave the whole project's entries for the next complete load.
+test('Layouts_ResetUi_AfterIncompleteLoad_KeepsSavedEntries', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await seedPending(page, { 'folder:proj|replay': 0, 'folder:proj': 0 });
+  await act(page, 'addRequest', '0.1');
+  await expect.poll(async () => Object.keys(await storedPending(page)).sort()).toEqual(['folder:proj', 'folder:proj|config', 'folder:proj|replay']);
+  await page.evaluate(() => { window.__logic.pendingReady = false; });
+  await act(page, 'resetUI');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project)).toBeNull();
+  expect(Object.keys(await storedPending(page)).sort()).toEqual(['folder:proj', 'folder:proj|config', 'folder:proj|replay']);
+});
+
 // baseKey only moves once layers.json parses: after a failed load of ANOTHER source it still names the previous project, whose entries Zerar must not touch.
 test('Layouts_ResetUi_AfterFailedLoadOfAnotherSource_KeepsPreviousProjectEntries', async ({ page }) => {
   await open(page, 'multi-layout');
