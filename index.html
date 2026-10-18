@@ -385,6 +385,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ reqCount }}</span>
             </div>
           </sc-if>
+          <sc-if value="{{ hasOther }}" hint-placeholder-val="{{ false }}"><div data-req-other="" style="padding:4px 10px;font:500 calc(9.5px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg3)">{{ otherLine }}</div></sc-if>
           <sc-for list="{{ reqRows }}" as="r" hint-placeholder-count="0">
             <div>
               <sc-if value="{{ r.closed }}" hint-placeholder-val="{{ true }}">
@@ -446,7 +447,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
             <button onClick="{{ reqMdToggle }}" aria-expanded="{{ reqMdOpen }}" style="all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:8px">
               <span style="color:var(--fg2);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;width:10px">{{ reqMdChev }}</span>
               <span style="flex:1;font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Requisições Manuais</span>
-              <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ reqCount }}</span>
+              <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ reqTotal }}</span>
             </button>
             <button onClick="{{ reqCopy }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Copiar</button>
             <sc-if value="{{ reqMdOpen }}" hint-placeholder-val="{{ false }}">
@@ -1228,7 +1229,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  reqFloor = 0; pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
+  reqFloor = 0; otherRequests = {}; pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1444,7 +1445,8 @@ class Component extends DCLogic {
     sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).concat(hostAttrs.vars.length ? [':host{' + hostAttrs.vars.map(v => v.name + ':' + v.value + ' !important').join(';') + '}'] : []).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.applyHostAttrs(host, hostAttrs); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     // interactions escritas contra o app real costumam mirar classes que o mock nao tem (S2.12)
-    const dead = LayersCore.deadInteractions(man.interactions, q => sh.querySelectorAll(q).length + (rootEl.matches(q) ? 1 : 0));
+    const inter = LayersCore.interactionsFor(man.interactions, curLayout.id); // S9.1a: filtered once per load; the Interagir menu keeps the ORIGINAL index for its keys
+    const dead = LayersCore.deadInteractions(inter.map(x => x.item), q => sh.querySelectorAll(q).length + (rootEl.matches(q) ? 1 : 0));
     if (dead.length) LayersCore.placeDeadWarning(warn, dead.length + ' seletor(es) de interactions sem alvo no mock: ' + dead.slice(0, 3).map(d => d.label + ' → ' + d.sel).join('; ') + (dead.length > 3 ? '…' : ''));
     const name = man.name || this.state.dirName;
     // Projeto novo abre na vista padrao; reabrir o ultimo projeto mantem camera e selecao.
@@ -1462,9 +1464,9 @@ class Component extends DCLogic {
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
     // S9.1a: badge and R<n> floor of the OTHER layouts, read once per load (never in writeConfig: it runs on every camera burst)
-    const layoutBadges = {}; let reqFloor = 0;
-    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
-    this.reqFloor = reqFloor;
+    const layoutBadges = {}, otherRequests = {}; let reqFloor = 0;
+    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; if (e.requests.length) otherRequests[l.id] = e.requests; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
+    this.reqFloor = reqFloor; this.otherRequests = otherRequests;
     // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
     const plan0 = LayersCore.restorePlan(saved, hash);
     const plan = incomplete ? { keep: [], dropped: 0, requests: plan0.requests, confirm: plan0.requests.length > 0 } : plan0;
@@ -1481,7 +1483,7 @@ class Component extends DCLogic {
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -1539,7 +1541,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.viewCache = {}; this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: {}, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.viewCache = {}; this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = {}; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: {}, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -2006,12 +2008,12 @@ class Component extends DCLogic {
     const path = []; for (let d = 0; d <= n.depth; d++) { const a = s.byId[LayersCore.ancestorAt(id, d)]; path.push(a ? a.name : ''); }
     const uses = this.sharedIds(id).length, texts = this.reqTexts(id), box = Math.round(n.w) + '×' + Math.round(n.h) + ' px';
     const pend = s.changes.filter(c => c.ids.includes(id)).map(c => kebab(c.prop) + ' ' + c.from + ' → ' + c.to).join('; ');
-    const rec0 = { layoutId: 'main', nodeId: id, ...(typeof this.pendingHash === 'string' ? { srcHash: this.pendingHash } : {}), nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
+    const rec0 = { layoutId: (s.project && s.project.layoutId) || 'main', nodeId: id, ...(typeof this.pendingHash === 'string' ? { srcHash: this.pendingHash } : {}), nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
       alvo: file ? file + ' › ' + selector + (line ? ' · L' + line : '') + (LayersCore.isManualSource(file) ? ' (manual: fonte TS)' : '') : '',
       caixa: box + ' · ' + (texts.length ? (texts.length > 1 ? 'textos ' : 'texto ') + texts.map(t => '“' + t + '”').join(', ') : uses + (uses === 1 ? ' uso' : ' usos')),
       estilos: this.reqStyles(id), uses, pendente: pend || null, text: '', createdAt: Date.now() };
     let rid = null; // o id nasce dentro do updater: duas acoes seguidas no mesmo tick leem a lista ja com a primeira
-    this.setState(st => { const k = st.requests.reduce((m, r) => { const x = /^R(\d+)$/.exec(r.id); return x ? Math.max(m, +x[1]) : m; }, 0) + 1; rid = 'R' + k; return { requests: [...st.requests, { id: rid, ...rec0 }], reqSel: rid, ajOpen: true, colOpen: true }; }, () => { const ta = document.getElementById('req-' + rid); if (ta) { ta.focus(); if (ta.scrollIntoView) ta.scrollIntoView({ block: 'nearest' }); } });
+    this.setState(st => { const k = st.requests.reduce((m, r) => { const x = /^R(\d+)$/.exec(r.id); return x ? Math.max(m, +x[1]) : m; }, this.reqFloor || 0) + 1; rid = 'R' + k; return { requests: [...st.requests, { id: rid, ...rec0 }], reqSel: rid, ajOpen: true, colOpen: true }; }, () => { const ta = document.getElementById('req-' + rid); if (ta) { ta.focus(); if (ta.scrollIntoView) ta.scrollIntoView({ block: 'nearest' }); } });
   }
   setRequestText(rid, t) { this.setState(st => ({ requests: st.requests.map(r => r.id === rid ? { ...r, text: t } : r) })); }
   removeRequest(rid) { this.setState(st => ({ requests: st.requests.filter(r => r.id !== rid), reqSel: st.reqSel === rid ? null : st.reqSel })); }
@@ -2020,26 +2022,33 @@ class Component extends DCLogic {
     if (!this.state.byId[r.nodeId]) { this.toast('Componente não encontrado nesta carga: o alvo pode ter mudado.', 'warn'); return; }
     this.select(r.nodeId); this.frame(r.nodeId);
   }
+  // S9.1a: active layout's requests (live state) merged with the stored ones of the other layouts, in layout order; memoized by identity
+  allRequests() {
+    const s = this.state, o = this.otherRequests, c = this._all; if (c && c.r === s.requests && c.p === s.project && c.o === o) return c.v;
+    const v = LayersCore.mergeLayoutRequests(s.project && s.project.layouts ? s.project.layouts.map(l => l.id) : [], s.project ? s.project.layoutId : 'main', s.requests, o);
+    this._all = { r: s.requests, p: s.project, o, v }; return v;
+  }
   requestsMd() {
-    const s = this.state; if (!s.requests.length) return '';
+    const s = this.state, all = this.allRequests(); if (!all.length) return '';
     const d = new Date(), p2 = v => String(v).padStart(2, '0'), stamp = p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
-    const c = this._md; if (c && c.r === s.requests && c.p === s.project && c.stamp === stamp) return c.v; // orbitar re-renderiza: o texto so muda com as requisicoes, o projeto ou o minuto
-    const v = LayersCore.requestsMarkdown({ project: s.project ? s.project.name : '', version: '—', stamp, mock: s.project ? s.project.mockPath : '', layouts: 1, requests: s.requests });
-    this._md = { r: s.requests, p: s.project, stamp, v }; return v;
+    const c = this._md; if (c && c.a === all && c.stamp === stamp) return c.v; // orbitar re-renderiza: o texto so muda com as requisicoes, o projeto ou o minuto
+    const v = LayersCore.requestsMarkdown({ project: s.project ? s.project.name : '', version: '—', stamp, mock: s.project ? s.project.mockPath : '', layouts: s.project && s.project.layouts ? s.project.layouts.length : 1, requests: all });
+    this._md = { a: all, stamp, v }; return v;
   }
   async copyRequests() {
-    const md = this.requestsMd(); if (!md) return; const n = this.state.requests.length; let ok = false;
+    const md = this.requestsMd(); if (!md) return; const n = this.allRequests().length; let ok = false;
     try { await navigator.clipboard.writeText(md); ok = true; } catch (e) { /* sem permissao: cai no textarea oculto */ }
     if (!ok) { const ta = document.createElement('textarea'); ta.value = md; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.select(); try { ok = document.execCommand('copy'); } catch (e) { /* sem execCommand */ } ta.remove(); }
     if (ok) this.toast(n + (n === 1 ? ' requisição copiada' : ' requisições copiadas') + ' como Markdown.', 'ok'); else this.toast('Não foi possível copiar: o navegador recusou o acesso à área de transferência.', 'warn');
   }
   async exportRequests() {
-    const md = this.requestsMd(); if (!md || !this.state.dir) return; const n = this.state.requests.length;
+    const md = this.requestsMd(); if (!md || !this.state.dir) return; const n = this.allRequests().length;
     try { await this.writeText('layers-requests.md', md); this.toast(n + (n === 1 ? ' requisição gravada' : ' requisições gravadas') + ' em layers-requests.md.', 'ok'); } catch (e) { this.toast('Não foi possível gravar layers-requests.md: ' + e.message, 'warn'); }
   }
   // template data of the Ajustes request block (list, footer, header badge, Ações items)
   reqVals() {
-    const s = this.state, rq = s.requests, n = rq.length, nc = s.changes.length;
+    const s = this.state, rq = s.requests, n = rq.length, nc = s.changes.length, tot = this.allRequests().length;
+    const otherLine = (s.project && s.project.layouts ? s.project.layouts : []).filter(l => l.id !== s.project.layoutId && (this.otherRequests[l.id] || []).length).map(l => l.name + ' (' + this.otherRequests[l.id].length + ')').join(', ');
     const rows = rq.map(r => {
       const conf = r.confirm === true, open = s.reqSel === r.id, canShow = !!r.nodeId && !conf;
       const chips = open && r.estilos ? r.estilos.split('; ').map(p => { const i = p.indexOf(':'); const k = i < 0 ? p : p.slice(0, i), v = i < 0 ? '' : p.slice(i + 1); return { k: k + ' ', v, hasSw: /^(#|rgb|hsl)/.test(v), sw: v }; }) : [];
@@ -2053,9 +2062,9 @@ class Component extends DCLogic {
     const pl = (k, one, many) => k + ' ' + (k === 1 ? one : many);
     const noDir = !s.dir;
     return { ajBadge: n ? nc + ' · ' + n : String(nc), ajBadgeTitle: n ? pl(nc, 'ajuste', 'ajustes') + ' · ' + pl(n, 'requisição', 'requisições') : '',
-      hasReq: n > 0, ajBodyMin: n ? '44px' : '0', reqCount: String(n), reqRows: rows, reqFooterOn: s.ajOpen && n > 0, reqMdOpen: s.mdOpen, reqMdChev: s.mdOpen ? '▾' : '▸', reqMd: s.mdOpen ? this.requestsMd() : '',
+      hasReq: n > 0, ajBodyMin: n ? '44px' : '0', reqCount: String(n), reqRows: rows, hasOther: !!otherLine, otherLine: 'outros layouts: ' + otherLine, reqTotal: String(tot), reqFooterOn: s.ajOpen && tot > 0, reqMdOpen: s.mdOpen, reqMdChev: s.mdOpen ? '▾' : '▸', reqMd: s.mdOpen ? this.requestsMd() : '',
       reqMdToggle: () => this.setState(st => ({ mdOpen: !st.mdOpen })), reqCopy: e => { e.stopPropagation(); this.copyRequests(); }, reqExport: e => { e.stopPropagation(); this.exportRequests(); },
-      reqExportOff: noDir || !n, reqExportOp: noDir || !n ? '.4' : '1', reqCopyOp: n ? '1' : '.4', reqExportTitle: noDir ? 'Exportar exige uma pasta conectada: grava layers-requests.md dentro dela' : 'Grava layers-requests.md na pasta conectada', reqCopyOff: !n,
+      reqExportOff: noDir || !tot, reqExportOp: noDir || !tot ? '.4' : '1', reqCopyOp: tot ? '1' : '.4', reqExportTitle: noDir ? 'Exportar exige uma pasta conectada: grava layers-requests.md dentro dela' : 'Grava layers-requests.md na pasta conectada', reqCopyOff: !tot,
       copyReqItem: this.menuAct(() => this.copyRequests()), exportReqItem: this.menuAct(() => this.exportRequests()) };
   }
   cam() {
@@ -2674,12 +2683,12 @@ class Component extends DCLogic {
       if (a.class) { const c = typeof a.class === 'string' ? { selector: a.class, name: 'active' } : a.class; mockQ(c.selector).forEach(e => e.classList.toggle(c.name || 'active')); } mockQ(a.click).forEach(e => { try { e.click(); } catch (er) {} });
       const at = LayersCore.attrAction(a.attr); if (at) mockQ(at.selector).forEach(e => LayersCore.attrToggle(e, at)); this.forceUpdate(); this.scanSoon(); };
     const actOn = a => a.on ? isShown(a.on) : a.toggle ? isShown(a.toggle) : a.show ? isShown(a.show) : a.hide ? (isShown(a.hide) === null ? null : !isShown(a.hide)) : a.class ? (() => { const c = typeof a.class === 'string' ? { selector: a.class, name: 'active' } : a.class; const L = mockQ(c.selector); return L.length ? L.some(e => e.classList.contains(c.name || 'active')) : null; })() : LayersCore.attrAction(a.attr) ? (() => { const at = LayersCore.attrAction(a.attr); const L = mockQ(at.selector); return L.length ? L.some(e => LayersCore.attrIsOn(e, at)) : null; })() : null;
-    const manInter = s.project && Array.isArray(s.project.man.interactions) ? s.project.man.interactions : [];
+    const manInter = s.project && s.project.inter ? s.project.inter : []; // [{item, index}] of the active layout; keys use the ORIGINAL index
     const INTER = [
       { key: 'mode', label: 'Modo interativo', hint: s.interact ? 'ON' : 'OFF', kind: 'mode', on: s.interact, toggle: flip('interact'), desc: s.project ? 'Com o modo ligado, o clique numa camada do palco dispara o clique nativo do elemento no mock (checkbox, radio, details). As superfícies e ações abaixo vêm de layers.json › interactions do projeto ' + s.project.name + '.' : 'Nenhum projeto carregado. Este menu lista as superfícies (painéis, popovers) e ações (abas, seções, ancoragens) que cada projeto declara em layers.json › interactions — veja docs/layers-json.md.', groups: [
         { label: 'Estado', items: [item(s.interact ? 'Ligado' : 'Desligado', s.interact, flip('interact'))] },
         ...(s.project && (s.project.states || []).length > 1 ? [{ label: 'Estado do mock', items: s.project.states.map(st => item(st.name, st.name === s.project.stateName, () => this.switchState(st.name)))}] : []) ] },
-      ...manInter.map((it, i) => { if (!it || typeof it !== 'object') return null; if (it.sep !== undefined) return { key: 'sep' + i, label: typeof it.sep === 'string' ? it.sep : (it.label || ''), sep: true };
+      ...manInter.map(({ item: it, index: i }) => { if (it.sep !== undefined) return { key: 'sep' + i, label: typeof it.sep === 'string' ? it.sep : (it.label || ''), sep: true };
         return { key: it.key || 'i' + i, label: it.label || 'Item ' + (i + 1), kind: it.show ? 'surface' : 'action', hint: it.show && isShown(it.show) === null ? 'sem alvo' : '', on: it.show ? isShown(it.show) : null, eye: it.show ? act({ toggle: it.show }) : null, desc: it.desc || '',
           groups: (Array.isArray(it.groups) ? it.groups : []).map(g => ({ label: g.label || '', items: (Array.isArray(g.items) ? g.items : []).map(a => item(a.label || '', hasAct(a) ? actOn(a) : null, hasAct(a) ? act(a) : null, a.hint || (a.attr && !LayersCore.attrAction(a.attr) ? 'attr inválido' : ''))) })) }; }).filter(Boolean),
     ];
