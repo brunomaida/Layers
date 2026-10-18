@@ -1217,7 +1217,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  pendingReady = false; pendingReqOnly = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
+  pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1373,7 +1373,7 @@ class Component extends DCLogic {
   resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(true); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
-    this.writeConfig(); this.pendingReady = false; this.pendingReqOnly = false; this.baseKey = this.pendingKeyNow(); this.pendingKey = null; // drena a rajada na chave antiga antes de recalcular; pendingKey so volta com o layout resolvido (S9.1a)
+    this.writeConfig(); this.pendingReady = false; this.pendingReqOnly = false; const baseKey = this.pendingKeyNow(); this.pendingKey = null; // drena a rajada na chave antiga antes de recalcular; pendingKey so volta com o layout resolvido (S9.1a)
     this.loadSeq = (this.loadSeq || 0) + 1; const seq = this.loadSeq;
     const bak = this.bakNote ? ' · ' + this.bakNote : ''; this.bakNote = null; // so a carga que o Reanalisar disparou mostra a nota; carga falha ou superada a descarta
     this.mtimes = {}; // mtimes sao por projeto: sem isto o watch herda os da pasta anterior e o 1o foco acusa um aviso falso
@@ -1404,8 +1404,8 @@ class Component extends DCLogic {
     }
     let man; try { man = JSON.parse(raw); } catch (e) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
     const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
-    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[this.baseKey || '-']); this.pendingKey = LayersCore.layoutPendingKey(this.baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(this.baseKey, curLayout.id)]); const mockPath = P(curState ? curState.mock : curLayout.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
-    let html; try { html = await this.readText(mockPath); } catch (e) { if (seq !== this.loadSeq) return; if (curState) delete this.stateMap[LayersCore.stateMapKey(this.baseKey, curLayout.id)]; delete this.layoutMap[this.baseKey || '-']; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija ' + (curState ? 'o "mock" do estado "' + curState.name + '" em "states" (recarregar abre o primeiro estado)' : 'o campo "mock"') + ' ou gere o arquivo.' }); return; }
+    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); const mockPath = P(curState ? curState.mock : curLayout.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
+    let html; try { html = await this.readText(mockPath); } catch (e) { if (seq !== this.loadSeq) return; if (curState) delete this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]; delete this.layoutMap[baseKey || '-']; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija ' + (curState ? 'o "mock" do estado "' + curState.name + '" em "states" (recarregar abre o primeiro estado)' : 'o campo "mock"') + ' ou gere o arquivo.' + (layouts.length > 1 ? ' Layout "' + curLayout.name + '": recarregar abre o primeiro layout.' : '') }); return; }
     const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
     // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
     doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
@@ -1799,7 +1799,9 @@ class Component extends DCLogic {
     if (s.modal || s.pending || s.diff) { this.toast('feche o painel aberto antes de trocar de layout'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
     const go = () => { this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; this.setState({ stale: null, drift: null }); this.loadProject(); };
-    if (LayersCore.hasUnsaved([], s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
+    // pendentes salvaveis ficam na chave do layout antigo; so os que o dreno nao persiste (carga incompleta, sem chave) se perdem
+    const lost = !this.pendingReady && (s.changes || []).length > 0;
+    if (LayersCore.hasUnsaved(this.pendingReady ? [] : s.changes, s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
     go();
   }
   // S2.21: Reanalisar do 0 = backup do layout carregado + recarga como projeto novo (sem selecao, camera nem ajustes salvos).
