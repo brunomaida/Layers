@@ -115,7 +115,7 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 ## Preferências persistidas (localStorage)
 - layers/v1/ui — tema, cor de seleção, cores de origem, cabeçalho, escala de fonte, painéis, navegação, árvore, escopo
 - layers/v1/projects — histórico de projetos (pasta, .zip, repositório)
-- layers/v1/session — último projeto, seleção, câmera e ramo explodido; em projeto com vários layouts ganha `layouts` (layout ativo) e `viewLayout`; `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
+- layers/v1/session — último projeto, seleção, câmera e ramo explodido; ganha `layouts` (layout ativo, gravado com o mapa não vazio) e `viewLayout` (só com 2+ layouts); `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
 - layers/v1/pending — por projeto: ajustes ainda não gravados (voltam ao reabrir se as fontes não mudaram) e requisições manuais (sempre voltam; com a fonte mudada, marcadas "alvo a confirmar"); a chave é `<projeto>` e, para um layout que não é o `main`, `<projeto>|<layout>`
 - layers/v1/meta — schema e data da última gravação
 

@@ -128,7 +128,7 @@ Seletor que não casa nada no mock (`show`, `toggle`, `hide`, `on`, `click`, `cl
 
 - Entrada sem `id` válido ou sem `mock` é descartada. Sem nenhuma entrada válida, vale o layout `main` implícito (raiz).
 - **Com `layouts` válido, `mock` e `states` da raiz são ignorados.** O layout ativo é o da sessão (`layers/v1/session › layouts`) ou, na primeira vez, o primeiro da lista.
-- **Chaves antigas só voltam se existir um layout de `id` `main`.** O layout `main` usa as mesmas chaves de antes (`pending` em `<projeto>`, `stateMap` em `<projeto>`); os demais usam `<projeto>|<id>`. Ao adotar `layouts` sem `main`, os ajustes e as requisições gravados antes ficam órfãos (continuam em `layers/v1/pending` sob a chave antiga, sem uso, até expirar em 30 dias).
+- **Chaves antigas só voltam se existir um layout de `id` `main`** (exatamente `main`, em minúsculas: `Main` é outro id para as chaves e usa `<projeto>|Main`). O layout `main` usa as mesmas chaves de antes (`pending` em `<projeto>`, `stateMap` em `<projeto>`); os demais usam `<projeto>|<id>`. Ao adotar `layouts` sem `main`, os ajustes e as requisições gravados antes ficam órfãos (continuam em `layers/v1/pending` sob a chave antiga, sem uso, até expirar em 30 dias).
 - Um layout cujo `mock` não existe descarrega o projeto com o erro "Mock não encontrado" (o texto cita o layout); recarregar a página abre o primeiro layout.
 - `projectLayouts`, `pickLayout`, `layoutPendingKey` e `stateMapKey` (puros em `LayersCore`) implementam estas regras. Exemplo completo, com um layout de mock ausente, em `fixtures/multi-layout/`.
 
