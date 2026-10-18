@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes } from './tree-helpers.js';
+import { readNodes, lastTreeRow } from './tree-helpers.js';
 import { readDisk } from './folder-helpers.js';
 import { act, open, reloadWith, goFlat, panel, item, rightClick } from './ctx-helpers.js';
 
@@ -24,6 +24,12 @@ async function addVia(page, id) {
   await rightClick(page, id);
   await item(page, /Requisição/).click();
   await expect(panel(page)).toHaveCount(0);
+}
+
+// a reload restores the camera, so the view may already be flat
+async function ensureFlat(page) {
+  await act(page);
+  if (!(await page.evaluate(() => window.__logic.state.flat))) await goFlat(page);
 }
 
 async function openFlat(page) {
@@ -77,6 +83,15 @@ test('Request_FromMenu_AddsEntryWithChipAndTextarea', async ({ page }) => {
   expect(rec.caixa).toMatch(/^\d+×\d+ px · texto “Ordenar”$/);
   expect(rec.uses).toBeGreaterThanOrEqual(1);
   expect(typeof rec.createdAt).toBe('number');
+  // estilos: only properties the rule really declares (not computed ones)
+  const css = await readDisk(page, 'wwwroot/painel.css');
+  const startAt = css.split('\n').slice(0, Number(/L(\d+)$/.exec(rec.alvo)[1]) - 1).join('\n').length;
+  const block = css.slice(startAt, css.indexOf('}', startAt));
+  const declared = [...block.matchAll(/([a-z-]+)\s*:/g)].map((m) => m[1]);
+  const keys = rec.estilos.split('; ').map((p) => p.slice(0, p.indexOf(':')));
+  expect(keys.length).toBeGreaterThan(0);
+  expect(declared).toContain('font-size');
+  for (const k of keys) expect(declared, `${k} is declared by the rule`).toContain(k);
   // header badge: 0 changes, 1 request
   await expect(page.locator('[title="0 ajustes · 1 requisição"]')).toHaveText('0 · 1');
   await expect(footer(page)).toContainText('Requisições Manuais');
@@ -119,18 +134,17 @@ test('Request_Remove', async ({ page }) => {
   await openFlat(page);
   await addVia(page, C6);
   await box(page, 'R1').fill('pedido a remover');
-  await page.waitForTimeout(600);
-  expect((await stored(page)).requests).toHaveLength(1);
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests.length).toBe(1);
   await entry(page, 'R1').getByRole('button', { name: 'Remover requisição' }).click();
   await expect(page.locator('[data-req], [data-req-row]')).toHaveCount(0);
   await expect(footer(page)).toHaveCount(0);
   expect(await requests(page)).toEqual([]);
   await expect(page.locator('[title*="requisi"]')).toHaveCount(0); // badge back to the plain count
-  await page.waitForTimeout(600);
-  expect(await stored(page)).toBeNull(); // no changes and no requests: the entry goes away
+  await expect.poll(() => stored(page)).toBeNull(); // no changes and no requests: the entry goes away
 });
 
 test('Request_CopyMarkdown_Toast', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-17T14:32:00'));
   await openFlat(page);
   await addVia(page, C6);
   await box(page, 'R1').fill('Aumentar o contraste do rótulo.');
@@ -139,7 +153,7 @@ test('Request_CopyMarkdown_Toast', async ({ page }) => {
   // panel B: opening the footer shows the Markdown that Copiar puts on the clipboard
   await footer(page).getByRole('button', { name: /Requisições Manuais/ }).click();
   const md = await page.locator('pre[data-req-md]').textContent();
-  expect(md).toMatch(/^## Requisições Manuais · Axaí · 2\n<!-- Layers .* · \d\d\/\d\d\/\d{4} \d\d:\d\d · mock wwwroot\/index\.html -->/);
+  expect(md).toMatch(/^## Requisições Manuais · Axaí · 2\n<!-- Layers .* · 17\/10\/2026 14:32 · mock wwwroot\/index\.html -->/);
   expect(md).toContain('### R1 · .control-label (L6)');
   expect(md).toContain('- pedido: Aumentar o contraste do rótulo.');
   expect(md).toContain('- pedido: Linha 1\n    Linha 2');
@@ -153,6 +167,7 @@ test('Request_CopyMarkdown_Toast', async ({ page }) => {
 });
 
 test('Request_ExportMd_WritesInsideFolder', async ({ page }) => {
+  await page.clock.setFixedTime(new Date('2026-10-17T14:32:00'));
   await openFlat(page);
   expect(await readDisk(page, 'layers-requests.md')).toBeNull();
   await addVia(page, C6);
@@ -193,8 +208,7 @@ test('Request_Reload_RestoresRequests', async ({ page }) => {
   await expect(entry(page, 'R1')).not.toContainText('alvo a confirmar');
   await expect(entry(page, 'R1').getByRole('button', { name: /Mostrar no palco/ })).toBeEnabled();
   // the next id continues the sequence
-  await act(page);
-  if (!(await page.evaluate(() => window.__logic.state.flat))) await goFlat(page);
+  await ensureFlat(page);
   await addVia(page, HEAD);
   await expect(entry(page, 'R2')).toBeVisible();
 });
@@ -203,7 +217,7 @@ test('Request_SourceChanged_KeepsWithAlvoAConfirmar', async ({ page }) => {
   await openFlat(page);
   await addVia(page, C6);
   await box(page, 'R1').fill('Pedido preso a um alvo que mudou.');
-  await page.waitForTimeout(600);
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.text).toBe('Pedido preso a um alvo que mudou.');
   // the source changes on disk between sessions: the hash differs on the next load
   await page.evaluate(async () => {
     const d = await window.__proj.getDirectoryHandle('wwwroot');
@@ -219,10 +233,35 @@ test('Request_SourceChanged_KeepsWithAlvoAConfirmar', async ({ page }) => {
   await expect(box(page, 'R1')).toHaveValue('Pedido preso a um alvo que mudou.');
   await expect(entry(page, 'R1')).toContainText('alvo a confirmar');
   await expect(entry(page, 'R1').getByRole('button', { name: /Mostrar no palco/ })).toBeDisabled();
+  expect((await requests(page))[0]).toMatchObject({ confirm: true }); // the flag belongs to the request
   expect((await requests(page))[0].nodeId).toBeUndefined(); // the positional id no longer describes the new DOM
   // the Markdown carries the status
   await footer(page).getByRole('button', { name: /Requisições Manuais/ }).click();
   expect(await page.locator('pre[data-req-md]').textContent()).toContain('- status: alvo a confirmar');
+  // editing the text and reloading again (same hash now) keeps the flag until the request is removed
+  await box(page, 'R1').fill('Texto editado depois da deriva.');
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.text).toBe('Texto editado depois da deriva.');
+  expect((await stored(page)).requests[0].confirm).toBe(true);
+  await reloadWith(page);
+  await expect(page.getByText(/1 requisição\(ões\) restaurada\(s\) · alvo a confirmar/)).toBeVisible();
+  await expect(page.locator('[data-req-row="R1"]')).toContainText('alvo a confirmar');
+  await page.locator('[data-req-row="R1"]').click();
+  await expect(box(page, 'R1')).toHaveValue('Texto editado depois da deriva.');
+  await expect(entry(page, 'R1')).toContainText('alvo a confirmar');
+  // a request created now has no flag: only R1 carries the tag, the status line and the disabled button
+  await ensureFlat(page);
+  await addVia(page, HEAD);
+  await expect(entry(page, 'R2')).toBeVisible();
+  await expect(entry(page, 'R2')).not.toContainText('alvo a confirmar');
+  await expect(entry(page, 'R2').getByRole('button', { name: /Mostrar no palco/ })).toBeEnabled();
+  await expect(page.locator('[data-req-row="R1"]')).toContainText('alvo a confirmar');
+  await footer(page).getByRole('button', { name: /Requisições Manuais/ }).click();
+  const md = await page.locator('pre[data-req-md]').textContent();
+  expect(md.match(/- status: alvo a confirmar/g)).toHaveLength(1);
+  expect(md.indexOf('- status: alvo a confirmar')).toBeLessThan(md.indexOf('### R2'));
+  const reqs = await requests(page);
+  expect(reqs[0].confirm).toBe(true);
+  expect(reqs[1].confirm).toBeUndefined();
 });
 
 test('Request_NotCountedInSalvar', async ({ page }) => {
@@ -253,17 +292,13 @@ test('Request_OnlyRequests_PendingEntryNotErased', async ({ page }) => {
   await openFlat(page);
   await addVia(page, C6);
   await box(page, 'R1').fill('So requisicao, sem ajuste.');
-  await page.waitForTimeout(600);
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests.length).toBe(1);
   const e1 = await stored(page);
-  expect(e1).not.toBeNull();
   expect(e1.changes).toEqual([]);
-  expect(e1.requests).toHaveLength(1);
   await reloadWith(page);
   await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
-  await page.waitForTimeout(600);
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests.length).toBe(1);
   const e2 = await stored(page);
-  expect(e2).not.toBeNull();
-  expect(e2.requests).toHaveLength(1);
   expect(e2.requests[0].text).toBe('So requisicao, sem ajuste.');
 });
 
@@ -271,7 +306,7 @@ test('Request_BadStoredRequest_Ignored', async ({ page }) => {
   await openFlat(page);
   await addVia(page, C6);
   await box(page, 'R1').fill('Valido.');
-  await page.waitForTimeout(600);
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests.length).toBe(1);
   await page.evaluate((k) => {
     const all = JSON.parse(localStorage.getItem(k));
     const key = Object.keys(all.byProject)[0];
@@ -283,4 +318,100 @@ test('Request_BadStoredRequest_Ignored', async ({ page }) => {
   await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
   expect(await requests(page)).toHaveLength(1);
   await expect(page.locator('[data-req-row]')).toHaveCount(1);
+});
+
+test('Request_TwoQuickActions_YieldR1AndR2', async ({ page }) => {
+  await openFlat(page);
+  await act(page);
+  // two Requisição actions in the same tick (a double activation): ids come from the list as it is when each lands
+  await page.evaluate(([a, b]) => { window.__logic.addRequest(a); window.__logic.addRequest(b); }, [C6, HEAD]);
+  await expect(page.locator('[data-req-row], [data-req]')).toHaveCount(2);
+  const ids = (await requests(page)).map((r) => r.id).sort();
+  expect(ids).toEqual(['R1', 'R2']);
+});
+
+// ---- discard paths: what the stored entry holds afterwards --------------------------------------------------------
+const reqsIn = async (page) => ((await stored(page)) || { requests: [] }).requests.length;
+
+// one De → Para change on the selected node (the node is selected by the right-click that created the request)
+async function makeChange(page) {
+  const only = page.getByText('Só este', { exact: false }).first();
+  if (await only.isVisible()) await only.click();
+  const field = page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
+  await field.click({ clickCount: 3 });
+  await page.keyboard.type('0 0 0 3px rgb(1, 2, 3)');
+  await page.keyboard.press('Tab');
+  await expect.poll(async () => ((await stored(page)) || { changes: [] }).changes.length).toBe(1);
+}
+
+// the project menu opens on hover and pins on click: one click can close what hover just opened
+async function projectMenu(page, name) {
+  const it = page.getByText(name).first();
+  const trigger = page.getByRole('button', { name: /▾/ }).first();
+  await trigger.click();
+  if (!(await it.isVisible())) await trigger.click();
+  await it.click();
+}
+
+test('Request_ConfirmedReload_KeepsRequestsDropsChanges', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  await box(page, 'R1').fill('Fica depois do Recarregar.');
+  await makeChange(page);
+  await expect.poll(() => reqsIn(page)).toBe(1);
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.keyboard.press('r'); // reload with unsaved changes asks first
+  await expect(page.getByText('Recarregar projeto?')).toBeVisible();
+  await page.getByRole('button', { name: 'Recarregar', exact: true }).click();
+  await expect.poll(async () => ((await stored(page)) || { changes: [1] }).changes.length).toBe(0);
+  const e = await stored(page);
+  expect(e.requests).toHaveLength(1);
+  expect(e.requests[0].text).toBe('Fica depois do Recarregar.');
+  expect(e.requests[0].confirm).toBeUndefined(); // same sources: nothing to confirm
+  await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
+});
+
+test('Request_ConfirmedStateSwitch_KeepsRequests', async ({ page }) => {
+  await open(page, 'multi-state');
+  await (await lastTreeRow(page)).click({ button: 'right' });
+  await item(page, /Requisição/).click();
+  await box(page, 'R1').fill('Fica depois de trocar de estado.');
+  await makeChange(page);
+  await expect.poll(() => reqsIn(page)).toBe(1);
+  await page.getByText('Interagir', { exact: false }).first().click();
+  await page.getByText('csv-loaded', { exact: true }).click();
+  await expect(page.getByText('Trocar de estado?')).toBeVisible();
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await expect.poll(async () => ((await stored(page)) || { changes: [1] }).changes.length).toBe(0);
+  const e = await stored(page);
+  expect(e.requests).toHaveLength(1);
+  expect(e.requests[0].text).toBe('Fica depois de trocar de estado.');
+  await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
+});
+
+test('Request_Reanalisar_KeepsRequests', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  await box(page, 'R1').fill('Fica depois de Reanalisar.');
+  await makeChange(page);
+  await expect.poll(() => reqsIn(page)).toBe(1);
+  await projectMenu(page, 'Reanalisar');
+  await page.getByRole('button', { name: /Reler mesmo assim|^Reanalisar$/ }).click();
+  await expect.poll(async () => ((await stored(page)) || { changes: [1] }).changes.length).toBe(0);
+  const e = await stored(page);
+  expect(e.requests).toHaveLength(1);
+  expect(e.requests[0].text).toBe('Fica depois de Reanalisar.');
+  await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
+});
+
+test('Request_ResetUi_RemovesTheEntry', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  await box(page, 'R1').fill('Some com Zerar interface.');
+  await makeChange(page);
+  await expect.poll(() => reqsIn(page)).toBe(1);
+  await projectMenu(page, 'Zerar interface');
+  await expect(page.getByText('Interface zerada')).toBeVisible();
+  await expect.poll(() => stored(page)).toBeNull();
+  await expect(page.locator('[data-req], [data-req-row]')).toHaveCount(0);
 });

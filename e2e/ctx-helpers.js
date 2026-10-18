@@ -22,7 +22,7 @@ export async function act(page, method, ...args) {
 
 // On the next load, patches layers/v1/session (camera merged). A plain localStorage write would be
 // overwritten by the pagehide drain of the page being left; sessionStorage survives the reload.
-export async function open(page) {
+export async function open(page, fixture = 'axai') {
   await page.addInitScript(() => {
     try {
       const raw = sessionStorage.getItem('__seedSession');
@@ -44,7 +44,7 @@ export async function open(page) {
       return req;
     };
   });
-  await connectFixture(page, 'axai');
+  await connectFixture(page, fixture);
 }
 
 export async function reloadWith(page, patch) {
