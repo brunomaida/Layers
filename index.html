@@ -198,7 +198,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
             </div>
           </div>
         </sc-if>
-  <div ref="{{ stageRef }}" tabIndex="0" onWheel="{{ onWheel }}" onMouseMove="{{ onMove }}" onMouseDown="{{ onDown }}" onMouseUp="{{ onUp }}" onMouseLeave="{{ onUp }}" onDoubleClick="{{ onStageDbl }}" onContextMenu="{{ noCtx }}" style="position:relative;overflow:hidden;outline:none;background:radial-gradient(ellipse at 50% 40%, var(--stageA) 0%, var(--bg0) 70%);cursor:{{ stageCursor }}">
+  <div ref="{{ stageRef }}" tabIndex="0" onWheel="{{ onWheel }}" onMouseMove="{{ onMove }}" onMouseDown="{{ onDown }}" onMouseUp="{{ onUp }}" onMouseLeave="{{ onUp }}" onDoubleClick="{{ onStageDbl }}" onContextMenu="{{ onStageCtx }}" style="position:relative;overflow:hidden;outline:none;background:radial-gradient(ellipse at 50% 40%, var(--stageA) 0%, var(--bg0) 70%);cursor:{{ stageCursor }}">
     {{ scene }}
     <sc-if value="{{ branchOn }}" hint-placeholder-val="{{ false }}"><span style="position:absolute;right:8px;bottom:8px;z-index:6;height:18px;display:inline-flex;align-items:center;padding:0 6px;border:1px solid var(--line1);border-radius:4px;background:rgba(var(--bg1Rgb),.9);font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2);pointer-events:none">▤ Plana · ▧ ramo</span></sc-if>
 
@@ -274,7 +274,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <div data-tree-pad="top" style="height:{{ treePadTop }}"></div>
           <sc-for list="{{ treeRows }}" as="t" hint-placeholder-count="8">
             <sc-if value="{{ t.isNode }}" hint-placeholder-val="{{ true }}">
-            <div data-node-id="{{ t.id }}" onClick="{{ t.select }}" onDoubleClick="{{ t.isolate }}" onMouseEnter="{{ t.hover }}" onMouseLeave="{{ t.unhover }}" title="{{ t.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ t.indent }};background:{{ t.bg }};color:{{ t.color }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;overflow:hidden">
+            <div data-node-id="{{ t.id }}" onClick="{{ t.select }}" onDoubleClick="{{ t.isolate }}" onContextMenu="{{ t.ctx }}" onMouseEnter="{{ t.hover }}" onMouseLeave="{{ t.unhover }}" title="{{ t.title }}" style="display:flex;align-items:center;gap:6px;height:22px;padding:0 8px 0 {{ t.indent }};background:{{ t.bg }};color:{{ t.color }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer;white-space:nowrap;overflow:hidden">
               <button onClick="{{ t.toggle }}" title="{{ t.chevTitle }}" style="all:unset;width:12px;flex:0 0 12px;text-align:center;color:var(--fg3);cursor:pointer">{{ t.chev }}</button>
               <span style="flex:0 0 auto;font-size:calc(9px*var(--fs));color:var(--fg3)">L{{ t.depth }}</span>
               <span style="min-width:0;overflow:hidden;text-overflow:ellipsis;background:{{ t.hlBg }};color:{{ t.hlColor }};border-radius:2px;padding:1px 2px;margin:-1px -2px;opacity:{{ t.op }}">{{ t.name }}</span>
@@ -742,6 +742,38 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
   </div>
 </sc-if>
 
+<sc-if value="{{ ctxOpen }}" hint-placeholder-val="{{ false }}">
+  <div ref="{{ ctxRef }}" role="menu" aria-label="Camadas do componente" onContextMenu="{{ ctxPrevent }}" style="position:fixed;left:{{ ctxX }};top:{{ ctxY }};z-index:85;width:222px;box-sizing:border-box;display:flex;flex-direction:column;padding:6px;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
+    <div style="display:flex;flex-direction:column;gap:3px;padding:4px 6px 7px;border-bottom:1px solid var(--line1)">
+      <span style="font:600 calc(12px*var(--fs))/1.2 'Inter',sans-serif;color:var(--fg0);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ctxTitle }}</span>
+      <span style="font:500 calc(9px*var(--fs))/1.2 'JetBrains Mono',monospace;color:var(--fg3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ ctxMeta }}</span>
+    </div>
+    <span style="font:700 calc(8px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3);padding:8px 6px 4px">Camadas</span>
+    <sc-for list="{{ ctxRows }}" as="r" hint-placeholder-count="11">
+      <div style="position:relative">
+        <button role="menuitem" data-ctx-d="{{ r.d }}" aria-current="{{ r.isSel }}" aria-haspopup="{{ r.isSel }}" disabled="{{ r.disabled }}" onClick="{{ r.pick }}" title="{{ r.title }}" style="all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:7px;height:22px;padding:0 4px 0 6px;border-radius:4px;background:{{ r.bg }};color:{{ r.color }};opacity:{{ r.op }};font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;white-space:nowrap;cursor:{{ r.cursor }}">
+          <span style="width:7px;height:7px;border-radius:50%;background:{{ r.dot }};flex:0 0 auto"></span>
+          <span style="flex:0 0 22px;font-size:calc(9px*var(--fs));color:var(--fg3)">L{{ r.d }}</span>
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-style:{{ r.fs }}">{{ r.name }}</span>
+          <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--sel)">{{ r.mark }}</span>
+          <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ r.n }}</span>
+          <span style="width:8px;color:var(--fg2)">{{ r.chev }}</span>
+        </button>
+        <sc-if value="{{ r.isSel }}" hint-placeholder-val="{{ false }}">
+          <div role="menu" aria-label="Ações do ramo" data-ctx-sub="" style="position:absolute;{{ r.subSide }};top:-8px;width:164px;box-sizing:border-box;display:flex;flex-direction:column;gap:1px;padding:5px;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
+            <sc-for list="{{ r.items }}" as="s" hint-placeholder-count="2">
+              <button role="menuitem" onClick="{{ s.go }}" style="all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:7px;height:26px;padding:0 6px 0 8px;border-radius:4px;background:{{ s.bg }};color:{{ s.color }};font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;white-space:nowrap;cursor:pointer" style-hover="background:rgba(var(--selRgb),.16);color:var(--fg0)">
+                <span style="width:12px;text-align:center;font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;color:{{ s.glyphColor }}">{{ s.glyph }}</span>
+                <span style="flex:1">{{ s.label }}</span>
+                <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ s.hint }}</span>
+              </button>
+            </sc-for>
+          </div>
+        </sc-if>
+      </div>
+    </sc-for>
+  </div>
+</sc-if>
 <sc-if value="{{ staleOpen }}" hint-placeholder-val="{{ false }}">
   <div role="status" style="position:fixed;left:{{ staleLeft }};top:{{ staleTop }};transform:translateX(-50%);z-index:109;display:flex;align-items:center;gap:10px;box-sizing:border-box;max-width:{{ staleWidth }};padding:8px 10px 8px 12px;background:var(--bg2);border:1px solid var(--line1);border-left:2px solid var(--warn);border-radius:4px;box-shadow:0 10px 30px var(--shadow2);color:var(--fg1);font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif">
     <span style="flex:1;min-width:0">{{ staleMsg }}</span>
@@ -1085,7 +1117,7 @@ const useLocalFaces = (href, warn) => {
 const loadInterSize = () => { const o = CONF.ui.interSize; return o && o.w ? { split: 210, ...o } : { w: 580, h: 0, split: 210 }; };
 class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
-    yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, dragging: false, stageW: 800, stageH: 600, interact: false,
+    yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
@@ -1391,7 +1423,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1627,7 +1659,7 @@ class Component extends DCLogic {
     // 400 ms morre com a pagina
     this.onHide = () => this.writeConfig(); window.addEventListener('pagehide', this.onHide);
     // capture: the top bar stops mousedown propagation, a bubbling listener would miss it
-    this.onDocDown = e => { const k = this.menuCur.menu; if (!k || this.menuHas(k, e.target)) return; this.menuGo({ type: 'close' }); };
+    this.onDocDown = e => { if (this.state.ctx && !(this.ctxRef.current && this.ctxRef.current.contains(e.target))) this.closeCtx(); const k = this.menuCur.menu; if (!k || this.menuHas(k, e.target)) return; this.menuGo({ type: 'close' }); };
     document.addEventListener('pointerdown', this.onDocDown, true);
     this.onFocus = () => { if (document.visibilityState === 'hidden') return; clearTimeout(this.staleT); this.staleT = setTimeout(() => this.checkStale(), 300); };
     window.addEventListener('focus', this.onFocus); document.addEventListener('visibilitychange', this.onFocus);
@@ -1764,7 +1796,7 @@ class Component extends DCLogic {
     this.els = els;
     const selId = byId[this.state.selId] ? this.state.selId : '0';
     const ef = this.state.explodeFrom; // S3.5: raiz do ramo que sumiu no scan desfaz o ramo
-    this.setState({ nodes, byId, maxDepth, selId, isoId: this.state.isoId && byId[this.state.isoId] ? this.state.isoId : null, ...(ef && !byId[ef] ? { explodeFrom: null, collapseAt: null } : {}) });
+    this.setState({ nodes, byId, maxDepth, selId, isoId: this.state.isoId && byId[this.state.isoId] ? this.state.isoId : null, ...(ef && !byId[ef] ? { explodeFrom: null, collapseAt: null } : {}), ...(this.state.ctx && !byId[this.state.ctx.id] ? { ctx: null } : {}) });
   }
 
   // memoizados: cam() é chamado várias vezes por render e visibleMax() percorre todos os nós
@@ -1780,6 +1812,38 @@ class Component extends DCLogic {
     const root = s.byId[s.explodeFrom]; const set = root ? LayersCore.branchOf(s.nodes, s.byId, s.explodeFrom) : null; let v = null;
     if (set) { let m = root.depth; s.nodes.forEach(n => { if (set.has(n.id) && n.depth > m) m = n.depth; }); const ca = Number.isInteger(s.collapseAt) && s.collapseAt >= root.depth ? s.collapseAt : null; v = { set, root, collapseAt: ca, span: Math.min(m, ca == null ? Infinity : ca) - root.depth }; }
     this._br = { nodes: s.nodes, from: s.explodeFrom, at: s.collapseAt, v }; return v;
+  }
+  // S3.5: stage context menu. `ctx` = {x, y, id} (cursor + target) plus the fitted position {fx, fy, flip} from fitCtx.
+  ctxRef = React.createRef(); rdown = null;
+  onStageCtx(e) {
+    e.preventDefault(); const r = this.rdown; this.rdown = null;
+    if (r && (Math.abs(e.clientX - r.x) > 3 || Math.abs(e.clientY - r.y) > 3)) return;
+    const pl = e.target && e.target.closest ? e.target.closest('[data-plane]') : null; const id = (pl && pl.dataset.plane) || this.state.hoverId;
+    if (id) this.openCtx(e, id);
+  }
+  openCtx(e, id) {
+    e.preventDefault(); if (!this.state.byId[id]) return;
+    if (id !== this.state.selId) this.select(id);
+    this.setState({ ctx: { x: e.clientX, y: e.clientY, id, fx: e.clientX, fy: e.clientY, flip: false } }, () => this.fitCtx());
+  }
+  closeCtx() { if (this.state.ctx) this.setState({ ctx: null }); }
+  ctxPick(d) { const c = this.state.ctx; if (!c) return; const id = c.id.split('.').slice(0, d + 1).join('.'); if (id === c.id || !this.state.byId[id]) return; this.select(id); this.setState({ ctx: { ...c, id } }, () => this.fitCtx()); }
+  ctxRun(item) {
+    const c = this.state.ctx; if (!c) return; const id = c.id;
+    if (item === 'explode') this.explodeHere(id); else if (item === 'collapse') this.collapseHere(id); else if (item === 'request') { if (this.addRequest) this.addRequest(id); }
+    this.closeCtx();
+  }
+  // keeps the panel and its submenu (opens right, flips left near the edge) inside the viewport
+  fitCtx() {
+    const c = this.state.ctx, el = this.ctxRef.current; if (!c || !el) return;
+    const W = 222, SW = 164, OV = 6, M = 8, vw = window.innerWidth, vh = window.innerHeight;
+    const flip = c.x + W + SW - OV + M > vw; let x = c.x, y = c.y;
+    const span = () => flip ? [x - (SW - OV), x + W] : [x, x + W + SW - OV];
+    if (span()[1] > vw - M) x -= span()[1] - (vw - M);
+    if (span()[0] < M) x += M - span()[0];
+    const er = el.getBoundingClientRect(), sb = el.querySelector('[data-ctx-sub]'); const h = Math.max(er.bottom, sb ? sb.getBoundingClientRect().bottom : 0) - er.top;
+    if (h + 2 * M > vh) y = M; else if (y + h > vh - M) y = vh - M - h;
+    if (Math.abs(x - c.fx) > .5 || Math.abs(y - c.fy) > .5 || flip !== c.flip) this.setState({ ctx: { ...c, fx: x, fy: y, flip } });
   }
   explodeHere(id) { if (!this.state.flat || !this.state.byId[id]) return; this.setState({ explodeFrom: id, collapseAt: null }); }
   collapseHere(id) { const s = this.state; if (!s.explodeFrom || !s.byId[id] || !LayersCore.inBranchOf(id, s.explodeFrom)) return; if (id === s.explodeFrom) this.setState({ explodeFrom: null, collapseAt: null }); else this.setState({ collapseAt: s.byId[id].depth }); }
@@ -1930,7 +1994,7 @@ class Component extends DCLogic {
   zoomBy(f, cx = 0, cy = 0) { const sx = this.cam().shiftX; this.setState(st => { const z = clamp(st.zoom * f, .2, 12); const r = z / st.zoom; const ex = sx + st.panX; return { zoom: z, panX: cx - (cx - ex) * r - sx, panY: cy - (cy - st.panY) * r }; }); }
   escape() {
     const s = this.state;
-    if (s.shortcuts) this.setState({ shortcuts: false }); else if (s.pending) this.decide(false); else if (s.diff) this.setState({ diff: null }); else if (s.modal) this.setState({ modal: null }); else if (s.cbOpen) this.setState({ cbOpen: null }); else if (this.menuCur.menu) this.menuEscape();
+    if (s.ctx) this.closeCtx(); else if (s.shortcuts) this.setState({ shortcuts: false }); else if (s.pending) this.decide(false); else if (s.diff) this.setState({ diff: null }); else if (s.modal) this.setState({ modal: null }); else if (s.cbOpen) this.setState({ cbOpen: null }); else if (this.menuCur.menu) this.menuEscape();
     else if (s.isoId) this.setState({ isoId: null }, () => this.resetView()); else if (s.solo) this.setState({ solo: false }); else this.setState({ selId: '0', active: 0 });
   }
   interactWith(id) { const el = this.els[id]; const n = this.state.byId[id]; if (!el || !n) return; this.setState({ selId: id, active: n.depth, buf: {}, units: {} }); try { el.click(); } catch (e) {} this.scanSoon(); }
@@ -2299,7 +2363,7 @@ class Component extends DCLogic {
         foldKids: e => { e.stopPropagation(); if (!kidsFoldable.length) return; const allClosed = kidsFoldable.every(k => s.treeClosed[k.id]); this.setState(st => { const tc = { ...st.treeClosed }; kidsFoldable.forEach(k => { tc[k.id] = !allClosed; }); if (!allClosed) tc[n.id] = false; return { treeClosed: tc }; }); },
         isoBtn: e => { e.stopPropagation(); if (isIso) this.setState({ isoId: null }, () => this.resetView()); else this.isolate(n.id); }, isoTitle: isIso ? TIP.isoExit : 'Isolar este elemento (= duplo clique)', isoBdr: isIso ? 'rgba(var(--selRgb),.55)' : 'var(--line1)', isoBg: isIso ? 'rgba(var(--selRgb),.15)' : 'transparent', isoColor: isIso ? 'var(--sel)' : 'var(--fg2)',
         title: n.name + ' · L' + n.depth + (kids.length ? ' · ' + kids.length + ' filho(s)' : '') + (n.frozen ? FROZEN_TITLE : '') + (n.capture ? ' — captura: ' + n.capture : '') + ' — clique: selecionar · duplo: isolar' + (n.id === exId ? ' — ' + EXP_TITLE : ''), bg: isSel ? 'rgba(var(--selRgb),.15)' : isHov ? 'rgba(var(--selRgb),.08)' : 'transparent', color: isSel || isIso ? 'var(--sel)' : 'var(--fg0)',
-        select: () => this.select(n.id), isolate: e => { e.stopPropagation(); this.isolate(n.id); }, hover: () => this.setState({ hoverId: n.id }), unhover: () => this.setState({ hoverId: null }),
+        select: () => this.select(n.id), ctx: e => this.openCtx(e, n.id), isolate: e => { e.stopPropagation(); this.isolate(n.id); }, hover: () => this.setState({ hoverId: n.id }), unhover: () => this.setState({ hoverId: null }),
         toggle: e => { e.stopPropagation(); this.setState(st => ({ treeClosed: { ...st.treeClosed, [n.id]: !st.treeClosed[n.id] } })); } });
       if (hc && this.els[n.id]) { const [file, selector, line] = ruleOf(n); const one = s.scope === 'one'; const ids = one ? [n.id] : [n.id, ...s.nodes.filter(m => m.own && m.src === n.src && m.id !== n.id).map(m => m.id)];
         treeRows.push(Object.assign(this.codeRow({ key: (one ? 'one:' : 'rule:') + n.id + '|' + file + '|' + selector, file, selector, line, src: n.src, ids, name: n.name, one }, (18 + n.depth * 12) + 'px', one ? 'só este elemento (Aplicar em: Só este) — entra em Ajustes com seletor restrito.' : 'vale para os ' + ids.length + ' elemento(s) desta regra (mude em "Aplicar em" para restringir) e entra em Ajustes (De → Para).'), { closeCode: () => this.setState(st => ({ hierCode: { ...st.hierCode, [n.id]: false } })) })); }
@@ -2500,7 +2564,17 @@ class Component extends DCLogic {
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
       toggleFlat: () => this.setState(st => ({ flat: !st.flat })), persp: s.persp, setPersp: e => this.setState({ persp: +e.target.value }), setSpacing: e => this.setState({ spacing: +e.target.value }), resetView: () => this.resetView(),
       interact: s.interact, toggleInteract: flip('interact'), interactBg: s.interact ? 'rgba(var(--accRgb),.15)' : 'transparent', interactBdr: s.interact ? 'transparent' : 'var(--line1)', interactColor: s.interact ? 'var(--acc)' : 'var(--fg2)',
-      stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', noCtx: e => e.preventDefault(),
+      stageCursor: s.dragging ? 'grabbing' : s.interact ? 'crosshair' : 'grab', onStageCtx: e => this.onStageCtx(e), ctxPrevent: e => e.preventDefault(),
+      ...(() => { const c = s.ctx; const cm = c && s.byId[c.id] ? LayersCore.ctxMenuModel({ nodes: s.nodes, selId: c.id, flat: s.flat, explodeFrom: exId, collapseAt: exBr ? exBr.collapseAt : null }) : null;
+        if (!cm) return { ctxOpen: false, ctxRef: this.ctxRef, ctxX: '0px', ctxY: '0px', ctxTitle: '', ctxMeta: '', ctxRows: [] };
+        const cn = s.byId[c.id]; const [cFile, , cLine] = ruleOf(cn); const GLY = { explode: '▧', collapse: '⤒', request: '✎' };
+        const rows = cm.layers.map(L => { const k = L.kind; const sel = k === 'selected'; const anc = k === 'ancestor'; const an = anc ? s.byId[c.id.split('.').slice(0, L.d + 1).join('.')] : null;
+          return { d: L.d, isSel: sel, disabled: !anc && !sel, pick: () => this.ctxPick(L.d), title: anc ? 'Selecionar este ancestral (L' + L.d + ')' : '', cursor: anc ? 'pointer' : 'default',
+            name: sel ? cn.name : anc ? (an ? an.name : '') : k === 'descendant' ? L.inBranch + ' no ramo' : 'fora do ramo', n: L.count, mark: exBr && L.d === exD ? '▧' : '', chev: sel ? '›' : '',
+            bg: sel ? 'rgba(var(--selRgb),.16)' : 'transparent', color: sel ? 'var(--fg0)' : anc ? 'var(--fg1)' : 'var(--fg2)', dot: sel ? 'var(--sel)' : anc ? 'var(--line2)' : 'transparent', op: k === 'outside' ? .45 : 1, fs: k === 'descendant' ? 'italic' : 'normal',
+            subSide: c.flip ? 'right:calc(100% + 1px)' : 'left:calc(100% + 1px)',
+            items: sel ? cm.items.map((it, i) => ({ label: it.label, hint: it.hint, glyph: GLY[it.id], bg: i === 0 ? 'rgba(var(--selRgb),.16)' : 'transparent', color: i === 0 ? 'var(--fg0)' : 'var(--fg1)', glyphColor: i === 0 ? 'var(--sel)' : 'var(--fg2)', go: () => this.ctxRun(it.id) })) : [] }; });
+        return { ctxOpen: true, ctxRef: this.ctxRef, ctxX: c.fx + 'px', ctxY: c.fy + 'px', ctxTitle: cn.name, ctxMeta: 'L' + cn.depth + (cFile ? ' · ' + cFile + (cLine ? ' › L' + cLine : '') : ''), ctxRows: rows }; })(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
       connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') + ' — gere um novo snapshot (node tools/layers-snapshot-cli.mjs)' : '',
@@ -2528,7 +2602,7 @@ class Component extends DCLogic {
       modalFiles: m ? this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : s.changes) : [], modalLog: m ? m.log.join('\n') : '',
       closeModal: () => this.setState({ modal: null }), makeDraft: () => this.makeDraft(), discardDraft: () => this.discardDraft(), approve: () => this.approve(),
       onWheel: e => { const r = stageRect(); this.zoomBy(e.deltaY > 0 ? 0.9 : 1.1, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2); },
-      onDown: e => { if (e.button === 2) return; if (e.button === 1) e.preventDefault(); const mode = e.button === 1 || e.shiftKey ? 'pan' : (e.ctrlKey || e.metaKey) ? 'plane' : 'orbit'; this.down = { x: e.clientX, y: e.clientY, yaw: s.yaw, tilt: s.tilt, panX: s.panX, panY: s.panY, focus: s.focus, mode }; this.dragged = false; },
+      onDown: e => { if (e.button === 2) { this.rdown = { x: e.clientX, y: e.clientY }; return; } if (e.button === 1) e.preventDefault(); const mode = e.button === 1 || e.shiftKey ? 'pan' : (e.ctrlKey || e.metaKey) ? 'plane' : 'orbit'; this.down = { x: e.clientX, y: e.clientY, yaw: s.yaw, tilt: s.tilt, panX: s.panX, panY: s.panY, focus: s.focus, mode }; this.dragged = false; },
       onMove: e => { const d = this.down; if (!d) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; if (!this.dragged && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; this.dragged = true;
         if (d.mode === 'orbit') { const { base } = this.cam(); this.setState({ dragging: true, yaw: clamp(d.yaw + dx * .35, -85 - base, 85 - base), tilt: clamp(d.tilt - dy * .35, -70, 70) }); }
         else if (d.mode === 'pan') this.setState({ dragging: true, panX: d.panX + dx, panY: d.panY + dy });
