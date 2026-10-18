@@ -1271,7 +1271,7 @@ class Component extends DCLogic {
       if (seq !== this.loadSeq) return;
       this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec);
       this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
-    } catch (e) { this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos (requisições continuam salvas).', 'warn'); this.pendingReqOnly = true; this.pendingDirty = true; this.persistSoon(); } // pendingReady fica falso: ajustes e hash antigos permanecem e a proxima carga os descarta; so as requisicoes seguem gravando
+    } catch (e) { if (seq !== this.loadSeq) return; this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos (requisições continuam salvas).', 'warn'); this.pendingReqOnly = true; this.pendingDirty = true; this.persistSoon(); } // pendingReady fica falso: ajustes e hash antigos permanecem e a proxima carga os descarta; so as requisicoes seguem gravando
   }
   // sessionStorage vence o session ao restaurar: N abas, N projetos.
   markTab() { try { SS_STORE.setItem(TAB_LS, JSON.stringify({ projectId: this.projectId || null })); } catch (e) {} }

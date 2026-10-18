@@ -467,3 +467,26 @@ test('Request_ResetUi_RemovesTheEntry', async ({ page }) => {
   await expect.poll(() => stored(page)).toBeNull();
   await expect(page.locator('[data-req], [data-req-row]')).toHaveCount(0);
 });
+
+test('Request_RereadFailsAfterProjectSwitch_DoesNotFlagOrWrite', async ({ page }) => {
+  await openFlat(page);
+  await addVia(page, C6);
+  await box(page, 'R1').fill('Entrada do projeto antigo.');
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.text).toBe('Entrada do projeto antigo.');
+  await act(page);
+  await expect.poll(() => page.evaluate(() => !window.__logic.pendingDirty)).toBe(true);
+  const before = await stored(page);
+  // the reread is still pending when the load sequence moves on (a project switch); only then does it fail
+  const out = await page.evaluate(async () => {
+    const L = window.__logic; const realRead = L.readText;
+    let fail; L.readText = () => new Promise((_, rej) => { fail = rej; });
+    const p = L.refreshPendingHash([L.hashSpec.mockPath]);
+    L.loadSeq += 1; L.state.requests = [{ ...L.state.requests[0], text: 'Do projeto antigo, nao deve ser gravado.' }];
+    fail(new Error('boom')); await p; L.readText = realRead;
+    return { reqOnly: L.pendingReqOnly, dirty: L.pendingDirty };
+  });
+  expect(out).toEqual({ reqOnly: false, dirty: false });
+  await page.waitForTimeout(1000); // longer than the persistSoon debounce
+  expect(await stored(page)).toEqual(before);
+  await expect(page.getByText(/Não foi possível reler/)).toHaveCount(0);
+});
