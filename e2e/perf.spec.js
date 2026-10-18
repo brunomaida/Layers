@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers, reapplyMarks } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
+import { act, goFlat } from './ctx-helpers.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
@@ -30,6 +31,8 @@ const EXPECTED = [
   'orbit/1500-tags-tree-ideal/mean-frame-ms',
   'orbit/1500-tags-v1/mean-frame-ms',
   'orbit/1500-tags-v1-tree-ideal/mean-frame-ms',
+  'orbit/1500-tags-flat/mean-frame-ms',
+  'orbit/1500-tags-branch-exploded/mean-frame-ms',
   'tree/traval/hover-ms',
   'tree/traval/select-ms',
   'tree/1500-tags/hover-ms',
@@ -387,6 +390,63 @@ test('Tree_1500TagsScroll_RecordsFrameInterval', async ({ page }) => {
 test('Orbit_Budget_Above50Fps', async () => {
   test.skip(!orbit, 'orbit measurement missing');
   expect(orbit.fps, `mean frame ${orbit.meanFrameMs.toFixed(1)} ms, p95 ${orbit.p95FrameMs.toFixed(1)} ms`).toBeGreaterThan(50);
+});
+
+// S3.5: flat view at ~1,500 tags with the largest branch exploded (explodeFrom, set through the same `act` helper the
+// context-menu spec uses): only that branch gets depth, and the orbit must cost no more than the flat view without it.
+// The A/B is inside this test: the flat view without a branch is the control (`orbit/1500-tags-flat`), measured first with the
+// same fixture and drag; `orbit/1500-tags` (default 3D exploded view) is only context, it never calls goFlat.
+test('Orbit_BranchExploded_CostsNoMoreThanFlat', async ({ page }) => {
+  await instrument(page);
+  await inflateTraval(page, 1500);
+  await page.goto('/?layers=fixtures/traval/');
+  await waitForScan(page, 1000, 40_000);
+  await goFlat(page);
+  await act(page);
+  await page.waitForTimeout(600); // let the flat transition (.35s) settle before the control drag
+  const c = await orbitDrag(page, 1500);
+  rec('orbit/1500-tags-flat/mean-frame-ms', c.meanFrameMs, {
+    fps: c.fps,
+    p95FrameMs: c.p95FrameMs,
+    frames: c.frames,
+    loafCount: c.loafCount,
+    loafScriptShare: c.loafScriptShare,
+    gcsPerFrame: c.gcsPerFrame,
+    main: c.main,
+  });
+  expect(c.frames).toBeGreaterThanOrEqual(30);
+  // the control drag moved the camera: same starting view for the branch run
+  await page.evaluate(() => window.__logic.setState({ yaw: 0, tilt: 0 }));
+  // root = the non-root node with the largest subtree (ids are dotted paths, a descendant starts with `root.`)
+  const { root, size } = await page.evaluate(() => {
+    const ids = window.__logic.state.nodes.map((n) => n.id);
+    let best = { root: null, size: 0 };
+    for (const id of ids) {
+      if (id === '0') continue;
+      const size = ids.filter((x) => x === id || x.startsWith(id + '.')).length;
+      if (size > best.size) best = { root: id, size };
+    }
+    return best;
+  });
+  expect(size, `branch ${root} must be big enough to matter`).toBeGreaterThan(100);
+  const st = await act(page, 'explodeHere', root);
+  expect(st.explodeFrom).toBe(root);
+  await page.waitForTimeout(600); // let the plane transforms (.35s) settle before the timed drag
+  const o = await orbitDrag(page, 1500);
+  rec('orbit/1500-tags-branch-exploded/mean-frame-ms', o.meanFrameMs, {
+    fps: o.fps,
+    p95FrameMs: o.p95FrameMs,
+    frames: o.frames,
+    loafCount: o.loafCount,
+    loafScriptShare: o.loafScriptShare,
+    gcsPerFrame: o.gcsPerFrame,
+    main: o.main,
+    branchRoot: root,
+    branchSize: size,
+  });
+  expect(o.frames).toBeGreaterThanOrEqual(30);
+  // relative guard: the absolute 50 fps budget has no margin at 1,500 tags in the flat view (the control itself runs near 45 fps)
+  expect(o.meanFrameMs, `branch ${o.meanFrameMs.toFixed(1)} ms vs flat control ${c.meanFrameMs.toFixed(1)} ms, p95 ${o.p95FrameMs.toFixed(1)} ms, branch ${root} (${size} nodes)`).toBeLessThanOrEqual(c.meanFrameMs * 1.1);
 });
 
 test('Explode_Toggle_ReportsFrameCost', async ({ page }) => {

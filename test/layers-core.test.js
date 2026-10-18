@@ -1485,6 +1485,7 @@ describe('PushSnapshot', () => {
 });
 
 const pendingChange = (o) => ({ key: '0.1|color', id: '0.1', ids: ['0.1'], name: '.a', src: 'a.css|.a|3', prop: 'color', from: 'red', fromInline: { '0.1': '' }, to: 'blue', scope: 'one', decided: false, scopedSel: null, ...o });
+const pendingRequest = (o) => ({ id: 'r1', layoutId: 'L1', nodeKey: '0.1', path: 'body>div', text: 'make it bigger', createdAt: 1000, ...o });
 const memStorage = () => { const m = new Map(); return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } }; };
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -1591,11 +1592,101 @@ describe('RestorePlan', () => {
 
   it('HashDiferente_DescartaTudo', () => {
     const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({}), pendingChange({ key: 'k2' })] };
-    expect(core.restorePlan(entry, 'outro')).toEqual({ keep: [], dropped: 2 });
+    expect(core.restorePlan(entry, 'outro')).toEqual({ keep: [], dropped: 2, requests: [], confirm: true });
   });
 
   it('EntryNula_VazioSemDescarte', () => {
-    expect(core.restorePlan(null, 'h')).toEqual({ keep: [], dropped: 0 });
+    expect(core.restorePlan(null, 'h')).toEqual({ keep: [], dropped: 0, requests: [], confirm: false });
+  });
+
+  it('HashDiferente_MantemRequestsComConfirm', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({ texts: ['a'] }), pendingRequest({ id: 'r2' })] };
+    const plan = core.restorePlan(entry, 'outro');
+    expect(plan.keep).toEqual([]);
+    expect(plan.dropped).toBe(1);
+    expect(plan.confirm).toBe(true);
+    expect(plan.requests.map((r) => r.id)).toEqual(['r1', 'r2']);
+    expect(plan.requests[0]).not.toBe(entry.requests[0]);
+    expect(plan.requests[0].texts).toEqual(['a']);
+    expect(plan.requests[0].texts).not.toBe(entry.requests[0].texts);
+  });
+
+  it('HashIgual_ConfirmFalse', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({ texts: ['a'] })] };
+    const plan = core.restorePlan(entry, 'h');
+    expect(plan.confirm).toBe(false);
+    expect(plan.dropped).toBe(0);
+    expect(plan.keep).toHaveLength(1);
+    expect(plan.requests).toEqual(entry.requests);
+    expect(plan.requests[0]).not.toBe(entry.requests[0]);
+    expect(plan.requests[0].texts).toEqual(['a']);
+    expect(plan.requests[0].texts).not.toBe(entry.requests[0].texts);
+  });
+
+  it('RequestsNaoArrayOuElementoInvalido_Ignora', () => {
+    const base = { savedAt: 1, hash: 'h', changes: [pendingChange({})] };
+    expect(core.restorePlan({ ...base, requests: 'x' }, 'h').requests).toEqual([]);
+    expect(core.restorePlan({ ...base, requests: [null, 'x', pendingRequest({})] }, 'outro').requests).toEqual([pendingRequest({})]);
+  });
+
+  it('SrcHashIgual_LimpaConfirmPegajoso', () => {
+    const entry = { savedAt: 1, hash: 'B', changes: [pendingChange({})], requests: [pendingRequest({ srcHash: 'A', confirm: true })] };
+    const plan = core.restorePlan(entry, 'A');
+    expect(plan.requests[0].confirm).toBeUndefined();
+    expect(plan.requests[0].srcHash).toBe('A');
+  });
+
+  it('SrcHashDiferente_MarcaConfirmMesmoComEntryHashIgual', () => {
+    const entry = { savedAt: 1, hash: 'B', changes: [pendingChange({})], requests: [pendingRequest({ srcHash: 'A' }), pendingRequest({ id: 'r2', srcHash: 'B' })] };
+    const plan = core.restorePlan(entry, 'B');
+    expect(plan.requests.map((r) => r.confirm)).toEqual([true, undefined]);
+  });
+
+  it('SemSrcHash_MantemConfirmDoRegistro', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({ confirm: true })] };
+    expect(core.restorePlan(entry, 'h').requests[0].confirm).toBe(true);
+  });
+
+  it('EntradaSemRequests_RequestsVazio', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})] };
+    expect(core.restorePlan(entry, 'h').requests).toEqual([]);
+    expect(core.restorePlan(entry, 'outro').requests).toEqual([]);
+  });
+});
+
+describe('ValidRequest', () => {
+  it('CamposObrigatorios_Valida', () => {
+    expect(core.validRequest(pendingRequest({}))).toBe(true);
+  });
+
+  it('CampoObrigatorioAusenteOuTipoErrado_Rejeita', () => {
+    ['id', 'layoutId', 'nodeKey', 'path', 'text', 'createdAt'].forEach((k) => {
+      expect(core.validRequest(pendingRequest({ [k]: undefined }))).toBe(false);
+      expect(core.validRequest(pendingRequest({ [k]: k === 'createdAt' ? '1' : 1 }))).toBe(false);
+    });
+  });
+
+  it('AncorasOpcionaisValidas_Aceita', () => {
+    expect(core.validRequest(pendingRequest({ nodeId: '0.1.2', name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p', confirm: true, srcHash: 'h1' }))).toBe(true);
+    expect(core.validRequest(pendingRequest({ pendente: null }))).toBe(true);
+  });
+
+  it('AncoraOpcionalTipoErrado_Rejeita', () => {
+    const bad = { nodeId: 1, name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1, confirm: 'true', srcHash: 1 };
+    Object.keys(bad).forEach((k) => {
+      expect(core.validRequest(pendingRequest({ [k]: bad[k] }))).toBe(false);
+    });
+    expect(core.validRequest(pendingRequest({ texts: ['x', 1] }))).toBe(false);
+  });
+
+  it('ChaveExtraDesconhecida_Ignora', () => {
+    expect(core.validRequest(pendingRequest({ extra: 1 }))).toBe(true);
+  });
+
+  it('ArrayOuNaoObjeto_Rejeita', () => {
+    [null, undefined, 'x', 1, true, [], [pendingRequest({})]].forEach((v) => {
+      expect(core.validRequest(v)).toBe(false);
+    });
   });
 });
 
@@ -1674,6 +1765,115 @@ describe('SetPending / GetPending', () => {
     const st = memStorage();
     st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ prop: 'cssText' })] } } }));
     expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('SemRequests_LeComoVazio', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})] } } }));
+    const e = core.getPending(st, 'fx:a');
+    expect(e.requests).toEqual([]);
+    expect(e.changes).toHaveLength(1);
+  });
+
+  it('RequestInvalida_DescartaSoRequests', () => {
+    const st = memStorage();
+    const reqs = [pendingRequest({}), pendingRequest({ id: 5 }), null, 'x', [], pendingRequest({ id: 'r3', depth: 'x' }), pendingRequest({ id: 'r4' })];
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: reqs } } }));
+    const e = core.getPending(st, 'fx:a');
+    expect(e.requests.map((r) => r.id)).toEqual(['r1', 'r4']);
+    expect(e.changes).toHaveLength(1);
+  });
+
+  it('RequestsNaoArray_LeComoVazio', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: 'x' } } }));
+    expect(core.getPending(st, 'fx:a').requests).toEqual([]);
+  });
+
+  it('GetPending_ChangeInvalida_MantemRequests', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 7, hash: 'h', changes: [pendingChange({ ids: 'x' })], requests: [pendingRequest({}), pendingRequest({ id: 5 })] } } }));
+    const e = core.getPending(st, 'fx:a');
+    expect(e.changes).toEqual([]);
+    expect(e.requests.map((r) => r.id)).toEqual(['r1']);
+    expect(e.hash).toBe('h');
+    expect(e.savedAt).toBe(7);
+  });
+
+  it('GetPending_ChangeInvalidaSemRequestsValidas_Null', () => {
+    const st = memStorage();
+    st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': { savedAt: 1, hash: 'h', changes: [pendingChange({ ids: 'x' })], requests: [pendingRequest({ id: 5 })] } } }));
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('GetPending_EnvelopeInvalido_Null', () => {
+    const st = memStorage();
+    const bad = [{ savedAt: 1, changes: [], requests: [pendingRequest({})] }, { savedAt: 1, hash: 5, changes: [], requests: [pendingRequest({})] }, { savedAt: '1', hash: 'h', changes: [], requests: [pendingRequest({})] }, { hash: 'h', changes: [], requests: [pendingRequest({})] }, 'x'];
+    bad.forEach((e) => {
+      st.setItem('layers/v1/pending', JSON.stringify({ schema: 1, byProject: { 'fx:a': e } }));
+      expect(core.getPending(st, 'fx:a')).toBeNull();
+    });
+  });
+
+  it('RoundTripRequests_PreservaAncoras', () => {
+    const st = memStorage();
+    const r = pendingRequest({ name: 'n', texts: ['a'], pendente: null });
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [r] }, 1000);
+    expect(core.getPending(st, 'fx:a').requests).toEqual([r]);
+  });
+
+  it('SoRequests_NaoApaga', () => {
+    const st = memStorage();
+    expect(core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000)).toBe(true);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.changes).toEqual([]);
+    expect(e.requests).toHaveLength(1);
+  });
+
+  it('SemChangesNemRequests_NaoGrava', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [] }, 2000);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('SemCampoRequests_TrataComoVazio', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [pendingChange({})] }, 1000);
+    expect(core.getPending(st, 'fx:a').requests).toEqual([]);
+  });
+
+  it('Teto200Changes_NaoDerrubaRequests', () => {
+    const st = memStorage();
+    const many = Array.from({ length: core.PENDING_CAP + 1 }, (_, i) => pendingChange({ key: 'k' + i }));
+    core.setPending(st, 'fx:a', { hash: 'h', changes: many, requests: [pendingRequest({})] }, 1000);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.changes).toEqual([]);
+    expect(e.requests).toHaveLength(1);
+  });
+
+  it('RequestsAcimaDoTeto_TruncaNas200Primeiras', () => {
+    const st = memStorage();
+    const many = Array.from({ length: core.PENDING_CAP + 5 }, (_, i) => pendingRequest({ id: 'r' + i }));
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: many }, 1000);
+    const e = core.getPending(st, 'fx:a');
+    expect(e.requests).toHaveLength(core.PENDING_CAP);
+    expect(e.requests[0].id).toBe('r0');
+    expect(e.requests[core.PENDING_CAP - 1].id).toBe('r' + (core.PENDING_CAP - 1));
+  });
+
+  it('EntryNullComRequests_RemoveEntrada', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000);
+    core.setPending(st, 'fx:a', null, 2000);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+  });
+
+  it('OutroProjetoSoComRequests_Preserva', () => {
+    const st = memStorage();
+    core.setPending(st, 'fx:a', { hash: 'h', changes: [], requests: [pendingRequest({})] }, 1000);
+    core.setPending(st, 'fx:b', { hash: 'h', changes: [pendingChange({})] }, 2000);
+    expect(core.getPending(st, 'fx:a').requests).toHaveLength(1);
   });
 });
 
@@ -2373,5 +2573,304 @@ describe('KeyMap', () => {
     const missing = handled.filter((k) => !panel.has((token[k] || k).toLowerCase()));
     expect(missing, 'teclas tratadas ausentes do painel: ' + missing.join(' ')).toEqual([]);
     expect(cells).toContain('Esc');
+  });
+});
+
+describe('BranchZ', () => {
+  it('SemCollapse_ProfundidadeRelativaARaiz', () => {
+    expect(core.branchZ(5, 3, null, 10)).toBe(20);
+    expect(core.branchZ(3, 3, null, 10)).toBe(0);
+  });
+
+  it('BranchZ_CollapseAt_ClampaProfundidade', () => {
+    expect(core.branchZ(7, 3, 5, 10)).toBe(20);
+    expect(core.branchZ(4, 3, 5, 10)).toBe(10);
+    expect(core.branchZ(5, 3, 5, 10)).toBe(20);
+  });
+
+  it('CollapseAtZero_NaoEhTratadoComoAusente', () => {
+    expect(core.branchZ(4, 0, 0, 10)).toBe(0);
+  });
+});
+
+describe('BranchOf', () => {
+  const nodes = [
+    { id: '0', depth: 0 }, { id: '0.0', depth: 1 }, { id: '0.0.0', depth: 2 },
+    { id: '0.1', depth: 1 }, { id: '0.10', depth: 1 }
+  ];
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+
+  it('Raiz_IncluiRaizEDescendentesPorPrefixo', () => {
+    expect([...core.branchOf(nodes, byId, '0.0')].sort()).toEqual(['0.0', '0.0.0']);
+  });
+
+  it('PrefixoNumerico_NaoVazaParaIrmaos', () => {
+    expect([...core.branchOf(nodes, byId, '0.1')]).toEqual(['0.1']);
+  });
+
+  it('ByIdObjetoSimples_NaoLanca', () => {
+    expect([...core.branchOf(nodes, {}, '0.1')]).toEqual(['0.1']);
+  });
+
+  it('BranchOf_RaizInexistente_Null', () => {
+    expect(core.branchOf(nodes, byId, '9.9')).toBeNull();
+    expect(core.branchOf(nodes, byId, null)).toBeNull();
+    expect(core.branchOf(nodes, byId, '')).toBeNull();
+  });
+});
+
+describe('InBranchOf', () => {
+  it('RaizEDescendentes_PorPrefixoComPonto', () => {
+    expect(core.inBranchOf('0.1', '0.1')).toBe(true);
+    expect(core.inBranchOf('0.1.2', '0.1')).toBe(true);
+    expect(core.inBranchOf('0.10', '0.1')).toBe(false);
+  });
+});
+
+describe('AncestorAt', () => {
+  it('AncestorAt_DepthInside_ReturnsPrefix', () => {
+    expect(core.ancestorAt('0.2.1.4', 0)).toBe('0');
+    expect(core.ancestorAt('0.2.1.4', 2)).toBe('0.2.1');
+  });
+  it('AncestorAt_OwnDepth_ReturnsSameId', () => {
+    expect(core.ancestorAt('0.2.1.4', 3)).toBe('0.2.1.4');
+  });
+  it('AncestorAt_PastDepth_ReturnsSameId', () => {
+    expect(core.ancestorAt('0.2', 9)).toBe('0.2');
+  });
+});
+
+describe('CtxMenuModel', () => {
+  const nodes = [
+    { id: '0', depth: 0, name: '.shell' },
+    { id: '0.0', depth: 1, name: '.workspace' },
+    { id: '0.0.0', depth: 2, name: '.stage' },
+    { id: '0.0.0.0', depth: 3, name: '.toolbar' },
+    { id: '0.0.0.0.0', depth: 4, name: '.chip-a' },
+    { id: '0.0.0.0.1', depth: 4, name: '.chip-b' },
+    { id: '0.0.0.0.0.0', depth: 5, name: '.label' },
+    { id: '0.0.1', depth: 2, name: '.side' },
+    { id: '0.0.1.0', depth: 3, name: '.side-item' }
+  ];
+  const ids = (m) => m.items.map((i) => i.id);
+
+  it('Flat_SemRamo_OferecaExplodirERequisicao', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: null, collapseAt: null });
+    expect(ids(m)).toEqual(['explode', 'request']);
+    expect(m.items[0]).toEqual({ id: 'explode', label: 'Explodir daqui', hint: 'só o ramo' });
+    expect(m.items[1]).toEqual({ id: 'request', label: 'Requisição', hint: '→ Ajustes' });
+    expect(m.header).toEqual({ name: '.toolbar', depth: 3 });
+  });
+
+  it('Explodido_DockOn_SemExplodir', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: false, explodeFrom: null, collapseAt: null });
+    expect(ids(m)).toEqual(['request']);
+    const inBranch = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: false, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(inBranch)).toEqual(['request']);
+  });
+
+  it('NoDoRamo_OferecaRecolherERequisicao', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(m)).toEqual(['collapse', 'request']);
+    expect(m.items[0]).toEqual({ id: 'collapse', label: 'Recolher até aqui', hint: 'L5+ → L4' });
+  });
+
+  it('RaizDoRamo_RecolherDesfazExplodir', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(m)).toEqual(['collapse', 'request']);
+    expect(m.items[0].hint).toBe('L4+ → L3');
+  });
+
+  it('FueraDoRamo_NaoOfereceRecolher', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.1.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: null });
+    expect(ids(m)).toEqual(['explode', 'request']);
+  });
+
+  it('LayersKinds_AncestorSelectedDescendantOutside', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: null, collapseAt: null });
+    expect(m.layers).toEqual([
+      { d: 0, kind: 'ancestor', count: 1 }, { d: 1, kind: 'ancestor', count: 1 },
+      { d: 2, kind: 'ancestor', count: 2 }, { d: 3, kind: 'selected', count: 2 },
+      { d: 4, kind: 'descendant', count: 2, inBranch: 2 }, { d: 5, kind: 'descendant', count: 1, inBranch: 1 }
+    ]);
+    const o = core.ctxMenuModel({ nodes, selId: '0.0.1', flat: true, explodeFrom: null, collapseAt: null });
+    expect(o.layers.map((l) => [l.d, l.kind, l.count, l.inBranch])).toEqual([
+      [0, 'ancestor', 1, undefined], [1, 'ancestor', 1, undefined], [2, 'selected', 2, undefined],
+      [3, 'descendant', 2, 1], [4, 'outside', 2, undefined], [5, 'outside', 1, undefined]
+    ]);
+  });
+
+  it('GhostPlane_DeeperThanCollapseAt_NoCollapseItem', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
+    expect(ids(m)).toEqual(['request']);
+    const at = core.ctxMenuModel({ nodes, selId: '0.0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
+    expect(ids(at)).toEqual(['request']); // already the collapse plane: collapsing there would do nothing
+    const above = core.ctxMenuModel({ nodes, selId: '0.0.0.0', flat: true, explodeFrom: '0.0.0.0', collapseAt: 4 });
+    expect(ids(above)).toEqual(['collapse', 'request']);
+  });
+
+  it('DepthsSemDescendentes_Outside', () => {
+    const m = core.ctxMenuModel({ nodes, selId: '0.0.1', flat: true, explodeFrom: null, collapseAt: null });
+    expect(m.layers.map((l) => [l.d, l.kind])).toEqual([
+      [0, 'ancestor'], [1, 'ancestor'], [2, 'selected'], [3, 'descendant'], [4, 'outside'], [5, 'outside']
+    ]);
+  });
+
+  it('SelecaoInexistente_Null', () => {
+    expect(core.ctxMenuModel({ nodes, selId: 'x', flat: true, explodeFrom: null, collapseAt: null })).toBeNull();
+  });
+});
+
+describe('RequestsMarkdown', () => {
+  const base = { project: 'Traval', version: '0.25', stamp: '17/10/2026 14:32', mock: 'layers/mock.html', layouts: 1, confirm: false };
+  const r1 = {
+    id: 'R1', layoutId: 'main', nodeKey: 'k1', path: '.shell > .workspace > .chart-stage > .studies-toolbar',
+    text: 'Agrupar TF e Visual à esquerda e levar os chips para a direita.', createdAt: 1,
+    name: '.studies-toolbar', depth: 3, uses: 1,
+    alvo: 'src/ui/studies.css › .studies-toolbar · L41', caixa: '612×28 px · 1 uso',
+    estilos: 'display:flex; gap:6px; padding:4px 12px; background:#353a41'
+  };
+  const r3 = {
+    id: 'R3', layoutId: 'main', nodeKey: 'k3', path: '… > .studies-toolbar > .studies-toolbar-chips > .chip:nth-of-type(1–4)',
+    text: 'O chip ativo precisa de contraste maior.', createdAt: 3, name: '.chip.studies-toolbar-chip', depth: 5, uses: 4,
+    alvo: 'src/ui/studies.css › .studies-toolbar-chip · L88', caixa: '64×22 px',
+    texts: ['EMA 9', 'RSI', 'VWAP', '+'], estilos: 'background:#3f454d; border-radius:3px', pendente: 'border-radius 3px → 999px'
+  };
+  const lines = (s) => s.split('\n');
+
+  it('RequestsMarkdown_UmaRequest_FormatoDoBoard', () => {
+    expect(core.requestsMarkdown({ ...base, requests: [r1] })).toBe([
+      '## Requisições Manuais · Traval · 1',
+      '<!-- Layers 0.25 · 17/10/2026 14:32 · mock layers/mock.html -->',
+      '',
+      '### R1 · .studies-toolbar (L3)',
+      '- alvo: src/ui/studies.css › .studies-toolbar · L41',
+      '- caminho: .shell > .workspace > .chart-stage > .studies-toolbar',
+      '- caixa: 612×28 px · 1 uso',
+      '- estilos: display:flex; gap:6px; padding:4px 12px; background:#353a41',
+      '- pedido: Agrupar TF e Visual à esquerda e levar os chips para a direita.'
+    ].join('\n'));
+  });
+
+  it('RequestsMarkdown_ConfirmPorRequest_SoAMarcadaRecebeStatus', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, confirm: true }, r3] });
+    expect(out.match(/- status: alvo a confirmar/g)).toHaveLength(1);
+    expect(out.indexOf('- status: alvo a confirmar')).toBeLessThan(out.indexOf('### R3'));
+    expect(core.requestsMarkdown({ ...base, requests: [{ ...r1, confirm: false }] })).not.toContain('status:');
+  });
+
+  it('RequestsMarkdown_ConfirmGlobal_MarcaTodas', () => {
+    const out = core.requestsMarkdown({ ...base, confirm: true, requests: [r1, r3] });
+    expect(out.match(/- status: alvo a confirmar/g)).toHaveLength(2);
+  });
+
+  it('RequestsMarkdown_VariosUsos_MarcaXN', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [r1, r3] });
+    expect(out).toContain('### R3 · .chip.studies-toolbar-chip (L5) ×4\n');
+    expect(out).toContain('### R1 · .studies-toolbar (L3)\n');
+    expect(out).toContain('\n\n### R3 ');
+    expect(out.startsWith('## Requisições Manuais · Traval · 2\n')).toBe(true);
+  });
+
+  it('RequestsMarkdown_BlocoR3_TextosEPendente_Ordem', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [r3] });
+    expect(lines(out).slice(3)).toEqual([
+      '### R3 · .chip.studies-toolbar-chip (L5) ×4',
+      '- alvo: src/ui/studies.css › .studies-toolbar-chip · L88',
+      '- caminho: … > .studies-toolbar > .studies-toolbar-chips > .chip:nth-of-type(1–4)',
+      '- texto: “EMA 9”, “RSI”, “VWAP”, “+”',
+      '- caixa: 64×22 px',
+      '- estilos: background:#3f454d; border-radius:3px',
+      '- ajuste pendente: border-radius 3px → 999px',
+      '- pedido: O chip ativo precisa de contraste maior.'
+    ]);
+  });
+
+  it('RequestsMarkdown_TextoComCercaECrases_NaoQuebra', () => {
+    const text = 'Usar `a | b` e "aspas"\n```css\n.x { color: red }\n```\n# titulo\n- item\n\nfim';
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text }] });
+    lines(out).forEach((l) => {
+      expect(/^(#|```|- )/.test(l)).toBe(l.startsWith('## ') || l.startsWith('### ') || /^- (alvo|caminho|caixa|estilos|pedido): /.test(l));
+    });
+    expect(out).toContain('- pedido: Usar `a | b` e "aspas"\n    ```css\n    .x { color: red }\n    ```\n    # titulo\n    - item\n    \n    fim');
+  });
+
+  it('RequestsMarkdown_PedidoMultilinha_IndentaContinuacao', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text: 'a\r\nb\rc' }] });
+    expect(out.endsWith('- pedido: a\n    b\n    c')).toBe(true);
+  });
+
+  it('RequestsMarkdown_TextoLongo_NaoTrunca', () => {
+    const text = 'x'.repeat(10240);
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text }] });
+    expect(out.endsWith('- pedido: ' + text)).toBe(true);
+  });
+
+  it('RequestsMarkdown_NomeComQuebraDeLinha_Colapsa', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, name: 'span\n# x\r\nfim', alvo: 'a\nb' }] });
+    expect(lines(out)[3]).toBe('### R1 · span # x fim (L3)');
+    expect(out).toContain('\n- alvo: a b\n');
+  });
+
+  it('RequestsMarkdown_SemNome_UsaUltimoSegmentoDoCaminho', () => {
+    const { name: _n, ...noName } = r1;
+    expect(lines(core.requestsMarkdown({ ...base, requests: [noName] }))[3]).toBe('### R1 · .studies-toolbar (L3)');
+    const bare = { id: 'R9', layoutId: 'm', nodeKey: 'k', path: '', text: 't', createdAt: 1 };
+    const out = core.requestsMarkdown({ ...base, requests: [bare] });
+    expect(lines(out).slice(3)).toEqual(['### R9 · R9', '- pedido: t']);
+  });
+
+  it('RequestsMarkdown_SemEstilos_OmiteLinha', () => {
+    const { estilos: _e, ...noStyle } = r1;
+    const out = core.requestsMarkdown({ ...base, requests: [noStyle, { ...r3, id: 'R2', estilos: '', pendente: null, texts: [] }] });
+    expect(out).not.toContain('- estilos:');
+    expect(out).not.toContain('- ajuste pendente:');
+    expect(out).not.toContain('- texto:');
+  });
+
+  it('RequestsMarkdown_MultiLayout_IncluiLayout', () => {
+    const out = core.requestsMarkdown({ ...base, layouts: 3, requests: [r1, { ...r3, layoutId: 'Tela principal' }] });
+    expect(lines(out)[1]).toBe('<!-- Layers 0.25 · 17/10/2026 14:32 · mock layers/mock.html · 3 layouts -->');
+    expect(out).toContain('### R1 · .studies-toolbar (L3) · layout: main\n');
+    expect(out).toContain('### R3 · .chip.studies-toolbar-chip (L5) ×4 · layout: Tela principal\n');
+  });
+
+  it('RequestsMarkdown_Confirm_MarcaAlvoAConfirmar', () => {
+    const out = core.requestsMarkdown({ ...base, confirm: true, requests: [r1, r3] });
+    const ls = lines(out);
+    ls.forEach((l, i) => {
+      if (l.startsWith('### ')) expect(ls[i + 1]).toBe('- status: alvo a confirmar');
+    });
+    expect(out.match(/- status: alvo a confirmar/g)).toHaveLength(2);
+    expect(core.requestsMarkdown({ ...base, requests: [r1] })).not.toContain('status:');
+  });
+
+  it('RequestsMarkdown_CamposInvalidos_NaoLancaNemImprimeUndefined', () => {
+    const bad = [
+      { id: 'R1', layoutId: 'm', nodeKey: 'k', path: 'a > b', text: 'x', createdAt: 1, depth: NaN, uses: 0, texts: 'abc' },
+      { id: 'R2', layoutId: 'm', nodeKey: 'k', path: 'a > b', text: 'y', createdAt: 1, depth: Infinity, uses: Infinity, texts: [null, 1, '', 'ok'] },
+      { layoutId: 'm', nodeKey: 'k', path: 'a', createdAt: 1 },
+      null, undefined, 7, []
+    ];
+    let out;
+    expect(() => { out = core.requestsMarkdown({ layouts: 3, requests: bad }); }).not.toThrow();
+    expect(out).not.toMatch(/undefined|NaN|null|Infinity/);
+    expect(out.split('\n')[0]).toBe('## Requisições Manuais ·  · 3');
+    expect(out).toContain('- texto: “ok”');
+    expect(out).not.toContain('abc');
+    expect(out).toContain('### R1 · b · layout: m');
+    expect(out.endsWith('- pedido: ')).toBe(true);
+    expect(core.requestsMarkdown({ ...base, requests: [null, {}] }).startsWith('## Requisições Manuais · Traval · 1')).toBe(true);
+    expect(core.requestsMarkdown({ ...base, requests: [null, 3] })).toBe('');
+  });
+
+  it('RequestsMarkdown_PedidoComQuebraFinal_SemLinhaSoDeEspacos', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, text: 'x\n' }] });
+    expect(lines(out).pop()).toBe('- pedido: x');
+  });
+
+  it('RequestsMarkdown_Lista_Vazia_String_Vazia', () => {
+    expect(core.requestsMarkdown({ ...base, requests: [] })).toBe('');
+    expect(core.requestsMarkdown({ ...base })).toBe('');
   });
 });
