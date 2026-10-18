@@ -2540,7 +2540,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 40,
+    "progress": 55,
     "docs": [],
     "children": [
       {
@@ -2637,12 +2637,12 @@
         "name": "Modelo de cobertura mono × múltiplos layouts",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "status": "wip",
+        "statusLabel": "In Progress",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 60,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
