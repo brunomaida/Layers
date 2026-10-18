@@ -117,8 +117,7 @@ test('Layouts_SwitchWithUnsavedCode_ModalNeverDropsPendingChanges', async ({ pag
   await field(page).click({ clickCount: 3 });
   await page.keyboard.type(SHADOW);
   await page.keyboard.press('Tab');
-  await page.waitForTimeout(300);
-  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
   await act(page, 'setState', { codeBuf: { 'layers/shared.css': '.title{color:red}' } });
   await act(page, 'switchLayout', 'config');
   await expect(page.getByText('Há código não salvo; trocar de layout descarta o código editado.')).toBeVisible();
@@ -133,4 +132,95 @@ test('Layouts_SwitchWithUnsavedCode_ModalNeverDropsPendingChanges', async ({ pag
   await act(page, 'switchLayout', 'main');
   await expect.poll(() => layoutId(page)).toBe('main');
   await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+});
+
+async function typeShadow(page) {
+  await (await lastTreeRow(page)).click();
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type(SHADOW);
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+}
+
+test('Layouts_SwitchLayout_GuardsDoNotReload', async ({ page }) => {
+  await loaded(page);
+  const seq = () => page.evaluate(() => window.__logic.loadSeq);
+  const s0 = await seq();
+  await act(page, 'switchLayout', 'main'); // same id
+  await act(page, 'switchLayout', 'nope'); // unknown id
+  expect(await seq()).toBe(s0);
+  await page.evaluate(() => window.__logic.setState({ modal: { stage: 'confirm', log: [], title: 'x', label: 'x', text: 'x', onYes: () => {} } }));
+  await act(page, 'switchLayout', 'config'); // a panel is open
+  expect(await seq()).toBe(s0);
+  await act(page, 'setState', { modal: null });
+  await page.evaluate(() => { window.__logic.loadedSeq = -1; });
+  await act(page, 'switchLayout', 'config'); // a load is still in flight
+  expect(await seq()).toBe(s0);
+  await page.evaluate(() => { window.__logic.loadedSeq = window.__logic.loadSeq; });
+  expect(await layoutId(page)).toBe('main');
+  await act(page, 'switchLayout', 'config');
+  await expect.poll(() => layoutId(page)).toBe('config');
+});
+
+test('Layouts_MissingMockInNonMainLayout_DropsSavedStateAndFallsBackToFirstLayout', async ({ page }) => {
+  // layers.json is rewritten in flight to add a layout with two states, the second one pointing at a missing mock
+  await page.route('**/multi-layout/layers.json*', async (route) => {
+    const res = await route.fetch(); const man = await res.json();
+    man.layouts.push({ id: 'multi', name: 'Multi', mock: 'layers/config.html', states: [{ name: 'ok', mock: 'layers/config.html' }, { name: 'bad', mock: 'layers/gone.html' }] });
+    await route.fulfill({ response: res, json: man });
+  });
+  await loaded(page);
+  await act(page, 'switchLayout', 'multi');
+  await expect.poll(() => layoutId(page)).toBe('multi');
+  await act(page, 'switchState', 'bad');
+  await expect(page.getByText('Mock não encontrado.')).toBeVisible();
+  await expect(page.getByText(/Layout "Multi": recarregar abre o primeiro layout\./)).toBeVisible();
+  const keys = await page.evaluate(() => ({ states: Object.keys(window.__logic.stateMap), layouts: Object.keys(window.__logic.layoutMap) }));
+  expect(keys).toEqual({ states: [], layouts: [] });
+  await page.reload();
+  await expect(page.getByText(/Projeto Multi layout/).first()).toBeVisible({ timeout: 15_000 });
+  await expect.poll(() => layoutId(page)).toBe('main');
+});
+
+test('Layouts_MissingMockWithoutLayouts_KeepsTheOriginalMessage', async ({ page }) => {
+  await loaded(page, '/?layers=fixtures/multi-state/');
+  await act(page, 'switchState', 'broken');
+  await expect(page.getByText(/estado "broken" em "states"/)).toBeVisible();
+  await expect(page.getByText(/recarregar abre o primeiro layout/)).toHaveCount(0);
+});
+
+test('Layouts_SwitchWithAdjustmentsThatCannotBeSaved_ConfirmsAndWarnsTheyAreLost', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  // simulates an incomplete load / unsaved key: the drain could not persist the burst
+  await page.evaluate(() => { window.__logic.pendingReady = false; });
+  await act(page, 'switchLayout', 'config');
+  await expect(page.getByText(/Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde\./)).toBeVisible();
+  expect(await layoutId(page)).toBe('main');
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await expect.poll(() => layoutId(page)).toBe('config');
+});
+
+test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({ page }) => {
+  await loaded(page);
+  let n = 0;
+  await page.route('**/multi-layout/layers.json*', async (route) => {
+    n += 1;
+    if (n === 1) await new Promise((r) => setTimeout(r, 1500)); // load A: slow
+    await route.continue();
+  });
+  await page.evaluate(() => {
+    const l = window.__logic;
+    l.loadProject(); // A (slow)
+    l.layoutMap[l.baseKey] = 'replay';
+    l.loadProject(); // B (fast, supersedes A)
+  });
+  await expect.poll(() => layoutId(page)).toBe('replay');
+  expect(await page.evaluate(() => window.__logic.pendingKey)).toBe('fx:fixtures/multi-layout|replay');
+  // A resolves now; had it passed the parse it would resolve main and overwrite the live keys
+  await page.evaluate(() => { window.__logic.layoutMap['fx:fixtures/multi-layout'] = 'main'; });
+  await expect.poll(() => n).toBe(2);
+  await page.waitForTimeout(2000);
+  expect(await page.evaluate(() => ({ key: window.__logic.pendingKey, id: window.__logic.state.project.layoutId }))).toEqual({ key: 'fx:fixtures/multi-layout|replay', id: 'replay' });
+  expect((await mounted(page)).ids).toEqual(['rpl-bar', 'rpl-frame', 'rpl-frame2', 'rpl-title']);
 });
