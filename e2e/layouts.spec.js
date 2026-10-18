@@ -470,3 +470,88 @@ test('Layouts_UnopenedLayoutRequests_MainEntrySurvivesWhileWorkingElsewhere', as
   await rewrite(page);
   expect(Object.keys(await storedPending(page)).sort()).toEqual(['folder:proj', 'folder:proj|config']);
 });
+
+// S9.1a Task 5: manual requests carry their layout, R<n> stays unique across layouts and the export merges every layout.
+const footer = (page) => page.locator('[data-req-footer]');
+const mdOf = (page) => page.evaluate(() => window.__logic.requestsMd());
+const reqsOf = (page) => page.evaluate(() => window.__logic.state.requests.map((r) => ({ id: r.id, layoutId: r.layoutId })));
+
+test.describe('Layouts_Requests', () => {
+  test.use({ permissions: ['clipboard-read', 'clipboard-write'] });
+
+  test('Request_MultiLayout_IdsUniqueAndExportGrouped', async ({ page }) => {
+    await open(page, 'multi-layout');
+    await act(page);
+    await act(page, 'addRequest', '0.1');
+    await expect.poll(() => reqsOf(page)).toEqual([{ id: 'R1', layoutId: 'main' }]);
+    await act(page, 'switchLayout', 'config');
+    await settled(page, 'config');
+    await act(page, 'addRequest', '0.1');
+    await expect.poll(() => reqsOf(page)).toEqual([{ id: 'R2', layoutId: 'config' }]);
+    await expect.poll(async () => (await mdOf(page)).includes('layout: config')).toBe(true);
+    const md = await mdOf(page);
+    expect(md).toContain('· 4 layouts');
+    expect(md).toContain('### R1');
+    expect(md).toContain('### R2');
+    expect(md).toContain('layout: main');
+    expect(md.indexOf('### R1')).toBeLessThan(md.indexOf('### R2'));
+    // the Ajustes block lists only the active layout; the other one is a count line
+    await expect(page.locator('[data-req="R2"]')).toBeVisible();
+    await expect(page.locator('[data-req="R1"], [data-req-row="R1"]')).toHaveCount(0);
+    await expect(page.locator('[data-req-other]')).toHaveText('outros layouts: Main (1)');
+    await expect(footer(page)).toContainText('2');
+  });
+
+  test('Request_Export_WorksWhenActiveLayoutHasNone', async ({ page }) => {
+    await open(page, 'multi-layout');
+    await act(page);
+    await act(page, 'addRequest', '0.1');
+    await expect.poll(async () => { const s = await storedPending(page); return s['folder:proj'] ? s['folder:proj'].requests.length : 0; }).toBe(1);
+    await act(page, 'switchLayout', 'replay');
+    await settled(page, 'replay');
+    expect(await reqsOf(page)).toEqual([]);
+    await expect(footer(page)).toBeVisible();
+    await footer(page).getByRole('button', { name: /Requisições Manuais/ }).click();
+    await expect(footer(page).getByRole('button', { name: 'Copiar', exact: true })).toBeEnabled();
+    await expect(footer(page).getByRole('button', { name: /Exportar/ })).toBeEnabled();
+    await footer(page).getByRole('button', { name: 'Copiar', exact: true }).click();
+    await expect(page.getByText('1 requisição copiada como Markdown.')).toBeVisible();
+    await footer(page).getByRole('button', { name: /Exportar/ }).click();
+    await expect(page.getByText('1 requisição gravada em layers-requests.md.')).toBeVisible();
+    expect(await mdOf(page)).toContain('layout: main');
+  });
+
+  test('Request_SingleLayoutProject_KeepsMainAndPlainHeader', async ({ page }) => {
+    await open(page, 'axai');
+    await act(page);
+    await act(page, 'addRequest', '0.0');
+    await expect.poll(() => reqsOf(page)).toEqual([{ id: 'R1', layoutId: 'main' }]);
+    const md = await mdOf(page);
+    expect(md).toMatch(/^## Requisições Manuais · [^\n]* · 1\n/);
+    expect(md).not.toContain('layouts');
+    expect(md).not.toContain('layout:');
+    await expect(page.locator('[data-req-other]')).toHaveCount(0);
+  });
+});
+
+test('Layouts_Interactions_FilteredByLayout', async ({ page }) => {
+  await loaded(page);
+  const inter = () => page.evaluate(() => window.__logic.state.project.inter.map((x) => [x.index, x.item.key]));
+  const labels = async () => {
+    await page.getByText('Interagir', { exact: false }).first().click();
+    await expect(page.getByText('Modo interativo').first()).toBeVisible();
+    const out = { all: await page.getByText('All layouts', { exact: true }).count(), cfg: await page.getByText('Config only', { exact: true }).count(), rpl: await page.getByText('Replay only', { exact: true }).count() };
+    await page.keyboard.press('Escape');
+    return out;
+  };
+  expect(await inter()).toEqual([[0, 'hint']]);
+  expect(await labels()).toEqual({ all: 1, cfg: 0, rpl: 0 });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await inter()).toEqual([[0, 'hint'], [1, 'cfg']]);
+  expect(await labels()).toEqual({ all: 1, cfg: 1, rpl: 0 });
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  expect(await inter()).toEqual([[0, 'hint'], [2, 'rpl']]);
+  expect(await labels()).toEqual({ all: 1, cfg: 0, rpl: 1 });
+});
