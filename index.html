@@ -1442,7 +1442,8 @@ class Component extends DCLogic {
     // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
     const plan0 = LayersCore.restorePlan(saved, hash);
     const plan = incomplete ? { keep: [], dropped: 0, requests: plan0.requests, confirm: plan0.requests.length > 0 } : plan0;
-    const reqs = plan.requests.map(r => { if (!plan.confirm && r.confirm !== true) return r; const { nodeId, ...rest } = r; return { ...rest, confirm: true }; }); // o id posicional so descreve o DOM de um hash igual
+    // com srcHash o restorePlan ja decidiu o confirm; sem srcHash (registro antigo) vale a marca pegajosa. O nodeId fica: so e usado com confirm falso
+    const reqs = plan.requests.map(r => (incomplete || r.confirm === true || (typeof r.srcHash !== 'string' && plan.confirm)) ? { ...r, confirm: true } : r);
     const anyConfirm = reqs.some(r => r.confirm === true);
     plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
     const restored = plan.keep, dropped = plan.dropped;
@@ -1968,7 +1969,7 @@ class Component extends DCLogic {
     const path = []; for (let d = 0; d <= n.depth; d++) { const a = s.byId[LayersCore.ancestorAt(id, d)]; path.push(a ? a.name : ''); }
     const uses = this.sharedIds(id).length, texts = this.reqTexts(id), box = Math.round(n.w) + '×' + Math.round(n.h) + ' px';
     const pend = s.changes.filter(c => c.ids.includes(id)).map(c => kebab(c.prop) + ' ' + c.from + ' → ' + c.to).join('; ');
-    const rec0 = { layoutId: 'main', nodeId: id, nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
+    const rec0 = { layoutId: 'main', nodeId: id, ...(typeof this.pendingHash === 'string' ? { srcHash: this.pendingHash } : {}), nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
       alvo: file ? file + ' › ' + selector + (line ? ' · L' + line : '') + (LayersCore.isManualSource(file) ? ' (manual: fonte TS)' : '') : '',
       caixa: box + ' · ' + (texts.length ? (texts.length > 1 ? 'textos ' : 'texto ') + texts.map(t => '“' + t + '”').join(', ') : uses + (uses === 1 ? ' uso' : ' usos')),
       estilos: this.reqStyles(id), uses, pendente: pend || null, text: '', createdAt: Date.now() };
