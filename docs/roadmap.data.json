@@ -2396,8 +2396,8 @@
     "id": "S8",
     "type": "phase",
     "name": "Trilha MCP e plugin",
-    "start": "2026-10-18",
-    "end": "2026-10-25",
+    "start": "2026-10-19",
+    "end": "2026-10-26",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -2417,8 +2417,8 @@
         "id": "S8.1",
         "type": "spec",
         "name": "Spike de servidor MCP stdio sobre o core",
-        "start": "2026-10-18",
-        "end": "2026-10-20",
+        "start": "2026-10-19",
+        "end": "2026-10-21",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2436,8 +2436,8 @@
         "id": "S8.2",
         "type": "spec",
         "name": "Spike Playwright: data-vite-dev-id sobrevive",
-        "start": "2026-10-19",
-        "end": "2026-10-21",
+        "start": "2026-10-20",
+        "end": "2026-10-22",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2455,8 +2455,8 @@
         "id": "S8.3",
         "type": "spec",
         "name": "Snapshot headless (slice 3)",
-        "start": "2026-10-20",
-        "end": "2026-10-22",
+        "start": "2026-10-21",
+        "end": "2026-10-23",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2474,8 +2474,8 @@
         "id": "S8.4",
         "type": "spec",
         "name": "apply_patch e porta Node de writeText",
-        "start": "2026-10-21",
-        "end": "2026-10-23",
+        "start": "2026-10-22",
+        "end": "2026-10-24",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2493,8 +2493,8 @@
         "id": "S8.5",
         "type": "spec",
         "name": "Proveniência SPA via data-vite-dev-id",
-        "start": "2026-10-22",
-        "end": "2026-10-24",
+        "start": "2026-10-23",
+        "end": "2026-10-25",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2512,8 +2512,8 @@
         "id": "S8.6",
         "type": "spec",
         "name": "Re-snapshot sem renovar mtimes com changes pendentes",
-        "start": "2026-10-23",
-        "end": "2026-10-25",
+        "start": "2026-10-24",
+        "end": "2026-10-26",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2540,7 +2540,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 60,
+    "progress": 40,
     "docs": [],
     "children": [
       {
@@ -2592,6 +2592,96 @@
         "start_synthetic": false,
         "end_synthetic": false,
         "version": "Unreleased"
+      },
+      {
+        "id": "S9.1a",
+        "type": "spec",
+        "name": "Modelo de layouts, faixa LAYOUTS e modo Foco",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-17-s9-1-layouts-newlogic.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
+            "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          },
+          {
+            "name": "2026-10-18-s9-1a-layouts-modelo-seletor-e.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-18-s9-1a-layouts-modelo-seletor-e.md)",
+            "title": "2026-10-18-s9-1a-layouts-modelo-seletor-e.md)"
+          },
+          {
+            "name": "feature-261018-87-s9-1a-layouts-foco.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261018-87-s9-1a-layouts-foco.md)",
+            "title": "feature-261018-87-s9-1a-layouts-foco.md)"
+          }
+        ],
+        "reason": "`layouts` em layers.json, um layout montado por vez, seleção, explosão, pendentes e requisições por layout",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S9.1b",
+        "type": "spec",
+        "name": "Modelo de cobertura mono × múltiplos layouts",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-17-s9-1-layouts-newlogic.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
+            "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          }
+        ],
+        "reason": "Regiões detectadas, cob_reg e cob_el, regra de decisão e painel de resultado",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S9.1c",
+        "type": "spec",
+        "name": "Espalhar layouts no palco 3D com LOD",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-17-s9-1-layouts-newlogic.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
+            "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          }
+        ],
+        "reason": "Hosts por layout, câmera de visão geral, popover Ver todos / 1–N, aviso acima de 1.500 planos",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
       }
     ]
   },
@@ -2600,7 +2690,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-25",
+    "end": "2026-10-26",
     "statusLabel": "Reference",
     "tags": [
       "bdn",
