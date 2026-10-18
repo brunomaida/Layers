@@ -46,6 +46,24 @@ Regras:
 - Um `change` guarda `fromInline` por id para reverter sem re-scan.
 - Escopo de aplicação (`scope`): `one` (só este), `all` (todos os usos da mesma regra) ou `ask`.
 
+Requisições manuais (S3.5) formam um ramo à parte: pedem uma mudança em texto livre e **não** alimentam `changes[]` (nada é aplicado, revertido nem entra no diff).
+
+```
+Menu de contexto do palco / da árvore  ── "Requisição" ──▶ addRequest(id)
+        │  lê o nó selecionado (nodeKey, path, caixa, estilos declarados, usos, ajuste pendente)
+        ▼
+requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, uses, pendente, text, confirm?, createdAt }
+        │
+        ├── Ajustes: lista + textarea "O QUE MUDAR" (setRequestText / removeRequest / showRequest)
+        ├── LayersCore.requestsMarkdown ──▶ "Requisições Manuais": copiar ou exportar layers-requests.md (pasta conectada)
+        └── layers/v1/pending › requests[]  (restaura com o hash; hash diferente marca confirm, não descarta)
+```
+
+- A fronteira com `changes[]` é deliberada: o texto do usuário vai para uma IA ou outra pessoa, não para o escritor de arquivos. O campo `pendente` é só um retrato textual (`prop de → para`) do ajuste da mesma seleção no momento da criação; fica congelado e não acompanha Aplicar nem reverter.
+- No Markdown, as linhas de continuação do `pedido` levam 4 espaços de recuo para ficar dentro do item da lista; o texto do usuário ainda pode virar título ou cerca de código dentro desse item, porque não é escapado.
+- `layoutId` é fixo em `'main'` até a S9.1 (layouts múltiplos); o cabeçalho do Markdown traz `layouts: 1`.
+- O token de versão no cabeçalho do Markdown é um travessão (`—`): a interface não mostra versão em lugar nenhum, e o `package.json` não é lido no navegador.
+
 ## Módulos (dentro do arquivo único)
 
 | Bloco | Responsabilidade |
@@ -61,13 +79,19 @@ Regras:
 | `checkStale`, `reloadProject`, `doReload`, `dismissStale`, `onFocus` | Recarregar projeto e aviso de "arquivos mudaram no disco" (ver § Loader de projeto). Helpers puros em `LayersCore`: `staleFiles`, `hasUnsaved`, `pickWatched`. |
 | `probeLayout`, `restructureProject`, `doRestructure`, `backupLayout` | Deriva do layout e Reanalisar do 0 (S2.21, § Reanalisar do 0). Helpers puros em `LayersCore`: `citedSources`, `layoutDrift`, `staleKind`, `layoutBackupPaths`. |
 | `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
-| Menus (Projetos, Aparência, Interagir, Ações), dropdowns customizados, toast | Chrome da interface. Os quatro menus seguem um padrão só, decidido por `LayersCore.menuStep` (puro) e aplicado por `menuGo`: hover abre (0 ms), saída fecha após 260 ms, clique fixa, `pointerdown` fora (captura), Esc, foco saindo e item de ação fecham; um menu aberto por vez (`menu`, `menuPin`). Os dropdowns de valor (`cbOpen`) abrem por clique e fecham no blur ou no Esc. Os popovers não usam `role=menu`: a navegação por setas nos itens fica fora do escopo. |
+| Menus (Projetos, Aparência, Interagir, Ações), dropdowns customizados, toast | Chrome da interface. Os quatro menus seguem um padrão só, decidido por `LayersCore.menuStep` (puro) e aplicado por `menuGo`: hover abre (0 ms), saída fecha após 260 ms, clique fixa, `pointerdown` fora (captura), Esc, foco saindo e item de ação fecham; um menu aberto por vez (`menu`, `menuPin`). Os dropdowns de valor (`cbOpen`) abrem por clique e fecham no blur ou no Esc. Os popovers não usam `role=menu`: a navegação por setas nos itens fica fora do escopo. O menu de contexto do palco (linha abaixo) não segue esse padrão de hover: abre só por botão direito. |
+| Menu de contexto (`ctx`, `onStageCtx`, `openCtx`, `closeCtx`, `ctxPick`, `ctxRun`, `fitCtx`); `LayersCore.ctxMenuModel`, `ancestorAt` | Botão direito num plano (ou numa linha da árvore) abre um painel fixo (`role=menu`, `aria-label="Camadas do componente"`) com as camadas L0 a Ln do componente e o selecionado destacado; o submenu "Ações do ramo" (`role=menu`) traz Explodir daqui, Recolher até aqui e Requisição. `onStageCtx` sempre chama `preventDefault`; sem plano sob o cursor (nem `hoverId`) não abre, e um arrasto com o botão direito (> 3 px entre `mousedown` e `contextmenu`) também não. Clicar numa camada seleciona o ancestral e mantém o menu aberto. Fecha com Esc (primeiro da cadeia em `escape()`), `pointerdown` fora (primeira instrução de `onDocDown`), qualquer tecla que resolva outra ação em `onKey`, ação executada, `unloadProject` e `scan()` quando o nó-alvo some. `fitCtx` mantém painel e submenu dentro da viewport (o submenu inverte para a esquerda perto da borda). Modelo puro em `ctxMenuModel` (contagens por profundidade, `inBranch`, itens disponíveis); o painel fica no topo do template, fora do palco. |
+| Explodir ramo (`explodeFrom`, `collapseAt`, `explodeHere`, `collapseHere`, `branchInfo`); `LayersCore.branchOf`, `inBranchOf`, `branchZ` | Na vista plana só o ramo escolhido ganha profundidade: `scene()` põe cada nó do ramo em `LayersCore.branchZ(depth, raiz.depth, collapseAt, spacing)` e o resto fica em z 0; `cam()` soma `s.spacing * span` ao afastamento lateral. `collapseAt` (profundidade) achata os níveis abaixo dele no plano daquele nível. `branchInfo()` memoiza conjunto, raiz e `span` por (`nodes`, `explodeFrom`, `collapseAt`) e devolve `null` fora da vista plana. O ramo se identifica por prefixo de id pontuado (`inBranchOf`). Marcas: selo `▤ Plana · ▧ ramo` no palco (canto inferior direito), `▧` na linha da árvore e no chip da régua. Não há plano fantasma tracejado para os níveis recolhidos, nem esmaecimento dos irmãos do ramo. |
+| Requisições (`addRequest`, `setRequestText`, `removeRequest`, `showRequest`, `requestsMd`, `copyRequests`, `exportRequests`, `rewritePending`); `LayersCore.validRequest`, `requestsMarkdown` | Entradas manuais no painel Ajustes (chip de dado, texto livre, "Mostrar no palco", tag "alvo a confirmar") e o rodapé "Requisições Manuais" (Markdown, copiar, exportar). Persistem em `layers/v1/pending › requests[]` (§ Persistência). `requestsMd()` memoiza por identidade de `requests`, projeto e minuto, para que o orbit não regenere o texto. "Mostrar no palco" fica desabilitado quando a requisição está marcada `confirm`. |
 | `LayersCore.ACTIONS`, `SHORTCUTS`, `keyAction`, `tooltip`; `keyRun`, `onKey` | Registro único de ações e atalhos (S3.3). `ACTIONS` dá rótulo, teclas e escopo (`global` no `onKey`, `ctrl` no ramo Ctrl/Cmd, `local` nos campos, `none` sem tecla); `keyAction` resolve a tecla e `keyRun` (montado uma vez) executa; `SHORTCUTS` é a tabela do painel `?`; `tooltip(id)` gera o `title` "Ação (K)". Exportado em [shortcuts.md](shortcuts.md). |
 | Mock offscreen (`pageRef`, `left:-20000px`) | Fonte de camadas atual: recriação do Traval anotada com `data-src`. Deve ser substituído pelo loader de projeto. |
 
 ## Estado (resumo)
 
 - Câmera: `yaw, tilt, zoom, panX, panY, focus, spacing, persp, flat`.
+- Ramo explodido (S3.5): `explodeFrom` (id da raiz do ramo, ou `null`) e `collapseAt` (profundidade a partir da qual o ramo volta ao plano daquele nível, ou `null`). Só valem na vista plana; limpam em `unloadProject`, na troca de projeto, em Reanalisar do 0 e quando a raiz some no `scan()`. A varredura limpa o ramo de forma permanente também quando a raiz passa a ter tamanho zero (por exemplo Interagir ou troca de estado do mock), e desfazer não o restaura.
+- Menu de contexto: `ctx` é `null` ou `{x, y, id, fx, fy, flip}` (cursor, nó-alvo, posição ajustada à viewport e se o submenu inverte). Limpa no fechamento, em `unloadProject` e quando o `id` some no `scan()`.
+- Requisições: `requests` (registros do ramo de requisição, ver § Fluxo de dados) mais `reqSel` (id expandido) e `mdOpen` (rodapé Markdown aberto), ambos só de interface.
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
@@ -82,8 +106,9 @@ Regras:
 | `localStorage` | `layers/v1/meta` | `{schema:1, savedAt, migratedFrom}` — `migratedFrom` só existe em navegador que veio das chaves antigas. |
 | `localStorage` | `layers/v1/ui` | Preferência de interface: `cfg` (tema, seleção, cores de origem, cabeçalho, escala de fonte, degradê) + `UI_KEYS` (painéis, navegação, árvore, escopo, `interSize`). |
 | `localStorage` | `layers/v1/projects` | Histórico de projetos: `{id,kind,name,path,label,last,pinned}`. |
-| `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera}`. `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. |
+| `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera, explodeFrom, collapseAt}`. `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. `explodeFrom`/`collapseAt` só são restaurados quando a sessão é do projeto da aba; no modo fixture (`?layers=`, `?project=`) não são persistidos (grava `null`). Limpam em descarregar o projeto, trocar de projeto e Reanalisar do 0; uma raiz que não existe mais no scan zera os dois; `collapseAt` não numérico é ignorado. |
 | `localStorage` | `layers/v1/pending` | `{schema:1, byProject:{<chave>:{savedAt, hash, changes[]}}}`. `<chave>` = `projectId` (`folder:`/`zip:`/`repo:`) ou `fx:<fixtureBase>`. `hash` cobre `layers.json`, mock, folhas `.css` e `dcSource` lidos em `loadProject`; hash igual restaura tudo na ordem, hash diferente descarta tudo com toast `warn`. Teto de 200 changes e expiração de 30 dias. |
+| `localStorage` | `layers/v1/pending` › `requests[]` | Requisições manuais da mesma entrada: `{savedAt, hash, changes[], requests[]}`. Registro: `id` (`R<n>`), `layoutId`, `nodeKey`, `path`, `text`, `createdAt` (obrigatórios) e as âncoras opcionais `name`, `depth`, `alvo`, `caixa`, `estilos`, `uses`, `texts`, `pendente`, `nodeId`, `confirm`; `validRequest` descarta o que não casa com o tipo. A entrada **sobrevive sem changes**: só some quando `changes` e `requests` estão ambos vazios. Hash diferente descarta os `changes` mas **mantém** as requisições, cada uma com `confirm: true` ("alvo a confirmar", sem o `nodeId` posicional, que só descreve o DOM de um hash igual); a marca é por requisição e persiste até ela ser removida. Leitura incompleta (CSS ou dcSource não lido) também marca `confirm`. Teto de 200 requisições (toast ao passar). Restaurar reescreve a entrada (novo `savedAt`, hash atual), então a expiração de 30 dias renova a cada carga que restaurou requisições. |
 | `sessionStorage` | `layers/v1/tab` | `{projectId}` da aba. Vence o `session` ao restaurar: cada aba reabre o **seu** projeto. Câmera e seleção não: moram no `session` compartilhado e só são restauradas quando `lastProjectId` é o projeto daquela aba. |
 | IndexedDB `layers-hist` | store `h`, chave = `id` do histórico | `FileSystemDirectoryHandle` da pasta conectada. É o único lugar onde handle é guardado. |
 
@@ -97,6 +122,7 @@ com `pendingDirty`, para que uma aba ociosa nunca regrave a entrada de outra. `l
 drena a rajada pendente antes de recalcular `pendingKey`, restaura só na carga vencedora e, se
 uma fonte falhou na leitura, preserva a entrada sem restaurar. `doReload` e `resetUI` limpam a
 entrada; `approve`/`rollback` recalculam o hash da sessão (`refreshPendingHash`).
+Recarregar, Trocar de estado e Reanalisar do 0 descartam os `changes` mas mantêm as requisições (`rewritePending`); Zerar interface limpa tudo, inclusive requisições. As requisições sinalizam "alvo a confirmar" toda vez que o hash multi-estado deriva; a S9.1 vai escopar a chave por layout e reduzir esses sinais.
 Migração (`LayersCore.migrateConfig`) converte `layers-cfg`, `layers-hist` e
 `layers-inter-size` e **não** as apaga; a remoção fica para a v2.26.
 
