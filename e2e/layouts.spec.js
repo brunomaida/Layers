@@ -226,6 +226,28 @@ test('Layouts_SwitchAfterQuotaWarning_ConfirmsBeforeLosingAdjustments', async ({
   await expect.poll(() => layoutId(page)).toBe('config');
 });
 
+test('Layouts_SiblingTouchFails_WarnsAndKeepsTheStoredEntries', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  const KEY = 'fx:fixtures/multi-layout|config';
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('layers/v1/pending'))).not.toBeNull();
+  await page.evaluate((k) => {
+    const all = JSON.parse(localStorage.getItem('layers/v1/pending'));
+    all.byProject[k] = { savedAt: Date.now() - 1000, hash: 'h', changes: [], requests: [{ id: 'R1', createdAt: 1, text: 'keep me' }] };
+    localStorage.setItem('layers/v1/pending', JSON.stringify(all));
+    // the next write to the pending key (the sibling touch) throws once; the setPending after it succeeds
+    const orig = Storage.prototype.setItem; let armed = true;
+    Storage.prototype.setItem = function (key, v) { if (armed && key === 'layers/v1/pending') { armed = false; throw new Error('quota'); } return orig.call(this, key, v); };
+    window.__logic.pendingDirty = true; window.__logic.writePending();
+    Storage.prototype.setItem = orig;
+  }, KEY);
+  await expect(page.getByText('Não foi possível salvar os ajustes e requisições pendentes: armazenamento cheio.')).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.pendingQuotaWarned)).toBe(true);
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('layers/v1/pending')).byProject);
+  expect(Object.keys(stored).sort()).toEqual(['fx:fixtures/multi-layout', KEY]);
+  expect(stored[KEY].requests).toHaveLength(1);
+});
+
 test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({ page }) => {
   await loaded(page);
   let n = 0;
