@@ -1629,6 +1629,24 @@ describe('RestorePlan', () => {
     expect(core.restorePlan({ ...base, requests: [null, 'x', pendingRequest({})] }, 'outro').requests).toEqual([pendingRequest({})]);
   });
 
+  it('SrcHashIgual_LimpaConfirmPegajoso', () => {
+    const entry = { savedAt: 1, hash: 'B', changes: [pendingChange({})], requests: [pendingRequest({ srcHash: 'A', confirm: true })] };
+    const plan = core.restorePlan(entry, 'A');
+    expect(plan.requests[0].confirm).toBeUndefined();
+    expect(plan.requests[0].srcHash).toBe('A');
+  });
+
+  it('SrcHashDiferente_MarcaConfirmMesmoComEntryHashIgual', () => {
+    const entry = { savedAt: 1, hash: 'B', changes: [pendingChange({})], requests: [pendingRequest({ srcHash: 'A' }), pendingRequest({ id: 'r2', srcHash: 'B' })] };
+    const plan = core.restorePlan(entry, 'B');
+    expect(plan.requests.map((r) => r.confirm)).toEqual([true, undefined]);
+  });
+
+  it('SemSrcHash_MantemConfirmDoRegistro', () => {
+    const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})], requests: [pendingRequest({ confirm: true })] };
+    expect(core.restorePlan(entry, 'h').requests[0].confirm).toBe(true);
+  });
+
   it('EntradaSemRequests_RequestsVazio', () => {
     const entry = { savedAt: 1, hash: 'h', changes: [pendingChange({})] };
     expect(core.restorePlan(entry, 'h').requests).toEqual([]);
@@ -1649,12 +1667,12 @@ describe('ValidRequest', () => {
   });
 
   it('AncorasOpcionaisValidas_Aceita', () => {
-    expect(core.validRequest(pendingRequest({ nodeId: '0.1.2', name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p', confirm: true }))).toBe(true);
+    expect(core.validRequest(pendingRequest({ nodeId: '0.1.2', name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p', confirm: true, srcHash: 'h1' }))).toBe(true);
     expect(core.validRequest(pendingRequest({ pendente: null }))).toBe(true);
   });
 
   it('AncoraOpcionalTipoErrado_Rejeita', () => {
-    const bad = { nodeId: 1, name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1, confirm: 'true' };
+    const bad = { nodeId: 1, name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1, confirm: 'true', srcHash: 1 };
     Object.keys(bad).forEach((k) => {
       expect(core.validRequest(pendingRequest({ [k]: bad[k] }))).toBe(false);
     });

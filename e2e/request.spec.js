@@ -234,7 +234,6 @@ test('Request_SourceChanged_KeepsWithAlvoAConfirmar', async ({ page }) => {
   await expect(entry(page, 'R1')).toContainText('alvo a confirmar');
   await expect(entry(page, 'R1').getByRole('button', { name: /Mostrar no palco/ })).toBeDisabled();
   expect((await requests(page))[0]).toMatchObject({ confirm: true }); // the flag belongs to the request
-  expect((await requests(page))[0].nodeId).toBeUndefined(); // the positional id no longer describes the new DOM
   // the Markdown carries the status
   await footer(page).getByRole('button', { name: /Requisições Manuais/ }).click();
   expect(await page.locator('pre[data-req-md]').textContent()).toContain('- status: alvo a confirmar');
@@ -435,10 +434,16 @@ test('Request_ConfirmedStateSwitch_KeepsRequests', async ({ page }) => {
   const e = await stored(page);
   expect(e.requests).toHaveLength(1);
   expect(e.requests[0].text).toBe('Fica depois de trocar de estado.');
-  // pins today's behaviour: pendingKey is per project, the hash per state, so a state switch flags every request (written after the reload)
+  // pendingKey is per project, the hash per state: the request carries the srcHash of the state it was written in, so the other state flags it...
   await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.confirm).toBe(true);
   expect((await requests(page))[0].confirm).toBe(true);
   await expect(page.locator('[data-req-row="R1"]')).toBeVisible();
+  // ...and going back to the original state clears the flag (not sticky)
+  await page.getByText('Interagir', { exact: false }).first().click();
+  await page.getByText('empty', { exact: true }).click();
+  await expect.poll(async () => ((await stored(page)) || { requests: [] }).requests[0]?.confirm).toBeUndefined();
+  expect((await requests(page))[0].confirm).toBeUndefined();
+  await expect(page.locator('[data-req-row="R1"]')).not.toContainText('alvo a confirmar');
 });
 
 test('Request_Reanalisar_KeepsRequests', async ({ page }) => {
