@@ -341,7 +341,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       <div onClick="{{ toggleAj }}" title="Recolher / expandir" style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line1);cursor:pointer;user-select:none">
         <button style="all:unset;cursor:pointer;color:var(--fg2);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;width:14px">{{ ajChevron }}</button>
         <span style="flex:1;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Ajustes</span>
-        <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 6px;border-radius:3px">{{ changeCount }}</span>
+        <span title="{{ ajBadgeTitle }}" style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc);background:rgba(var(--accRgb),.15);padding:3px 6px;border-radius:3px">{{ ajBadge }}</span>
         <div ref="{{ acoesRef }}" title="Ver diff · aplicar nos arquivos · exportar — passe o mouse para abrir · clique para fixar" onPointerEnter="{{ acoesEnter }}" onPointerLeave="{{ acoesLeave }}" onBlur="{{ acoesBlur }}" onClick="{{ stop }}" style="position:relative">
           <button onClick="{{ toggleMenu }}" data-menu="acoes" aria-haspopup="menu" aria-expanded="{{ menuOpen }}" style="height:22px;padding:0 8px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg0);font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Ações ▾</button>
           <sc-if value="{{ menuOpen }}" hint-placeholder-val="{{ false }}">
@@ -349,12 +349,14 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <button onClick="{{ openDiff }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Ver diff <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· por arquivo, com contexto</span></button>
               <button onClick="{{ openSave }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Aplicar nos arquivos… <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· rascunho → aprovar</span></button>
               <button onClick="{{ exportFull }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Exportar versões completas… <span style="color:var(--fg3);font-size:calc(11px*var(--fs))">· escolher pasta</span></button>
+              <button onClick="{{ copyReqItem }}" disabled="{{ reqCopyOff }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);opacity:{{ reqCopyOp }};font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Copiar requisições (Markdown)</button>
+              <button onClick="{{ exportReqItem }}" disabled="{{ reqExportOff }}" title="{{ reqExportTitle }}" style="all:unset;cursor:pointer;padding:7px 10px;border-radius:3px;color:var(--fg0);opacity:{{ reqExportOp }};font:500 calc(12px*var(--fs))/1 'Inter',sans-serif" style-hover="background:var(--line1)">Exportar requisições…</button>
             </div>
           </sc-if>
         </div>
       </div>
       <sc-if value="{{ ajOpen }}" hint-placeholder-val="{{ true }}">
-        <div style="overflow-y:auto;min-height:0">
+        <div style="overflow-y:auto;min-height:{{ ajBodyMin }}">
           <sc-if value="{{ noChanges }}" hint-placeholder-val="{{ true }}">
             <div style="padding:14px 12px;text-align:center;font:500 calc(11px*var(--fs))/1.4 'Inter',sans-serif;color:var(--fg3)">Nenhum ajuste ainda. Edite uma propriedade no painel à direita.</div>
           </sc-if>
@@ -367,12 +369,84 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
               <div style="grid-column:1 / -1;color:var(--fg3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><span data-manual-mark="aj" style="color:var(--warn)">{{ c.manual }}</span>{{ c.file }} › {{ c.selector }} · L{{ c.line }}</div>
             </div>
           </sc-for>
+          <sc-if value="{{ hasReq }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 10px 4px">
+              <span style="font:700 calc(8px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Requisições</span>
+              <span style="flex:1;height:1px;background:var(--line1)"></span>
+              <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ reqCount }}</span>
+            </div>
+          </sc-if>
+          <sc-for list="{{ reqRows }}" as="r" hint-placeholder-count="0">
+            <div>
+              <sc-if value="{{ r.closed }}" hint-placeholder-val="{{ true }}">
+                <button data-req-row="{{ r.id }}" onClick="{{ r.toggle }}" title="Abrir a requisição" style="all:unset;box-sizing:border-box;width:100%;display:flex;flex-direction:column;gap:3px;padding:6px 10px;border-bottom:1px solid var(--line0);cursor:pointer">
+                  <span style="display:flex;align-items:center;gap:6px;font:500 calc(10px*var(--fs))/1.3 'JetBrains Mono',monospace;white-space:nowrap">
+                    <span style="color:var(--sel);font-weight:700">{{ r.id }}</span>
+                    <span style="color:var(--fg0);min-width:0;overflow:hidden;text-overflow:ellipsis">{{ r.name }}</span>
+                    <span style="color:var(--fg3)">{{ r.dLabel }}</span>
+                    <sc-if value="{{ r.confirm }}" hint-placeholder-val="{{ false }}"><span style="color:var(--warn)">alvo a confirmar</span></sc-if>
+                    <span style="flex:1"></span>
+                    <span style="color:var(--fg2)">▸</span>
+                  </span>
+                  <span style="font:400 calc(10.5px*var(--fs))/1.4 'Inter',sans-serif;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.preview }}</span>
+                </button>
+              </sc-if>
+              <sc-if value="{{ r.open }}" hint-placeholder-val="{{ false }}">
+                <div data-req="{{ r.id }}" style="display:flex;flex-direction:column;gap:7px;padding:8px 10px 10px;border-bottom:1px solid var(--line0);background:rgba(var(--selRgb),.05)">
+                  <div style="display:flex;flex-direction:column;gap:5px;padding:7px 8px;border:1px solid rgba(var(--selRgb),.45);border-radius:6px;background:var(--bg2)">
+                    <div style="display:flex;align-items:center;gap:6px;white-space:nowrap">
+                      <span style="font:700 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--sel)">{{ r.id }}</span>
+                      <span title="{{ r.path }}" style="min-width:0;overflow:hidden;text-overflow:ellipsis;font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg0)">{{ r.name }}</span>
+                      <span style="font:600 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--acc)">{{ r.dLabel }}</span>
+                      <sc-if value="{{ r.confirm }}" hint-placeholder-val="{{ false }}"><span title="As fontes mudaram desde que a requisição foi escrita: confirme o componente antes de agir." style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--warn)">alvo a confirmar</span></sc-if>
+                      <span style="flex:1"></span>
+                      <button aria-label="Remover requisição" title="Remover requisição" onClick="{{ r.remove }}" style="all:unset;cursor:pointer;color:var(--fg3);font-size:calc(11px*var(--fs))" style-hover="color:var(--err)">✕</button>
+                    </div>
+                    <div title="{{ r.path }}" style="display:flex;flex-wrap:wrap;gap:2px 6px;font:500 calc(10px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg2)"><span style="color:var(--fg1)">{{ r.alvo }}</span><span style="color:var(--fg3)">{{ r.caixa }}</span></div>
+                    <sc-if value="{{ r.hasChips }}" hint-placeholder-val="{{ false }}">
+                      <div data-req-chips="" style="display:flex;flex-wrap:wrap;gap:3px">
+                        <sc-for list="{{ r.chips }}" as="c" hint-placeholder-count="0">
+                          <span style="display:inline-flex;align-items:center;gap:4px;height:18px;max-width:100%;box-sizing:border-box;overflow:hidden;padding:0 6px;border-radius:999px;background:var(--faint);box-shadow:inset 0 0 0 1px var(--line0);font:500 calc(9.5px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg1);white-space:nowrap"><sc-if value="{{ c.hasSw }}" hint-placeholder-val="{{ false }}"><span style="flex:0 0 auto;width:8px;height:8px;border:1px solid var(--line2);background:{{ c.sw }}"></span></sc-if><span style="color:var(--fg3)">{{ c.k }}</span><span style="overflow:hidden;text-overflow:ellipsis">{{ c.v }}</span></span>
+                        </sc-for>
+                      </div>
+                    </sc-if>
+                    <sc-if value="{{ r.hasMeta }}" hint-placeholder-val="{{ false }}"><div style="font:500 calc(9.5px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg3)">{{ r.meta }}</div></sc-if>
+                  </div>
+                  <label style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3)">O que mudar</label>
+                  <textarea id="{{ r.taId }}" aria-label="{{ r.taLabel }}" value="{{ r.text }}" onChange="{{ r.set }}" onKeyDown="{{ r.key }}" rows="4" spellCheck="false" style="width:100%;box-sizing:border-box;resize:vertical;padding:6px 8px;border:1px solid var(--sel);border-radius:4px;background:var(--bg0);color:var(--fg1);font:400 calc(11px*var(--fs))/1.5 'Inter',sans-serif;outline:none"></textarea>
+                  <div style="display:flex;align-items:center;gap:6px">
+                    <button onClick="{{ r.show }}" disabled="{{ r.showOff }}" title="{{ r.showTitle }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">⊕ Mostrar no palco</button>
+                    <span style="flex:1"></span>
+                    <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">salvo · {{ r.count }} car.</span>
+                  </div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
           <sc-for list="{{ history }}" as="h" hint-placeholder-count="0">
             <div style="display:flex;align-items:center;gap:8px;padding:6px 10px;border-bottom:1px solid var(--line0);background:var(--bg0);font:500 calc(10px*var(--fs))/1.4 'JetBrains Mono',monospace;color:var(--fg2)">
               <span style="color:var(--ok)">✓</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ h.label }}</span>
               <button onClick="{{ h.rollback }}" style="height:20px;padding:0 6px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Rollback</button>
             </div>
           </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ reqFooterOn }}" hint-placeholder-val="{{ false }}">
+        <div data-req-footer="" style="display:flex;flex-direction:column;border-top:1px solid var(--line1);background:var(--bg0);border-radius:0 0 6px 6px">
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 10px">
+            <button onClick="{{ reqMdToggle }}" aria-expanded="{{ reqMdOpen }}" style="all:unset;cursor:pointer;flex:1;min-width:0;display:flex;align-items:center;gap:8px">
+              <span style="color:var(--fg2);font:600 calc(12px*var(--fs))/1 'JetBrains Mono',monospace;width:10px">{{ reqMdChev }}</span>
+              <span style="flex:1;font:700 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg2);white-space:nowrap">Requisições Manuais</span>
+              <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ reqCount }}</span>
+            </button>
+            <button onClick="{{ reqCopy }}" style="height:20px;padding:0 8px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg1);font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Copiar</button>
+            <sc-if value="{{ reqMdOpen }}" hint-placeholder-val="{{ false }}">
+              <button onClick="{{ reqExport }}" disabled="{{ reqExportOff }}" title="{{ reqExportTitle }}" style="height:20px;padding:0 7px;border-radius:3px;border:1px solid var(--line1);background:transparent;color:var(--fg1);opacity:{{ reqExportOp }};font:500 calc(10px*var(--fs))/1 'Inter',sans-serif;cursor:pointer">Exportar .md…</button>
+            </sc-if>
+          </div>
+          <sc-if value="{{ reqMdOpen }}" hint-placeholder-val="{{ false }}">
+            <pre data-req-md="" style="margin:0;max-height:90px;overflow:auto;padding:8px 10px;border-top:1px solid var(--line0);color:var(--fg1);font:500 calc(10px*var(--fs))/1.55 'JetBrains Mono',monospace;white-space:pre-wrap;word-break:break-word;font-variant-ligatures:none">{{ reqMd }}</pre>
+          </sc-if>
         </div>
       </sc-if>
     </div>
@@ -1119,7 +1193,7 @@ class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
-    buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null,
+    buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], requestsConfirm: false, reqSel: null, mdOpen: false,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
@@ -1141,7 +1215,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false;
+  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1163,15 +1237,17 @@ class Component extends DCLogic {
   elAtPath(id) { let el = this.mockRoot; if (!el) return null; const p = String(id).split('.'); for (let k = 1; k < p.length && el; k++) el = el.children[+p[k]]; return el || null; }
   writePending() {
     if (!this.pendingReady || !this.pendingKey || !this.pendingDirty) return;
-    const ch = this.state.changes;
+    const ch = this.state.changes, rq = this.state.requests;
     const over = ch.length > LayersCore.PENDING_CAP;
     if (over && !this.pendingCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' ajustes pendentes: não serão restaurados ao reabrir.', 'warn');
     this.pendingCapWarned = over;
-    LayersCore.setPending(LS_STORE, this.pendingKey, ch.length ? { hash: this.pendingHash, changes: ch } : null, Date.now());
+    LayersCore.setPending(LS_STORE, this.pendingKey, ch.length || rq.length ? { hash: this.pendingHash, changes: ch, requests: rq } : null, Date.now());
     this.pendingDirty = false;
   }
   // Descarte explicito (recarregar confirmado, zerar interface): limpa a entrada e para de gravar ate a proxima carga.
-  dropPending() { if (this.pendingReady && this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); this.pendingDirty = false; this.pendingReady = false; }
+  // As requisicoes sao texto do usuario: sobrevivem ao descarte dos ajustes; so `clearReq` (zerar interface) as apaga.
+  rewritePending(clearReq) { const rq = clearReq ? [] : this.state.requests; LayersCore.setPending(LS_STORE, this.pendingKey, rq.length ? { hash: this.pendingHash, changes: [], requests: rq } : null, Date.now()); }
+  dropPending(clearReq) { if (this.pendingReady && this.pendingKey) this.rewritePending(clearReq); this.pendingDirty = false; this.pendingReady = false; }
   // approve/rollback reescrevem arquivos sem recarregar: so as partes gravadas (`paths`) entram no hash novo.
   // Durante a releitura a sessao nao grava, para que uma edicao logo apos "Aplicar" nao saia com o hash antigo.
   async refreshPendingHash(paths) {
@@ -1186,7 +1262,7 @@ class Component extends DCLogic {
       }
       if (seq !== this.loadSeq) return;
       this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec);
-      this.pendingSeen = this.state.changes; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
+      this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
     } catch (e) { this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos.', 'warn'); } // pendingReady fica falso: a entrada antiga permanece e a proxima carga a descarta
   }
   // sessionStorage vence o session ao restaurar: N abas, N projetos.
@@ -1284,7 +1360,7 @@ class Component extends DCLogic {
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
-  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
+  resetUI() { this.loadSeq = (this.loadSeq || 0) + 1; this.dropPending(true); this.unloadProject(); this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
     this.writeConfig(); this.pendingReady = false; this.pendingKey = this.pendingKeyNow(); // drena a rajada na chave antiga antes de recalcular
@@ -1355,19 +1431,23 @@ class Component extends DCLogic {
     const hs = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null, ph: { html: this.partHash(html), css: phCss, dc: this.partHash(dcText) } };
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
-    const plan = incomplete ? { keep: [], dropped: 0 } : LayersCore.restorePlan(saved, hash);
+    // fonte nao lida: o hash nao prova nada, entao as requisicoes salvas ficam visiveis e com o alvo a confirmar
+    const plan0 = LayersCore.restorePlan(saved, hash);
+    const plan = incomplete ? { keep: [], dropped: 0, requests: plan0.requests, confirm: plan0.requests.length > 0 } : plan0;
+    const reqs = plan.confirm ? plan.requests.map(r => { const { nodeId, ...rest } = r; return rest; }) : plan.requests; // o id posicional so descreve o DOM de um hash igual
     plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
     const restored = plan.keep, dropped = plan.dropped;
     const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete ? (saved ? ' · ajustes salvos mantidos: fonte não lida' : ' · ajustes desta sessão não serão salvos: fonte não lida') : '';
+    const reqNote = reqs.length ? ' · ' + reqs.length + ' requisição(ões) restaurada(s)' + (plan.confirm ? ' · alvo a confirmar' : '') : '';
     this.hashSpec = hs;
-    this.pendingHash = hash; this.pendingSeen = restored; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
+    this.pendingHash = hash; this.pendingSeen = restored; this.pendingReqSeen = reqs; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, requests: reqs, requestsConfirm: plan.confirm, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
-    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
+    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
     this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man)); // sem await: nao atrasa a carga
   }
@@ -1423,7 +1503,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], requestsConfirm: false, reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1628,7 +1708,7 @@ class Component extends DCLogic {
     // Um ponto de gravação em vez de um por editor: a assinatura do que é persistido decide.
     const sig = JSON.stringify([this.uiSnapshot(), this.state.hist, this.sessionSnapshot()]);
     if (sig !== this.persistSig) { this.persistSig = sig; this.persistSoon(); }
-    if (this.pendingReady && this.state.changes !== this.pendingSeen) { this.pendingSeen = this.state.changes; this.pendingDirty = true; this.persistSoon(); }
+    if (this.pendingReady && (this.state.changes !== this.pendingSeen || this.state.requests !== this.pendingReqSeen)) { this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingDirty = true; this.persistSoon(); }
   }
   componentDidMount() {
     this.applyTheme();
@@ -1725,7 +1805,7 @@ class Component extends DCLogic {
     let saved; try { saved = await this.backupLayout(); } catch (e) { this.toast('Reanálise cancelada: o backup do layout falhou — ' + e.message, 'warn'); return; }
     if (seq !== this.loadSeq) return;
     this.bakNote = 'layout anterior salvo em ' + saved + '/'; this.ackDrift();
-    this.dropPending(); if (this.pendingKey) LayersCore.setPending(LS_STORE, this.pendingKey, null, Date.now()); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
+    this.dropPending(); if (this.pendingKey) this.rewritePending(); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
     this.pendingSel = null; this.setState({ stale: null, drift: null, explodeFrom: null, collapseAt: null }); this.loadProject();
   }
   async backupLayout() {
@@ -1847,6 +1927,88 @@ class Component extends DCLogic {
   }
   explodeHere(id) { if (!this.state.flat || !this.state.byId[id]) return; this.setState({ explodeFrom: id, collapseAt: null }); }
   collapseHere(id) { const s = this.state; if (!s.explodeFrom || !s.byId[id] || !LayersCore.inBranchOf(id, s.explodeFrom)) return; if (id === s.explodeFrom) this.setState({ explodeFrom: null, collapseAt: null }); else this.setState({ collapseAt: s.byId[id].depth }); }
+  // S3.5: manual requests (Ajustes). The record is the written ask plus anchors an AI can use to find the component again.
+  reqTexts(id) {
+    const s = this.state, n = s.byId[id]; if (!n) return [];
+    const own = n.text ? [n.text] : s.nodes.filter(m => m.parent === id && m.text).map(m => m.text);
+    const cut = t => { const v = String(t).replace(/\s+/g, ' ').trim(); return v.length > 40 ? v.slice(0, 39) + '…' : v; };
+    return [...new Set(own.map(cut).filter(Boolean))].slice(0, 6);
+  }
+  // only what the rule declares or the user edited (not the ~200 computed properties); a longhand covered by a declared shorthand is skipped
+  reqStyles(id) {
+    const s = this.state, el = this.els[id]; if (!el) return '';
+    const cs = getComputedStyle(el), out = [];
+    const all = new Set(); GROUPS.forEach(([, props]) => props.forEach(p => all.add(p[1])));
+    GROUPS.forEach(([, props]) => props.forEach(([, prop]) => {
+      const edited = s.changes.some(c => c.prop === prop && c.ids.includes(id));
+      if (!edited) {
+        if (this.originOf(id, prop) !== 'declared') return;
+        if ((SHORT[prop] || []).some(sh => { const cam = sh.replace(/-./g, m => m[1].toUpperCase()); return all.has(cam) && this.originOf(id, cam) === 'declared'; })) return;
+      }
+      const v = String(el.style[prop] || cs[prop] || '').replace(/\s+/g, ' ').trim(); if (!v) return;
+      out.push(kebab(prop) + ':' + (v.length > 80 ? v.slice(0, 79) + '…' : v));
+    }));
+    return out.slice(0, 14).join('; ');
+  }
+  async addRequest(id) {
+    const n0 = this.state.byId[id]; if (!n0) return;
+    const [f0, s0] = ruleOf(n0);
+    if (this.state.dir && /\.css$/.test(f0) && s0 && this.state.cssRules[f0 + '|' + s0] === undefined) { await this.loadRule(n0); await new Promise(r => this.setState({}, r)); }
+    const s = this.state, n = s.byId[id]; if (!n) return;
+    const [file, selector, line] = ruleOf(n);
+    const k = s.requests.reduce((m, r) => { const x = /^R(\d+)$/.exec(r.id); return x ? Math.max(m, +x[1]) : m; }, 0) + 1;
+    const path = []; for (let d = 0; d <= n.depth; d++) { const a = s.byId[LayersCore.ancestorAt(id, d)]; path.push(a ? a.name : ''); }
+    const uses = this.sharedIds(id).length, texts = this.reqTexts(id), box = Math.round(n.w) + '×' + Math.round(n.h) + ' px';
+    const pend = s.changes.filter(c => c.ids.includes(id)).map(c => kebab(c.prop) + ' ' + c.from + ' → ' + c.to).join('; ');
+    const rec = { id: 'R' + k, layoutId: 'main', nodeId: id, nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
+      alvo: file ? file + ' › ' + selector + (line ? ' · L' + line : '') + (LayersCore.isManualSource(file) ? ' (manual: fonte TS)' : '') : '',
+      caixa: box + ' · ' + (texts.length ? (texts.length > 1 ? 'textos ' : 'texto ') + texts.map(t => '“' + t + '”').join(', ') : uses + (uses === 1 ? ' uso' : ' usos')),
+      estilos: this.reqStyles(id), uses, pendente: pend || null, text: '', createdAt: Date.now() };
+    this.setState(st => ({ requests: [...st.requests, rec], reqSel: rec.id, ajOpen: true, colOpen: true }), () => { const ta = document.getElementById('req-' + rec.id); if (ta) { ta.focus(); if (ta.scrollIntoView) ta.scrollIntoView({ block: 'nearest' }); } });
+  }
+  setRequestText(rid, t) { this.setState(st => ({ requests: st.requests.map(r => r.id === rid ? { ...r, text: t } : r) })); }
+  removeRequest(rid) { this.setState(st => ({ requests: st.requests.filter(r => r.id !== rid), reqSel: st.reqSel === rid ? null : st.reqSel })); }
+  showRequest(r) {
+    if (this.state.requestsConfirm || !r.nodeId) return;
+    if (!this.state.byId[r.nodeId]) { this.toast('Componente não encontrado nesta carga: o alvo pode ter mudado.', 'warn'); return; }
+    this.select(r.nodeId); this.frame(r.nodeId);
+  }
+  requestsMd() {
+    const s = this.state; if (!s.requests.length) return '';
+    const d = new Date(), p2 = v => String(v).padStart(2, '0');
+    return LayersCore.requestsMarkdown({ project: s.project ? s.project.name : '', version: '—', stamp: p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()), mock: s.project ? s.project.mockPath : '', layouts: 1, requests: s.requests, confirm: s.requestsConfirm });
+  }
+  async copyRequests() {
+    const md = this.requestsMd(); if (!md) return; const n = this.state.requests.length; let ok = false;
+    try { await navigator.clipboard.writeText(md); ok = true; } catch (e) { /* sem permissao: cai no textarea oculto */ }
+    if (!ok) { const ta = document.createElement('textarea'); ta.value = md; ta.setAttribute('readonly', ''); ta.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0'; document.body.appendChild(ta); ta.select(); try { ok = document.execCommand('copy'); } catch (e) { /* sem execCommand */ } ta.remove(); }
+    if (ok) this.toast(n + (n === 1 ? ' requisição copiada' : ' requisições copiadas') + ' como Markdown.', 'ok'); else this.toast('Não foi possível copiar: o navegador recusou o acesso à área de transferência.', 'warn');
+  }
+  async exportRequests() {
+    const md = this.requestsMd(); if (!md || !this.state.dir) return; const n = this.state.requests.length;
+    try { await this.writeText('layers-requests.md', md); this.toast(n + (n === 1 ? ' requisição gravada' : ' requisições gravadas') + ' em layers-requests.md.', 'ok'); } catch (e) { this.toast('Não foi possível gravar layers-requests.md: ' + e.message, 'warn'); }
+  }
+  // template data of the Ajustes request block (list, footer, header badge, Ações items)
+  reqVals() {
+    const s = this.state, rq = s.requests, n = rq.length, nc = s.changes.length, conf = s.requestsConfirm;
+    const rows = rq.map(r => {
+      const open = s.reqSel === r.id, canShow = !!r.nodeId && !conf;
+      const chips = open && r.estilos ? r.estilos.split('; ').map(p => { const i = p.indexOf(':'); const k = i < 0 ? p : p.slice(0, i), v = i < 0 ? '' : p.slice(i + 1); return { k: k + ' ', v, hasSw: /^(#|rgb|hsl)/.test(v), sw: v }; }) : [];
+      const meta = [Array.isArray(r.texts) && r.texts.length ? 'texto: ' + r.texts.map(t => '“' + t + '”').join(', ') : '', r.pendente ? 'ajuste pendente: ' + r.pendente : ''].filter(Boolean).join(' · ');
+      return { id: r.id, name: r.name || r.id, dLabel: typeof r.depth === 'number' ? 'L' + r.depth : '', open, closed: !open, confirm: conf, preview: r.text.replace(/\s+/g, ' ').trim() || '(sem pedido ainda)',
+        path: r.path, alvo: r.alvo || '', caixa: r.caixa || '', hasAlvo: !!r.alvo, chips, hasChips: chips.length > 0, meta, hasMeta: !!meta, taId: 'req-' + r.id, taLabel: 'O que mudar — ' + r.id, text: r.text, count: r.text.length,
+        showOff: !canShow, showTitle: conf ? 'Alvo a confirmar: as fontes mudaram, o id da camada já não vale.' : canShow ? 'Selecionar e enquadrar este componente no palco' : 'Esta requisição não guarda a camada',
+        toggle: () => this.setState({ reqSel: r.id }), remove: e => { e.stopPropagation(); this.removeRequest(r.id); }, set: e => this.setRequestText(r.id, e.target.value),
+        key: e => { e.stopPropagation(); if (e.key === 'Escape') e.target.blur(); }, show: () => this.showRequest(r) };
+    });
+    const pl = (k, one, many) => k + ' ' + (k === 1 ? one : many);
+    const noDir = !s.dir;
+    return { ajBadge: n ? nc + ' · ' + n : String(nc), ajBadgeTitle: n ? pl(nc, 'ajuste', 'ajustes') + ' · ' + pl(n, 'requisição', 'requisições') : '',
+      hasReq: n > 0, ajBodyMin: n ? '44px' : '0', reqCount: String(n), reqRows: rows, reqFooterOn: s.ajOpen && n > 0, reqMdOpen: s.mdOpen, reqMdChev: s.mdOpen ? '▾' : '▸', reqMd: s.mdOpen ? this.requestsMd() : '',
+      reqMdToggle: () => this.setState(st => ({ mdOpen: !st.mdOpen })), reqCopy: e => { e.stopPropagation(); this.copyRequests(); }, reqExport: e => { e.stopPropagation(); this.exportRequests(); },
+      reqExportOff: noDir || !n, reqExportOp: noDir || !n ? '.4' : '1', reqCopyOp: n ? '1' : '.4', reqExportTitle: noDir ? 'Exportar exige uma pasta conectada: grava layers-requests.md dentro dela' : 'Grava layers-requests.md na pasta conectada', reqCopyOff: !n,
+      copyReqItem: this.menuAct(() => this.copyRequests()), exportReqItem: this.menuAct(() => this.exportRequests()) };
+  }
   cam() {
     const s = this.state; const ba = -32;
     const k = s.flat + '|' + s.spacing + '|' + s.yaw + '|' + s.zoom + '|' + s.stageW + '|' + s.stageH + '|' + (s.focus ? 1 : 0) + '|' + s.isoId + '|' + ba + '|' + s.pageW + '|' + s.pageH + '|' + s.explodeFrom + '|' + s.collapseAt;
@@ -2557,7 +2719,7 @@ class Component extends DCLogic {
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
       tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
       hasSibs, noSibs: !hasSibs, scopeOpts,
-      propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '',
+      propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '', ...this.reqVals(),
       ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,
       openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
       promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' : '',
