@@ -77,6 +77,14 @@ test('analyzeCoverage_ManifestWithBase_IgnoresFilesOutsideBase', async ({ page }
   expect(c.keys).toEqual(['app/index.html']);
 });
 
+test('analyzeCoverage_BaseWithDotSlash_NormalizesLikeTheLoader', async ({ page }) => {
+  await connect(page, [['layers.json', '{"name":"x","base":"./app","mock":"index.html"}'], ['app/index.html', PAGE], ['other.html', PAGE]]);
+  await readNodes(page);
+  const c = await coverageOf(page);
+  expect(c.status).toBe('done');
+  expect(c.keys).toEqual(['app/index.html']);
+});
+
 test('analyzeCoverage_LoadInFlight_ReportsStillLoading', async ({ page }) => {
   await connect(page, [['layers.json', '{"name":"x","mock":"index.html"}'], ['index.html', PAGE]]);
   await readNodes(page);

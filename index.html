@@ -1636,10 +1636,11 @@ class Component extends DCLogic {
     this.setState({ coverage: { open: true, status: 'running' } });
     try {
       const proj = this.state.project; if (!proj) throw new Error('nenhum projeto carregado');
-      const base0 = proj.man.base ? String(proj.man.base).replace(/^\/+|\/+$/g, '') : '', baseDir = base0 ? LayersCore.safePath(base0) : '', P = p => joinPath(base0 ? base0 + '/' : '', p);
-      if (base0 && !baseDir) throw new Error('base inválida: ' + base0);
+      const base0 = proj.man.base ? String(proj.man.base).replace(/^\/+|\/+$/g, '') : '', baseDir = joinPath('', base0); // same collapse of ./ // ../ as the loader
+      if (baseDir && !LayersCore.safePath(baseDir)) throw new Error('base inválida: ' + base0);
+      const P = p => joinPath(baseDir ? baseDir + '/' : '', p);
       // the loader mounts layers/mock.html when the manifest names no mock and no state
-      const l0 = LayersCore.projectLayouts(proj.man)[0], man = l0.mock == null && !l0.states.length ? { ...proj.man, mock: 'layers/mock.html' } : proj.man;
+      const l0 = LayersCore.projectLayouts(proj.man)[0], man = { ...proj.man, base: baseDir, ...(!l0.mock && !l0.states.length ? { mock: 'layers/mock.html' } : {}) };
       let files = [], capped = false, partial = false;
       if (dir) {
         if (dir.queryPermission && await dir.queryPermission({ mode: 'read' }) !== 'granted' && await dir.requestPermission({ mode: 'read' }) !== 'granted') throw new Error('permissão de leitura não concedida para a pasta ' + dir.name);
@@ -1668,8 +1669,10 @@ class Component extends DCLogic {
     const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX, C = LayersCore.COVERAGE, td = new TextDecoder();
     const skipDirs = new Set(C.SKIP_DIRS), start = base ? base + '/' : '';
     let visited = 0, totalBytes = 0, scriptBytes = 0, scripts = 0, capped = false; const files = [];
+    let inBase = !base;
     for (const [key, bytes] of zip.files) {
       if (!key.startsWith(zip.root + start)) continue;
+      inBase = true;
       const rel = LayersCore.safePath(key.slice(zip.root.length)); if (!rel) continue;
       const segs = rel.slice(start.length).split('/'), name = segs.pop();
       if (segs.length > MAX_DEPTH) continue;
@@ -1684,6 +1687,7 @@ class Component extends DCLogic {
       if (kind === 'script') { scriptBytes += bytes.length; scripts++; } else totalBytes += bytes.length;
       files.push({ path: rel, kind, text: td.decode(bytes) });
     }
+    if (!inBase) throw new Error('base "' + base + '" não encontrada na pasta');
     return { files, capped };
   }
   async pickDir() {
