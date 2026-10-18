@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readNodes, treeRow } from './tree-helpers.js';
+import { item } from './ctx-helpers.js';
 
 // S2.14: pending changes survive a reload. Same axai setup as undo-redo.spec.js.
 const SHADOW = '0 0 0 3px rgb(1, 2, 3)';
@@ -103,4 +104,49 @@ test('Reload_LayersJsonChanged_DiscardsAndWarns', async ({ page }) => {
   await reload(page);
   expect(count(await page.evaluate(shadows), 'rgb(1, 2, 3)')).toBe(0);
   await expect(page.getByText('1 ajuste(s) salvo(s) descartado(s)')).toBeVisible();
+});
+
+// S3.5 Task 6: manual requests share the entry of the pending changes.
+async function requestOnSelected(page, text) {
+  await (await treeRow(page, { title: '.sum-stat' })).click({ button: 'right' });
+  await item(page, /Requisição/).click();
+  await page.locator('[data-req="R1"] textarea').fill(text);
+}
+
+test('Reload_ChangeAndRequest_BothRestored', async ({ page }) => {
+  await parkTrailingWrite(page);
+  await open(page);
+  await typeShadow(page, SHADOW);
+  await requestOnSelected(page, 'Pedido ao lado do ajuste.');
+  const rec = await page.evaluate(() => { const el = document.querySelector('[data-plane]'); let f = el[Object.keys(el).find((k) => k.startsWith('__reactFiber'))]; while (f && !(f.stateNode && f.stateNode.logic && f.stateNode.logic.explodeHere)) f = f.return; return f.stateNode.logic.state.requests[0]; });
+  expect(rec.pendente).toMatch(/^box-shadow .* → .*rgb\(1, 2, 3\)/); // the node's pending De → Para travels with the request
+  await reload(page);
+  expect(count(await page.evaluate(shadows), 'rgb(1, 2, 3)')).toBe(1);
+  await expect(page.getByText('1 ajuste(s) restaurado(s) · 1 requisição(ões) restaurada(s)')).toBeVisible();
+  await page.locator('[data-req-row="R1"]').click();
+  await expect(page.locator('[data-req="R1"] textarea')).toHaveValue('Pedido ao lado do ajuste.');
+  const e = await entry(page);
+  expect(e.changes).toHaveLength(1);
+  expect(e.requests).toHaveLength(1);
+});
+
+test('Reload_SourceChanged_DropsChangesKeepsRequest', async ({ page }) => {
+  await open(page);
+  await typeShadow(page, SHADOW);
+  await requestOnSelected(page, 'Sobrevive a fonte mudada.');
+  await page.waitForTimeout(600);
+  await page.route('**/fixtures/axai/wwwroot/index.html', async (route) => {
+    const res = await route.fetch();
+    await route.fulfill({ response: res, body: (await res.text()) + '\n<!-- changed -->' });
+  });
+  await reload(page);
+  expect(count(await page.evaluate(shadows), 'rgb(1, 2, 3)')).toBe(0);
+  await expect(page.getByText('1 ajuste(s) salvo(s) descartado(s): arquivo mudou · 1 requisição(ões) restaurada(s) · alvo a confirmar')).toBeVisible();
+  await page.locator('[data-req-row="R1"]').click();
+  await expect(page.locator('[data-req="R1"]')).toContainText('alvo a confirmar');
+  await expect(page.locator('[data-req="R1"] textarea')).toHaveValue('Sobrevive a fonte mudada.');
+  await page.waitForTimeout(600);
+  const e = await entry(page); // the dropped changes are rewritten away, the request stays
+  expect(e.changes).toEqual([]);
+  expect(e.requests).toHaveLength(1);
 });
