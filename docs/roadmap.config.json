@@ -135,7 +135,10 @@
       "id": "S9",
       "name": "Layouts múltiplos",
       "members": [
-        "S9.1"
+        "S9.1",
+        "S9.1a",
+        "S9.1b",
+        "S9.1c"
       ]
     }
   ],

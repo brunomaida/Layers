@@ -56,6 +56,9 @@ mostra o botão **Criar layers.json**. Um `layers.json` existente nunca é sobre
 Revise `mock`, `base` e `styles` se a heurística errar. Apps renderizados por JS precisam
 de snapshot: `tools/layers-snapshot.js` (ver [docs/layers-json.md](docs/layers-json.md)).
 
+### Vários layouts
+`layers.json` pode declarar `layouts` (`id`, `name`, `mock`, `states?`): telas distintas do mesmo projeto. Com 2 ou mais, a faixa **LAYOUTS** aparece acima de Camadas na barra inferior (some com um só). Um layout fica montado por vez: clicar noutro chip recarrega só o mock dele; seleção, explosão, câmera e ajustes pendentes ficam atrelados ao layout (o chip dos outros mostra um badge com os pendentes), e as requisições saem agrupadas por layout. **Aplicar** e **Salvar** agem só no layout montado. Contrato em [docs/layers-json.md](docs/layers-json.md#layouts); exemplo em `fixtures/multi-layout/`.
+
 ### Menu de contexto e requisições
 Botão direito num componente do palco ou da Árvore abre o menu de contexto: as camadas L0–Ln com o
 selecionado em destaque, **Explodir daqui** / **Recolher até aqui** (na vista plana, só o ramo ganha
@@ -112,8 +115,8 @@ Detalhes: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) § Camadas de gravação.
 ## Preferências persistidas (localStorage)
 - layers/v1/ui — tema, cor de seleção, cores de origem, cabeçalho, escala de fonte, painéis, navegação, árvore, escopo
 - layers/v1/projects — histórico de projetos (pasta, .zip, repositório)
-- layers/v1/session — último projeto, seleção, câmera e ramo explodido; `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
-- layers/v1/pending — por projeto: ajustes ainda não gravados (voltam ao reabrir se as fontes não mudaram) e requisições manuais (sempre voltam; com a fonte mudada, marcadas "alvo a confirmar")
+- layers/v1/session — último projeto, seleção, câmera e ramo explodido; ganha `layouts` (layout ativo, gravado com o mapa não vazio) e `viewLayout` (só com 2+ layouts); `layers/v1/tab` (sessionStorage) faz cada aba lembrar do seu projeto
+- layers/v1/pending — por projeto: ajustes ainda não gravados (voltam ao reabrir se as fontes não mudaram) e requisições manuais (sempre voltam; com a fonte mudada, marcadas "alvo a confirmar"); a chave é `<projeto>` e, para um layout que não é o `main`, `<projeto>|<layout>`
 - layers/v1/meta — schema e data da última gravação
 
 Nada de conteúdo de arquivo aqui: o handle da pasta conectada mora no IndexedDB
