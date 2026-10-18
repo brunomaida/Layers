@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { readDisk } from './folder-helpers.js';
+import { act } from './ctx-helpers.js';
 
 // Characterization of autoCreateLayersJson (S9.1b Task 4): the folder-walk refactor must not change what it writes.
 // The folder is built inside the test in OPFS (no layers.json) and handed to the app through a stubbed showDirectoryPicker.
@@ -46,4 +47,42 @@ test('autoCreate_OnlyHtmlUnderSkippedFolder_ReportsNoReadableHtml', async ({ pag
   await connect(page, [['node_modules/x.html', '<!doctype html><html><body><p>x</p></body></html>']]);
   await expect(page.getByText(/nenhum HTML legível/)).toBeVisible();
   expect(await readDisk(page, 'layers.json')).toBeNull();
+});
+
+// S9.1b Task 4 fix round: analyzeCoverage honors the loader defaults (mock, base) and the load guard.
+const PAGE = '<!doctype html><html><body><div class="a"><p>hi</p></div></body></html>';
+const coverageOf = async (page) => {
+  await act(page, 'analyzeCoverage');
+  await page.waitForFunction(() => window.__logic.state.coverage && window.__logic.state.coverage.status !== 'running');
+  return page.evaluate(() => {
+    const c = window.__logic.state.coverage;
+    return { status: c.status, error: c.error, mono: c.model && c.model.models.mono.mocks, keys: c.model && c.model.regions.map((r) => r.key), suggestion: c.suggestion };
+  });
+};
+
+test('analyzeCoverage_ManifestWithoutMock_UsesLoaderDefaultMock', async ({ page }) => {
+  await connect(page, [['layers.json', '{"name":"x"}'], ['layers/mock.html', PAGE]]);
+  await readNodes(page);
+  const c = await coverageOf(page);
+  expect(c.status).toBe('done');
+  expect(c.mono).toEqual(['layers/mock.html']);
+  expect(c.suggestion[0].mock).toBe('layers/mock.html');
+});
+
+test('analyzeCoverage_ManifestWithBase_IgnoresFilesOutsideBase', async ({ page }) => {
+  await connect(page, [['layers.json', '{"name":"x","base":"app","mock":"index.html"}'], ['app/index.html', PAGE], ['other.html', PAGE]]);
+  await readNodes(page);
+  const c = await coverageOf(page);
+  expect(c.status).toBe('done');
+  expect(c.keys).toEqual(['app/index.html']);
+});
+
+test('analyzeCoverage_LoadInFlight_ReportsStillLoading', async ({ page }) => {
+  await connect(page, [['layers.json', '{"name":"x","mock":"index.html"}'], ['index.html', PAGE]]);
+  await readNodes(page);
+  await act(page);
+  await page.evaluate(() => { window.__logic.loadSeq++; });
+  const c = await coverageOf(page);
+  expect(c.status).toBe('error');
+  expect(c.error).toBe('projeto ainda carregando');
 });

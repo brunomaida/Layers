@@ -1096,9 +1096,8 @@ const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*['"]?((?:[a-z][a-z0-9
 const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = []; parts.forEach(x => { if (x === '..') out.pop(); else if (x && x !== '.') out.push(x); }); return out.join('/'); };
 // Project scan rules shared by the folder walker and the zip filter (autocreate and coverage).
 const SCAN_SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
-const SCAN_MAX = { depth: 6, entries: 5000, fileBytes: 3 * 1024 * 1024, totalBytes: 20 * 1024 * 1024 };
+const SCAN_MAX = { depth: 6, entries: 5000, fileBytes: 3 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, scriptBytes: 8 * 1024 * 1024 };
 const scanKind = n => /\.html?$/i.test(n) ? 'html' : /\.css$/i.test(n) ? 'css' : /\.(tsx?|jsx?|mjs)$/i.test(n) && !/\.d\.ts$/i.test(n) ? 'script' : null;
-const COVERAGE_EXCLUDE = new Set(['docs', 'test', 'tests', 'testing', 'e2e', 'fixtures', 'bench', 'tools', 'vendor']);
 // Seam do loader: sanitiza o mock ja parseado, escopa as folhas e monta a raiz com data-src.
 // So devolve dados; o hoist de @font-face e o mount no shadow root ficam com o chamador.
 const buildProjectFromHtml = ({ doc, html, man, css, dcFile, dcText, mockPath, mockDir, warn }) => {
@@ -1550,10 +1549,10 @@ class Component extends DCLogic {
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
   unloadProject(why) { this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
-  // Varre a pasta conectada e devolve o texto dos arquivos dos `kinds` pedidos ('html'|'css'|'script'); `exclude` = nomes de pasta extras a pular.
-  async collectProjectFiles(dir, kinds, exclude) {
-    const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES } = SCAN_MAX;
-    let entriesVisited = 0, totalBytes = 0, scripts = 0, capped = false;
+  // Varre a pasta conectada e devolve o texto dos arquivos dos `kinds` pedidos ('html'|'css'|'script'); `exclude` = nomes de pasta extras a pular; `base` = subpasta onde a varredura comeca (caminhos seguem relativos a raiz).
+  async collectProjectFiles(dir, kinds, exclude, base) {
+    const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX;
+    let entriesVisited = 0, totalBytes = 0, scriptBytes = 0, scripts = 0, capped = false, trunc = false; // capped para a varredura; trunc so marca o resultado como parcial
     const files = [];
     const walk = async (dirHandle, prefix, depth) => {
       if (depth > MAX_DEPTH || capped) return;
@@ -1569,21 +1568,23 @@ class Component extends DCLogic {
         if (!kind || !kinds.has(kind)) continue;
         const rel = LayersCore.safePath(prefix + name);
         if (!rel) continue;
-        if (kind === 'script' && scripts >= LayersCore.COVERAGE.SCRIPT_FILES_MAX) continue;
+        if (kind === 'script' && scripts >= LayersCore.COVERAGE.SCRIPT_FILES_MAX) { trunc = true; continue; }
         let file; try { file = await handle.getFile(); } catch (e) { continue; }
         // arquivo grande demais: pula SO ele — nao aborta a varredura inteira (um vendor/bundle.css
         // de 4 MB enumerado antes do index.html nao pode fazer a analise inteira falhar)
         if (file.size > MAX_FILE_BYTES) continue;
         if (kind === 'script' && file.size > LayersCore.COVERAGE.SCRIPT_BYTES_MAX) continue;
-        if (totalBytes + file.size > MAX_TOTAL_BYTES) { capped = true; continue; }
+        if (kind === 'script' && scriptBytes + file.size > MAX_SCRIPT_BYTES) { trunc = true; continue; }
+        if (kind !== 'script' && totalBytes + file.size > MAX_TOTAL_BYTES) { capped = true; continue; }
         let text; try { text = await file.text(); } catch (e) { continue; }
-        totalBytes += file.size;
-        if (kind === 'script') scripts++;
+        if (kind === 'script') { scriptBytes += file.size; scripts++; } else totalBytes += file.size;
         files.push({ path: rel, kind, text });
       }
     };
-    await walk(dir, '', 0);
-    return { files, capped };
+    let root = dir, start = '';
+    if (base) { try { for (const seg of base.split('/')) root = await root.getDirectoryHandle(seg); } catch (e) { throw new Error('base "' + base + '" não encontrada na pasta'); } start = base + '/'; }
+    await walk(root, start, 0);
+    return { files, capped: capped || trunc };
   }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
@@ -1629,18 +1630,22 @@ class Component extends DCLogic {
   }
   // S9.1b: cobertura de regioes do projeto (so leitura; nada e gravado). Chamado por clique; o resultado vai para state.coverage.
   async analyzeCoverage() {
+    if (this.loadedSeq !== this.loadSeq) { this.setState({ coverage: { open: true, status: 'error', error: 'projeto ainda carregando' } }); return; }
     const dir = this.state.dir, seq = this.loadSeq, zip = this.zip; // capturados ANTES do 1o await: o resultado so vale para esta conexao
     const stale = () => this.state.dir !== dir || seq !== this.loadSeq;
     this.setState({ coverage: { open: true, status: 'running' } });
     try {
       const proj = this.state.project; if (!proj) throw new Error('nenhum projeto carregado');
-      const man = proj.man, base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : '', P = p => joinPath(base, p);
+      const base0 = proj.man.base ? String(proj.man.base).replace(/^\/+|\/+$/g, '') : '', baseDir = base0 ? LayersCore.safePath(base0) : '', P = p => joinPath(base0 ? base0 + '/' : '', p);
+      if (base0 && !baseDir) throw new Error('base inválida: ' + base0);
+      // the loader mounts layers/mock.html when the manifest names no mock and no state
+      const l0 = LayersCore.projectLayouts(proj.man)[0], man = l0.mock == null && !l0.states.length ? { ...proj.man, mock: 'layers/mock.html' } : proj.man;
       let files = [], capped = false, partial = false;
       if (dir) {
         if (dir.queryPermission && await dir.queryPermission({ mode: 'read' }) !== 'granted' && await dir.requestPermission({ mode: 'read' }) !== 'granted') throw new Error('permissão de leitura não concedida para a pasta ' + dir.name);
-        ({ files, capped } = await this.collectProjectFiles(dir, new Set(['html', 'css', 'script']), COVERAGE_EXCLUDE));
+        ({ files, capped } = await this.collectProjectFiles(dir, new Set(['html', 'css', 'script']), new Set(LayersCore.COVERAGE.SKIP_DIRS), baseDir));
       } else if (zip) {
-        ({ files, capped } = this.collectZipFiles(zip));
+        ({ files, capped } = this.collectZipFiles(zip, baseDir));
       } else partial = true;
       const layouts = LayersCore.projectLayouts(man), mocks = {};
       const names = []; layouts.forEach(l => (l.states.length ? l.states.map(s => s.mock) : [l.mock]).forEach(m => { if (m && !names.includes(m)) names.push(m); }));
@@ -1659,21 +1664,24 @@ class Component extends DCLogic {
     }
   }
   // Zip counterpart of collectProjectFiles: same kinds, skip rules and caps over the in-memory entries.
-  collectZipFiles(zip) {
-    const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES } = SCAN_MAX, C = LayersCore.COVERAGE, td = new TextDecoder();
-    let visited = 0, totalBytes = 0, scripts = 0, capped = false; const files = [];
+  collectZipFiles(zip, base) {
+    const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX, C = LayersCore.COVERAGE, td = new TextDecoder();
+    const skipDirs = new Set(C.SKIP_DIRS), start = base ? base + '/' : '';
+    let visited = 0, totalBytes = 0, scriptBytes = 0, scripts = 0, capped = false; const files = [];
     for (const [key, bytes] of zip.files) {
-      if (++visited > MAX_ENTRIES) { capped = true; break; }
-      if (!key.startsWith(zip.root)) continue;
+      if (!key.startsWith(zip.root + start)) continue;
       const rel = LayersCore.safePath(key.slice(zip.root.length)); if (!rel) continue;
-      const segs = rel.split('/'), name = segs.pop(), kind = scanKind(name);
-      if (!kind || segs.length > SCAN_MAX.depth) continue;
+      const segs = rel.slice(start.length).split('/'), name = segs.pop();
+      if (segs.length > MAX_DEPTH) continue;
       if ([name, ...segs].some(s => s.charAt(0) === '.' && s !== '.well-known')) continue;
-      if (segs.some(s => SCAN_SKIP.has(s.toLowerCase()) || COVERAGE_EXCLUDE.has(s.toLowerCase()))) continue;
-      if (kind === 'script' && (scripts >= C.SCRIPT_FILES_MAX || bytes.length > C.SCRIPT_BYTES_MAX)) continue;
-      if (bytes.length > MAX_FILE_BYTES) continue;
-      if (totalBytes + bytes.length > MAX_TOTAL_BYTES) { capped = true; continue; }
-      totalBytes += bytes.length; if (kind === 'script') scripts++;
+      if (segs.some(s => SCAN_SKIP.has(s.toLowerCase()) || skipDirs.has(s.toLowerCase()))) continue;
+      if (++visited > MAX_ENTRIES) { capped = true; break; }
+      const kind = scanKind(name); if (!kind) continue;
+      if (kind === 'script' && scripts >= C.SCRIPT_FILES_MAX) { capped = true; continue; }
+      if (bytes.length > MAX_FILE_BYTES || (kind === 'script' && bytes.length > C.SCRIPT_BYTES_MAX)) continue;
+      if (kind === 'script' && scriptBytes + bytes.length > MAX_SCRIPT_BYTES) { capped = true; continue; }
+      if (kind !== 'script' && totalBytes + bytes.length > MAX_TOTAL_BYTES) { capped = true; continue; }
+      if (kind === 'script') { scriptBytes += bytes.length; scripts++; } else totalBytes += bytes.length;
       files.push({ path: rel, kind, text: td.decode(bytes) });
     }
     return { files, capped };
