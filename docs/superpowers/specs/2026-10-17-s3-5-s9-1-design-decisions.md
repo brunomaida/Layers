@@ -48,6 +48,21 @@ Onde o que foi entregue difere dos boards `S35Menu` e `S35Requisicao`. Os boards
 | Versão do app no cabeçalho do Markdown | Travessão (`—`) | A interface não mostra versão em lugar nenhum |
 | `Mostrar no palco` sempre ativo | Desabilitado quando a requisição está "alvo a confirmar" | O id posicional (`nodeId`) só descreve o DOM de um hash igual e é removido no restauro com deriva |
 
+## Divergências do código (S9.1a)
+
+Onde o que foi entregue na S9.1a (layouts, faixa LAYOUTS, modo Foco) difere dos boards `S91Fluxos` e `S91Cobertura`. Os boards seguem como referência visual; as linhas abaixo são desvios conhecidos, não decisões novas. Modelo, chaves e limites em [](../../ARCHITECTURE.md#layouts-s91a).
+
+| Item do board | Como ficou no código | Motivo |
+|---|---|---|
+| Botão "Espalhar" e o glifo `⊞` | Ausentes; só o modo Foco | Espalhar (vários layouts montados, LOD, câmera de visão geral) é a S9.1c; evita também o choque de nome com o FOCO das camadas |
+| Chip ativo com a borda `sel` e `selRgb` .16 (V3) | O chip ativo usa a variante **não solo** do rail de Camadas (preenchido com `accRgb` .15 e "●") | Reuso do estilo dos chips existentes (visual congelado). **Decisão visual do usuário pendente**: se a variante do board for a pretendida, troca-se só os tokens do chip em `renderVals` |
+| Faixa LAYOUTS como linha da barra inferior | Pílula própria acima da barra de Camadas, com `gap` de 4 px | O 3 px do board é a 0,75 de escala; 4 px reais igualam o `gap` interno da barra. Cada linha encolhe ao conteúdo, e a barra de um projeto de um layout só mantém largura e posição |
+| Tabela do board: "Aplicar junta tudo" | **Aplicar** e **Salvar** agem só no layout montado; os outros mostram badge de pendentes | Só um layout está montado (Foco); "Aplicar junta tudo" fica na S9.1c |
+| Aviso do escopo `all` ("também afeta <layout> (N usos)") | Adiado | Exige contar usos em layouts desmontados; S9.1c |
+| Undo/Redo com `layoutId` e watch/deriva globais | Valem só para o layout montado | Pilha única e watch global só fazem sentido com vários montados (S9.1c); o backup do Reanalisar já lê o mock de todos |
+| Ajustes com grupos recolhidos por layout | Linha única `outros layouts: Nome (N), …`, só contagem | As requisições dos outros layouts são lidas do `layers/v1/pending` na carga; a lista delas só aparece ao abrir o layout |
+| Custo do Foco: um shadow root montado | Trocar de layout recarrega o mock (como Trocar de estado) e mantém 1 shadow root | A linha de custo do board coincide; medido em [](../../RELEASE-CHECKLIST.md) § D: troca 175,1 ms contra recarga 181,2 ms (razão 0,97) |
+
 ## Limites conhecidos dos boards
 
 - `Base` reproduz a UI a 1440×900 com larguras de painel (340 px, coluna de 384 px) e logo reais, medidos no app.

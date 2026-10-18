@@ -61,7 +61,7 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 
 - A fronteira com `changes[]` é deliberada: o texto do usuário vai para uma IA ou outra pessoa, não para o escritor de arquivos. O campo `pendente` é só um retrato textual (`prop de → para`) do ajuste da mesma seleção no momento da criação; fica congelado e não acompanha Aplicar nem reverter.
 - No Markdown, as linhas de continuação do `pedido` levam 4 espaços de recuo para ficar dentro do item da lista; o texto do usuário ainda pode virar título ou cerca de código dentro desse item, porque não é escapado.
-- `layoutId` é fixo em `'main'` até a S9.1 (layouts múltiplos); com um único layout o cabeçalho do Markdown omite o token de layouts (`<!-- Layers — · carimbo · mock caminho -->`); só com mais de um layout acrescenta `· N layouts`.
+- `layoutId` é o do layout ativo (`'main'` num projeto sem `layouts`, ver § Layouts); com um único layout o cabeçalho do Markdown omite o token de layouts (`<!-- Layers — · carimbo · mock caminho -->`); só com mais de um layout acrescenta `· N layouts` e agrupa os itens por layout.
 - O token de versão no cabeçalho do Markdown é um travessão (`—`): a interface não mostra versão em lugar nenhum, e o `package.json` não é lido no navegador.
 
 ## Módulos (dentro do arquivo único)
@@ -91,7 +91,8 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 - Câmera: `yaw, tilt, zoom, panX, panY, focus, spacing, persp, flat`.
 - Ramo explodido (S3.5): `explodeFrom` (id da raiz do ramo, ou `null`) e `collapseAt` (profundidade a partir da qual o ramo volta ao plano daquele nível, ou `null`). Só valem na vista plana. Limpam explicitamente em `unloadProject`, na troca de projeto (`useDir`/`pickZip`/`loadRepo`) e em Reanalisar do 0; `loadProject` também os zera sempre que não há seleção a reaproveitar (`pendingSel` nulo, caso de Trocar de estado). O `scan()` os limpa só quando a raiz some de `byId`, o que inclui a raiz de tamanho zero (por exemplo após Interagir); desfazer não restaura o ramo.
 - Menu de contexto: `ctx` é `null` ou `{x, y, id, fx, fy, flip}` (cursor, nó-alvo, posição ajustada à viewport e se o submenu inverte). Limpa no fechamento, em `unloadProject` e quando o `id` some no `scan()`.
-- Requisições: `requests` (registros do ramo de requisição, ver § Fluxo de dados) mais `reqSel` (id expandido) e `mdOpen` (rodapé Markdown aberto), ambos só de interface.
+- Requisições: `requests` (as do layout ativo; registros do ramo de requisição, ver § Fluxo de dados) mais `reqSel` (id expandido) e `mdOpen` (rodapé Markdown aberto), ambos só de interface.
+- Layouts (S9.1a): `project.layouts`/`project.layoutId`/`project.inter` e `layoutBadges` (no state); `layoutMap`, `viewCache`, `pendingView`, `otherRequests`, `reqFloor` e `baseKey` são campos de instância (§ Layouts).
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
 - Painéis: `rightOpen, rightPx, treeOpen, treeTab, splitPct, colOpen, navMin, interSize, menu, menuPin, cbOpen`.
@@ -106,8 +107,8 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 | `localStorage` | `layers/v1/meta` | `{schema:1, savedAt, migratedFrom}` — `migratedFrom` só existe em navegador que veio das chaves antigas. |
 | `localStorage` | `layers/v1/ui` | Preferência de interface: `cfg` (tema, seleção, cores de origem, cabeçalho, escala de fonte, degradê) + `UI_KEYS` (painéis, navegação, árvore, escopo, `interSize`). |
 | `localStorage` | `layers/v1/projects` | Histórico de projetos: `{id,kind,name,path,label,last,pinned}`. |
-| `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera, explodeFrom, collapseAt}`. `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. `explodeFrom`/`collapseAt` só são restaurados quando a sessão é do projeto da aba; no modo fixture (`?layers=`, `?project=`) não são persistidos (grava `null`). Limpam em descarregar o projeto, trocar de projeto e Reanalisar do 0; uma raiz que não existe mais no scan zera os dois; `collapseAt` não numérico é ignorado. |
-| `localStorage` | `layers/v1/pending` | `{schema:1, byProject:{<chave>:{savedAt, hash, changes[], requests[]}}}` (`requests[]` na linha seguinte). `<chave>` = `projectId` (`folder:`/`zip:`/`repo:`) ou `fx:<fixtureBase>`. `hash` cobre `layers.json`, mock, folhas `.css` e `dcSource` lidos em `loadProject`; hash igual restaura tudo na ordem; hash diferente descarta os `changes` com toast `warn` e mantém as requisições (marcadas `confirm`). `getPending` valida `changes` e `requests` separadamente: um `change` inválido zera só os `changes` e preserva as requisições válidas; `hash` ou `savedAt` inválidos anulam a entrada. Teto de 200 changes e expiração de 30 dias. |
+| `localStorage` | `layers/v1/session` | `{lastProjectId, selId, isoId, camera, explodeFrom, collapseAt, states, layouts?, viewLayout?}`. `layouts` (layout ativo por projeto) só é gravado se não vazio e `viewLayout` (layout a que `selId`/câmera pertencem) só em projeto com 2+ layouts (§ Layouts). `lastProjectId: null` é valor legítimo — significa "nenhum projeto", e o editor reabre vazio. `explodeFrom`/`collapseAt` só são restaurados quando a sessão é do projeto da aba; no modo fixture (`?layers=`, `?project=`) não são persistidos (grava `null`). Limpam em descarregar o projeto, trocar de projeto e Reanalisar do 0; uma raiz que não existe mais no scan zera os dois; `collapseAt` não numérico é ignorado. |
+| `localStorage` | `layers/v1/pending` | `{schema:1, byProject:{<chave>:{savedAt, hash, changes[], requests[]}}}` (`requests[]` na linha seguinte). `<chave>` = `projectId` (`folder:`/`zip:`/`repo:`) ou `fx:<fixtureBase>`, mais `|<layoutId>` para um layout que não é o `main` (§ Layouts). `hash` cobre `layers.json`, mock, folhas `.css` e `dcSource` lidos em `loadProject`; hash igual restaura tudo na ordem; hash diferente descarta os `changes` com toast `warn` e mantém as requisições (marcadas `confirm`). `getPending` valida `changes` e `requests` separadamente: um `change` inválido zera só os `changes` e preserva as requisições válidas; `hash` ou `savedAt` inválidos anulam a entrada. Teto de 200 changes e expiração de 30 dias. |
 | `localStorage` | `layers/v1/pending` › `requests[]` | Requisições manuais da mesma entrada: `{savedAt, hash, changes[], requests[]}`. Registro: `id` (`R<n>`), `layoutId`, `nodeKey`, `path`, `text`, `createdAt` (obrigatórios) e as âncoras opcionais `name`, `depth`, `alvo`, `caixa`, `estilos`, `uses`, `texts`, `pendente`, `nodeId`, `srcHash`, `confirm`; `validRequest` descarta a requisição cujo campo obrigatório falta ou cujo opcional presente (inclusive `nodeId`, string) não tem o tipo certo. A entrada **sobrevive sem changes**: só some quando `changes` e `requests` estão ambos vazios. Hash diferente descarta os `changes` mas **mantém** as requisições, cada uma com `confirm: true` ("alvo a confirmar"; o `nodeId` posicional só vale com `confirm` falso). Com `srcHash` a marca é derivada (`r.srcHash !== hash`) e some quando o hash original volta; sem `srcHash` (registro antigo) ou após leitura incompleta ela persiste até a requisição ser removida. Leitura incompleta (CSS ou dcSource não lido) também marca `confirm` e **continua gravando** o texto das requisições (modo `pendingReqOnly`), mantendo o `hash` e os `changes` já guardados; o mesmo vale quando `refreshPendingHash` falha depois de Aplicar. Teto de 200 requisições (toast ao passar). Restaurar reescreve a entrada (novo `savedAt`, hash atual), então a expiração de 30 dias renova a cada carga que restaurou requisições; em leitura incompleta o `hash` guardado é mantido, não o atual. |
 | `sessionStorage` | `layers/v1/tab` | `{projectId}` da aba. Vence o `session` ao restaurar: cada aba reabre o **seu** projeto. Câmera e seleção não: moram no `session` compartilhado e só são restauradas quando `lastProjectId` é o projeto daquela aba. |
 | IndexedDB `layers-hist` | store `h`, chave = `id` do histórico | `FileSystemDirectoryHandle` da pasta conectada. É o único lugar onde handle é guardado. |
@@ -122,7 +123,7 @@ com `pendingDirty`, para que uma aba ociosa nunca regrave a entrada de outra. `l
 drena a rajada pendente antes de recalcular `pendingKey`, restaura só na carga vencedora e, se
 uma fonte falhou na leitura, preserva a entrada sem restaurar `changes` (as requisições seguem sendo gravadas). `doReload` descarta só os `changes` e mantém as requisições; `resetUI` limpa a
 entrada inteira; `approve`/`rollback` recalculam o hash da sessão (`refreshPendingHash`).
-Recarregar, Trocar de estado e Reanalisar do 0 descartam os `changes` mas mantêm as requisições (`rewritePending`); Zerar interface limpa tudo, inclusive requisições. Multi-estado: `pendingKey` é por projeto e o `hash` por estado do mock, então cada requisição grava o `srcHash` do estado em que nasceu (`addRequest`) e `restorePlan` deriva `confirm = r.srcHash !== hash` ao restaurar: trocar para outro estado marca, voltar ao original desmarca (`Request_ConfirmedStateSwitch_KeepsRequests`). O `nodeId` permanece no registro e só vale com `confirm` falso. Registros sem `srcHash` (antes desta correção) e cargas incompletas mantêm a marca pegajosa.
+Recarregar, Trocar de estado e Reanalisar do 0 descartam os `changes` mas mantêm as requisições (`rewritePending`); Zerar interface limpa tudo, inclusive requisições e as entradas dos demais layouts (§ Layouts). Multi-estado: `pendingKey` é por projeto (e por layout, § Layouts) e o `hash` por estado do mock, então cada requisição grava o `srcHash` do estado em que nasceu (`addRequest`) e `restorePlan` deriva `confirm = r.srcHash !== hash` ao restaurar: trocar para outro estado marca, voltar ao original desmarca (`Request_ConfirmedStateSwitch_KeepsRequests`). O `nodeId` permanece no registro e só vale com `confirm` falso. Registros sem `srcHash` (antes desta correção) e cargas incompletas mantêm a marca pegajosa.
 
 Casos de borda: Zerar interface com a carga incompleta (`pendingReady` falso) não toca a entrada salva, então requisições e ajustes guardados voltam na próxima carga completa. Do mesmo modo, depois de uma carga incompleta, Recarregar ou Trocar de estado confirmados não reescrevem os `changes` guardados (`dropPending` só reescreve com `pendingReady` verdadeiro). Exportar de novo as requisições cria `layers-requests.md.bak` na raiz do projeto (o `writeText` faz `.bak` antes de sobrescrever).
 Migração (`LayersCore.migrateConfig`) converte `layers-cfg`, `layers-hist` e
@@ -243,7 +244,7 @@ S2.22d: `layers.json › watch` (globs de fontes, relativos à raiz da pasta) co
 mtime da carga (`layoutMoved`), o modal vira "O mock não mudou": explica que reler não traz UI nova, manda
 gerar o snapshot e só recarrega com "Reler mesmo assim". Ao confirmar, `backupLayout` grava o
 `layers.json` e o mock **como foram lidos** (`this.loaded`, em memória, então mesmo um mock já
-sobrescrito no disco fica salvo) em `.design-history/layout-<AAAAMMDD-HHMMSS>/`, por `writeText`
+sobrescrito no disco fica salvo) em `.design-history/layout-<AAAAMMDD-HHMMSS>/`, mais o mock de cada outro layout declarado em `layouts/<id>/` (lido do disco na hora; § Layouts), por `writeText`
 (permissão de escrita, guarda de conflito, `writeLog`). Falha no backup aborta antes de recarregar, com
 toast `warn`. Depois o toast da carga nomeia a pasta do backup (`bakNote`). `dropPending`, `pendingSel = null` e `loadProject`: projeto novo, sem seleção,
 câmera, undo nem ajustes salvos. O backup não tem retenção nem poda.
@@ -301,10 +302,71 @@ primeiro); `loadProject` lê o `mock` do estado no lugar de `man.mock` e guarda 
 menu ⚡ Interagir (só aparece com 2+ estados). `switchState` relê o projeto do zero: o DOM é outro, então seleção
 e câmera não valem, e edições não salvas pedem confirmação e são descartadas, como no Recarregar. O hash das
 fontes inclui o caminho do mock, por isso ajustes pendentes de um estado não valem em outro.
-`this.stateMap` (estado escolhido por projeto, chave = `pendingKey`) vai em `layers/v1/session › states`, então
+`this.stateMap` (estado escolhido por projeto e layout, chave = `LayersCore.stateMapKey(base, layoutId)`, que coincide com o `pendingKey` fora o `-` do projeto sem chave) vai em `layers/v1/session › states`, então
 Recarregar e reabrir voltam ao mesmo estado e os ajustes pendentes dele são restaurados. Mock ausente no estado
 escolhido limpa a entrada e o erro cita `states`; recarregar abre o primeiro estado. O CLI de snapshot captura cada estado da gallery do app com
 `--state <nome>` (`<url-do-app>/gallery.html#/<nome>`).
+
+### Layouts (S9.1a)
+
+`layers.json › layouts` (`[{ id, name, mock, states? }]`, contrato em [layers-json.md](layers-json.md)) deixa um projeto ter várias telas. **Foco**: um layout montado por vez, no mesmo shadow root; trocar de layout recarrega só o mock dele. Espalhar (vários montados) é a S9.1c e a cobertura % é a S9.1b.
+
+```
+layers.json ── LayersCore.projectLayouts(man) ──▶ [{id,name,mock,states}]   (sem layouts: 'main' implícito)
+                                                        │ pickLayout(list, layoutMap[base])
+chip da faixa LAYOUTS ─▶ switchLayout(id)               ▼
+   │ guardas: painel, diff, loadedSeq      loadProject()  ── baseKey local + guarda de loadSeq
+   │ codeBuf sem salvar? modal (só limpa   │              ── pendingKey = layoutPendingKey(base, id)
+   │   o codeBuf, nunca dropPending)       │              ── scan(): nodes/byId só do layout ativo
+   │ viewCache[saindo] = vista atual       ▼
+   │ layoutMap[base] = id             palco, Árvore, Camadas, Ajustes (um layout)
+   └ pendingView = vista alvo (carimbo {projectId, layoutId})
+```
+
+**Modelo.** `LayersCore.projectLayouts` devolve a lista normalizada: sem `layouts` válido existe só o `main` implícito (`mock` e `states` da raiz, como antes); com `layouts` válido a raiz é ignorada (limite g). `pickLayout` escolhe o pedido ou o primeiro. O mock vem do estado ativo do layout (se houver `states`) ou do `mock` dele. `project` ganha `layouts` (`[{id, name}]`) e `layoutId`.
+
+**Chaves.** Um projeto sem `layouts` (ou o layout `main`) usa exatamente as chaves de antes; os demais acrescentam `|<id>`. O `<id>` casa `^[A-Za-z0-9_-]{1,40}$`, então nunca contém `|`.
+
+| Dado | `main` (ou sem `layouts`) | Outro layout `<id>` | Onde |
+|---|---|---|---|
+| `pendingKey` | `<base>` | `<base>\|<id>` | `layers/v1/pending › byProject` |
+| `stateMap` (estado do mock) | `<base>` (ou `-`) | `<base>\|<id>` (ou `-\|<id>`) | memória e `session › states` |
+| layout ativo (`layoutMap`) | `{ <base ou ->: '<id>' }` | idem | `session › layouts`, só se não vazio |
+| vista da sessão (`selId`, câmera) | carimbo `viewLayout` | idem | `session › viewLayout`, só com 2+ layouts |
+| `viewCache` (`selId`, `isoId`, câmera, `flat`, `explodeFrom`, `collapseAt`) | `stateMapKey(base, id)` | idem | memória; esvazia em `unloadProject` |
+
+`restoreSession` só reaproveita câmera, seleção e ramo se o `viewLayout` gravado bate com o layout ativo, então fechar a aba durante uma troca não pareia a vista de um layout com o mock de outro. `stateMapKey` e `layoutPendingKey` são puras em `LayersCore` (`test/layers-core.test.js`).
+
+**Carga e troca.** `loadProject` guarda `baseKey` em variável local e só atribui `this.baseKey` e `this.pendingKey` depois do `JSON.parse` **e** do teste `seq !== loadSeq`, para uma carga superada não mexer nas chaves da vencedora. A rajada pendente é drenada (`writeConfig`) na chave antiga antes da reatribuição, então os `changes` do layout que sai ficam gravados e voltam com o mesmo hash. `switchLayout` tem as guardas do `switchState` (modal, painel de pendentes, diff, `loadedSeq`); só abre modal se houver `codeBuf` sem salvar (ou `changes` que não podem ser gravados, com a carga incompleta), e o `onYes` só limpa o `codeBuf`, nunca chama `dropPending`. A vista do layout que sai vai para `viewCache`; a do que entra (se existir) segue em `pendingView` e é aplicada no `setState` principal da carga vencedora (como `keep`, sem segundo render), validada pelo `scan()`. Mock do layout ausente apaga `stateMap` e `layoutMap` daquele projeto antes de descarregar: recarregar abre o primeiro layout.
+
+**Calculado uma vez por carga** (nunca no `writeConfig`, que roda a cada rajada de câmera):
+
+- Numa só leitura de `layers/v1/pending` por layout não ativo saem os badges da faixa (`layoutBadges`, `changes + requests`), o piso do `R<n>` (`reqFloor`, o maior número entre as requisições dos outros layouts) e as requisições dos outros layouts (`otherRequests`).
+- `project.inter` guarda as interações do layout ativo (`LayersCore.interactionsFor`; interação sem `layout` vale para todos), cada uma com o índice **original**, de que dependem as chaves do menu Interagir. `deadInteractions` recebe a lista filtrada.
+
+**Requisições.** `addRequest` grava o `layoutId` ativo e numera `R<n>` globalmente (máximo entre as do layout ativo e `reqFloor`). Na exportação, `allRequests()` junta (`LayersCore.mergeLayoutRequests`, na ordem de `layouts`) as do ativo com as lidas dos outros, e o Markdown agrupa por layout com `· N layouts` no cabeçalho (N = layouts declarados). A guarda de vazio, a contagem dos toasts, Copiar e Exportar usam a lista **mesclada**, então exportar funciona com o layout ativo sem requisições. O painel Ajustes lista só as do ativo e mostra, numa linha à parte, `outros layouts: Nome (N), …` (só contagem).
+
+**Backup e Zerar.** Reanalisar do 0 (`backupLayout`) grava também o mock atual de cada outro layout declarado em `layouts/<id>/<arquivo>` dentro de `layout-<carimbo>/` (`layoutBackupPaths(stamp, mock, id)`; o caminho do layout ativo não muda). Falha de **leitura** de outro mock vira aviso no toast; falha de **escrita** continua tudo-ou-nada. Reanalisar mantém o layout ativo (`layoutMap`) e esvazia só o `viewCache` dele. Zerar interface remove as entradas `<base>|*` (`clearLayoutEntries`), o `layoutMap` do projeto e, quando o `main` é declarado e não está ativo, também a entrada `<base>`; se a carga atual falhou antes de ler o `layers.json` (o `baseKey` ainda é o do projeto anterior), não toca nas chaves de outro projeto.
+
+**Renovação do TTL.** Cada escrita da chave ativa (`writePending`, `rewritePending`) chama `touchLayoutEntries` (só com 2+ layouts) e renova o `savedAt` das entradas irmãs `<base>|*`, e o da `<base>` quando o `main` é declarado (`includeBase`). Sem isso a expiração de 30 dias apagaria os ajustes e as requisições de layouts fechados enquanto o projeto é usado todo dia. A renovação também poda o que já expirou, então cada irmã precisa ser renovada em até 30 dias da renovação anterior.
+
+#### Limites do Foco
+
+| # | Limite | Observação |
+|---|---|---|
+| a | Trocar de layout não descarta `changes` (ficam na chave antiga e voltam com hash igual); `codeBuf` sem salvar pede confirmação e é descartado | `changes` que não podem ser gravados (carga incompleta) se perdem, e o modal diz isso |
+| b | **Aplicar** e **Salvar** agem só no layout montado; os outros mostram badge | CSS compartilhado aplicado muda o hash dos outros layouts: os ajustes pendentes deles são descartados ao abri-los (toast). "Aplicar junta tudo" é da S9.1c |
+| c | Requisições dos outros layouts vêm do `layers/v1/pending`, com o `confirm` gravado | A marca "alvo a confirmar" fica desatualizada até o layout ser aberto |
+| d | Undo/Redo, watch, deriva e `driftAck` valem só para o layout montado | Deriva em layout desmontado só aparece ao abri-lo; o backup do Reanalisar lê o mock de todos |
+| e | Sem botão "Espalhar" e sem novo "Foco" no dock | Evita o choque de nome com o FOCO das camadas; Espalhar é da S9.1c |
+| f | Sem aviso de escopo `all` ("também afeta …") | Exige contar usos em layouts desmontados; S9.1c |
+| g | Com `layouts` declarado, `mock` e `states` da raiz são ignorados, e as chaves antigas (`<base>`) só voltam se existir `id: "main"` | Sem `main` os pendentes antigos ficam órfãos; ver [layers-json.md](layers-json.md) |
+| h | A escrita da chave ativa renova o `savedAt` das irmãs | Entradas de layouts abandonados vivem enquanto o projeto viver |
+| i | Clicar no layout cujo mock não existe descarrega o projeto e a faixa some | Recarregar a página reabre o primeiro layout (o `layoutMap` foi apagado) |
+| j | Badges e requisições dos outros layouts são um retrato da carga | Só se atualizam na próxima carga (trocar de layout recarrega) |
+| k | Um `<base>` (nome de pasta ou `.zip`) com `\|` pode colidir com `<base>\|<id>` | O `<id>` nunca contém `\|`, mas o nome da pasta pode |
+| l | Ids de layout são deduplicados sem diferenciar maiúsculas (vale o primeiro) | `Main` e `main` contam como o mesmo layout |
+| m | O backup do Reanalisar lê do disco o mock dos outros layouts; só o ativo vem da memória (`this.loaded`) | Um mock sobrescrito no disco entra no backup já alterado; leitura que falha vira aviso |
 
 ### Guarda de conflito na gravação
 

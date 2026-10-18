@@ -32,13 +32,14 @@ O editor não traz projeto embutido. Ao conectar uma pasta (Projetos recentes �
 | `viewport` | 1280×760 | tamanho da página do mock em px; define a geometria do palco. Páginas longas: use a altura real (`scrollHeight`) |
 | `mock` | `layers/mock.html` | HTML do mock. Pode ser o próprio `index.html` do app quando o DOM é estático |
 | `states` | `[]` | estados do mock: `[{ "name": "csv-loaded", "mock": "layers/mock.csv.html" }]`. Com ao menos uma entrada válida (`name` e `mock` strings não vazias; nome repetido vale o primeiro), o `mock` vem do estado ativo (padrão: o primeiro; `mock` do topo é ignorado) e `base` também prefixa o mock do estado. Com 2+ estados o menu ⚡ Interagir › Modo interativo ganha o grupo "Estado do mock": escolher um relê as camadas do zero (pede confirmação se há edições não salvas). Sem `states` o campo `mock` vale como antes |
+| `layouts` | `[]` | telas distintas do mesmo projeto: `[{ "id": "config", "name": "Configurações", "mock": "layers/mock.config.html", "states": [] }]`. Ver § layouts abaixo. Sem `layouts` válido o projeto tem um só layout (`main`), com o `mock` e os `states` da raiz, exatamente como antes |
 | `styles` | `[]` | folhas `.css` reais, lidas da pasta e aplicadas dentro do shadow root (não vazam para o editor). `<link rel="stylesheet" href="relativo">` dentro do mock também é resolvido e lido. Em mock de snapshot, a folha listada substitui a cópia do mesmo arquivo no snapshot quando o bloco traz `data-layers-origin` (ocupa a posição da cópia na ordem do mock); snapshot antigo, sem o atributo, precisa ser gerado de novo para isso |
 | `fonts` | `[]` | Famílias de fonte que o projeto usa. **Nada é buscado na rede**: cada família é resolvida contra `fonts/projects.css`, versionado no repositório do LAYERS. Por compatibilidade, uma URL de serviço de fontes com parâmetro `family=` também é aceita — só as famílias são lidas dela, a URL nunca é requisitada. Família ausente do sheet local vira aviso e cai no fallback |
 | `root` | — | `data-name` / `data-src` do elemento raiz (L0). Em mock de snapshot (S2.22c) o L0 leva o rótulo `<nome> · snapshot` e `name`/`src` ficam no L0 quando ele próprio casa o seletor `name`; senão vão para o primeiro descendente que casa (ex.: `.shell` dentro de `#app`); sem match, ficam no L0 |
 | `watch` | `[]` | globs de fontes TS/JS vigiadas pela deriva do layout (S2.22d), relativos à raiz da pasta conectada (o mesmo espaço de `data-src` e `root.src`): `"watch": ["src/ui/**/*.ts"]`. `*` não cruza `/`, `**` cruza pastas só como segmento inteiro (`src/**/x.ts`, `src/**`; em `a**b` vale como `*`), `?` é um caractere; entrada vazia, com `..`, `\` ou `/` inicial é ignorada; no máximo 20 globs, de até 200 caracteres e 8 curingas (`*`/`?` seguidos contam um). Pastas e arquivos que começam com `.` não são vigiados. A varredura pula `node_modules`, `.git`, `dist`, `build` e pastas de ponto, para em 5000 entradas ou além de 8 níveis de pasta (ambos avisados, sem contar o que ficou de fora) e observa até 50 arquivos (citados em `data-src` primeiro; o excedente é avisado). Vale para qualquer mock, em especial o de snapshot, que não traz `data-src` |
 | `rules` | `{}` | seletor CSS → `arquivo|regra|linha`; sobrescreve `data-src` (e `data-name`) dos elementos que casam |
 | `dcSource` | — | arquivo (relativo a `base`) com o bloco `<x-dc>` do app dc que gerou o `mock`. Elementos do mock com `data-dc-tpl` ganham `data-src` `arquivo\|tpl:N\|linha` e passam a poder gravar valor literal de `style=""` no template. Só vale se as tags do arquivo batem com as do mock; senão avisa e nenhuma gravação `tpl:` é feita. Inerte fora de pasta local (a origem precisa ser gravável) |
-| `interactions` | `[]` | itens do menu ⚡ Interagir (abaixo) |
+| `interactions` | `[]` | itens do menu ⚡ Interagir (abaixo); cada item pode se restringir a um layout com `layout` |
 
 ## O que o loader faz com o mock
 
@@ -106,6 +107,34 @@ Toda ação re-escaneia o mock.
 Elemento cujo atributo já vale `value` é desligado (remove ou vira `off`); qualquer outro estado vira `value`. O ●/○ do chip é ● se algum alvo está ligado. `attr` malformado deixa o chip informativo, com `title` "attr inválido". Exemplo mínimo em `fixtures/attr-action/`.
 
 Seletor que não casa nada no mock (`show`, `toggle`, `hide`, `on`, `click`, `class`) é avisado na carga e a superfície sem alvo aparece como "sem alvo" no menu. Elementos ocultos contam como alvo; só o seletor sem nenhum elemento (ou inválido) é morto.
+
+## layouts
+
+`layouts` (S9.1a) declara várias telas num projeto só. O Layers monta **um layout por vez** (modo Foco) e mostra a faixa LAYOUTS na barra inferior, acima de Camadas, quando há 2 ou mais; trocar de chip recarrega só o mock do layout escolhido. Detalhes de chaves e persistência em [ARCHITECTURE.md](ARCHITECTURE.md#layouts-s91a).
+
+```json
+"layouts": [
+  { "id": "main", "name": "Principal", "mock": "layers/mock.html", "states": [{ "name": "vazio", "mock": "layers/mock.empty.html" }] },
+  { "id": "config", "name": "Configurações", "mock": "layers/mock.config.html" }
+]
+```
+
+| Campo | Regra |
+|---|---|
+| `id` | obrigatório; casa `^[A-Za-z0-9_-]{1,40}$` (nunca `\|`); id repetido vale o primeiro, **sem diferenciar maiúsculas** (`Main` e `main` são o mesmo layout) |
+| `name` | texto do chip; padrão = `id` (string vazia ou não string cai no `id`) |
+| `mock` | obrigatório; string não vazia, prefixada por `base` como o `mock` da raiz |
+| `states` | opcional; mesmo contrato do `states` da raiz, mas por layout (`states` e layouts são ortogonais: layout = tela distinta, estado = variação da mesma tela) |
+
+- Entrada sem `id` válido ou sem `mock` é descartada. Sem nenhuma entrada válida, vale o layout `main` implícito (raiz).
+- **Com `layouts` válido, `mock` e `states` da raiz são ignorados.** O layout ativo é o da sessão (`layers/v1/session › layouts`) ou, na primeira vez, o primeiro da lista.
+- **Chaves antigas só voltam se existir um layout de `id` `main`.** O layout `main` usa as mesmas chaves de antes (`pending` em `<projeto>`, `stateMap` em `<projeto>`); os demais usam `<projeto>|<id>`. Ao adotar `layouts` sem `main`, os ajustes e as requisições gravados antes ficam órfãos (continuam em `layers/v1/pending` sob a chave antiga, sem uso, até expirar em 30 dias).
+- Um layout cujo `mock` não existe descarrega o projeto com o erro "Mock não encontrado" (o texto cita o layout); recarregar a página abre o primeiro layout.
+- `projectLayouts`, `pickLayout`, `layoutPendingKey` e `stateMapKey` (puros em `LayersCore`) implementam estas regras. Exemplo completo, com um layout de mock ausente, em `fixtures/multi-layout/`.
+
+### `interactions[].layout`
+
+Campo opcional (string, o `id` de um layout). Ausente, o item vale para **todos** os layouts. Presente, o item só aparece (e só é validado por `deadInteractions`) no layout de mesmo `id`; um valor que não é string, ou um `id` que não existe, deixa o item fora de todos os layouts. Num projeto sem `layouts` o único layout é `main`. O filtro é feito uma vez por carga, e as chaves do menu Interagir usam o índice original do item em `interactions`, então o filtro não renumera nada.
 
 ## Snapshot de apps renderizados por JS
 
