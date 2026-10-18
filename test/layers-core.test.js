@@ -2897,6 +2897,16 @@ describe('ProjectLayouts', () => {
     expect(out[1].name).toBe('A_b-1');
   });
 
+  it('NomeNaoStringOuVazio_CaiNoId', () => {
+    const out = core.projectLayouts({ layouts: [{ id: 'a', name: '', mock: 'a.html' }, { id: 'b', name: 7, mock: 'b.html' }, { id: 'c', name: 'Cee', mock: 'c.html' }] });
+    expect(out.map((l) => l.name)).toEqual(['a', 'b', 'Cee']);
+  });
+
+  it('PrimeiroDuplicadoInvalido_SegundoValidoVence', () => {
+    const out = core.projectLayouts({ layouts: [{ id: 'd', name: 'Ruim', mock: '' }, { id: 'd', name: 'Bom', mock: 'd.html' }] });
+    expect(out).toEqual([{ id: 'd', name: 'Bom', mock: 'd.html', states: [] }]);
+  });
+
   it('StatesPorLayout_ViaProjectStates', () => {
     const out = core.projectLayouts({ layouts: [{ id: 'a', mock: 'a.html', states: [{ name: 's1', mock: 's1.html' }, { name: 's1', mock: 'dup.html' }, { name: 'bad' }] }, { id: 'b', mock: 'b.html' }] });
     expect(out[0].states).toEqual([{ name: 's1', mock: 's1.html' }]);
@@ -3000,6 +3010,11 @@ describe('MergeLayoutRequests', () => {
     expect(out[0].texts).not.toBe(src.texts);
   });
 
+  it('OrderComIdRepetido_NaoDuplicaPedidos', () => {
+    const out = core.mergeLayoutRequests(['a', 'b', 'a'], 'a', [r('a1')], { b: [r('b1')] });
+    expect(out.map((x) => x.id)).toEqual(['a1', 'b1']);
+  });
+
   it('EntradasAusentes_Vazio', () => {
     expect(core.mergeLayoutRequests(['a', 'b'], 'a', undefined, undefined)).toEqual([]);
     expect(core.mergeLayoutRequests(undefined, 'a', [r('a1')], { b: [r('b1')] }).map((x) => x.id)).toEqual(['a1', 'b1']);
@@ -3035,6 +3050,65 @@ describe('TouchLayoutEntries / ClearLayoutEntries', () => {
     expect(core.getPending(st, 'fx:a|tablet').savedAt).toBe(31 * DAY);
   });
 
+  it('Touch_IncludeBase_RenovaTambemABaseExataEPreservaOutrosProjetos', () => {
+    const st = memStorage();
+    seed(st, 'fx:a', 0); seed(st, 'fx:a|mobile', 0); seed(st, 'fx:b', 0); seed(st, 'fx:old', -40 * DAY);
+    expect(core.touchLayoutEntries(st, 'fx:a', 20 * DAY, true)).toBe(true);
+    expect(core.getPending(st, 'fx:a').savedAt).toBe(20 * DAY);
+    expect(core.getPending(st, 'fx:a|mobile').savedAt).toBe(20 * DAY);
+    expect(core.getPending(st, 'fx:b').savedAt).toBe(0);
+    expect(core.getPending(st, 'fx:old')).toBeNull();
+  });
+
+  it('Touch_IncludeBase_BaseExpiradaNaoRessuscita', () => {
+    const st = memStorage();
+    seed(st, 'fx:a', 0); seed(st, 'fx:a|mobile', 25 * DAY);
+    core.touchLayoutEntries(st, 'fx:a', 31 * DAY, true);
+    expect(core.getPending(st, 'fx:a')).toBeNull();
+    expect(core.getPending(st, 'fx:a|mobile').savedAt).toBe(31 * DAY);
+  });
+
+  it('Touch_NowNaoNumero_RetornaFalseSemGravar', () => {
+    const st = memStorage();
+    seed(st, 'fx:a|mobile', 5);
+    const before = st.getItem('layers/v1/pending');
+    [undefined, null, '1000', NaN].forEach((now) => {
+      expect(core.touchLayoutEntries(st, 'fx:a', now)).toBe(false);
+    });
+    expect(st.getItem('layers/v1/pending')).toBe(before);
+  });
+
+  it('TouchEClear_BaseNulaOuVazia_NoOpRetornaTrue', () => {
+    const st = memStorage();
+    seed(st, 'fx:a|mobile', 5);
+    const before = st.getItem('layers/v1/pending');
+    [null, undefined, ''].forEach((base) => {
+      expect(core.touchLayoutEntries(st, base, 1000, true)).toBe(true);
+      expect(core.clearLayoutEntries(st, base)).toBe(true);
+    });
+    expect(st.getItem('layers/v1/pending')).toBe(before);
+    const empty = memStorage();
+    core.touchLayoutEntries(empty, null, 1000);
+    core.clearLayoutEntries(empty, undefined);
+    expect(empty.getItem('layers/v1/pending')).toBeNull();
+  });
+
+  it('TouchEClear_GravacaoFalha_RemoveAChaveERetornaFalse', () => {
+    const throwing = () => {
+      const m = new Map(); let full = false;
+      const st = { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => { if (full) throw new Error('quota'); m.set(k, String(v)); }, removeItem: (k) => { m.delete(k); } };
+      seed(st, 'fx:a|mobile', 0); seed(st, 'fx:a|tablet', 0); seed(st, 'fx:b', 0);
+      full = true;
+      return st;
+    };
+    const t = throwing();
+    expect(core.touchLayoutEntries(t, 'fx:a', 1000)).toBe(false);
+    expect(t.getItem('layers/v1/pending')).toBeNull();
+    const c = throwing();
+    expect(core.clearLayoutEntries(c, 'fx:a')).toBe(false);
+    expect(c.getItem('layers/v1/pending')).toBeNull();
+  });
+
   it('Touch_SemEntradas_NaoCriaNada', () => {
     const st = memStorage();
     expect(core.touchLayoutEntries(st, 'fx:a', 1000)).toBe(true);
@@ -3058,13 +3132,5 @@ describe('TouchLayoutEntries / ClearLayoutEntries', () => {
     put(st, 'fx:a|mobile', 1000);
     core.clearLayoutEntries(st, 'fx:a');
     expect(st.getItem('layers/v1/pending')).toBeNull();
-  });
-
-  it('Clear_ComNow_AplicaTTLNasDemais', () => {
-    const st = memStorage();
-    seed(st, 'fx:old', 0); seed(st, 'fx:a|mobile', 30 * DAY); seed(st, 'fx:new', 30 * DAY);
-    core.clearLayoutEntries(st, 'fx:a', 31 * DAY);
-    expect(core.getPending(st, 'fx:old')).toBeNull();
-    expect(core.getPending(st, 'fx:new')).not.toBeNull();
   });
 });
