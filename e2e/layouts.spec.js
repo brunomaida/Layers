@@ -183,6 +183,27 @@ test('Layouts_MissingMockInNonMainLayout_DropsSavedStateAndFallsBackToFirstLayou
   await expect.poll(() => layoutId(page)).toBe('main');
 });
 
+test('Layouts_DeadInteractions_OnlyCheckTheActiveLayoutsItems', async ({ page }) => {
+  await page.route('**/multi-layout/layers.json*', async (route) => {
+    const res = await route.fetch(); const man = await res.json();
+    man.interactions.push(
+      { key: 'dm', label: 'Dead main', layout: 'main', groups: [{ label: 'g', items: [{ label: 'x', toggle: '.nope-main' }] }] },
+      { key: 'dc', label: 'Dead config', layout: 'config', groups: [{ label: 'g', items: [{ label: 'y', toggle: '.nope-config' }] }] },
+    );
+    await route.fulfill({ response: res, json: man });
+  });
+  await loaded(page);
+  const warn = () => page.evaluate(() => JSON.stringify(window.__logic.state.project.warn));
+  const w = await warn();
+  expect(w).toContain('.nope-main');
+  expect(w).not.toContain('.nope-config');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  const w2 = await warn();
+  expect(w2).toContain('.nope-config');
+  expect(w2).not.toContain('.nope-main');
+});
+
 test('Layouts_MissingMockWithoutLayouts_KeepsTheOriginalMessage', async ({ page }) => {
   await loaded(page, '/?layers=fixtures/multi-state/');
   await act(page, 'switchState', 'broken');
@@ -250,11 +271,13 @@ test('Layouts_SiblingTouchFails_WarnsAndKeepsTheStoredEntries', async ({ page })
 
 test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({ page }) => {
   await loaded(page);
-  let n = 0;
+  let n = 0, aDone = false;
   await page.route('**/multi-layout/layers.json*', async (route) => {
     n += 1;
-    if (n === 1) await new Promise((r) => setTimeout(r, 1500)); // load A: slow
+    const slow = n === 1;
+    if (slow) await new Promise((r) => setTimeout(r, 1500)); // load A: slow
     await route.continue();
+    if (slow) aDone = true;
   });
   await page.evaluate(() => {
     const l = window.__logic;
@@ -266,8 +289,8 @@ test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({
   expect(await page.evaluate(() => window.__logic.pendingKey)).toBe('fx:fixtures/multi-layout|replay');
   // A resolves now; had it passed the parse it would resolve main and overwrite the live keys
   await page.evaluate(() => { window.__logic.layoutMap['fx:fixtures/multi-layout'] = 'main'; });
-  await expect.poll(() => n).toBe(2);
-  await page.waitForTimeout(2000);
+  await expect.poll(() => aDone, { timeout: 10_000 }).toBe(true);
+  await page.waitForTimeout(500); // A's remaining steps run after its layers.json answer
   expect(await page.evaluate(() => ({ key: window.__logic.pendingKey, id: window.__logic.state.project.layoutId }))).toEqual({ key: 'fx:fixtures/multi-layout|replay', id: 'replay' });
   expect((await mounted(page)).ids).toEqual(['rpl-bar', 'rpl-frame', 'rpl-frame2', 'rpl-title']);
 });
@@ -417,7 +440,7 @@ test('Layouts_ViewState_PerLayoutSelectionAndExplode', async ({ page }) => {
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
   // config has no view of its own: nothing of main's selection or explode leaks in, the camera is the default one
-  expect(await viewOf(page)).toMatchObject({ selId: '0', explodeFrom: null, collapseAt: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 });
+  expect(await viewOf(page)).toMatchObject({ selId: '0', explodeFrom: null, collapseAt: null, yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, flat: true }); // the flat/3D mode is a display mode: a layout without a cached view keeps it
   await act(page, 'setState', { yaw: -0.7, zoom: 2 });
   await act(page, 'select', '0.2');
   await act(page, 'explodeHere', '0.2');
@@ -426,12 +449,76 @@ test('Layouts_ViewState_PerLayoutSelectionAndExplode', async ({ page }) => {
   expect(await viewOf(page)).toEqual(mainView);
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
-  expect(await viewOf(page)).toMatchObject({ selId: '0.2', explodeFrom: '0.2', yaw: -0.7, zoom: 2 });
+  expect(await viewOf(page)).toMatchObject({ selId: '0.2', explodeFrom: '0.2', yaw: -0.7, zoom: 2, flat: true });
   // a cached id the layout no longer has falls back to the root / no explode instead of leaking
   await page.evaluate(() => { const l = window.__logic; l.viewCache['folder:proj'] = { ...l.viewCache['folder:proj'], selId: '0.9', isoId: '0.9', explodeFrom: '0.9' }; });
   await act(page, 'switchLayout', 'main');
   await settled(page, 'main');
   expect(await viewOf(page)).toMatchObject({ selId: '0', isoId: null, explodeFrom: null, yaw: 0.5 });
+});
+
+test('Layouts_ViewState_IsolationRoundTrips', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'isolate', '0.1');
+  expect(await viewOf(page)).toMatchObject({ selId: '0.1', isoId: '0.1' });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await viewOf(page)).toMatchObject({ selId: '0', isoId: null });
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await viewOf(page)).toMatchObject({ selId: '0.1', isoId: '0.1' });
+});
+
+// A real useDir swap to a project of another name: views are keyed by the project base, so nothing crosses over.
+test('Layouts_ViewState_UseDirRoundTripKeepsViewsPerProject', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(async () => {
+    const copy = async (src, dst) => {
+      for await (const [name, h] of src.entries()) {
+        if (h.kind === 'directory') await copy(h, await dst.getDirectoryHandle(name, { create: true }));
+        else { const w = await (await dst.getFileHandle(name, { create: true })).createWritable(); await w.write(await (await h.getFile()).text()); await w.close(); }
+      }
+    };
+    const other = await (await navigator.storage.getDirectory()).getDirectoryHandle('other', { create: true });
+    await copy(window.__proj, other);
+    window.__other = other;
+  });
+  await act(page, 'select', '0.1');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.evaluate(() => window.__logic.useDir(window.__other));
+  await expect.poll(() => page.evaluate(() => window.__logic.projectId)).toBe('folder:other');
+  await settled(page, 'main');
+  expect(await viewOf(page)).toMatchObject({ selId: '0' });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'select', '0.2');
+  await page.evaluate(() => window.__logic.useDir(window.__proj));
+  await expect.poll(() => page.evaluate(() => window.__logic.projectId)).toBe('folder:proj');
+  await settled(page, 'config');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect((await viewOf(page)).selId).toBe('0.1');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect((await viewOf(page)).selId).toBe('0');
+});
+
+test('Layouts_SingleLayoutProject_NeverTouchesSiblingEntries', async ({ page }) => {
+  await loaded(page, '/?layers=fixtures/multi-state/');
+  await page.evaluate(() => { const c = window.LayersCore; window.__touches = 0; const o = c.touchLayoutEntries; c.touchLayoutEntries = (...a) => { window.__touches += 1; return o(...a); }; });
+  await typeShadow(page);
+  await expect.poll(() => page.evaluate(() => localStorage.getItem('layers/v1/pending'))).not.toBeNull();
+  expect(await page.evaluate(() => window.__touches)).toBe(0);
+});
+
+test('Layouts_TouchSiblings_RunsForMultiLayoutProjects', async ({ page }) => {
+  await loaded(page);
+  await page.evaluate(() => { const c = window.LayersCore; window.__touches = 0; const o = c.touchLayoutEntries; c.touchLayoutEntries = (...a) => { window.__touches += 1; return o(...a); }; });
+  await typeShadow(page);
+  await expect.poll(() => page.evaluate(() => window.__touches)).toBeGreaterThan(0);
 });
 
 test('Layouts_PendingChange_SurvivesSwitchAndReturn', async ({ page }) => {
@@ -702,6 +789,24 @@ test('Layouts_Reanalisar_KeepsActiveLayout', async ({ page }) => {
   expect(await keys()).toEqual(['folder:proj', 'folder:proj|replay']);
 });
 
+// A write that fails (or a folder swapped mid-backup) cancels the whole Reanalisar and removes the half-written stamp.
+test('Layouts_Reanalisar_FailedExtraMockWrite_CancelsAndRemovesTheStamp', async ({ page }) => {
+  await sameBasenameProject(page);
+  await page.evaluate(() => { const l = window.__logic, o = l.writeText.bind(l); l.writeText = (p, t) => (p.includes('/layouts/replay/') ? Promise.reject(new Error('disk full')) : o(p, t)); });
+  await act(page, 'doRestructure');
+  await expect(page.getByText(/Reanálise cancelada: o backup do layout falhou — disk full/)).toBeVisible({ timeout: 10000 });
+  await expect.poll(() => listDisk(page, '.design-history')).toEqual([]);
+  expect(await layoutId(page)).toBe('main');
+});
+
+test('Layouts_Reanalisar_FolderSwappedBetweenMockWrites_Cancels', async ({ page }) => {
+  await sameBasenameProject(page);
+  await page.evaluate(() => { const l = window.__logic, o = l.writeText.bind(l); l.writeText = async (p, t) => { await o(p, t); if (p.includes('/layouts/config/')) l.setState({ dir: { name: 'swapped' } }); }; });
+  await act(page, 'doRestructure');
+  await expect(page.getByText(/Reanálise cancelada: o backup do layout falhou — a pasta conectada mudou durante o backup/)).toBeVisible({ timeout: 10000 });
+  await expect.poll(() => listDisk(page, '.design-history')).toEqual([]);
+});
+
 test('Layouts_ResetUi_ClearsLayoutKeys', async ({ page }) => {
   await open(page, 'multi-layout');
   await act(page);
@@ -737,6 +842,7 @@ test('Layouts_ResetUi_AfterFailedLoadOfAnotherSource_KeepsPreviousProjectEntries
   await open(page, 'multi-layout');
   await act(page);
   await seedPending(page, { 'folder:proj|x': 0 });
+  await page.evaluate(() => { window.__logic.layoutMap['folder:proj'] = 'replay'; });
   await page.evaluate(async () => {
     const w = await (await window.__proj.getFileHandle('layers.json')).createWritable(); await w.write('{ not json'); await w.close();
     window.__logic.projectId = 'folder:other'; // what connecting another source does before its load
@@ -746,4 +852,5 @@ test('Layouts_ResetUi_AfterFailedLoadOfAnotherSource_KeepsPreviousProjectEntries
   expect(await page.evaluate(() => window.__logic.baseKey)).toBe('folder:proj');
   await page.evaluate(() => window.__logic.resetUI()); // no plane is mounted after the failed load, so `act` cannot find the instance
   expect(Object.keys(await storedPending(page))).toContain('folder:proj|x');
+  expect(await page.evaluate(() => window.__logic.layoutMap['folder:proj'])).toBe('replay');
 });
