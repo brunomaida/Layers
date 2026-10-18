@@ -202,6 +202,30 @@ test('Layouts_SwitchWithAdjustmentsThatCannotBeSaved_ConfirmsAndWarnsTheyAreLost
   await expect.poll(() => layoutId(page)).toBe('config');
 });
 
+test('Layouts_SwitchWithAdjustmentsOverTheCap_ConfirmsBeforeLosingThem', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  // pendingReady stays true: only the cap makes the burst unstorable
+  await page.evaluate(() => { window.LayersCore.PENDING_CAP = 0; });
+  await act(page, 'switchLayout', 'config');
+  await expect(page.getByText(/Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde\./)).toBeVisible();
+  expect(await layoutId(page)).toBe('main');
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await expect.poll(() => layoutId(page)).toBe('config');
+});
+
+test('Layouts_SwitchAfterQuotaWarning_ConfirmsBeforeLosingAdjustments', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  // the last write failed (storage full): the stored entry is gone, the adjustments live only in memory
+  await page.evaluate(() => { window.__logic.pendingQuotaWarned = true; });
+  await act(page, 'switchLayout', 'config');
+  await expect(page.getByText(/Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde\./)).toBeVisible();
+  expect(await layoutId(page)).toBe('main');
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await expect.poll(() => layoutId(page)).toBe('config');
+});
+
 test('Layouts_OverlappingLoads_OlderLoadResolvingLastDoesNotTouchKeys', async ({ page }) => {
   await loaded(page);
   let n = 0;
