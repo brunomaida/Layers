@@ -1204,7 +1204,7 @@ class Component extends DCLogic {
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], reqSel: null, mdOpen: false,
-    layoutBadges: {}, toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
+    layoutBadges: Object.create(null), toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
   // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
@@ -1214,7 +1214,7 @@ class Component extends DCLogic {
   // S9.1a: layout ativo por projeto (chave = base do projeto), guardado na sessao so quando ha algum
   layoutMap = CONF.session.layouts && typeof CONF.session.layouts === 'object' && !Array.isArray(CONF.session.layouts) ? { ...CONF.session.layouts } : {};
   // S9.1a: vista (selecao, camera, ramo explodido) por layout, so em memoria; chave = stateMapKey(base, layout). pendingView leva a vista alvo de switchLayout ate o loadProject que a consome.
-  viewCache = {}; pendingView = null;
+  viewCache = Object.create(null); pendingView = null; // null-prototype maps keyed by layout id: ids like `constructor` must not hit Object.prototype
   toast(msg, kind) { clearTimeout(this.toastT); this.setState({ toast: { msg, kind: kind || 'warn' } }); this.toastT = setTimeout(() => this.setState({ toast: null }), 4200); }
   codeH = {}; codeObs = new Map(); _treeAll = []; _treeH = []; _treeCodeN = 0; _treeBox = null; // S4.10: alturas medidas das linhas de código por codeKey; lista completa e alturas da aba ativa
   _treeA = 0; _treeB = 0; _treeFrozen = null; _treePtr = false; _treeWinOn = false; _treeWasOn = false; _codeSig = ''; // faixa montada, congelamento por foco, origem do foco (ponteiro x teclado), janela ligada, assinatura que invalida codeH
@@ -1229,7 +1229,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  reqFloor = 0; otherRequests = {}; pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
+  reqFloor = 0; otherRequests = Object.create(null); pendingReady = false; pendingReqOnly = false; pendingKey = null; baseKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false; pendingQuotaWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1467,7 +1467,7 @@ class Component extends DCLogic {
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
     // S9.1a: badge and R<n> floor of the OTHER layouts, read once per load (never in writeConfig: it runs on every camera burst)
-    const layoutBadges = {}, otherRequests = {}; let reqFloor = 0;
+    const layoutBadges = Object.create(null), otherRequests = Object.create(null); let reqFloor = 0;
     if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; if (e.requests.length) otherRequests[l.id] = e.requests; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
     this.reqFloor = reqFloor; this.otherRequests = otherRequests;
     // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
@@ -1544,7 +1544,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.viewCache = {}; this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = {}; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: {}, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —

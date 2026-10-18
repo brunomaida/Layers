@@ -322,6 +322,35 @@ test('Layouts_Strip_BadgeShowsPendingOfOtherLayout', async ({ page }) => {
   await expect(page.locator('[data-layout-badge]')).toHaveCount(0);
 });
 
+// Layout ids are user text: names that live on Object.prototype must behave like any other id in the per-layout maps.
+test('Layouts_PrototypeNamedIds_BehaveLikeAnyOtherLayout', async ({ page }) => {
+  await page.route('**/multi-layout/layers.json*', async (route) => {
+    const res = await route.fetch(); const man = await res.json();
+    man.layouts.push({ id: 'constructor', name: 'Ctor', mock: 'layers/config.html' }, { id: '__proto__', name: 'Proto', mock: 'layers/config.html' }, { id: 'toString', name: 'Str', mock: 'layers/config.html' });
+    await route.fulfill({ response: res, json: man });
+  });
+  await loaded(page);
+  // no pending anywhere: no badge and a plain title, not `Object.prototype` members leaking through the lookups
+  await expect(page.locator('[data-layout-badge]')).toHaveCount(0);
+  await expect(chip(page, 'constructor')).toHaveAttribute('title', 'Ctor');
+  await expect(chip(page, 'toString')).toHaveAttribute('title', 'Str');
+  expect(await page.evaluate(() => Object.keys(window.__logic.otherRequests))).toEqual([]);
+  await seedPending(page, { 'fx:fixtures/multi-layout|constructor': 0, 'fx:fixtures/multi-layout|__proto__': 0 });
+  await loaded(page);
+  await expect(page.locator('[data-layout-badge="constructor"]')).toHaveText('1');
+  await expect(page.locator('[data-layout-badge="__proto__"]')).toHaveText('1');
+  await expect(page.locator('[data-layout-badge="toString"]')).toHaveCount(0);
+  expect(await page.evaluate(() => Object.keys(window.__logic.otherRequests).sort())).toEqual(['__proto__', 'constructor']);
+  await act(page, 'switchLayout', '__proto__');
+  await settled(page, '__proto__');
+  await act(page, 'select', '0.1');
+  await act(page, 'switchLayout', 'constructor');
+  await settled(page, 'constructor');
+  await act(page, 'switchLayout', '__proto__');
+  await settled(page, '__proto__');
+  expect((await viewOf(page)).selId).toBe('0.1');
+});
+
 // Fix round 1: the strip is its own pill above the Camadas bar, so neither row stretches the other (no empty band).
 // Widths captured from the unchanged bar (before the strip existed) on the 1280x760 viewport.
 const bar = (page) => page.getByTitle('Mostrar todas as camadas').locator('xpath=..');
