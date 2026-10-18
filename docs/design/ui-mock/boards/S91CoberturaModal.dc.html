@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<title>S9.1 modal de cobertura</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#8b96a3}a:hover{color:#adb5be}
+</style>
+</helmet>
+<div style="{{ vars }}width:1240px;height:1700px;box-sizing:border-box;padding:22px 28px;display:flex;flex-direction:column;gap:14px;background:var(--bg0);color:var(--fg0);font-family:'Inter',-apple-system,'Segoe UI',sans-serif;font-size:13px;overflow:hidden">
+  <div style="display:flex;align-items:baseline;gap:12px">
+    <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--sel)">S9.1 · 3</span>
+    <h2 style="margin:0;font:600 16px/1.3 'Inter',sans-serif;color:var(--fg0)">Analisar cobertura: item em Projetos ▾ e modal com barras, veredito, regiões e trecho layouts</h2>
+  </div>
+
+  <div style="display:grid;grid-template-columns:380px minmax(0,1fr);gap:16px;height:720px">
+    <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+      <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Projetos ▾ · posição do item</span>
+      <div style="width:340px;display:flex;flex-direction:column;gap:2px;padding:6px;box-sizing:border-box;background:var(--bg1);border:1px solid rgba(var(--selRgb),.6);border-radius:4px;box-shadow:0 10px 26px var(--shadow2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:4px 6px 5px"><span style="font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Projetos recentes</span><span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">2 / 10</span></div>
+        <div style="display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:8px;height:34px;padding:0 8px;border-radius:3px;background:rgba(var(--selRgb),.1)">
+          <span style="display:flex;color:var(--sel)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1.5 4.5A1.5 1.5 0 0 1 3 3h3l1.5 1.5H13A1.5 1.5 0 0 1 14.5 6v6A1.5 1.5 0 0 1 13 13.5H3A1.5 1.5 0 0 1 1.5 12z"></path></svg></span>
+          <span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font:500 11px/1 'Inter',sans-serif;color:var(--sel)">Traval</span><span style="font:400 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">Pasta local · traval</span></span>
+          <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">agora</span>
+        </div>
+        <div style="display:grid;grid-template-columns:16px minmax(0,1fr) auto;align-items:center;gap:8px;height:34px;padding:0 8px;border-radius:3px">
+          <span style="display:flex;color:var(--violet)"><svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="3.5" r="1.5"></circle><circle cx="4" cy="12.5" r="1.5"></circle><circle cx="12" cy="5.5" r="1.5"></circle><path d="M4 5v6M12 7c0 2.5-3.5 2-6 3.5"></path></svg></span>
+          <span style="display:flex;flex-direction:column;gap:3px;min-width:0"><span style="font:500 11px/1 'Inter',sans-serif;color:var(--fg1)">layers-demo</span><span style="font:400 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">usuario/layers-demo</span></span>
+          <span style="font:500 9px/1 'JetBrains Mono',monospace;color:var(--fg3)">2 d</span>
+        </div>
+        <span style="height:1px;background:var(--line1);margin:4px 2px"></span>
+        <div style="height:1px;background:var(--line0);margin:3px 0"></div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Conectar pasta local…</div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:14px;text-align:center;color:var(--fg3)">▤</span>Abrir arquivo .zip…</div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">+</span>Registrar repositório GitHub…</div>
+        <span style="height:1px;background:var(--line1);margin:4px 2px"></span>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">↑</span>Exportar configuração…</div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">↓</span>Importar configuração…</div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">○</span>Zerar interface (sem projeto)</div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">↻</span>Recarregar projeto (R)</div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">⟲</span>Reanalisar do 0</div>
+        <div style="position:relative;display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg1);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center;color:var(--fg3)">◔</span>Analisar cobertura<span style="position:absolute;left:-4px;right:-4px;top:-2px;bottom:-2px;border:1px dashed var(--sel);border-radius:4px"></span><span style="position:absolute;left:336px;top:6px;height:14px;display:inline-flex;align-items:center;padding:0 4px;border-radius:3px;background:var(--sel);color:var(--bg0);font:700 8px/1 'JetBrains Mono',monospace;letter-spacing:.08em">NOVO</span></div>
+        <div style="display:flex;align-items:center;gap:8px;height:26px;padding:0 8px;border-radius:3px;color:var(--fg3);font:500 10.5px/1 'Inter',sans-serif"><span style="width:16px;text-align:center">↺</span>Limpar histórico (mantém fixados)</div>
+      </div>
+      <span style="font:500 9.5px/1.4 'JetBrains Mono',monospace;color:var(--fg3)">contorno tracejado e NOVO são anotação do board, não estilo do item</span>
+
+      <div style="display:flex;flex-direction:column;background:rgba(var(--bg1Rgb),.95);border:1px solid var(--line1);border-radius:6px">
+        <div style="padding:6px 10px;border-bottom:1px solid var(--line1);font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Regras do item</div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:9px 11px 11px;font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg2)">
+          <span><b style="color:var(--fg0);font-weight:600">Posição</b>: logo abaixo de Reanalisar do 0. Sem ele (.zip, GitHub, fixture), logo após o último item de projeto presente.</span>
+          <span><b style="color:var(--fg0);font-weight:600">Visível</b> com projeto carregado, de qualquer origem; mesmo cromo das linhas vizinhas (26px, glifo de 16px).</span>
+          <span><b style="color:var(--fg0);font-weight:600">Clique</b> fecha o menu e abre o modal já em Analisando.</span>
+          <span><b style="color:var(--fg0);font-weight:600">Fecha</b> com Esc, clique no fundo ou Fechar. Sem rede, nada gravado; Copiar usa a área de transferência.</span>
+          <code style="padding:5px 7px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg1);font:500 9.5px/1.5 'JetBrains Mono',monospace;white-space:pre-wrap">title: Varre o repositório sem rodar o app e mostra quanto cada abordagem cobre — nada é gravado</code>
+        </div>
+      </div>
+    </div>
+
+    <div style="position:relative;min-width:0;border:1px solid var(--line1);border-radius:6px;background:var(--stageA);overflow:hidden">
+      <div style="height:36px;display:flex;align-items:center;gap:10px;padding:0 12px;background:var(--bg1);border-bottom:1px solid var(--line1);font:500 11px/1 'JetBrains Mono',monospace;color:var(--fg2)"><span>traval ▾</span><span style="color:var(--fg3);font-size:10px">212 camadas · 1.940 elementos</span></div>
+      <div style="position:absolute;inset:0;background:var(--shadow);display:flex;align-items:center;justify-content:center">
+        <div style="width:760px;max-height:690px;display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)">
+            <span>Cobertura <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">Traval · 14 regiões</span></span>
+            <button style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif;cursor:pointer">Fechar</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:14px;padding:14px 16px 16px;min-height:0;overflow:auto">
+            <div style="display:grid;grid-template-columns:240px minmax(0,1fr);gap:16px">
+              <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Modelos<span style="flex:1;height:1px;background:var(--line1)"></span></div>
+                <sc-for list="{{ bars }}" as="b" hint-placeholder-count="3">
+                <div style="display:flex;flex-direction:column;gap:4px">
+                  <div style="display:flex;align-items:baseline;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">{{ b.label }}</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:{{ b.color }}">{{ b.pct }}</span></div>
+                  <div style="height:6px;border-radius:3px;background:var(--line0);overflow:hidden"><div style="width:{{ b.w }};height:6px;background:{{ b.color }}"></div></div>
+                  <span style="font:500 9.5px/1.3 'JetBrains Mono',monospace;color:var(--fg3)">{{ b.sub }}</span>
+                </div>
+                </sc-for>
+                <span style="font:500 9.5px/1.3 'JetBrains Mono',monospace;color:var(--fg3)">valor = cob_reg · cob_el (%); barra = cob_reg</span>
+                <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Veredito<span style="flex:1;height:1px;background:var(--line1)"></span></div>
+                <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid rgba(var(--selRgb),.45);border-radius:3px;background:rgba(var(--selRgb),.07)">
+                  <span style="font:700 13px/1.2 'Inter',sans-serif;color:var(--sel)">Múltiplos layouts</span>
+                  <span style="font:600 10px/1.3 'JetBrains Mono',monospace;color:var(--fg1)">regra 3 · ganho +29 p.p. (≥ 15)</span>
+                  <span style="font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg2)">Melhor monovisual 64% &lt; 85%; layouts somam 29 p.p.</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Avisos<span style="flex:1;height:1px;background:var(--line1)"></span></div>
+                <div style="display:flex;flex-direction:column;gap:5px;font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg2)">
+                  <span style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:5px"><span style="font:700 10px/1.4 'JetBrains Mono',monospace;color:var(--warn)">!</span><span>Mock ilegível, ignorado: <code style="font:500 10px/1.4 'JetBrains Mono',monospace;color:var(--fg1)">states/importar.html</code></span></span>
+                  <span style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:5px"><span style="font:700 10px/1.4 'JetBrains Mono',monospace;color:var(--warn)">!</span><span><code style="font:500 10px/1.4 'JetBrains Mono',monospace;color:var(--fg1)">index.html</code> e <code style="font:500 10px/1.4 'JetBrains Mono',monospace;color:var(--fg1)">index.vazio.html</code> dividem ≥ 60% dos nós: contadas como states (regra 5)</span></span>
+                </div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Regiões<span style="flex:1;height:1px;background:var(--line1)"></span><span style="font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:0;text-transform:none;color:var(--fg3)">14 detectadas · até 200 linhas</span></div>
+                <div style="display:flex;flex-direction:column;border:1px solid var(--line0);border-radius:3px;background:var(--bg1)">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;padding:5px 8px;border-bottom:1px solid var(--line1);font:600 8.5px/1.3 'JetBrains Mono',monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--fg3)">
+                    <span>Região</span><span>Tipo</span><span style="text-align:right">Elem.</span><span style="text-align:center">Mono</span><span style="text-align:center">Mono + states</span><span style="text-align:center">Layouts</span>
+                  </div>
+                  <sc-for list="{{ regions }}" as="r" hint-placeholder-count="14">
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;align-items:center;height:20px;padding:0 8px;border-bottom:1px solid var(--line0);font:500 10px/1 'JetBrains Mono',monospace">
+                    <span style="color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ r.key }}</span>
+                    <span style="color:var(--fg3)">{{ r.kind }}</span>
+                    <span style="text-align:right;color:var(--fg2)">{{ r.el }}</span>
+                    <span style="text-align:center;color:{{ r.c1 }}">{{ r.m1 }}</span>
+                    <span style="text-align:center;color:{{ r.c2 }}">{{ r.m2 }}</span>
+                    <span style="text-align:center;color:{{ r.c3 }}">{{ r.m3 }}</span>
+                  </div>
+                  </sc-for>
+                  <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;align-items:center;height:22px;padding:0 8px;font:700 10px/1 'JetBrains Mono',monospace;color:var(--fg0)">
+                    <span>cob_reg · cob_el</span><span></span><span style="text-align:right;color:var(--fg2)">780</span><span style="text-align:center">43·58</span><span style="text-align:center">64·67</span><span style="text-align:center;color:var(--sel)">93·98</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:6px">
+              <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Trecho layouts<span style="font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:0;text-transform:none;color:var(--fg3)">cole em layers.json · só com veredito Múltiplos layouts</span><span style="flex:1;height:1px;background:var(--line1)"></span><button style="height:24px;padding:0 10px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:600 10.5px/1 'Inter',sans-serif;letter-spacing:0;text-transform:none;cursor:pointer">Copiar</button></div>
+              <pre style="margin:0;max-height:150px;overflow:auto;padding:8px 10px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg1);font:500 10px/1.5 'JetBrains Mono',monospace;white-space:pre">{{ snippet }}</pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;align-items:center;gap:10px">
+    <span style="font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Estados do modal</span>
+    <span style="font:500 10px/1.3 'Inter',sans-serif;color:var(--fg3)">recortes do mesmo cartão de 760px: só o que muda em relação ao modal acima</span>
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px 16px">
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">1 · Analisando</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)"><span>Cobertura <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">Traval</span></span><button style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif">Fechar</button></div>
+        <div style="display:flex;flex-direction:column;gap:9px;padding:14px 16px 16px">
+          <span style="font:600 12px/1.3 'Inter',sans-serif;color:var(--fg1)">Analisando o projeto…</span>
+          <span style="font:500 9.5px/1.4 'JetBrains Mono',monospace;color:var(--fg3)">lendo HTML, CSS e scripts do projeto · sem rodar o app · sem rede</span>
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg2)">Monovisual</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--fg3)">…</span></div><div style="height:6px;border-radius:3px;background:var(--line0)"></div></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg2)">Monovisual + states</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--fg3)">…</span></div><div style="height:6px;border-radius:3px;background:var(--line0)"></div></div>
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg2)">Múltiplos layouts</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--fg3)">…</span></div><div style="height:6px;border-radius:3px;background:var(--line0)"></div></div>
+          <span style="font:500 10px/1.4 'Inter',sans-serif;color:var(--fg3)">Fechar descarta o resultado; trocar de projeto no meio também.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">2 · Erro</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)"><span>Cobertura <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">Traval</span></span><button style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif">Fechar</button></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px">
+          <span style="font:600 12px/1.3 'Inter',sans-serif;color:var(--err)">Não foi possível analisar.</span>
+          <code style="padding:6px 8px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg1);font:500 10px/1.5 'JetBrains Mono',monospace;white-space:pre-wrap">Permissão de leitura da pasta negada.</code>
+          <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg2)">Sem barras, tabela nem trecho. O projeto carregado não muda; tente de novo pelo menu.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">3 · Indeterminado (regra 0)</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)"><span>Cobertura <span style="font:500 10px/1 'JetBrains Mono',monospace;color:var(--fg2);text-transform:none;letter-spacing:0">0 regiões</span></span><button style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif">Fechar</button></div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px">
+          <div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">Monovisual</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--fg3)">— · —</span></div>
+          <div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">Monovisual + states</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--fg3)">— · —</span></div>
+          <div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">Múltiplos layouts</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--fg3)">— · —</span></div>
+          <div style="display:flex;flex-direction:column;gap:3px;padding:8px 10px;border:1px solid var(--line1);border-radius:3px">
+            <span style="font:700 13px/1.2 'Inter',sans-serif;color:var(--fg1)">Indeterminado</span>
+            <span style="font:600 10px/1.3 'JetBrains Mono',monospace;color:var(--fg2)">regra 0 · nenhuma região detectada</span>
+          </div>
+          <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">Tabela vazia: docs/, test/, e2e/, fixtures/, bench/, tools/, vendor/ e *.dc.html ficam fora do escopo. Sem trecho.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">4 · Monovisual (regra 2)</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px">
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">Monovisual + states</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--acc)">92 · 95</span></div><div style="height:6px;border-radius:3px;background:var(--line0);overflow:hidden"><div style="width:92%;height:6px;background:var(--acc)"></div></div><span style="font:500 9.5px/1.3 'JetBrains Mono',monospace;color:var(--fg3)">11/12 regiões · 95% elem. · máx. 640 planos</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid rgba(var(--selRgb),.45);border-radius:3px;background:rgba(var(--selRgb),.07)">
+            <span style="font:700 13px/1.2 'Inter',sans-serif;color:var(--sel)">Monovisual</span>
+            <span style="font:600 10px/1.3 'JetBrains Mono',monospace;color:var(--fg1)">regra 2 · 92% ≥ 85% e 640 ≤ 1.500 planos</span>
+          </div>
+          <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">Sem trecho layouts nem Copiar: o manifesto atual já cobre o app.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">5 · Layouts não ajudam (regra 3)</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px">
+          <div style="display:flex;flex-direction:column;gap:4px"><div style="display:flex;gap:6px"><span style="flex:1;font:600 11px/1.2 'Inter',sans-serif;color:var(--fg0)">Múltiplos layouts</span><span style="font:700 12px/1 'JetBrains Mono',monospace;color:var(--sel)">58 · 61</span></div><div style="height:6px;border-radius:3px;background:var(--line0);overflow:hidden"><div style="width:58%;height:6px;background:var(--sel)"></div></div><span style="font:500 9.5px/1.3 'JetBrains Mono',monospace;color:var(--fg3)">7/12 regiões · 61% elem. · máx. 520 planos</span></div>
+          <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid rgba(var(--selRgb),.45);border-radius:3px;background:rgba(var(--selRgb),.07)">
+            <span style="font:700 13px/1.2 'Inter',sans-serif;color:var(--sel)">Monovisual (layouts não ajudam)</span>
+            <span style="font:600 10px/1.3 'JetBrains Mono',monospace;color:var(--fg1)">regra 3 · ganho +6 p.p. (&lt; 15)</span>
+          </div>
+          <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">Melhor monovisual 52% &lt; 85%, mas layouts somam pouco. Sem trecho.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">6 · Dividir (regra 4)</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;flex-direction:column;gap:8px;padding:14px 16px 16px">
+          <div style="display:flex;flex-direction:column;gap:4px;padding:8px 10px;border:1px solid rgba(var(--selRgb),.45);border-radius:3px;background:rgba(var(--selRgb),.07)">
+            <div style="display:flex;align-items:center;gap:8px"><span style="font:700 13px/1.2 'Inter',sans-serif;color:var(--sel)">Múltiplos layouts</span><span style="height:16px;display:inline-flex;align-items:center;padding:0 5px;border:1px solid var(--warn);border-radius:3px;color:var(--warn);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.04em">dividir</span></div>
+            <span style="font:600 10px/1.3 'JetBrains Mono',monospace;color:var(--fg1)">regra 4 · 1.620 planos (&gt; 1.500)</span>
+            <span style="font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg2)">Cobertura 90% ≥ 85%, mas um layout passa do limite do orbit.</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Trecho layouts<span style="flex:1;height:1px;background:var(--line1)"></span><button style="height:24px;padding:0 10px;border:1px solid var(--sel);border-radius:4px;background:transparent;color:var(--sel);font:600 10.5px/1 'Inter',sans-serif;letter-spacing:0;text-transform:none">Copiar</button></div>
+          <pre style="margin:0;padding:6px 8px;border:1px solid var(--line1);border-radius:3px;background:var(--bg0);color:var(--fg1);font:500 10px/1.5 'JetBrains Mono',monospace;white-space:pre;overflow:hidden">{
+  "layouts": [
+    {
+      "id": "main",
+      …</pre>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">7 · Cobertura parcial</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)"><span>Cobertura</span><span style="flex:1"></span><span style="height:18px;display:inline-flex;align-items:center;padding:0 6px;border:1px solid var(--warn);border-radius:3px;color:var(--warn);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:none">cobertura parcial</span><button style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif;letter-spacing:0;text-transform:none">Fechar</button></div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px 14px;font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg2)">
+          <span style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:5px"><span style="font:700 10px/1.4 'JetBrains Mono',monospace;color:var(--warn)">!</span><span>GitHub ou fixture: sem listagem de arquivos, só os mocks declarados foram lidos.</span></span>
+          <span style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:5px"><span style="font:700 10px/1.4 'JetBrains Mono',monospace;color:var(--warn)">!</span><span>Varredura parou no teto (5.000 entradas ou 20 MB): parte da pasta ficou fora.</span></span>
+          <span style="color:var(--fg3)">O selo fica no cabeçalho, antes de Fechar; o resto do modal segue o estado concluído.</span>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">8 · Confiança baixa</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 16px;border-bottom:1px solid var(--line1);font:700 14px/1 'JetBrains Mono',monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--fg0)"><span>Cobertura</span><span style="flex:1"></span><span style="height:18px;display:inline-flex;align-items:center;padding:0 6px;border:1px solid var(--warn);border-radius:3px;color:var(--warn);font:600 9px/1 'JetBrains Mono',monospace;letter-spacing:.04em;text-transform:none">confiança baixa</span><button style="height:26px;padding:0 9px;border-radius:4px;border:1px solid var(--line1);background:transparent;color:var(--fg2);font:500 12px/1 'Inter',sans-serif;letter-spacing:0;text-transform:none">Fechar</button></div>
+        <div style="display:flex;flex-direction:column;gap:6px;padding:12px 16px 14px">
+          <span style="display:grid;grid-template-columns:10px minmax(0,1fr);gap:5px;font:500 10.5px/1.4 'Inter',sans-serif;color:var(--fg2)"><span style="font:700 10px/1.4 'JetBrains Mono',monospace;color:var(--warn)">!</span><span>App renderizado por JS: regiões de marcadores em .js/.ts contam só em cob_reg (Elem. —).</span></span>
+          <div style="display:flex;flex-direction:column;border:1px solid var(--line0);border-radius:3px;background:var(--bg1)">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;align-items:center;height:20px;padding:0 8px;border-bottom:1px solid var(--line0);font:500 10px/1 'JetBrains Mono',monospace"><span style="color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">src/App.tsx:aba</span><span style="color:var(--fg3)">aba</span><span style="text-align:right;color:var(--fg2)">—</span><span style="text-align:center;color:var(--fg3)">–</span><span style="text-align:center;color:var(--ok)">✓</span><span style="text-align:center;color:var(--ok)">✓</span></div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;align-items:center;height:20px;padding:0 8px;font:500 10px/1 'JetBrains Mono',monospace"><span style="color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">src/router.ts:route:config</span><span style="color:var(--fg3)">tela</span><span style="text-align:right;color:var(--fg2)">—</span><span style="text-align:center;color:var(--fg3)">–</span><span style="text-align:center;color:var(--fg3)">–</span><span style="text-align:center;color:var(--ok)">✓</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:6px;min-width:0">
+      <span style="font:700 9px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--sel)">9 · Mais de 200 regiões</span>
+      <div style="display:flex;flex-direction:column;background:var(--bg2);border:1px solid var(--line1);border-radius:4px;box-shadow:0 16px 44px var(--shadow2)">
+        <div style="display:flex;flex-direction:column;gap:6px;padding:14px 16px 16px">
+          <div style="display:flex;align-items:center;gap:8px;font:700 11px/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Regiões<span style="flex:1;height:1px;background:var(--line1)"></span><span style="font:500 9.5px/1 'JetBrains Mono',monospace;letter-spacing:0;text-transform:none;color:var(--fg3)">512 detectadas · até 200 linhas</span></div>
+          <div style="display:flex;flex-direction:column;border:1px solid var(--line0);border-radius:3px;background:var(--bg1)">
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;align-items:center;height:20px;padding:0 8px;border-bottom:1px solid var(--line0);font:500 10px/1 'JetBrains Mono',monospace"><span style="color:var(--fg1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">pages/z.html#div#nota</span><span style="color:var(--fg3)">painel</span><span style="text-align:right;color:var(--fg2)">9</span><span style="text-align:center;color:var(--fg3)">–</span><span style="text-align:center;color:var(--fg3)">–</span><span style="text-align:center;color:var(--ok)">✓</span></div>
+            <div style="display:grid;grid-template-columns:minmax(0,1fr) 50px 36px 36px 58px 46px;gap:0 6px;align-items:center;height:20px;padding:0 8px;border-bottom:1px solid var(--line0);font:500 10px/1 'JetBrains Mono',monospace"><span style="color:var(--fg3)">linha 200</span><span></span><span></span><span></span><span></span><span></span></div>
+            <div style="display:flex;align-items:center;justify-content:center;height:22px;font:600 10px/1 'JetBrains Mono',monospace;color:var(--fg2)">+312 regiões</div>
+          </div>
+          <span style="font:500 10.5px/1.45 'Inter',sans-serif;color:var(--fg3)">A tabela mostra as primeiras 200; a linha +N fecha a lista. As barras e o veredito usam todas.</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tema":{"editor":"enum","options":["Gray · 1 Grafite","Dark","Bright · 1 Papel"],"default":"Gray · 1 Grafite"},"selecao":{"editor":"enum","options":["Âmbar","Coral","Azul"],"default":"Âmbar"},"$preview":{"width":1240,"height":1700}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const T = {
+      'Gray · 1 Grafite': { bg0: '#2a2e34', bg1: '#353a41', bg2: '#3f454d', line0: '#3b4148', line1: '#4a515a', line2: '#5c646e', fg3: '#8a929c', fg2: '#adb5be', fg1: '#d5dae0', fg0: '#eef1f4', acc: '#8b96a3', warn: '#f7b24a', ok: '#3fd08f', err: '#f26b68', violet: '#b9a6f5', stageA: '#33383f', shadow: 'rgba(0,0,0,.35)', shadow2: 'rgba(0,0,0,.45)', faint: 'rgba(255,255,255,.05)', bg0Rgb: '42,46,52', bg1Rgb: '53,58,65', accRgb: '139,150,163' },
+      'Dark': { bg0: '#0e1116', bg1: '#161b22', bg2: '#1c2230', line0: '#212936', line1: '#2a3340', line2: '#3a4452', fg3: '#5a636e', fg2: '#8b949e', fg1: '#c9d1d9', fg0: '#e6edf3', acc: '#8b96a3', warn: '#f5a623', ok: '#26c281', err: '#ef5350', violet: '#a78bfa', stageA: '#151a22', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', faint: 'rgba(255,255,255,.03)', bg0Rgb: '14,17,22', bg1Rgb: '22,27,34', accRgb: '139,150,163' },
+      'Bright · 1 Papel': { bg0: '#e8ebef', bg1: '#f4f5f7', bg2: '#fbfbfc', line0: '#e2e5e9', line1: '#d3d8de', line2: '#b6bec7', fg3: '#8a929b', fg2: '#5e666f', fg1: '#3a4149', fg0: '#1f252b', acc: '#59626d', warn: '#b8781a', ok: '#2f8f5f', err: '#c24a45', violet: '#7a5fb0', stageA: '#f0f2f5', shadow: 'rgba(20,30,40,.12)', shadow2: 'rgba(20,30,40,.18)', faint: 'rgba(0,0,0,.035)', bg0Rgb: '232,235,239', bg1Rgb: '244,245,247', accRgb: '89,98,109' }
+    };
+    const S = { 'Âmbar': '#f5a623', 'Coral': '#f08c6c', 'Azul': '#60a5fa' };
+    const sel = S[this.props.selecao] || S['Âmbar'];
+    const n = parseInt(sel.slice(1), 16);
+    const t = { ...(T[this.props.tema] || T['Gray · 1 Grafite']), sel, selRgb: [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(',') };
+    const vars = Object.keys(t).map(k => '--' + k + ':' + t[k]).join(';') + ';';
+    const yes = (b) => b ? '✓' : '–';
+    const col = (b) => b ? 'var(--ok)' : 'var(--fg3)';
+    const R = (key, kind, el, a, b, c) => ({ key, kind, el, m1: yes(a), m2: yes(b), m3: yes(c), c1: col(a), c2: col(b), c3: col(c) });
+    const layouts = [
+      { id: 'main', name: 'Traval', mock: 'index.html' },
+      { id: 'config', name: 'config', mock: 'config.html' },
+      { id: 'replay', name: 'replay', mock: 'replay.html' }
+    ];
+    return {
+      vars,
+      bars: [
+        { label: 'Monovisual', pct: '43 · 58', w: '43%', color: 'var(--fg3)', sub: '6/14 regiões · 58% elem. · máx. 454 planos' },
+        { label: 'Monovisual + states', pct: '64 · 67', w: '64%', color: 'var(--acc)', sub: '9/14 regiões · 67% elem. · máx. 484 planos' },
+        { label: 'Múltiplos layouts', pct: '93 · 98', w: '93%', color: 'var(--sel)', sub: '13/14 regiões · 98% elem. · máx. 484 planos' }
+      ],
+      regions: [
+        R('index.html', 'tela', 290, true, true, true),
+        R('index.html#div#estudos', 'aba', 62, true, true, true),
+        R('index.html#div#ordens', 'aba', 40, true, true, true),
+        R('index.html#aside#resumo', 'painel', 24, true, true, true),
+        R('index.html#div#parametros', 'painel', 20, true, true, true),
+        R('index.html#div.posicoes', 'painel', 16, true, true, true),
+        R('index.html#div#vazio', 'painel', 30, false, true, true),
+        R('index.html#dialog#importar', 'diálogo', 26, false, true, true),
+        R('index.html#div#menu-estudos', 'painel', 15, false, true, true),
+        R('config.html', 'tela', 110, false, false, true),
+        R('config.html#section#atalhos', 'aba', 48, false, false, true),
+        R('config.html#section#tema', 'aba', 38, false, false, true),
+        R('replay.html', 'tela', 45, false, false, true),
+        R('index.html#dialog#confirmar', 'diálogo', 16, false, false, false)
+      ],
+      snippet: JSON.stringify({ layouts }, null, 2)
+    };
+  }
+}
+</script>
+</body>
+</html>
