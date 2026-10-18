@@ -1193,7 +1193,7 @@ class Component extends DCLogic {
   state = { cfg: loadCfg(), hist: loadHist(), menu: null, menuPin: false, rightOpen: true, persp: 1600, nodes: [], byId: {}, maxDepth: 0, selId: '0', hoverId: null, isoId: null, active: 0, solo: false,
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
-    buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], requestsConfirm: false, reqSel: null, mdOpen: false,
+    buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], reqSel: null, mdOpen: false,
     toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
@@ -1215,7 +1215,7 @@ class Component extends DCLogic {
   histRef = React.createRef();
   // S2.14: ajustes pendentes persistidos em layers/v1/pending. `pendingReady` so liga na carga
   // vencedora; `pendingSeen` e a identidade de state.changes ja contabilizada.
-  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false;
+  pendingReady = false; pendingKey = null; pendingHash = null; pendingSeen = null; pendingReqSeen = null; pendingDirty = false; hashSpec = null; pendingCapWarned = false; pendingReqCapWarned = false;
   histMax() { const n = +this.props.histMax; return n > 0 ? n : 10; }
   saveHist(h) { this.setState({ hist: h }); }
   // 'ui' e preferencia de interface; 'session' e o que esta aba estava fazendo. Os dois saem
@@ -1241,6 +1241,9 @@ class Component extends DCLogic {
     const over = ch.length > LayersCore.PENDING_CAP;
     if (over && !this.pendingCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' ajustes pendentes: não serão restaurados ao reabrir.', 'warn');
     this.pendingCapWarned = over;
+    const overR = rq.length > LayersCore.PENDING_CAP;
+    if (overR && !this.pendingReqCapWarned) this.toast('Mais de ' + LayersCore.PENDING_CAP + ' requisições: as excedentes não serão restauradas ao reabrir.', 'warn');
+    this.pendingReqCapWarned = overR;
     LayersCore.setPending(LS_STORE, this.pendingKey, ch.length || rq.length ? { hash: this.pendingHash, changes: ch, requests: rq } : null, Date.now());
     this.pendingDirty = false;
   }
@@ -1431,23 +1434,24 @@ class Component extends DCLogic {
     const hs = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null, ph: { html: this.partHash(html), css: phCss, dc: this.partHash(dcText) } };
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
-    // fonte nao lida: o hash nao prova nada, entao as requisicoes salvas ficam visiveis e com o alvo a confirmar
+    // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
     const plan0 = LayersCore.restorePlan(saved, hash);
     const plan = incomplete ? { keep: [], dropped: 0, requests: plan0.requests, confirm: plan0.requests.length > 0 } : plan0;
-    const reqs = plan.confirm ? plan.requests.map(r => { const { nodeId, ...rest } = r; return rest; }) : plan.requests; // o id posicional so descreve o DOM de um hash igual
+    const reqs = plan.requests.map(r => { if (!plan.confirm && r.confirm !== true) return r; const { nodeId, ...rest } = r; return { ...rest, confirm: true }; }); // o id posicional so descreve o DOM de um hash igual
+    const anyConfirm = reqs.some(r => r.confirm === true);
     plan.keep.forEach(c => c.ids.forEach(i => { const e2 = this.elAtPath(i); if (e2) e2.style[c.prop] = c.to; }));
     const restored = plan.keep, dropped = plan.dropped;
     const pendNote = restored.length ? ' · ' + restored.length + ' ajuste(s) restaurado(s)' : dropped ? ' · ' + dropped + ' ajuste(s) salvo(s) descartado(s): arquivo mudou' : incomplete ? (saved ? ' · ajustes salvos mantidos: fonte não lida' : ' · ajustes desta sessão não serão salvos: fonte não lida') : '';
-    const reqNote = reqs.length ? ' · ' + reqs.length + ' requisição(ões) restaurada(s)' + (plan.confirm ? ' · alvo a confirmar' : '') : '';
+    const reqNote = reqs.length ? ' · ' + reqs.length + ' requisição(ões) restaurada(s)' + (anyConfirm ? ' · alvo a confirmar' : '') : '';
     this.hashSpec = hs;
-    this.pendingHash = hash; this.pendingSeen = restored; this.pendingReqSeen = reqs; this.pendingDirty = dropped > 0; this.pendingReady = !incomplete && !!this.pendingKey;
+    this.pendingHash = hash; this.pendingSeen = restored; this.pendingReqSeen = reqs; this.pendingDirty = dropped > 0 || reqs.length > 0; this.pendingReady = !incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, requests: reqs, requestsConfirm: plan.confirm, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null }, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || '0', isoId: (keep && keep.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep ? {} : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: null, collapseAt: null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
-    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped ? 'warn' : 'ok');
+    this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
     this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man)); // sem await: nao atrasa a carga
   }
@@ -1503,7 +1507,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], requestsConfirm: false, reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.resetUndo(); this.pendingReady = false; this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Analisa a pasta conectada (heuristica pura em LayersCore.deriveManifest) e grava um
   // layers.json minimo quando a pasta nao tem um. So chamado (a) por loadProject quando a
   // conexao veio de clique (F:66), ou (b) pelo botao "Criar layers.json" do painel de erro —
@@ -1952,31 +1956,33 @@ class Component extends DCLogic {
   }
   async addRequest(id) {
     const n0 = this.state.byId[id]; if (!n0) return;
-    const [f0, s0] = ruleOf(n0);
-    if (this.state.dir && /\.css$/.test(f0) && s0 && this.state.cssRules[f0 + '|' + s0] === undefined) { await this.loadRule(n0); await new Promise(r => this.setState({}, r)); }
+    const [f0, s0] = ruleOf(n0), seq = this.loadSeq;
+    if (this.state.dir && /\.css$/.test(f0) && s0 && this.state.cssRules[f0 + '|' + s0] === undefined) { await this.loadRule(n0); await new Promise(r => this.setState({}, r)); if (seq !== this.loadSeq) return; }
     const s = this.state, n = s.byId[id]; if (!n) return;
     const [file, selector, line] = ruleOf(n);
-    const k = s.requests.reduce((m, r) => { const x = /^R(\d+)$/.exec(r.id); return x ? Math.max(m, +x[1]) : m; }, 0) + 1;
     const path = []; for (let d = 0; d <= n.depth; d++) { const a = s.byId[LayersCore.ancestorAt(id, d)]; path.push(a ? a.name : ''); }
     const uses = this.sharedIds(id).length, texts = this.reqTexts(id), box = Math.round(n.w) + '×' + Math.round(n.h) + ' px';
     const pend = s.changes.filter(c => c.ids.includes(id)).map(c => kebab(c.prop) + ' ' + c.from + ' → ' + c.to).join('; ');
-    const rec = { id: 'R' + k, layoutId: 'main', nodeId: id, nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
+    const rec0 = { layoutId: 'main', nodeId: id, nodeKey: file + '|' + selector + '|' + (line || ''), path: path.join(' > '), name: n.name, depth: n.depth,
       alvo: file ? file + ' › ' + selector + (line ? ' · L' + line : '') + (LayersCore.isManualSource(file) ? ' (manual: fonte TS)' : '') : '',
       caixa: box + ' · ' + (texts.length ? (texts.length > 1 ? 'textos ' : 'texto ') + texts.map(t => '“' + t + '”').join(', ') : uses + (uses === 1 ? ' uso' : ' usos')),
       estilos: this.reqStyles(id), uses, pendente: pend || null, text: '', createdAt: Date.now() };
-    this.setState(st => ({ requests: [...st.requests, rec], reqSel: rec.id, ajOpen: true, colOpen: true }), () => { const ta = document.getElementById('req-' + rec.id); if (ta) { ta.focus(); if (ta.scrollIntoView) ta.scrollIntoView({ block: 'nearest' }); } });
+    let rid = null; // o id nasce dentro do updater: duas acoes seguidas no mesmo tick leem a lista ja com a primeira
+    this.setState(st => { const k = st.requests.reduce((m, r) => { const x = /^R(\d+)$/.exec(r.id); return x ? Math.max(m, +x[1]) : m; }, 0) + 1; rid = 'R' + k; return { requests: [...st.requests, { id: rid, ...rec0 }], reqSel: rid, ajOpen: true, colOpen: true }; }, () => { const ta = document.getElementById('req-' + rid); if (ta) { ta.focus(); if (ta.scrollIntoView) ta.scrollIntoView({ block: 'nearest' }); } });
   }
   setRequestText(rid, t) { this.setState(st => ({ requests: st.requests.map(r => r.id === rid ? { ...r, text: t } : r) })); }
   removeRequest(rid) { this.setState(st => ({ requests: st.requests.filter(r => r.id !== rid), reqSel: st.reqSel === rid ? null : st.reqSel })); }
   showRequest(r) {
-    if (this.state.requestsConfirm || !r.nodeId) return;
+    if (r.confirm === true || !r.nodeId) return;
     if (!this.state.byId[r.nodeId]) { this.toast('Componente não encontrado nesta carga: o alvo pode ter mudado.', 'warn'); return; }
     this.select(r.nodeId); this.frame(r.nodeId);
   }
   requestsMd() {
     const s = this.state; if (!s.requests.length) return '';
-    const d = new Date(), p2 = v => String(v).padStart(2, '0');
-    return LayersCore.requestsMarkdown({ project: s.project ? s.project.name : '', version: '—', stamp: p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes()), mock: s.project ? s.project.mockPath : '', layouts: 1, requests: s.requests, confirm: s.requestsConfirm });
+    const d = new Date(), p2 = v => String(v).padStart(2, '0'), stamp = p2(d.getDate()) + '/' + p2(d.getMonth() + 1) + '/' + d.getFullYear() + ' ' + p2(d.getHours()) + ':' + p2(d.getMinutes());
+    const c = this._md; if (c && c.r === s.requests && c.p === s.project && c.stamp === stamp) return c.v; // orbitar re-renderiza: o texto so muda com as requisicoes, o projeto ou o minuto
+    const v = LayersCore.requestsMarkdown({ project: s.project ? s.project.name : '', version: '—', stamp, mock: s.project ? s.project.mockPath : '', layouts: 1, requests: s.requests });
+    this._md = { r: s.requests, p: s.project, stamp, v }; return v;
   }
   async copyRequests() {
     const md = this.requestsMd(); if (!md) return; const n = this.state.requests.length; let ok = false;
@@ -1990,9 +1996,9 @@ class Component extends DCLogic {
   }
   // template data of the Ajustes request block (list, footer, header badge, Ações items)
   reqVals() {
-    const s = this.state, rq = s.requests, n = rq.length, nc = s.changes.length, conf = s.requestsConfirm;
+    const s = this.state, rq = s.requests, n = rq.length, nc = s.changes.length;
     const rows = rq.map(r => {
-      const open = s.reqSel === r.id, canShow = !!r.nodeId && !conf;
+      const conf = r.confirm === true, open = s.reqSel === r.id, canShow = !!r.nodeId && !conf;
       const chips = open && r.estilos ? r.estilos.split('; ').map(p => { const i = p.indexOf(':'); const k = i < 0 ? p : p.slice(0, i), v = i < 0 ? '' : p.slice(i + 1); return { k: k + ' ', v, hasSw: /^(#|rgb|hsl)/.test(v), sw: v }; }) : [];
       const meta = [Array.isArray(r.texts) && r.texts.length ? 'texto: ' + r.texts.map(t => '“' + t + '”').join(', ') : '', r.pendente ? 'ajuste pendente: ' + r.pendente : ''].filter(Boolean).join(' · ');
       return { id: r.id, name: r.name || r.id, dLabel: typeof r.depth === 'number' ? 'L' + r.depth : '', open, closed: !open, confirm: conf, preview: r.text.replace(/\s+/g, ' ').trim() || '(sem pedido ainda)',

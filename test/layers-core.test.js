@@ -1649,12 +1649,12 @@ describe('ValidRequest', () => {
   });
 
   it('AncorasOpcionaisValidas_Aceita', () => {
-    expect(core.validRequest(pendingRequest({ name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p' }))).toBe(true);
+    expect(core.validRequest(pendingRequest({ name: 'n', depth: 2, alvo: 'a', caixa: 'c', estilos: 'e', uses: 3, texts: ['x'], pendente: 'p', confirm: true }))).toBe(true);
     expect(core.validRequest(pendingRequest({ pendente: null }))).toBe(true);
   });
 
   it('AncoraOpcionalTipoErrado_Rejeita', () => {
-    const bad = { name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1 };
+    const bad = { name: 1, depth: '2', alvo: 1, caixa: 1, estilos: 1, uses: '3', texts: 'x', pendente: 1, confirm: 'true' };
     Object.keys(bad).forEach((k) => {
       expect(core.validRequest(pendingRequest({ [k]: bad[k] }))).toBe(false);
     });
@@ -2711,6 +2711,18 @@ describe('RequestsMarkdown', () => {
       '- estilos: display:flex; gap:6px; padding:4px 12px; background:#353a41',
       '- pedido: Agrupar TF e Visual à esquerda e levar os chips para a direita.'
     ].join('\n'));
+  });
+
+  it('RequestsMarkdown_ConfirmPorRequest_SoAMarcadaRecebeStatus', () => {
+    const out = core.requestsMarkdown({ ...base, requests: [{ ...r1, confirm: true }, r3] });
+    expect(out.match(/- status: alvo a confirmar/g)).toHaveLength(1);
+    expect(out.indexOf('- status: alvo a confirmar')).toBeLessThan(out.indexOf('### R3'));
+    expect(core.requestsMarkdown({ ...base, requests: [{ ...r1, confirm: false }] })).not.toContain('status:');
+  });
+
+  it('RequestsMarkdown_ConfirmGlobal_MarcaTodas', () => {
+    const out = core.requestsMarkdown({ ...base, confirm: true, requests: [r1, r3] });
+    expect(out.match(/- status: alvo a confirmar/g)).toHaveLength(2);
   });
 
   it('RequestsMarkdown_VariosUsos_MarcaXN', () => {
