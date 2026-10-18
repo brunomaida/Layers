@@ -756,7 +756,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <span style="flex:0 0 22px;font-size:calc(9px*var(--fs));color:var(--fg3)">L{{ r.d }}</span>
           <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;font-style:{{ r.fs }}">{{ r.name }}</span>
           <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--sel)">{{ r.mark }}</span>
-          <span style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ r.n }}</span>
+          <span data-ctx-n="" style="font:500 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ r.n }}</span>
           <span style="width:8px;color:var(--fg2)">{{ r.chev }}</span>
         </button>
         <sc-if value="{{ r.isSel }}" hint-placeholder-val="{{ false }}">
@@ -1652,7 +1652,7 @@ class Component extends DCLogic {
       const tg = e.target; const typing = tg && (tg.tagName === 'TEXTAREA' || (tg.tagName === 'INPUT' && !/^(range|color|checkbox|radio|button)$/.test(tg.type)));
       if (!typing && (e.ctrlKey || e.metaKey) && !e.altKey) { const k = String(e.key).toLowerCase(); if (k === 'z' || k === 'y') { e.preventDefault(); if (k === 'y' || e.shiftKey) this.redo(); else this.undo(); return; } }
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-      const id = LayersCore.keyAction(e.key); const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { e.preventDefault(); fn(e); }
+      const id = LayersCore.keyAction(e.key); const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { if (this.state.ctx && id !== 'escape') this.closeCtx(); e.preventDefault(); fn(e); }
     };
     window.addEventListener('keydown', this.onKey);
     // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
@@ -1827,7 +1827,7 @@ class Component extends DCLogic {
     this.setState({ ctx: { x: e.clientX, y: e.clientY, id, fx: e.clientX, fy: e.clientY, flip: false } }, () => this.fitCtx());
   }
   closeCtx() { if (this.state.ctx) this.setState({ ctx: null }); }
-  ctxPick(d) { const c = this.state.ctx; if (!c) return; const id = c.id.split('.').slice(0, d + 1).join('.'); if (id === c.id || !this.state.byId[id]) return; this.select(id); this.setState({ ctx: { ...c, id } }, () => this.fitCtx()); }
+  ctxPick(d) { const c = this.state.ctx; if (!c) return; const id = LayersCore.ancestorAt(c.id, d); if (id === c.id || !this.state.byId[id]) return; this.select(id); this.setState({ ctx: { ...c, id } }, () => this.fitCtx()); }
   ctxRun(item) {
     const c = this.state.ctx; if (!c) return; const id = c.id;
     if (item === 'explode') this.explodeHere(id); else if (item === 'collapse') this.collapseHere(id); else if (item === 'request') { if (this.addRequest) this.addRequest(id); }
@@ -2568,12 +2568,12 @@ class Component extends DCLogic {
       ...(() => { const c = s.ctx; const cm = c && s.byId[c.id] ? LayersCore.ctxMenuModel({ nodes: s.nodes, selId: c.id, flat: s.flat, explodeFrom: exId, collapseAt: exBr ? exBr.collapseAt : null }) : null;
         if (!cm) return { ctxOpen: false, ctxRef: this.ctxRef, ctxX: '0px', ctxY: '0px', ctxTitle: '', ctxMeta: '', ctxRows: [] };
         const cn = s.byId[c.id]; const [cFile, , cLine] = ruleOf(cn); const GLY = { explode: '▧', collapse: '⤒', request: '✎' };
-        const rows = cm.layers.map(L => { const k = L.kind; const sel = k === 'selected'; const anc = k === 'ancestor'; const an = anc ? s.byId[c.id.split('.').slice(0, L.d + 1).join('.')] : null;
+        const rows = cm.layers.map(L => { const k = L.kind; const sel = k === 'selected'; const anc = k === 'ancestor'; const rid = LayersCore.ancestorAt(c.id, L.d); const an = anc ? s.byId[rid] : null;
           return { d: L.d, isSel: sel, disabled: !anc && !sel, pick: () => this.ctxPick(L.d), title: anc ? 'Selecionar este ancestral (L' + L.d + ')' : '', cursor: anc ? 'pointer' : 'default',
-            name: sel ? cn.name : anc ? (an ? an.name : '') : k === 'descendant' ? L.inBranch + ' no ramo' : 'fora do ramo', n: L.count, mark: exBr && L.d === exD ? '▧' : '', chev: sel ? '›' : '',
+            name: sel ? cn.name : anc ? (an ? an.name : '') : k === 'descendant' ? L.inBranch + ' no ramo' : 'fora do ramo', n: L.count, mark: exBr && (k === 'descendant' || k === 'outside' ? L.d === exD : rid === exId) ? '▧' : '', chev: sel ? '›' : '',
             bg: sel ? 'rgba(var(--selRgb),.16)' : 'transparent', color: sel ? 'var(--fg0)' : anc ? 'var(--fg1)' : 'var(--fg2)', dot: sel ? 'var(--sel)' : anc ? 'var(--line2)' : 'transparent', op: k === 'outside' ? .45 : 1, fs: k === 'descendant' ? 'italic' : 'normal',
             subSide: c.flip ? 'right:calc(100% + 1px)' : 'left:calc(100% + 1px)',
-            items: sel ? cm.items.map((it, i) => ({ label: it.label, hint: it.hint, glyph: GLY[it.id], bg: i === 0 ? 'rgba(var(--selRgb),.16)' : 'transparent', color: i === 0 ? 'var(--fg0)' : 'var(--fg1)', glyphColor: i === 0 ? 'var(--sel)' : 'var(--fg2)', go: () => this.ctxRun(it.id) })) : [] }; });
+            items: sel ? cm.items.map((it, i) => ({ label: it.label, hint: it.hint, glyph: GLY[it.id], bg: it.id !== 'request' ? 'rgba(var(--selRgb),.16)' : 'transparent', color: it.id !== 'request' ? 'var(--fg0)' : 'var(--fg1)', glyphColor: it.id !== 'request' ? 'var(--sel)' : 'var(--fg2)', go: () => this.ctxRun(it.id) })) : [] }; });
         return { ctxOpen: true, ctxRef: this.ctxRef, ctxX: c.fx + 'px', ctxY: c.fy + 'px', ctxTitle: cn.name, ctxMeta: 'L' + cn.depth + (cFile ? ' · ' + cFile + (cLine ? ' › L' + cLine : '') : ''), ctxRows: rows }; })(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
@@ -2607,7 +2607,7 @@ class Component extends DCLogic {
         if (d.mode === 'orbit') { const { base } = this.cam(); this.setState({ dragging: true, yaw: clamp(d.yaw + dx * .35, -85 - base, 85 - base), tilt: clamp(d.tilt - dy * .35, -70, 70) }); }
         else if (d.mode === 'pan') this.setState({ dragging: true, panX: d.panX + dx, panY: d.panY + dy });
         else { const { S } = this.cam(); const f = d.focus || { x: this.state.pageW / 2, y: this.state.pageH / 2, zd: null }; this.setState({ dragging: true, focus: { x: f.x - dx / S, y: f.y - dy / S, zd: f.zd } }); } },
-      onUp: () => { if (this.down) { this.down = null; this.setState({ dragging: false }); setTimeout(() => { this.dragged = false; }, 0); } },
+      onUp: e => { if (e && e.type === 'mouseup' && this.rdown) { const r = this.rdown; setTimeout(() => { if (this.rdown === r) this.rdown = null; }, 0); } if (this.down) { this.down = null; this.setState({ dragging: false }); setTimeout(() => { this.dragged = false; }, 0); } },
       onStageDbl: () => { if (s.isoId) this.setState({ isoId: null }, () => this.resetView()); else this.resetView(); },
     };
   }

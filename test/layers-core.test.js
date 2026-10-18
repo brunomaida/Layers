@@ -2590,6 +2590,19 @@ describe('InBranchOf', () => {
   });
 });
 
+describe('AncestorAt', () => {
+  it('AncestorAt_DepthInside_ReturnsPrefix', () => {
+    expect(core.ancestorAt('0.2.1.4', 0)).toBe('0');
+    expect(core.ancestorAt('0.2.1.4', 2)).toBe('0.2.1');
+  });
+  it('AncestorAt_OwnDepth_ReturnsSameId', () => {
+    expect(core.ancestorAt('0.2.1.4', 3)).toBe('0.2.1.4');
+  });
+  it('AncestorAt_PastDepth_ReturnsSameId', () => {
+    expect(core.ancestorAt('0.2', 9)).toBe('0.2');
+  });
+});
+
 describe('CtxMenuModel', () => {
   const nodes = [
     { id: '0', depth: 0, name: '.shell' },
