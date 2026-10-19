@@ -591,7 +591,7 @@ test('LayoutSwitch_NoLeak_AcrossRoundTrips', async ({ page }) => {
 // S9.1b Task 7: Projetos > Analisar cobertura end to end (folder walk, mock reads, model, verdict) on a connected folder with one
 // 1,500-tag HTML (the mock) and 199 screens of ~30 tags. Timed from the analyzeCoverage() call until it resolves; median of 3 after a
 // warm-up run. The budget is 2x the rounded median measured on the reference machine (same rule as S9.1a).
-const COVERAGE_BUDGET_MS = 616; // 2x the rounded median (308 ms) measured 2026-10-19
+const COVERAGE_BUDGET_MS = 616; // 2x the median measured 2026-10-19 (last re-measured 218 ms); ceiling kept at 616 ms
 
 test('Coverage_Analyze_CostsUnderBudget', async ({ page }) => {
   const screens = Array.from({ length: 199 }, (_, i) => [`screens/s${i}.html`, coverageHtml('s' + i, 30)]);
