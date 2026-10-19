@@ -1406,16 +1406,19 @@ test('SpreadUi_Popover_OutsideClickOnAStableStagePoint', async ({ page }) => {
 
 test('SpreadUi_Checkbox_GlyphFitsItsBoxAtLargeFontScale', async ({ page }) => {
   await loaded(page, FX);
-  await act(page, 'setCfg', 'fontScale', 1.6);
   await openPop(page);
   await seg(page, 'all').click(); await settled(page, 3);
-  const r = await page.evaluate(() => {
-    const box = document.querySelector('[data-spread-ck] span'), b = box.getBoundingClientRect();
-    const rg = document.createRange(); rg.selectNodeContents(box); const g = rg.getBoundingClientRect();
-    return { w: b.width, h: b.height, gw: g.width, gh: g.height };
-  });
-  expect(r.gw).toBeLessThanOrEqual(r.w); expect(r.gh).toBeLessThanOrEqual(r.h + 0.5);
-  expect(r.w).toBeCloseTo(13 * 1.6, 0); // the box scales with --fs
+  for (const fs of [1, 1.6]) {
+    await act(page, 'setCfg', 'fontScale', fs);
+    const r = await page.evaluate(() => {
+      const box = document.querySelector('[data-spread-ck] span'), b = box.getBoundingClientRect(), f = parseFloat(getComputedStyle(box).getPropertyValue('--fs'));
+      const rg = document.createRange(); rg.selectNodeContents(box); const g = rg.getBoundingClientRect();
+      return { w: b.width, h: b.height, gw: g.width, gh: g.height, f };
+    });
+    expect(r.f).toBeCloseTo(fs, 2);
+    expect(r.w).toBeCloseTo(13 * fs, 1); expect(r.h).toBeCloseTo(13 * fs, 1); // outer box: 13px at --fs 1 (what it was before the polish, under the global border-box reset), scaled by --fs
+    expect(r.gw).toBeLessThanOrEqual(r.w); expect(r.gh).toBeLessThanOrEqual(r.h + 0.5);
+  }
 });
 
 test('SpreadUi_Aria_ButtonOpensADialogAndDoesNotClaimToBePressed', async ({ page }) => {
@@ -1428,4 +1431,167 @@ test('SpreadUi_Aria_ButtonOpensADialogAndDoesNotClaimToBePressed', async ({ page
   await expect(page.locator(BTN)).toHaveAttribute('aria-controls', id);
   await expect(page.locator(POP)).toHaveAttribute('role', 'dialog');
   await expect(page.locator(POP)).toHaveAttribute('aria-label', 'Espalhar layouts');
+});
+
+// ---- S9.1c Task 6, fix round 1 (R19) ----
+const DEFAULT_SPREAD = { on: false, mode: 'all', picked: [], dist: 30 };
+
+test('SpreadCamera_PickWithNothingPicked_KeepsTheNormalCameraUntilAPageAppears', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true, 'pick');
+  expect(await cam(page)).toMatchObject(NORMAL); // fewer than 2 pages: nothing to frame, the camera is not swapped
+  expect(await page.evaluate(() => window.__logic.normalCam)).toBeNull();
+  await act(page, 'setSpreadPick', 'pick', ['config']);
+  await settled(page, 1);
+  expect(await cam(page)).toMatchObject({ yaw: NORMAL.yaw, tilt: NORMAL.tilt, zoom: 1, panX: 0, panY: 0, focus: null }); // two pages: the overview takes over
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject(NORMAL);
+  await act(page, 'spreadOn', true, 'pick'); await act(page, 'spreadOn', false); // off again before any page appeared: the camera is left alone
+  expect(await cam(page)).toMatchObject(NORMAL);
+  expect(await page.evaluate(() => window.__logic.normalCam)).toBeNull();
+});
+
+test('SpreadReload_ProjectBecomesSingleLayout_LeavesEspalharAndRestoresTheNormalCamera', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await act(page, 'setState', { yaw: -30, tilt: 22, zoom: 3.1, panX: 90, panY: 40 }); // the overview camera
+  const man = JSON.parse(await readDisk(page, 'layers.json')); man.layouts = man.layouts.slice(0, 1);
+  await page.evaluate(async (txt) => { const w = await (await window.__proj.getFileHandle('layers.json')).createWritable(); await w.write(txt); await w.close(); }, JSON.stringify(man));
+  await act(page, 'doReload');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project && window.__logic.state.project.layouts.length)).toBe(1);
+  await loadedNow(page); await flush(page);
+  const r = await page.evaluate(() => { const L = window.__logic; return { spread: L.state.spread, menu: L.state.spreadMenu, nc: L.normalCam, owner: L.normalCamOwner, size: L.spreadFrozen.size, snap: L.sessionSnapshot() }; });
+  expect(r.spread).toEqual(DEFAULT_SPREAD);
+  expect([r.menu, r.nc, r.owner, r.size]).toEqual([false, null, null, 0]);
+  expect('spread' in r.snap).toBe(false);
+  expect(r.snap.camera).toMatchObject({ yaw: NORMAL.yaw, tilt: NORMAL.tilt, zoom: NORMAL.zoom, panX: NORMAL.panX, panY: NORMAL.panY }); // never the overview camera
+  expect(await cam(page)).toMatchObject(NORMAL);
+});
+
+// A LOD plane in front of an ACTIVE plane under the pointer (3D overlap). dist 0 puts neighbouring pages edge to edge, so the deep planes of a frozen page cover the active one.
+const lodOverActive = async (page, preferLayout) => {
+  await page.waitForTimeout(450);
+  return page.evaluate((prefer) => {
+    const hits = [];
+    for (let y = 0; y < innerHeight; y += 6) for (let x = 0; x < innerWidth; x += 6) {
+      const l = document.elementsFromPoint(x, y), iL = l.findIndex((e) => e.closest('[data-lod-plane]')), iP = l.findIndex((e) => e.closest('[data-plane]'));
+      if (iL >= 0 && iP >= 0 && iL < iP) hits.push({ x, y, plane: l[iP].closest('[data-plane]').dataset.plane, lod: l[iL].closest('[data-lod-plane]').dataset.layout });
+    }
+    return hits.find((h) => h.lod === prefer) || hits[0] || null;
+  }, preferLayout);
+};
+async function lodInFrontOfActive(page) {
+  await spreadReady(page);
+  const p = await lodPick(page, 'config');
+  await page.mouse.click(p.x, p.y); // config is active, main (the previous active) is frozen full: deep planes
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page); await settled(page, 3);
+  await act(page, 'setSpreadDist', 0);
+  const h = await lodOverActive(page, 'main');
+  expect(h).not.toBeNull();
+  await act(page, 'select', h.plane === '0' ? '0.0' : '0'); // anything but the plane under the pointer
+  return h;
+}
+
+test('SpreadLod_Click_ActivePlaneUnderTheLodPlaneWins', async ({ page }) => {
+  const h = await lodInFrontOfActive(page);
+  await page.mouse.click(h.x, h.y);
+  await flush(page);
+  expect(await activeId(page)).toBe('config'); // no layout switch
+  expect(await sel(page)).toBe(h.plane); // the active plane was selected
+  expect(await page.evaluate(() => window.__logic.pendingView)).toBeNull();
+});
+
+test('SpreadLod_RightClick_ActivePlaneUnderTheLodPlaneOpensItsContextMenu', async ({ page }) => {
+  const h = await lodInFrontOfActive(page);
+  await page.mouse.click(h.x, h.y, { button: 'right' });
+  await flush(page);
+  expect(await page.evaluate(() => window.__logic.state.ctx && window.__logic.state.ctx.id)).toBe(h.plane);
+  expect(await activeId(page)).toBe('config');
+});
+
+test('SpreadCamera_ViewCacheKeepsEachLayoutsOwnCameraWhileEspalharIsOn', async ({ page }) => {
+  await loaded(page, FX);
+  const A = { yaw: -20, tilt: 5, zoom: 1.3, panX: 7, panY: 3 };
+  await act(page, 'setState', A); // main's own camera
+  await switchTo(page, 'config');
+  await act(page, 'setState', NORMAL); // camera B on config
+  await act(page, 'spreadOn', true); await settled(page, 3); // on at config: B is the normal camera
+  await switchTo(page, 'main');
+  await switchTo(page, 'config');
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject(NORMAL);
+  await page.locator('[data-layout-chip="main"]').click();
+  await expect.poll(() => activeId(page)).toBe('main');
+  await loadedNow(page);
+  expect(await cam(page)).toMatchObject(A); // main keeps its own camera, not config's
+});
+
+test('SpreadUi_StripDoubleClick_DoesNotResetTheViewOrClearIsolation', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', { yaw: 7, zoom: 2.2, isoId: '0.1' });
+  const before = await cam(page);
+  await page.locator(BTN).dblclick();
+  await page.locator('[data-layout-strip] > span').first().dblclick();
+  await flush(page);
+  expect(await cam(page)).toEqual(before);
+  expect(await page.evaluate(() => window.__logic.state.isoId)).toBe('0.1');
+});
+
+test('SpreadLoad_StaleLoadAtTheFinalSetState_DoesNotScan', async ({ page }) => {
+  await loaded(page, FX);
+  await page.evaluate(() => {
+    const L = window.__logic, orig = L.setState, os = L.scan; window.__scans = 0; window.__cb = null;
+    L.scan = function () { window.__scans++; return os.apply(this, arguments); };
+    L.setState = function (u, cb) {
+      if (!(cb && u && u.project)) return orig.call(this, u, cb);
+      L.setState = orig; const inner = cb; // the final write of loadProject: its callback is measured, then a newer load supersedes it
+      const r = orig.call(this, u, () => { const before = window.__scans; inner(); window.__cb = { scans: window.__scans - before }; });
+      L.loadSeq++; return r;
+    };
+  });
+  await act(page, 'loadProject');
+  await expect.poll(() => page.evaluate(() => window.__cb)).not.toBeNull(); // the callback did run...
+  expect(await page.evaluate(() => window.__cb.scans)).toBe(0); // ...and returned before scan()
+  await page.evaluate(() => { delete window.__logic.scan; });
+  await act(page, 'loadProject'); await loadedNow(page); await flush(page); // the app recovers on the next load
+  expect(await page.evaluate(() => window.__logic.state.project.layoutId)).toBe('main');
+});
+
+test('SpreadUnload_LayoutSwitchThatFailsToLoad_RestoresTheNormalCamera', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await act(page, 'setState', { yaw: -30, tilt: 22, zoom: 3.1, panX: 90, panY: 40 });
+  await act(page, 'switchLayout', 'broken'); // its mock is missing: the load fails and the project unloads
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project)).toBeNull();
+  const r = await page.evaluate(() => { const L = window.__logic; return { spread: L.state.spread, nc: L.normalCam, owner: L.normalCamOwner, size: L.spreadFrozen.size }; });
+  expect(r).toEqual({ spread: DEFAULT_SPREAD, nc: null, owner: null, size: 0 });
+  expect(await cam(page)).toMatchObject(NORMAL);
+});
+
+test('SpreadProject_OtherProjectOverALiveEspalhar_StartsOnTheDefaultCamera', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await act(page, 'setState', { yaw: -30, tilt: 22, zoom: 3.1, panX: 90, panY: 40 });
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('proj2', { create: true });
+    const put = async (name, text) => { const w = await (await dir.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+    await put('layers.json', '{"name":"Other","layouts":[{"id":"a","name":"A","mock":"a.html"},{"id":"b","name":"B","mock":"b.html"}]}');
+    const body = '<!doctype html><html><body><div id="r"><p>x</p></div></body></html>';
+    await put('a.html', body); await put('b.html', body);
+    window.showDirectoryPicker = async () => dir;
+  });
+  await act(page, 'pickDir');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project && window.__logic.state.project.name)).toBe('Other');
+  await loadedNow(page); await flush(page);
+  const r = await page.evaluate(() => { const L = window.__logic; return { spread: L.state.spread, nc: L.normalCam, owner: L.normalCamOwner, size: L.spreadFrozen.size }; });
+  expect(r).toEqual({ spread: DEFAULT_SPREAD, nc: null, owner: null, size: 0 });
+  expect(await cam(page)).toMatchObject({ yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null }); // the overview camera does not leak into the new project
 });
