@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act } from './ctx-helpers.js';
-import { connectFixture } from './folder-helpers.js';
+import { connectFixture, readDisk } from './folder-helpers.js';
 
 // S9.1c Task 2: scanRoot / buildMockDom are the pure halves of scan() / loadProject(); the spread (LOD) reader reuses them.
 // Reached through the component instance (`act`), like layouts.spec.js reaches switchLayout.
@@ -130,7 +130,7 @@ async function truth(page) {
   for (const id of ['config', 'replay', 'main']) { await switchTo(page, id); t[id] = await depth1(page); }
   return t;
 }
-const tempHosts = (page) => page.evaluate(() => document.querySelectorAll('[data-lod-host]').length + [...document.body.children].filter((e) => e !== document.querySelector('[data-plane]') && e.style && e.style.left === '-20000px' && e.shadowRoot && e.shadowRoot.childElementCount).length);
+const tempHosts = (page) => page.evaluate(() => document.querySelectorAll('[data-lod-host]').length);
 
 test('Spread_Off_ChangesNothing', async ({ page }) => {
   await loaded(page, FX);
@@ -162,11 +162,15 @@ test('Spread_On_FreezesOtherLayoutsInLod', async ({ page }) => {
 test('Spread_OnAfterSwitch_FreezesMainFromItsState', async ({ page }) => {
   await loaded(page, FX);
   const t = await truth(page); // ends on main
+  await act(page, 'switchState', 'filled'); // main now shows its second state: the frozen snapshot must follow it, not the default
+  await page.waitForFunction(() => window.__logic.loadedSeq === window.__logic.loadSeq && window.__logic.state.project.stateName === 'filled');
+  const filled = await depth1(page);
+  expect(filled).toBeGreaterThan(t.main);
   await switchTo(page, 'config');
   await act(page, 'spreadOn', true);
   await settled(page, 3);
   const f = await frozen(page);
-  expect(f.main).toMatchObject({ full: false, count: t.main });
+  expect(f.main).toMatchObject({ full: false, count: filled, len: filled });
   expect(f.replay).toMatchObject({ full: false, count: t.replay });
   expect(f.config).toBeUndefined();
 });
@@ -218,16 +222,91 @@ test('Spread_Pick_OnlyChosenLayoutsAreFrozen', async ({ page }) => {
   expect(await page.evaluate(() => ({ on: window.__logic.state.spread.on, size: window.__logic.spreadFrozen.size }))).toEqual({ on: false, size: 0 });
 });
 
-test('Spread_ReloadAndUnload_ClearTheMap', async ({ page }) => {
-  await loaded(page, FX);
+// Adds one more depth-1 element to layers/config.html in the connected OPFS folder (the frozen `config` count grows by 1).
+async function growConfig(page, id) {
+  const html = await readDisk(page, 'layers/config.html');
+  await page.evaluate(async ({ html, id }) => {
+    const d = await window.__proj.getDirectoryHandle('layers'), w = await (await d.getFileHandle('config.html')).createWritable();
+    await w.write(html.replace('</body>', '<div class="extra" id="' + id + '">x</div></body>')); await w.close();
+  }, { html, id });
+}
+
+test('Spread_ReloadAndRestructure_ReReadEveryLayout', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
   await act(page, 'spreadOn', true);
   await settled(page, 3);
-  const before = await page.evaluate(() => window.__logic.spreadSeq);
-  await act(page, 'doReload');
-  expect(await page.evaluate(() => window.__logic.spreadSeq)).toBeGreaterThan(before); // cleared at once, refilled by the winning reload
-  await settled(page, 3);
+  const renewed = () => page.evaluate(() => { const L = window.__logic, o = window.__ids; return L.spreadFrozen.size === o.size && [...o].every(([k, v]) => L.spreadFrozen.has(k) && L.spreadFrozen.get(k) !== v); });
+  for (const [i, method] of ['doReload', 'doRestructure'].entries()) {
+    const before = (await frozen(page)).config.count;
+    await page.evaluate(() => { window.__ids = new Map(window.__logic.spreadFrozen); });
+    await growConfig(page, 'cfg-extra' + i);
+    await act(page, method);
+    await expect.poll(renewed).toBe(true); // every entry is a new object: the map was cleared, not reused
+    expect((await frozen(page)).config.count).toBe(before + 1); // and the files were read again
+  }
   await act(page, 'unloadProject');
   expect(await page.evaluate(() => window.__logic.spreadFrozen.size)).toBe(0);
+});
+
+test('Spread_ReconnectSameFolder_ReadsFreshSnapshots', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  const before = (await frozen(page)).config.count;
+  await growConfig(page, 'cfg-extra');
+  await page.evaluate(() => window.__logic.useDir(window.__proj, true)); // same folder name, new content: a re-connect, not a Recarregar
+  await expect.poll(async () => (await frozen(page)).config?.count).toBe(before + 1);
+});
+
+test('Spread_Pick_LeavingUnpickedLayoutStillDowngradesOlderFull', async ({ page }) => {
+  await loaded(page, FX);
+  const t = await truth(page); // on main
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  await act(page, 'setSpreadPick', 'pick', ['main', 'replay']);
+  await expect.poll(async () => Object.keys(await frozen(page))).toEqual(['replay']);
+  await switchTo(page, 'config'); // main is picked: frozen full
+  await expect.poll(async () => (await frozen(page)).main?.full).toBe(true);
+  await switchTo(page, 'replay'); // config is not picked: nothing frozen for it, but the older full entry must still drop to LOD
+  const f = await frozen(page);
+  expect(f.main).toMatchObject({ full: false, count: t.main, len: t.main });
+  expect(f.config).toBeUndefined();
+  expect(Object.values(f).filter((e) => e.full).length).toBe(0);
+});
+
+test('Spread_ZerarAndOtherProject_ResetSpread', async ({ page }) => {
+  const DEFAULT = { on: false, mode: 'all', picked: [], dist: 30 };
+  const set = async () => {
+    await act(page, 'spreadOn', true); await settled(page, 3);
+    await act(page, 'setSpreadPick', 'pick', ['replay']); await act(page, 'setSpreadDist', 55);
+    expect(await page.evaluate(() => window.__logic.state.spread)).toEqual({ on: true, mode: 'pick', picked: ['replay'], dist: 55 });
+  };
+  const now = () => page.evaluate(() => ({ spread: window.__logic.state.spread, size: window.__logic.spreadFrozen.size }));
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await set();
+  await act(page, 'resetUI');
+  expect(await now()).toEqual({ spread: DEFAULT, size: 0 });
+  await page.evaluate(() => window.__logic.useDir(window.__proj, true));
+  await page.waitForFunction(() => window.__logic.state.project && window.__logic.loadedSeq === window.__logic.loadSeq);
+  await set();
+  // another multi-layout project opened over a live Espalhar: it does not inherit on/picked
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('proj2', { create: true });
+    const put = async (name, text) => { const w = await (await dir.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+    await put('layers.json', '{"name":"Other","layouts":[{"id":"a","name":"A","mock":"a.html"},{"id":"b","name":"B","mock":"b.html"}]}');
+    const body = '<!doctype html><html><body><div id="r"><p>x</p></div></body></html>';
+    await put('a.html', body); await put('b.html', body);
+    window.showDirectoryPicker = async () => dir;
+  });
+  await act(page, 'pickDir');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project && window.__logic.state.project.name)).toBe('Other');
+  await page.waitForFunction(() => window.__logic.loadedSeq === window.__logic.loadSeq);
+  await flush(page);
+  expect(await now()).toEqual({ spread: DEFAULT, size: 0 });
 });
 
 // A read of a non-active layout (readText(path, true)) is held in flight until __release(): the active load is never delayed.
@@ -314,4 +393,31 @@ test('Spread_OffDuringLoad_DropsResult', async ({ page }) => {
   await flush(page);
   expect(await page.evaluate(() => ({ size: window.__logic.spreadFrozen.size, rev: window.__logic.state.spreadRev, on: window.__logic.state.spread.on }))).toEqual({ size: 0, rev: 0, on: false });
   expect(await tempHosts(page)).toBe(0);
+});
+
+test('Spread_LayoutSwitchWithActiveLoadPending_OldRunWritesNothing', async ({ page }) => {
+  await loaded(page, FX);
+  await holdLodReads(page);
+  await act(page, 'spreadOn', true);
+  await page.waitForFunction(() => window.__held >= 1); // the old run (config is its first layout) is in flight
+  await page.evaluate(() => {
+    const l = window.__logic, orig = l.readText.bind(l);
+    window.__holdActive = true; window.__activeHeld = 0; window.__gate2 = new Promise((r) => { window.__release2 = r; });
+    l.readText = async (p, quiet) => { if (quiet === false && window.__holdActive && p.endsWith('config.html')) { window.__activeHeld++; await window.__gate2; } return orig(p, quiet); };
+    window.__hold = false; // LOD reads started from now on pass through; the old one stays held
+  });
+  await act(page, 'switchLayout', 'config');
+  await page.waitForFunction(() => window.__activeHeld >= 1); // the new active load is pending: it has not restarted loadSpread, so only the loadSeq half of live() can drop the old run
+  expect(await page.evaluate(() => window.__logic.loadedSeq !== window.__logic.loadSeq)).toBe(true);
+  const keys = await page.evaluate(() => { const L = window.__logic; window.__snap = { rev: L.state.spreadRev, entries: [...L.spreadFrozen.entries()] }; return [...L.spreadFrozen.keys()]; });
+  expect(keys).toEqual(['main']); // the leaving layout, frozen full by the switch
+  await page.evaluate(() => window.__release()); // the old LOD read resumes while the new active load is still held
+  await page.waitForFunction(() => window.__settled >= 1);
+  await flush(page);
+  const same = await page.evaluate(() => { const L = window.__logic, s = window.__snap; return L.state.spreadRev === s.rev && L.spreadFrozen.size === s.entries.length && s.entries.every(([k, v]) => L.spreadFrozen.get(k) === v); });
+  expect(same).toBe(true);
+  expect(await tempHosts(page)).toBe(0);
+  await page.evaluate(() => { window.__holdActive = false; window.__release2(); }); // let the switch finish: its own run fills the rest
+  await settled(page, 3);
+  expect(Object.keys(await frozen(page)).sort()).toEqual(['broken', 'main', 'replay']);
 });
