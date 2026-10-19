@@ -224,7 +224,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     </div>
 
     <sc-if value="{{ spPop }}" hint-placeholder-val="{{ false }}">
-    <div data-spread-pop onMouseDown="{{ stop }}" onWheel="{{ stop }}" style="position:absolute;right:10px;bottom:52px;z-index:9;width:176px;display:flex;flex-direction:column;gap:5px;padding:7px 8px;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
+    <div data-spread-pop id="spread-pop" role="dialog" aria-label="Espalhar layouts" onMouseDown="{{ stop }}" onWheel="{{ stop }}" onDoubleClick="{{ stop }}" style="position:absolute;right:10px;bottom:52px;z-index:9;width:176px;display:flex;flex-direction:column;gap:5px;padding:7px 8px;background:var(--bg2);border:1px solid var(--line1);border-radius:6px;box-shadow:0 14px 34px var(--shadow2)">
       <span style="font:700 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.14em;text-transform:uppercase;color:var(--fg3)">Espalhar layouts</span>
       <div style="display:flex;height:22px;border:1px solid var(--line1);border-radius:3px;overflow:hidden;font:500 calc(11px*var(--fs))/1 'Inter',sans-serif">
         <sc-for list="{{ spSegs }}" as="g" hint-placeholder-count="3">
@@ -232,7 +232,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         </sc-for>
       </div>
       <sc-for list="{{ spRows }}" as="l" hint-placeholder-count="3">
-        <div data-spread-row="{{ l.id }}"><button data-spread-ck role="checkbox" aria-checked="{{ l.chk }}" disabled="{{ l.dis }}" onClick="{{ l.pick }}" style="all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:6px;font:500 calc(12px*var(--fs))/1.2 'Inter',sans-serif;color:var(--fg1);cursor:{{ l.cursor }};opacity:{{ l.op }}"><span style="flex:none;width:13px;height:13px;border:1px solid {{ l.ckBdr }};border-radius:2px;background:{{ l.ckBg }};color:#1a1205;font:700 calc(10px*var(--fs))/11px 'JetBrains Mono',monospace;text-align:center">{{ l.ck }}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span><span data-spread-count style="margin-left:auto;flex:none;font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ l.cn }}</span></button></div>
+        <div data-spread-row="{{ l.id }}"><button data-spread-ck role="checkbox" aria-checked="{{ l.chk }}" disabled="{{ l.dis }}" onClick="{{ l.pick }}" style="all:unset;box-sizing:border-box;width:100%;display:flex;align-items:center;gap:6px;font:500 calc(12px*var(--fs))/1.2 'Inter',sans-serif;color:var(--fg1);cursor:{{ l.cursor }};opacity:{{ l.op }}"><span style="flex:none;box-sizing:border-box;width:calc(13px*var(--fs));height:calc(13px*var(--fs));border:1px solid {{ l.ckBdr }};border-radius:2px;background:{{ l.ckBg }};color:#1a1205;font:700 calc(10px*var(--fs))/calc(11px*var(--fs)) 'JetBrains Mono',monospace;text-align:center;overflow:hidden">{{ l.ck }}</span><span style="min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</span><span data-spread-count style="margin-left:auto;flex:none;font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">{{ l.cn }}</span></button></div>
       </sc-for>
       <sc-if value="{{ spDistOn }}" hint-placeholder-val="{{ false }}">
         <label style="display:flex;align-items:center;gap:6px;font:500 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3)">distância <input type="range" data-ed="1" data-spread-dist min="0" max="100" step="1" value="{{ spDist }}" onChange="{{ spSetDist }}" onInput="{{ spSetDist }}" onKeyDown="{{ spCloseKey }}" style="flex:1;min-width:0;margin:0;accent-color:var(--sel)"></label>
@@ -251,7 +251,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
           <button onClick="{{ c.pick }}" title="{{ c.title }}" aria-pressed="{{ c.pressed }}" data-layout-chip="{{ c.id }}" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ c.bdr }};background:{{ c.bg }};color:{{ c.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">{{ c.mark }}{{ c.name }}<sc-if value="{{ c.hasBadge }}" hint-placeholder-val="{{ false }}"> <span data-layout-badge="{{ c.id }}" style="font-weight:400;opacity:.6">{{ c.badge }}</span></sc-if></button>
         </sc-for>
         <span style="width:1px;height:16px;background:var(--line1);margin:0 2px"></span>
-        <button data-spread-btn onClick="{{ spToggle }}" title="{{ spBtnTitle }}" aria-pressed="{{ spOn }}" aria-expanded="{{ spExpanded }}" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid var(--sel);background:{{ spBtnBg }};color:var(--sel);font:700 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;cursor:pointer">⊞ ESPALHAR ▾<sc-if value="{{ spWarnBtn }}" hint-placeholder-val="{{ false }}"><span data-spread-warnmark style="color:var(--warn);margin-left:5px">⚠</span></sc-if></button>
+        <button data-spread-btn onClick="{{ spToggle }}" title="{{ spBtnTitle }}" aria-haspopup="dialog" aria-controls="spread-pop" aria-expanded="{{ spExpanded }}" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid var(--sel);background:{{ spBtnBg }};color:var(--sel);font:700 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.08em;cursor:pointer">⊞ ESPALHAR ▾<sc-if value="{{ spWarnBtn }}" hint-placeholder-val="{{ false }}"><span data-spread-warnmark style="color:var(--warn);margin-left:5px">⚠</span></sc-if></button>
       </div>
       </sc-if>
       <div style="pointer-events:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px;max-width:100%;padding:3px 6px;border-radius:6px;background:rgba(var(--bg0Rgb),.82)">
@@ -1221,7 +1221,7 @@ const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = [
 const SCAN_SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
 const SCAN_MAX = { depth: 6, entries: 5000, fileBytes: 3 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, scriptBytes: 8 * 1024 * 1024 };
 // Template data of the coverage overlay while closed (S9.1b): one shared object, the overlay's handlers only exist while it is open.
-const SP_NONE = Object.freeze({ spPop: false, spOn: false, spBtnBg: 'transparent', spExpanded: 'false', spWarnBtn: false, spBtnTitle: '', spSegs: Object.freeze([]), spRows: Object.freeze([]), spDistOn: false, spTotalOn: false, spTotal: '', spWarnOn: false, spWarn: '' }); // S9.1c: no Espalhar UI (1-layout project)
+const SP_NONE = Object.freeze({ spPop: false, spBtnBg: 'transparent', spExpanded: 'false', spWarnBtn: false, spBtnTitle: '', spSegs: Object.freeze([]), spRows: Object.freeze([]), spDistOn: false, spTotalOn: false, spTotal: '', spWarnOn: false, spWarn: '' }); // S9.1c: no Espalhar UI (1-layout project)
 const COV_CLOSED = Object.freeze({ covOpen: false, covRunning: false, covError: false, covDone: false, covErrorMsg: '', covSub: '', covPartial: false, covLowConf: false,
   covRunBars: Object.freeze(['Monovisual', 'Monovisual + states', 'Múltiplos layouts'].map(label => Object.freeze({ label }))), covBars: Object.freeze([]), covWarns: Object.freeze([]), covRows: Object.freeze([]), closeCoverage: () => {}, copySnippet: () => {} });
 const scanKind = n => /\.html?$/i.test(n) ? 'html' : /\.css$/i.test(n) ? 'css' : /\.(tsx?|jsx?|mjs)$/i.test(n) && !/\.d\.ts$/i.test(n) ? 'script' : null;
@@ -2162,7 +2162,7 @@ class Component extends DCLogic {
   // Espalhar popover (S9.1c Task 5): UI state is state.spreadMenu; the selection logic stays in spreadOn/setSpreadPick/setSpreadDist.
   spToggle = () => this.setState(st => ({ spreadMenu: !st.spreadMenu }));
   spCloseKey = e => { if (e.key === 'Escape') this.setState({ spreadMenu: false }); }; // focus in the slider: the global key handler skips inputs
-  spSeg(k) { const sp = this.state.spread; if (k === 'off') this.spreadOn(false); else if (!sp.on) this.spreadOn(true, k); else if (sp.mode !== k) this.setSpreadPick(k, sp.picked); }
+  spSeg(k) { const sp = this.state.spread; if (k === 'off') this.spreadOn(false); else if (!sp.on) this.spreadOn(true, k); else if (sp.mode !== k) { const v = this.spreadView(); this.setSpreadPick(k, k === 'pick' && v ? v.ids : sp.picked); } } // Todos -> 1-N starts from what is drawn, so the frozen snapshots survive and nothing is read again
   spPickToggle(id) { const s = this.state; if (!s.project || id === s.project.layoutId) return; const cur = s.spread.picked; this.setSpreadPick('pick', cur.includes(id) ? cur.filter(x => x !== id) : [...cur, id]); }
   // Template data of the button and popover. Memoized by identity of project/layout/spread/spreadRev and node count (like covVals): the total only changes with those, never per orbit render.
   spreadUi() {
@@ -2178,7 +2178,7 @@ class Component extends DCLogic {
       const act = l.id === P.layoutId, chk = act || all || picked.has(l.id), e = F.get(l.id), dis = act || all;
       return { id: l.id, name: l.name, cn: act ? fmt(n) : e && e.unavailable ? 'indisponível' : e && e.count != null ? fmt(e.count) : chk ? '…' : '—', ck: chk ? '✓' : '', chk: String(chk), ckBdr: chk ? 'var(--sel)' : 'var(--line2)', ckBg: chk ? 'var(--sel)' : 'transparent', dis, cursor: dis ? 'default' : 'pointer', op: e && e.unavailable ? .55 : 1, pick: () => this.spPickToggle(l.id) };
     });
-    const v = { spPop: open, spOn: sp.on, spBtnBg: sp.on ? 'rgba(var(--selRgb),.18)' : 'transparent', spExpanded: String(open), spWarnBtn: warn, spBtnTitle: warn ? warnText : 'Espalhar layouts no palco', spSegs: segs, spRows: rows, spDistOn: sp.on, spDist: sp.dist, spSetDist: e => this.setSpreadDist(e.target.value),
+    const v = { spPop: open, spBtnBg: sp.on ? 'rgba(var(--selRgb),.18)' : 'transparent', spExpanded: String(open), spWarnBtn: warn, spBtnTitle: warn ? warnText : 'Espalhar layouts no palco', spSegs: segs, spRows: rows, spDistOn: sp.on, spDist: sp.dist, spSetDist: e => this.setSpreadDist(e.target.value),
       spTotalOn: sp.on, spTotal: 'Total: ' + fmt(total) + ' planos', spWarnOn: warn, spWarn: warnText };
     this._spu = { P, lid: P.layoutId, sp, rev: s.spreadRev, n, open, v }; return v;
   }
