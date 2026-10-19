@@ -2540,7 +2540,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 55,
+    "progress": 65,
     "docs": [],
     "children": [
       {
@@ -2637,12 +2637,12 @@
         "name": "Modelo de cobertura mono × múltiplos layouts",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
@@ -2661,6 +2661,12 @@
             "type": "spec",
             "path": "/docs/superpowers/specs/2026-10-18-s9-1b-modelo-de-cobertura-mono-design.md",
             "title": "S9.1b — Modelo de cobertura mono × múltiplos layouts (plano de design)"
+          },
+          {
+            "name": "feature-261018-89-s9-1b-cobertura-layouts.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261018-89-s9-1b-cobertura-layouts.md)",
+            "title": "feature-261018-89-s9-1b-cobertura-layouts.md)"
           }
         ],
         "reason": "Regiões detectadas, cob_reg e cob_el, regra de decisão e painel de resultado",
