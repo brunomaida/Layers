@@ -77,6 +77,26 @@ Onde o que foi entregue na S9.1b (Analisar cobertura) difere do board `S91Cobert
 | Spec, decisão 8: `suggestLayouts(files, man)` | A assinatura real é `suggestLayouts(model, man, files)`; `files` segue na assinatura e não é lido | O modelo já traz as regiões e as telas candidatas |
 | Regra 4 ("dividir") | Só dispara com o melhor monovisual ≥ 85 % e um layout acima de 1.500 planos | A redação do board é ambígua; o código segue a spec (regras 2 e 4 só sob mono ≥ 85 %) e, com cobertura menor, vale a regra 3 |
 
+## Divergências do código (S9.1c)
+
+Onde o que foi entregue na S9.1c (Espalhar) difere do board `S91Fluxos` (V3) e da spec [](2026-10-19-s9-1c-espalhar-lod-design.md). Os boards seguem como referência visual; as linhas abaixo são desvios conhecidos, não decisões novas. Fluxo, contratos e limites em [](../../ARCHITECTURE.md#espalhar-s91c).
+
+| Item do board ou da spec | Como ficou no código | Motivo |
+|---|---|---|
+| Seleção e hover com `layoutId:nodeId` | O layout ativo segue com ids simples; `layoutId:nodeId` só existe no hover transitório do plano LOD (`state.lodHover`) e na resolução do clique | Os ids só são únicos dentro de um shadow root e só o ativo aceita seleção; mudar o formato quebraria Árvore, Camadas, Ajustes e `planeCensus` |
+| LOD como montagem parcial dos layouts | **Varredura rasa** (`scanRoot` com `maxDepth: 1`, profundidade ≤ 1) num host temporário descartado a cada layout; os ids são subconjunto dos da varredura cheia | Mantém 1 shadow root vivo; clicar num plano LOD seleciona o mesmo nó depois da troca |
+| Popover com 2 segmentos (Ver todos, Selecionar 1–N) | **3 segmentos Foco \| Todos \| 1–N**: Foco é o Espalhar desligado; as linhas de layout e o slider só aparecem fora do Foco | Decisão 8 da spec (o "Foco" de layouts é o Espalhar desligado, sem botão novo no dock); "Ver todos" virou "Todos" e "Selecionar 1–N", "1–N" |
+| Fontes e tamanhos literais do botão e do popover | Na escala do app (o board desenha o dock a ~0,72×): botão de 11 px e 24 px de altura (board 8,5 px e 17 px), título 10, segmentos 11, linhas 12, contagem 10, distância 11, caixa do checkbox 13 px (board 10 px); tudo multiplicado por `--fs`. Largura 176 px, `right:10`, `bottom:52`, cores, bordas, raio e sombra seguem o board | Mesma razão dos irmãos da faixa LAYOUTS (visual congelado: o botão tem que ter o tamanho dos chips) |
+| Slider de distância como linha de 2 px | `input type=range` com `accent-color: var(--sel)` | Padrão dos outros sliders do app |
+| Selo com o total de planos | A linha `Total: N planos` e o aviso ficam **só dentro do popover**; no botão aparecem apenas o `⚠` e um `title` com o aviso acima de 1.500 planos | O botão é do tamanho de um chip; um selo o alargaria e deslocaria a faixa |
+| Texto do aviso de 1.500 planos | O board não traz a frase; usa-se `Acima de 1.500 planos (N): a órbita pode degradar. Selecione menos layouts.` (não bloqueante) | Mudar uma string é reversível |
+| Retrato cheio do último ativo como o LOD | `dim` sólido `.35` (borda contínua) para o retrato cheio e tracejado `.45` para o LOD, como o board | O board distingue os dois modos |
+| Bordas internas `.45` dos níveis d > 0 na página ativa | **Não desenhadas** | `Plane` já codifica seleção, hover, camada e wire nas bordas; o visual do ativo é congelado (limite 11 do Espalhar) |
+| Câmera de visão geral: `cam()` com a pegada `N·pageW + (N−1)·gap` | O mundo é `scale(zoom) scale3d(fit,fit,fit)`, com `fit` de `LayersCore.overviewFit` (bisseção sobre a caixa projetada); o zoom é 2D fora do `scale3d`. A câmera de visão geral não está em `state.spread.cam`: é a câmera comum e a normal fica em `this.normalCam`; `spread.cam` só existe na entrada de sessão | O `scale(fit · zoom)` do Foco colapsava o `fit` (~1,9e-4 a 1280×760) e empurrava páginas distantes para trás do olho; espelhar a câmera no `state.spread` por quadro de órbita anularia as memoizações |
+| Slots por `spreadOffsets` sobre os escolhidos (R12) | Os offsets valem para as páginas **desenhadas**: layouts indisponíveis são compactados para fora e as páginas seguintes se deslocam uma vez quando uma leitura em voo vira indisponível | Um slot vazio no meio do palco não ajuda ninguém |
+| Edição entre layouts (undo com `layoutId`, watch global, "também afeta …", Aplicar junta tudo) | Adiada para a leaf **S9.1d**; com o Espalhar ligado só o ativo aceita seleção, edição, Árvore, Camadas, Interagir e menu de contexto | Pede pilha única com `layoutId`, contagem de usos em layouts desmontados e watch de vários mocks |
+| Retratos congelados | Não acompanham mudanças em disco até Recarregar, Reanalisar ou reconectar; as fontes de um layout não ativo não sobem para o documento (a geometria pode usar a fonte de fallback) | Um retrato é um instantâneo barato; subir fontes quebraria o invariante de uma só folha `@font-face` |
+
 ## Limites conhecidos dos boards
 
 - `Base` reproduz a UI a 1440×900 com larguras de painel (340 px, coluna de 384 px) e logo reais, medidos no app.

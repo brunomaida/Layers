@@ -3830,3 +3830,283 @@ describe('SuggestLayouts', () => {
     expect(out[2].id.endsWith('-2')).toBe(true);
   });
 });
+
+describe('SpreadPicked', () => {
+  const layouts = [{ id: 'main' }, { id: 'cfg' }, { id: 'replay' }, { id: 'about' }];
+
+  it('SpreadPicked_ModoAll_RetornaTodosNaOrdemDoLayersJson', () => {
+    expect(core.spreadPicked(layouts, 'all', [], 'cfg')).toEqual(['main', 'cfg', 'replay', 'about']);
+  });
+
+  it('SpreadPicked_ModoPickDesordenado_SegueOrdemDoLayersJson', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['about', 'cfg'], 'main')).toEqual(['main', 'cfg', 'about']);
+  });
+
+  it('SpreadPicked_AtivoForaDoPick_SempreIncluido', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['about'], 'replay')).toEqual(['replay', 'about']);
+  });
+
+  it('SpreadPicked_IdInexistenteEDuplicado_Descartados', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['ghost', 'cfg', 'cfg'], 'main')).toEqual(['main', 'cfg']);
+  });
+
+  it('SpreadPicked_AtivoInexistente_RetornaApenasPickedValidos', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['cfg', 'ghost'], 'ghost')).toEqual(['cfg']);
+  });
+
+  it('SpreadPicked_EntradasInvalidas_NaoLanca', () => {
+    expect(core.spreadPicked(null, 'pick', null, 'main')).toEqual([]);
+    expect(core.spreadPicked(layouts, 'pick', undefined, 'main')).toEqual(['main']);
+  });
+});
+
+describe('SpreadOffsets', () => {
+  it('SpreadOffsets_DistZero_PaginasEncostadas', () => {
+    expect(core.spreadOffsets(3, 1000, 0)).toEqual([0, 1000, 2000]);
+  });
+
+  it('SpreadOffsets_Dist100_GapIgualALargura', () => {
+    expect(core.spreadOffsets(3, 1000, 100)).toEqual([0, 2000, 4000]);
+  });
+
+  it('SpreadOffsets_Dist50_GapLinearMetadeDaLargura', () => {
+    expect(core.spreadOffsets(3, 800, 50)).toEqual([0, 1200, 2400]);
+  });
+
+  it('SpreadOffsets_DistForaDoIntervalo_Clampada', () => {
+    expect(core.spreadOffsets(2, 1000, -20)).toEqual([0, 1000]);
+    expect(core.spreadOffsets(2, 1000, 250)).toEqual([0, 2000]);
+  });
+
+  it('SpreadOffsets_CountZeroOuUm_PrimeiroNaOrigem', () => {
+    expect(core.spreadOffsets(0, 1000, 40)).toEqual([]);
+    expect(core.spreadOffsets(1, 1000, 40)).toEqual([0]);
+  });
+
+  it('SpreadOffsets_LarguraInvalida_ResultadoFinito', () => {
+    expect(core.spreadOffsets(2, NaN, 50)).toEqual([0, 0]);
+    expect(core.spreadOffsets(2, -5, 50)).toEqual([0, 0]);
+    expect(core.spreadOffsets(2, Infinity, 50)).toEqual([0, 0]);
+  });
+
+  it('SpreadOffsets_LarguraEnorme_NaoTransbordaParaInfinity', () => {
+    const out = core.spreadOffsets(2, 1e308, 100);
+    expect(out).toHaveLength(2);
+    expect(out.every(Number.isFinite)).toBe(true);
+  });
+
+  it('SpreadOffsets_DistNaNOuString_NaNViraZeroStringNumericaVale', () => {
+    expect(core.spreadOffsets(2, 1000, NaN)).toEqual([0, 1000]);
+    expect(core.spreadOffsets(2, 1000, '50')).toEqual([0, 1500]);
+  });
+});
+
+describe('LodNodes', () => {
+  const nodes = [
+    { id: 'a', depth: 0 }, { id: 'b', depth: 1 }, { id: 'c', depth: 2 }, { id: 'd', depth: 1 }, { id: 'e', depth: 3 }
+  ];
+
+  it('LodNodes_MaxDepth1_CortaProfundidadePreservandoIds', () => {
+    expect(core.lodNodes(nodes, 1).map((n) => n.id)).toEqual(['a', 'b', 'd']);
+  });
+
+  it('LodNodes_MaxDepth0_SoRaizes', () => {
+    expect(core.lodNodes(nodes, 0).map((n) => n.id)).toEqual(['a']);
+  });
+
+  it('LodNodes_MaxDepthNegativo_RetornaVazio', () => {
+    expect(core.lodNodes(nodes, -1)).toEqual([]);
+  });
+
+  it('LodNodes_Entrada_NaoMutada', () => {
+    const snap = JSON.stringify(nodes);
+    const out = core.lodNodes(nodes, 1);
+    expect(out).not.toBe(nodes);
+    expect(JSON.stringify(nodes)).toBe(snap);
+  });
+
+  it('LodNodes_Resultado_MesmasReferenciasDosNos', () => {
+    const out = core.lodNodes(nodes, 1);
+    expect(out[0]).toBe(nodes[0]);
+    expect(out[1]).toBe(nodes[1]);
+    expect(out[2]).toBe(nodes[3]);
+  });
+
+  it('LodNodes_EntradaInvalida_RetornaVazio', () => {
+    expect(core.lodNodes(null, 1)).toEqual([]);
+  });
+});
+
+describe('SpreadPlaneTotal', () => {
+  it('SpreadPlaneTotal_AtivoMaisCongelados_Soma', () => {
+    expect(core.spreadPlaneTotal(100, [{ count: 40 }, { count: 60 }])).toBe(200);
+  });
+
+  it('SpreadPlaneTotal_SemCongelados_SoAtivo', () => {
+    expect(core.spreadPlaneTotal(12, [])).toBe(12);
+  });
+
+  it('SpreadPlaneTotal_Exatamente1500_NaoAvisa', () => {
+    expect(core.spreadPlaneTotal(1000, [{ count: 500 }]) > core.COVERAGE.PLANES_MAX).toBe(false);
+  });
+
+  it('SpreadPlaneTotal_1501_Avisa', () => {
+    expect(core.spreadPlaneTotal(1000, [{ count: 501 }]) > core.COVERAGE.PLANES_MAX).toBe(true);
+  });
+
+  it('SpreadPlaneTotal_ContagemInvalida_Ignorada', () => {
+    expect(core.spreadPlaneTotal(5, [{ count: NaN }, {}, null, { count: 3 }])).toBe(8);
+  });
+});
+
+describe('SpreadSessionEntry', () => {
+  const on = { on: true, mode: 'pick', picked: ['cfg'], dist: 30 };
+
+  it('SpreadSessionEntry_EspalharLigadoCom2Layouts_RetornaSpread', () => {
+    expect(core.spreadSessionEntry(on, 2)).toEqual(on);
+  });
+
+  it('SpreadSessionEntry_EspalharDesligado_Null', () => {
+    expect(core.spreadSessionEntry({ on: false, mode: 'all', picked: [], dist: 30 }, 3)).toBeNull();
+  });
+
+  it('SpreadSessionEntry_1Layout_Null', () => {
+    expect(core.spreadSessionEntry(on, 1)).toBeNull();
+  });
+
+  it('SpreadSessionEntry_SpreadAusente_Null', () => {
+    expect(core.spreadSessionEntry(null, 3)).toBeNull();
+    expect(core.spreadSessionEntry(undefined, 3)).toBeNull();
+  });
+
+  it('SpreadSessionEntry_Retorno_NaoCompartilhaPicked', () => {
+    const out = core.spreadSessionEntry(on, 2);
+    expect(out.picked).not.toBe(on.picked);
+  });
+
+  it('SpreadSessionEntry_ConCam_PreservaCam', () => {
+    const withCam = { on: true, mode: 'all', picked: [], dist: 10, cam: { x: 5, y: -3, z: 0.5 } };
+    const out = core.spreadSessionEntry(withCam, 2);
+    expect(out.cam).toEqual({ x: 5, y: -3, z: 0.5 });
+    expect(out.cam).not.toBe(withCam.cam);
+  });
+
+  it('SpreadSessionEntry_ModoDesconhecido_ViraPick', () => {
+    expect(core.spreadSessionEntry({ on: true, mode: 'bogus', picked: [], dist: 0 }, 2).mode).toBe('pick');
+    expect(core.spreadSessionEntry({ on: true, picked: [], dist: 0 }, 2).mode).toBe('pick');
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', picked: [], dist: 0 }, 2).mode).toBe('all');
+  });
+
+  it('SpreadSessionEntry_Dist_ClampadaENaNViraZero', () => {
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', dist: 250 }, 2).dist).toBe(100);
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', dist: -4 }, 2).dist).toBe(0);
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', dist: NaN }, 2).dist).toBe(0);
+  });
+
+  it('SpreadSessionEntry_ContagemInvalida_Null', () => {
+    expect(core.spreadSessionEntry(on, NaN)).toBeNull();
+    expect(core.spreadSessionEntry(on, undefined)).toBeNull();
+  });
+});
+
+describe('OverviewFit', () => {
+  // independent projection of the footprint box with scale3d(S,S,S) under perspective, as the browser does it (pivot = footprint center)
+  const project = (o, S, tx, ty = 0) => {
+    const a = o.yaw * Math.PI / 180, b = o.tilt * Math.PI / 180; let l = Infinity, r = -Infinity, t = Infinity, d = -Infinity, zmax = -Infinity;
+    for (const xs of [-1, 1]) for (const ys of [-1, 1]) for (const z of [0, o.zm]) {
+      const x1 = xs * o.foot / 2, y1 = ys * o.pageH / 2, x2 = x1 * Math.cos(a) + z * Math.sin(a), z2 = -x1 * Math.sin(a) + z * Math.cos(a);
+      const y3 = y1 * Math.cos(b) - z2 * Math.sin(b), z3 = y1 * Math.sin(b) + z2 * Math.cos(b), k = o.persp / (o.persp - S * z3);
+      l = Math.min(l, (S * x2 + tx) * k); r = Math.max(r, (S * x2 + tx) * k); t = Math.min(t, (S * y3 + ty) * k); d = Math.max(d, (S * y3 + ty) * k); zmax = Math.max(zmax, S * z3);
+    }
+    return { l, r, t, d, zmax };
+  };
+  // largest z3 (towards the eye) of any footprint corner when the camera pivot sits anywhere on the footprint: x and y at its edges, z at either end
+  const worstZ3 = (o) => {
+    const a = o.yaw * Math.PI / 180, b = o.tilt * Math.PI / 180; let zmax = -Infinity;
+    for (const xs of [-1, 1]) for (const ys of [-1, 1]) for (const z of [0, o.zm]) for (const px of [-1, 1]) for (const py of [-1, 1]) for (const pz of [0, o.zm]) {
+      const x1 = xs * o.foot / 2 - px * o.foot / 2, y1 = ys * o.pageH / 2 - py * o.pageH / 2, z1 = z - pz;
+      const z2 = -x1 * Math.sin(a) + z1 * Math.cos(a);
+      zmax = Math.max(zmax, y1 * Math.sin(b) + z2 * Math.cos(b));
+    }
+    return zmax;
+  };
+  const four = { foot: 4 * 1280 + 3 * 384, pageH: 760, zm: 0, yaw: -32, tilt: 0, persp: 1600, stageW: 940, stageH: 560 };
+
+  it('OverviewFit_QuatroPaginasYawPadrao_NaoColapsa', () => {
+    const { fit } = core.overviewFit(four);
+    expect(fit).toBeGreaterThan(0.1); // the 2D-scale camera gave ~0.07 here and ~3e-4 once orbited
+  });
+
+  it('OverviewFit_YawZero_SemPerspectivaNoPlano_UsaLarguraDoPalco', () => {
+    const o = { ...four, yaw: 0 }, r = core.overviewFit(o);
+    expect(r.fit).toBeCloseTo(Math.min(o.stageW / (o.foot * 1.18 + 80), o.stageH / (o.pageH + 200)), 6);
+    expect(r.tx).toBeCloseTo(0, 6);
+    expect(r.ty).toBeCloseTo(0, 6);
+  });
+
+  it('OverviewFit_OrbitaMais15Menos15_FitSaudavelEDentroDoPalco', () => {
+    [-47, -32, -17, 0, 25].forEach(yaw => [30, 100].forEach(dist => {
+      const o = { ...four, yaw, foot: 4 * 1280 + 3 * 1280 * dist / 100, zm: 360 }, r = core.overviewFit(o), p = project(o, r.fit, r.tx, r.ty);
+      expect(r.fit, 'yaw ' + yaw + ' dist ' + dist).toBeGreaterThan(0.04);
+      expect(p.zmax).toBeLessThanOrEqual(o.persp / 2 + 1e-6);
+      expect(p.r - p.l).toBeLessThanOrEqual(o.stageW / 1.18);
+      expect(p.d - p.t).toBeLessThanOrEqual(o.stageH);
+      expect(Math.abs(p.l + p.r)).toBeLessThan(2); // centered
+      expect(Math.abs(p.t + p.d)).toBeLessThan(2);
+    }));
+  });
+
+  it('OverviewFit_PivoNoExtremoDoFootprint_NenhumCantoCruzaOPlanoDoOlho', () => {
+    // frame() moves the pivot to the active page, so corner |z| can double: S * z3 must stay <= persp / 2 for any pivot on the footprint
+    [{ N: 4, dist: 30, zm: 360 }, { N: 4, dist: 100, zm: 360 }, { N: 8, dist: 30, zm: 720 }, { N: 8, dist: 100, zm: 720 }, { N: 4, dist: 100, zm: 720, big: 1 }].forEach(c => [-47, -32, -15, 0, 15].forEach(yaw => [0, 30, -45].forEach(tilt => {
+      const o = { ...four, yaw, tilt, zm: c.zm, foot: c.N * 1280 + (c.N - 1) * 1280 * c.dist / 100, ...(c.big ? { stageW: 40000, stageH: 20000 } : {}) }, r = core.overviewFit(o);
+      expect(r.fit * worstZ3(o), JSON.stringify({ ...c, yaw, tilt })).toBeLessThanOrEqual(o.persp / 2 + 1e-6);
+    })));
+  });
+
+  it('OverviewFit_PaginasRetratoComTilt_CentralizaVerticalmente', () => {
+    // tilt makes the projected y range asymmetric: without ty the top edge lost 59-65px at tilt 30-70
+    [30, 45, 70].forEach(tilt => {
+      const o = { foot: 3 * 390 + 2 * 117, pageH: 844, zm: 720, yaw: -32, tilt, persp: 1600, stageW: 940, stageH: 724 }, r = core.overviewFit(o), p = project(o, r.fit, r.tx, r.ty);
+      expect(Math.abs(r.ty), 'tilt ' + tilt).toBeGreaterThan(1);
+      expect(p.t).toBeGreaterThanOrEqual(-o.stageH / 2 - 1e-6);
+      expect(p.d).toBeLessThanOrEqual(o.stageH / 2 + 1e-6);
+      expect(Math.abs(p.t + p.d)).toBeLessThan(2);
+    });
+  });
+
+  it('OverviewFit_MaisLayoutsOuMaisDistancia_NuncaAumentaOFit', () => {
+    const f = (o) => core.overviewFit({ ...four, ...o }).fit;
+    expect(f({ foot: 6000 })).toBeLessThanOrEqual(f({ foot: 4000 }));
+    expect(f({ foot: 9000 })).toBeLessThan(f({ foot: 6000 }));
+  });
+
+  it('OverviewFit_PalcoMinusculo_NaoDaNaNNemNegativo', () => {
+    const r = core.overviewFit({ ...four, stageW: 10, stageH: 10 });
+    expect(Number.isFinite(r.fit) && r.fit >= 0).toBe(true);
+    expect(Number.isFinite(r.tx)).toBe(true);
+    expect(Number.isFinite(r.ty)).toBe(true);
+  });
+});
+
+describe('ViewCuller zs (z scale)', () => {
+  const base = { pageW: 1000, pageH: 600, stageW: 800, stageH: 600, persp: 1600, S: 0.5, yaw: 0, tilt: 0, tx: 0, ty: 0, fx: 0, fy: 0, fz: 0, margin: 0 };
+
+  it('Zs_ZEscaladoPorZs_CortaPlanoForaDoPalco', () => {
+    // z = 2000 sits behind the camera plane at z scale 1, but zs * z = 1000: k = 2.67 pushes the plane off the stage
+    expect(core.viewCuller(base)(950, 250, 50, 50, 2000)).toBe(false);
+    expect(core.viewCuller({ ...base, zs: 0.5 })(950, 250, 50, 50, 2000)).toBe(true);
+  });
+
+  it('Zs_DiferenteDeS_ZUsaZsEXYUsaS', () => {
+    // overview world = scale(zoom) scale3d(fit): S = fit * zoom scales x/y, zs = fit scales z; zoom must not move the plane towards the eye
+    expect(core.viewCuller({ ...base, S: 2, zs: 0.2 })(950, 250, 50, 50, 1000)).toBe(true); // zs * z = 200: in front of the eye, off the stage
+    expect(core.viewCuller({ ...base, S: 2, zs: 2 })(950, 250, 50, 50, 1000)).toBe(false); // zs * z = 2000: behind the eye never culls
+  });
+
+  it('Zs_Ausente_MantemMatematicaAnterior', () => {
+    // S != 1 and z != 0 so ignoring the flag changes the answer: with zs absent z keeps full size (k = 2.67, off the stage); zs = S shrinks it (k = 1.45, on stage)
+    expect(core.viewCuller(base)(950, 250, 50, 50, 1000)).toBe(true);
+    expect(core.viewCuller({ ...base, zs: 0.5 })(950, 250, 50, 50, 1000)).toBe(false);
+  });
+});

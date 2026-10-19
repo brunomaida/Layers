@@ -62,6 +62,9 @@ de snapshot: `tools/layers-snapshot.js` (ver [docs/layers-json.md](docs/layers-j
 ### Cobertura de layouts
 **Projetos ▾ › Analisar cobertura** varre o repositório sem rodar o app e mostra num modal quanto dele cada abordagem cobre (Monovisual, Monovisual + states e Múltiplos layouts), a regra que decidiu e, quando vale dividir em layouts, um trecho `layouts` para **Copiar** e colar no `layers.json`. É só leitura: nada é gravado. GitHub e fixture HTTP não listam arquivos e dão cobertura parcial. Regras e limites em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#cobertura-s91b); exemplo em `fixtures/coverage-multi/`.
 
+### Espalhar layouts
+Com 2 ou mais layouts, **⊞ ESPALHAR ▾** (último item da faixa LAYOUTS) mostra os layouts lado a lado no palco 3D: o ativo completo e os demais como retratos congelados em LOD (planos de nível L0–L1, borda tracejada, sufixo "· LOD"). No popover, **Foco** volta a um layout só, **Todos** espalha todos, **1–N** deixa escolher quais (o ativo sempre entra) e o slider ajusta a distância. Clicar num plano LOD ativa o layout e seleciona o mesmo nó; arrastar a órbita sobre ele não. Acima de 1.500 planos aparece um aviso que não bloqueia (a órbita pode degradar). Só o ativo edita; os retratos não acompanham o disco até **Recarregar**, e a edição entre layouts fica para a S9.1d. Fluxo, contratos e limites em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#espalhar-s91c); exemplo em `fixtures/multi-layout/`.
+
 ### Menu de contexto e requisições
 Botão direito num componente do palco ou da Árvore abre o menu de contexto: as camadas L0–Ln com o
 selecionado em destaque, **Explodir daqui** / **Recolher até aqui** (na vista plana, só o ramo ganha

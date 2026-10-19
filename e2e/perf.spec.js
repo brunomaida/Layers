@@ -35,6 +35,11 @@ const EXPECTED = [
   'orbit/1500-tags-v1-tree-ideal/mean-frame-ms',
   'orbit/1500-tags-flat/mean-frame-ms',
   'orbit/1500-tags-branch-exploded/mean-frame-ms',
+  'spread/multi-layout/orbit-mean-frame-ms',
+  'spread/multi-layout/enable-ms',
+  'spread/heavy/orbit-mean-frame-ms',
+  'spread/heavy/drag-off-mean-frame-ms',
+  'spread/heavy/drag-on-mean-frame-ms',
   'tree/traval/hover-ms',
   'tree/traval/select-ms',
   'tree/1500-tags/hover-ms',
@@ -469,6 +474,36 @@ test('Explode_Toggle_ReportsFrameCost', async ({ page }) => {
   rec('explode/traval/toggle-ms', ms);
 });
 
+// S9.1c Task 4: orbit with Espalhar on in multi-layout: 3 pages (main full + config and replay in LOD; broken is unavailable and takes no slot).
+// The target stays > 50 fps (Orbit_Budget_Above50Fps); the budget below is provisional until the Task 7 measurement run.
+const SPREAD_ORBIT_BUDGET_MS = 36; // 2x the rounded median (18 ms, vsync-capped) measured 2026-10-19
+test('Orbit_SpreadThreePages_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await waitForScan(page);
+  await act(page, 'spreadOn', true);
+  await expect.poll(() => page.evaluate(() => window.__logic.spreadFrozen.size)).toBe(3);
+  await page.waitForTimeout(600); // let the page set and the camera settle
+  const pages = await page.evaluate(() => document.querySelectorAll('[data-spread-page]').length);
+  expect(pages).toBe(3);
+  const census = await planeCensus(page);
+  const o = await orbitDrag(page, 1500);
+  rec('spread/multi-layout/orbit-mean-frame-ms', o.meanFrameMs, {
+    fps: o.fps,
+    p95FrameMs: o.p95FrameMs,
+    frames: o.frames,
+    loafCount: o.loafCount,
+    loafScriptShare: o.loafScriptShare,
+    gcsPerFrame: o.gcsPerFrame,
+    main: o.main,
+    pages,
+    lodPlanes: await page.evaluate(() => document.querySelectorAll('[data-lod-plane]').length),
+    census,
+  });
+  expect(o.frames).toBeGreaterThanOrEqual(30);
+  expect(o.meanFrameMs, `mean frame ${o.meanFrameMs.toFixed(1)} ms (${o.fps.toFixed(0)} fps), p95 ${o.p95FrameMs.toFixed(1)} ms`).toBeLessThan(SPREAD_ORBIT_BUDGET_MS);
+});
+
 // S9.1a Task 7a: layout switch vs a reload of the active layout, in the same page, on ~1,500-node mocks. The multi-layout mocks are
 // tiny, so the main and config mocks are replaced through page.route (like inflateTraval; no fixture file changes) with two big,
 // different bodies. The control is doReload (loadProject of the layout already mounted); switchLayout does the same work plus the
@@ -619,6 +654,154 @@ test('Coverage_Analyze_CostsUnderBudget', async ({ page }) => {
   rec('coverage/analyze-200-html-1500-tags/analyze-ms', ms, { runs, regions });
   expect(regions, 'one tela per distinct screen plus their sub-regions').toBeGreaterThanOrEqual(200);
   expect(ms, `analyzeCoverage median ${ms.toFixed(0)} ms (${runs.map((x) => x.toFixed(0))}) vs budget ${COVERAGE_BUDGET_MS} ms`).toBeLessThanOrEqual(COVERAGE_BUDGET_MS);
+});
+
+// S9.1c Task 7: cost of Espalhar on big mocks. Same trick as LayoutSwitch: the multi-layout mocks are tiny, so the bodies of main, config and
+// replay are replaced through page.route with ~1,500-node ones (broken stays missing: it is the unavailable page). Budgets below are
+// Budgets are 2x the rounded medians measured on the reference machine (same rule as S9.1a).
+const SPREAD_ENABLE_BUDGET_MS = 746; // 2x the rounded median (373 ms) measured 2026-10-19
+const SPREAD_HEAVY_ORBIT_FLOOR_MS = 198; // 2x the rounded median (99 ms, ~10 fps at 3,303 planes: the degradation the warning exists for) measured 2026-10-19
+const SPREAD_DRAG_REL = 1.5, SPREAD_DRAG_ABS_MS = 5; // spread-on drag <= REL x spread-off + ABS; measured 2026-10-19: off 20.8 ms, on 19.5 ms
+const bigLayouts = async (page, files) => {
+  for (const [file, cls] of files) {
+    await page.route(`**/fixtures/multi-layout/layers/${file}.html`, async (route) => {
+      const html = await (await route.fetch()).text();
+      await route.fulfill({ body: html.replace(/<body[\s\S]*<\/body>/i, bigBody(cls, 1500)), contentType: 'text/html' });
+    });
+  }
+};
+// resolves when the load is settled and every layout but the active one has a frozen entry (3 of 4: the broken one is an `unavailable` entry)
+const spreadSettled = (page) => page.waitForFunction(() => {
+  const lg = window.__logic;
+  return lg.loadedSeq === lg.loadSeq && lg.state.spread.on && lg.spreadFrozen.size === lg.state.project.layouts.length - 1;
+}, null, { timeout: 40_000 });
+
+test('Spread_EnableThreeLayouts_RecordsLodReadCost', async ({ page }) => {
+  await instrument(page);
+  await bigLayouts(page, [['main', 'mm'], ['config', 'cc'], ['replay', 'rr']]);
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await waitForScan(page, 1000, 40_000);
+  await act(page);
+  // spreadOn(true) until the frozen map is complete: spreadBump runs right after each entry is stored, so hooking it ends the timing with no polling latency
+  const timed = () => page.evaluate(async () => {
+    const lg = window.__logic, want = lg.state.project.layouts.length - 1;
+    const bump = lg.spreadBump.bind(lg);
+    let done; const p = new Promise((r) => { done = r; });
+    let t1 = 0;
+    lg.spreadBump = () => { bump(); if (!t1 && lg.spreadFrozen.size === want) { t1 = performance.now(); done(); } };
+    const t0 = performance.now();
+    lg.spreadOn(true);
+    const to = setTimeout(done, 30_000);
+    await p; clearTimeout(to);
+    delete lg.spreadBump; // back to the prototype method
+    const ms = t1 ? t1 - t0 : -1;
+    await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+    const F = lg.spreadFrozen, lod = ['config', 'replay'].map((id) => (F.get(id) || {}).count || 0);
+    return { ms, paintedMs: performance.now() - t0, lod, unavailable: !!(F.get('broken') || {}).unavailable, pages: document.querySelectorAll('[data-spread-page]').length };
+  });
+  const off = async () => {
+    await page.evaluate(() => window.__logic.spreadOn(false));
+    await expect.poll(() => page.evaluate(() => window.__logic.spreadFrozen.size + (window.__logic.state.spread.on ? 1 : 0))).toBe(0);
+    await page.waitForTimeout(400); // let the unmount and any rescan settle before the next timed run
+  };
+  await timed(); await off(); // warm-up: JIT, fetch path and style caches, not timed
+  const runs = [], painted = [];
+  let last = null;
+  for (let i = 0; i < 3; i++) {
+    const r = await timed();
+    expect(r.ms, `run ${i}: frozen map never completed`).toBeGreaterThan(0);
+    runs.push(r.ms); painted.push(r.paintedMs); last = r;
+    await off();
+  }
+  const ms = median(runs);
+  rec('spread/multi-layout/enable-ms', ms, { runs, paintedRuns: painted, lodNodes: last.lod, unavailable: last.unavailable, pages: last.pages });
+  expect(last.lod.every((n) => n > 100), `each big layout must freeze a real LOD slice, got ${last.lod}`).toBe(true);
+  expect(last.unavailable).toBe(true);
+  expect(ms, `enable median ${ms.toFixed(0)} ms (${runs.map((x) => x.toFixed(0))}) vs provisional budget ${SPREAD_ENABLE_BUDGET_MS} ms`).toBeLessThanOrEqual(SPREAD_ENABLE_BUDGET_MS);
+});
+
+// Worst case the warning exists for: config active (~1,500 planes) + main frozen FULL (the previous active, ~1,500 planes) + replay in LOD,
+// so the total is well over COVERAGE.PLANES_MAX. Documents the degradation: the assertion is a lenient floor, the number is the result.
+test('Orbit_SpreadHeavyOverWarningLimit_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await bigLayouts(page, [['main', 'mm'], ['config', 'cc'], ['replay', 'rr']]);
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await waitForScan(page, 1000, 40_000);
+  await act(page);
+  await page.evaluate(() => window.__logic.spreadOn(true));
+  await spreadSettled(page);
+  await page.evaluate(() => window.__logic.switchLayout('config'));
+  await page.waitForFunction(() => {
+    const lg = window.__logic, m = lg.spreadFrozen.get('main');
+    return lg.loadedSeq === lg.loadSeq && lg.state.project.layoutId === 'config' && lg.state.nodes.length > 1000 && m && m.full && lg.spreadFrozen.size === 3;
+  }, null, { timeout: 40_000 });
+  await page.waitForTimeout(800); // let the world, the page set and the camera settle
+  const info = await page.evaluate(() => {
+    const lg = window.__logic, ui = lg.spreadUi(), frozen = [...lg.spreadFrozen.values()];
+    return {
+      active: lg.state.nodes.length,
+      fullFrozen: lg.spreadFrozen.get('main').count,
+      lod: lg.spreadFrozen.get('replay').count,
+      total: lg.state.nodes.length + frozen.reduce((a, e) => a + (e.count || 0), 0),
+      planes: document.querySelectorAll('[data-plane]').length,
+      lodPlanes: document.querySelectorAll('[data-lod-plane]').length,
+      warnMark: document.querySelectorAll('[data-spread-warnmark]').length,
+      warnTitle: ui.spBtnTitle,
+      warnFlag: !!ui.spWarnBtn,
+    };
+  });
+  expect(info.total, 'worst case must exceed the 1,500-plane limit').toBeGreaterThan(1500);
+  expect(info.warnFlag, `warning state at ${info.total} planes`).toBe(true);
+  expect(info.warnMark, 'the button carries the warning mark').toBe(1);
+  const o = await orbitDrag(page, 1500);
+  rec('spread/heavy/orbit-mean-frame-ms', o.meanFrameMs, {
+    fps: o.fps,
+    p95FrameMs: o.p95FrameMs,
+    frames: o.frames,
+    loafCount: o.loafCount,
+    loafScriptShare: o.loafScriptShare,
+    gcsPerFrame: o.gcsPerFrame,
+    main: o.main,
+    ...info,
+  });
+  expect(o.frames).toBeGreaterThanOrEqual(10);
+  expect(o.meanFrameMs, `heavy mean frame ${o.meanFrameMs.toFixed(1)} ms (${o.fps.toFixed(0)} fps), p95 ${o.p95FrameMs.toFixed(1)} ms, ${info.total} planes`).toBeLessThan(SPREAD_HEAVY_ORBIT_FLOOR_MS);
+});
+
+// Orbit-drag frame time with Espalhar ON vs OFF on the same project in the same test: only main is heavy (~1,500 planes), config and replay stay at
+// fixture size. It does NOT isolate the spread overhead: spread-on draws the overview smaller (fit), so ON can be cheaper than OFF; the relative bound
+// only guards against ON being much worse. The bookkeeping cost (the `[tag, frame, ...planes]` copies in scene(), flagged in the Task 4 review) is the
+// number recorded as `sceneMsPerCall` for both modes (measured 1.05 ms off, 0.89 ms on: the copies do not show above noise); scene() is timed per call through an instance wrapper.
+test('Drag_SpreadOnVsOff_CostsNoMoreThanRelativeBound', async ({ page }) => {
+  await instrument(page);
+  await bigLayouts(page, [['main', 'mm']]);
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await waitForScan(page, 1000, 40_000);
+  await act(page);
+  const drag = async () => {
+    await page.evaluate(() => {
+      const lg = window.__logic;
+      lg.setState({ yaw: 0, tilt: 0 }); // same starting view for both runs
+      window.__sceneT = { n: 0, ms: 0 };
+      if (!lg.__sceneOrig) { lg.__sceneOrig = lg.scene.bind(lg); lg.scene = () => { const t = performance.now(); const r = lg.__sceneOrig(); window.__sceneT.n++; window.__sceneT.ms += performance.now() - t; return r; }; }
+    });
+    await page.waitForTimeout(600);
+    const o = await orbitDrag(page, 1500);
+    const t = await page.evaluate(() => window.__sceneT);
+    return { o, sceneMsPerCall: t.n ? t.ms / t.n : 0, sceneCalls: t.n };
+  };
+  const a = await drag(); // control: Espalhar off
+  await page.evaluate(() => window.__logic.spreadOn(true));
+  await spreadSettled(page);
+  const pages = await page.evaluate(() => document.querySelectorAll('[data-spread-page]').length);
+  expect(pages).toBe(3);
+  const b = await drag();
+  const extra = (r) => ({ fps: r.o.fps, p95FrameMs: r.o.p95FrameMs, frames: r.o.frames, loafCount: r.o.loafCount, gcsPerFrame: r.o.gcsPerFrame, main: r.o.main, sceneMsPerCall: r.sceneMsPerCall, sceneCalls: r.sceneCalls });
+  rec('spread/heavy/drag-off-mean-frame-ms', a.o.meanFrameMs, extra(a));
+  rec('spread/heavy/drag-on-mean-frame-ms', b.o.meanFrameMs, { ...extra(b), pages });
+  expect(a.o.frames).toBeGreaterThanOrEqual(10);
+  expect(b.o.frames).toBeGreaterThanOrEqual(10);
+  expect(b.o.meanFrameMs, `drag spread on ${b.o.meanFrameMs.toFixed(1)} ms (scene ${b.sceneMsPerCall.toFixed(2)} ms/call) vs off ${a.o.meanFrameMs.toFixed(1)} ms (scene ${a.sceneMsPerCall.toFixed(2)} ms/call)`).toBeLessThanOrEqual(a.o.meanFrameMs * SPREAD_DRAG_REL + SPREAD_DRAG_ABS_MS);
 });
 
 test.afterAll(() => {

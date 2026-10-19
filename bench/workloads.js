@@ -65,5 +65,11 @@ export function loadWorkloads() {
     manyHtml: { man: { mock: 'screens/s0.html' }, files: covMany, mocks: { 'screens/s0.html': covMany[0].text } },
   };
 
-  return { css, travalSheets, dcText, manifestFiles, zip, coverage };
+  // S9.1c: Espalhar inputs. overviewFit runs per render in the overview camera (8 pages at dist 30); lodNodes slices a 1,500-node scan at depth 1.
+  const spread = {
+    fit: { foot: 8 * 1280 + 7 * 384, pageH: 760, zm: 360, yaw: -32, tilt: 0, persp: 1600, stageW: 1280, stageH: 760 },
+    nodes: Array.from({ length: 1500 }, (_, i) => ({ id: String(i), depth: i % 6 })),
+  };
+
+  return { css, travalSheets, dcText, manifestFiles, zip, coverage, spread };
 }

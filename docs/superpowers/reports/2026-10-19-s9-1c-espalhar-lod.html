@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Implementation Report — s9-1c-espalhar-lod</title>
+  <style>
+:root {
+  --bg:              #ffffff;
+  --bg-sidebar:      #fafafa;
+  --bg-header:       #ffffff;
+  --bg-footer:       #fafafa;
+  --bg-code:         #f4f4f5;
+  --bg-decision:     #f9f9f9;
+  --border:          #e8e8e8;
+  --border-decision: #d4d4d8;
+  --border-indent:   #e4e4e7;
+  --text:            #1c1c1e;
+  --text-muted:      #71717a;
+  --text-code:       #3f3f46;
+  --accent-active:   #1c1c1e;
+  --accent-active-bg:#f0f0f0;
+  --decision-icon:   #71717a;
+
+  --btn-approve-bg:     #f0fdf4;
+  --btn-approve-border: #bbf7d0;
+  --btn-approve-text:   #15803d;
+  --btn-decline-bg:     #fff1f2;
+  --btn-decline-border: #fecdd3;
+  --btn-decline-text:   #be123c;
+  --btn-revision-bg:    #f4f4f5;
+  --btn-revision-border:#d4d4d8;
+  --btn-revision-text:  #3f3f46;
+
+  --fs-scale:   1;
+  --fs-body:    calc(var(--fs-scale) * 17.5px);
+  --fs-sm:      calc(var(--fs-scale) * 16px);
+  --fs-xs:      calc(var(--fs-scale) * 14px);
+  --fs-code:    calc(var(--fs-scale) * 15.5px);
+  --fs-h2:      calc(var(--fs-scale) * 21px);
+  --fs-h3:      calc(var(--fs-scale) * 17.5px);
+  --fs-h4:      calc(var(--fs-scale) * 16px);
+  --fs-btn:     calc(var(--fs-scale) * 16px);
+  --fs-chip:    calc(var(--fs-scale) * 13.75px);
+  --fs-sidebar: calc(var(--fs-scale) * 16px);
+  --fs-sub-sidebar: calc(var(--fs-scale) * 15.5px);
+  --fs-label:   calc(var(--fs-scale) * 11px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--fs-body);
+  color: var(--text);
+  background: var(--bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  min-height: 52px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 10px 20px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 var(--border);
+}
+.header-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; row-gap: 2px; }
+.header-label {
+  font-weight: 700; font-size: 13px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+}
+.header-sep { color: #d1d5db; font-size: 18px; }
+.header-filename {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  overflow-wrap: anywhere; white-space: normal;
+}
+.header-center { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.chip {
+  font-size: var(--fs-chip); padding: 3px 11px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text-muted); white-space: nowrap;
+}
+.chip-warn { background: #f4f4f5; border-color: #d4d4d8; color: #52525b; }
+
+.body { flex: 1; display: flex; overflow: hidden; }
+
+.sidebar {
+  width: 290px; flex-shrink: 0; background: var(--bg-sidebar);
+  border-right: 1px solid var(--border); display: flex;
+  flex-direction: column; overflow-y: auto;
+}
+.sidebar-title {
+  padding: 16px 18px 8px; font-size: var(--fs-label); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+}
+.tree { padding: 4px 10px 16px; list-style: none; }
+.tree-row { display: flex; align-items: center; }
+.tree-toggle {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 10px; width: 22px; height: 30px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+  border-radius: 4px; transition: background 0.1s; padding: 0;
+}
+.tree-toggle:hover { background: rgba(0,0,0,0.06); }
+.tree-toggle.hidden { visibility: hidden; pointer-events: none; }
+
+.tree-item > .tree-row > a {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px 5px 4px; border-radius: 6px; text-decoration: none;
+  color: var(--text); font-size: var(--fs-sidebar); line-height: 1.3;
+  font-weight: 500; transition: background 0.15s ease, color 0.15s ease;
+}
+.tree-item > .tree-row > a:hover { background: rgba(0,0,0,0.035); }
+.tree-item.active > .tree-row > a {
+  background: var(--accent-active-bg); color: var(--accent-active); font-weight: 600;
+}
+
+.tree-children {
+  list-style: none; padding-left: 0; margin-left: 22px;
+  border-left: 2px solid var(--border-indent); padding-left: 8px;
+  margin-top: 2px; margin-bottom: 4px;
+}
+.tree-children.collapsed { display: none; }
+.tree-children .tree-item > .tree-row > a {
+  font-size: var(--fs-sub-sidebar); color: var(--text-muted); font-weight: 400;
+}
+.tree-children .tree-item.active > .tree-row > a {
+  color: var(--accent-active); background: var(--accent-active-bg); font-weight: 500;
+}
+.tree-num {
+  font-variant-numeric: tabular-nums; color: var(--text-muted);
+  font-size: 0.9em; margin-right: 2px;
+}
+.tree-badge {
+  font-size: 11px; padding: 1px 6px; border-radius: 4px;
+  background: #f4f4f5; color: #71717a;
+  border: 1px solid #d4d4d8; margin-left: auto;
+}
+.sidebar-divider { margin: 8px 18px; border: none; border-top: 1px solid var(--border); }
+.sidebar-legend {
+  padding: 2px 18px 16px; font-size: var(--fs-xs); color: var(--text-muted);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.legend-item { display: flex; align-items: center; gap: 7px; }
+
+.content { flex: 1; overflow-y: auto; min-width: 0; }
+.content-inner { max-width: 1280px; margin: 0 auto; padding: 32px 36px 24px; }
+
+.plan-preamble {
+  font-size: var(--fs-sm); color: var(--text-muted);
+  margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.plan-preamble p { margin: 0 0 8px; }
+.plan-preamble p:last-child { margin-bottom: 0; }
+
+section.top-section { margin-bottom: 44px; scroll-margin-top: 16px; }
+
+.section-heading {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  padding: 10px 14px; background: #f4f4f5; border-radius: 8px;
+}
+.section-heading h2 { font-size: var(--fs-h2); font-weight: 700; margin: 0; flex: 1; }
+.section-heading h3 { font-size: var(--fs-h3); font-weight: 600; margin: 0; flex: 1; }
+.section-num-badge {
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  min-width: 28px; color: #1c1c1e; font-size: 19px; font-weight: 800;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  flex-shrink: 0; margin-right: 4px;
+}
+
+.section-collapse {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 12px; width: 22px; height: 22px; display: flex;
+  align-items: center; justify-content: center; border-radius: 4px;
+  flex-shrink: 0; transition: background 0.1s; padding: 0;
+}
+.section-collapse:hover { background: rgba(0,0,0,0.06); }
+
+.section-body {
+  display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start;
+}
+.section-body.collapsed { display: none; }
+.section-body.no-aside { grid-template-columns: 1fr; }
+.section-main { min-width: 0; }
+
+.section-aside { position: sticky; top: 16px; }
+.aside-label {
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 8px;
+}
+.aside-textarea {
+  width: 100%; min-height: 100px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-sidebar); font-size: var(--fs-sm); font-family: inherit;
+  resize: vertical; color: var(--text); line-height: 1.55;
+  transition: border-color 0.15s, background 0.15s;
+}
+.aside-textarea:focus { outline: none; border-color: #a1a1aa; background: #fff; box-shadow: 0 0 0 3px rgba(161,161,170,0.1); }
+.aside-textarea::placeholder { color: #9ca3af; }
+
+.subsections {
+  margin-top: 8px; margin-left: 20px; padding-left: 24px;
+  border-left: 2px solid var(--border-indent);
+}
+.subsections.collapsed { display: none; }
+
+section.sub-section { margin-bottom: 36px; scroll-margin-top: 16px; }
+section.sub-section .section-heading {
+  background: #fafafa; border: 1px solid var(--border);
+  margin-bottom: 12px; padding: 7px 12px;
+}
+section.sub-section .section-num-badge { font-size: 15px; color: #52525b; min-width: 36px; }
+
+h4 { font-size: var(--fs-h4); font-weight: 600; margin: 16px 0 8px; color: var(--text-muted); }
+p { margin-bottom: 12px; line-height: 1.7; }
+
+code {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: var(--fs-code); background: var(--bg-code);
+  padding: 2px 6px; border-radius: 4px; color: var(--text-code);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 18px; overflow-x: auto;
+  margin: 14px 0; font-size: var(--fs-code);
+}
+pre code { background: none; padding: 0; }
+
+ul, ol { padding-left: 22px; margin-bottom: 12px; }
+li { margin-bottom: 6px; line-height: 1.65; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: var(--fs-sm); table-layout: fixed; }
+th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
+th { background: var(--bg-sidebar); font-weight: 600; }
+tr:nth-child(even) td { background: #fafafa; }
+
+blockquote {
+  border-left: 3px solid var(--border); padding: 4px 14px;
+  color: var(--text-muted); margin: 12px 0; font-style: italic;
+}
+
+strong { font-weight: 600; }
+
+.decision-callout {
+  background: #3f3f46; border: none; border-left: 3px solid #71717a;
+  border-radius: 10px; padding: 16px 18px; margin: 18px 0;
+}
+.decision-header {
+  display: flex; align-items: center; gap: 7px; font-weight: 600;
+  font-size: var(--fs-sm); color: #f4f4f5; margin-bottom: 10px;
+}
+.decision-body {
+  font-size: var(--fs-sm); color: #d4d4d8;
+  margin-bottom: 12px; line-height: 1.65;
+}
+.decision-body ul { padding-left: 20px; }
+.decision-body strong { color: #ffffff; }
+.decision-body code { background: #52525b; color: #f4f4f5; }
+.decision-callout textarea {
+  width: 100%; min-height: 56px; padding: 9px 12px;
+  border: 1px solid #52525b; border-radius: 8px; background: #52525b;
+  font-size: var(--fs-sm); font-family: inherit; resize: vertical;
+  color: #f4f4f5; line-height: 1.55;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.decision-callout textarea:focus {
+  outline: none; border-color: #a1a1aa;
+  box-shadow: 0 0 0 3px rgba(161,161,170,0.2);
+}
+.decision-callout textarea::placeholder { color: #a1a1aa; }
+
+footer {
+  background: var(--bg-footer); border-top: 1px solid var(--border);
+  padding: 18px 28px 20px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.footer-notes-label {
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.footer-notes-textarea {
+  width: 100%; min-height: 80px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: var(--fs-sm); font-family: inherit; color: var(--text);
+  background: var(--bg); resize: vertical; line-height: 1.6;
+}
+.footer-notes-textarea:focus { outline: none; border-color: #a1a1aa; box-shadow: 0 0 0 3px rgba(161,161,170,0.1); transition: border-color 0.15s, box-shadow 0.15s; }
+.footer-actions { display: flex; justify-content: center; gap: 14px; }
+
+button {
+  padding: 0 24px; height: 44px; border: 1px solid transparent;
+  border-radius: 10px; font-size: var(--fs-btn); font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; gap: 7px;
+  transition: background 0.15s ease, border-color 0.15s ease,
+              box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s;
+}
+button:active:not(:disabled) { transform: scale(0.98); }
+button:disabled { opacity: 0.4; cursor: default; }
+
+.btn-approve {
+  background: var(--btn-approve-bg); border-color: var(--btn-approve-border);
+  color: var(--btn-approve-text); min-width: 144px; justify-content: center;
+}
+.btn-approve:hover:not(:disabled) { background: #dcfce7; box-shadow: 0 1px 4px rgba(21,128,61,0.12); }
+.btn-decline {
+  background: var(--btn-decline-bg); border-color: var(--btn-decline-border);
+  color: var(--btn-decline-text); min-width: 144px; justify-content: center;
+}
+.btn-decline:hover:not(:disabled) { background: #ffe4e6; box-shadow: 0 1px 4px rgba(190,18,60,0.12); }
+.btn-revision {
+  background: var(--btn-revision-bg); border-color: var(--btn-revision-border);
+  color: var(--btn-revision-text); min-width: 184px; justify-content: center;
+}
+.btn-revision:hover:not(:disabled) { background: #ececec; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+.decision-banner {
+  display: none; position: fixed; top: 60px; left: 50%;
+  transform: translateX(-50%); color: white; padding: 12px 28px;
+  border-radius: 9px; font-size: var(--fs-sm); font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 200;
+  animation: slideDown 0.2s ease; white-space: nowrap;
+}
+@keyframes slideDown {
+  from { opacity: 0; top: 52px; }
+  to   { opacity: 1; top: 60px; }
+}
+
+.delta-pos { color: #be123c; font-weight: 600; }
+.delta-neg { color: #15803d; font-weight: 600; }
+.delta-zero { color: var(--text-muted); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 3px; transition: background 0.15s; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+.header-right {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0;
+}
+.header-json-name {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px;
+}
+.btn-copy-json {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0 9px; height: 26px; font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-copy-json:hover:not(:disabled) { background: var(--accent-active-bg); color: var(--text); border-color: #a1a1aa; }
+.btn-copy-json.copied { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+
+.mobile-toolbar { display: none; }
+
+@media (max-width: 768px) {
+  /* App-shell (fixed header/toolbar + internal scroll pane) wastes too much
+     of a phone's vertical space when the header wraps to 2-3 rows. Switch to
+     a normal scrolling document so header/toolbar scroll away with content
+     instead of staying pinned. */
+  body { height: auto; overflow: visible; }
+  .body { overflow: visible; }
+  .content { overflow: visible; }
+
+  .sidebar { display: none; }
+  .content-inner { padding: 16px 14px 20px; max-width: 100%; }
+  .section-body, .section-body.no-aside { grid-template-columns: 1fr; gap: 16px; }
+  .section-aside { position: static; }
+  header { grid-template-columns: 1fr; height: auto; row-gap: 6px; padding: 10px 14px; }
+  .header-center { flex-wrap: wrap; justify-content: flex-start; }
+
+  .section-heading {
+    background: none; border-radius: 0; padding: 8px 0; margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  section.sub-section .section-heading {
+    background: none; border: none; padding: 6px 0; margin-bottom: 10px;
+  }
+
+  .mobile-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-bottom: 1px solid var(--border);
+    background: var(--bg-header); flex-shrink: 0;
+  }
+  .mt-group { display: flex; gap: 4px; }
+  .mt-group button {
+    height: 26px; padding: 0 10px; font-size: 12px; min-width: 0;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-muted);
+  }
+  .mt-group button.on { background: var(--accent-active-bg); color: var(--accent-active); font-weight: 600; }
+
+  body.density-compact .content-inner { padding: 10px 12px 16px; }
+  body.density-compact section.top-section { margin-bottom: 26px; }
+  body.density-compact section.sub-section { margin-bottom: 20px; }
+  body.density-compact p { margin-bottom: 8px; line-height: 1.5; }
+  body.density-compact li { margin-bottom: 3px; line-height: 1.45; }
+  body.density-compact .section-heading { padding: 4px 0; margin-bottom: 8px; }
+  body.density-compact th, body.density-compact td { padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="header-label">Implementation Report</span>
+    <span class="header-sep">›</span>
+    <span class="header-filename">s9-1c-espalhar-lod</span>
+  </div>
+  <div class="header-center">
+    <span class="chip">2026-10-19</span>
+    <span class="chip">7 sections</span>
+    <span class="chip">50 commits</span>
+    <span class="chip chip-warn">final</span>
+  </div>
+  <div></div>
+</header>
+
+<div class="body">
+
+  <nav class="sidebar">
+    <div class="sidebar-title">Structure</div>
+    <ul class="tree">
+<li class="tree-item" data-section="sec-1" id="tree-sec-1">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-1"><span class="tree-num">1.</span> Resumo</a>
+  </div>
+</li>
+<li class="tree-item" data-section="sec-2" id="tree-sec-2">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-2')">▼</button>
+    <a href="#sec-2"><span class="tree-num">2.</span> Solicitação &amp; Spec</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-2-children">
+    <li class="tree-item" data-section="sec-2-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-1"><span class="tree-num">2.1</span> Spec definida</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-3" id="tree-sec-3">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-3')">▼</button>
+    <a href="#sec-3"><span class="tree-num">3.</span> Mudanças</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-3-children">
+    <li class="tree-item" data-section="sec-3-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-1"><span class="tree-num">3.1</span> Added (4)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-2">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-2"><span class="tree-num">3.2</span> Changed (16)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-3">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-3"><span class="tree-num">3.3</span> Changelog fragment</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-4" id="tree-sec-4">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-4')">▼</button>
+    <a href="#sec-4"><span class="tree-num">4.</span> Arquivos tocados</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-4-children">
+    <li class="tree-item" data-section="sec-4-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-4-1"><span class="tree-num">4.1</span> src (6)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-4-2">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-4-2"><span class="tree-num">4.2</span> test (3)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-4-3">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-4-3"><span class="tree-num">4.3</span> doc (10)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-4-4">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-4-4"><span class="tree-num">4.4</span> other (1)</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-5" id="tree-sec-5">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-5"><span class="tree-num">5.</span> Testes</a>
+  </div>
+</li>
+<li class="tree-item" data-section="sec-6" id="tree-sec-6">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-6')">▼</button>
+    <a href="#sec-6"><span class="tree-num">6.</span> Commits ↔ changelog</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-6-children">
+    <li class="tree-item" data-section="sec-6-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-6-1"><span class="tree-num">6.1</span> Todos os commits</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-7" id="tree-sec-7">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-7"><span class="tree-num">7.</span> Custo (tokens + tempo)</a>
+  </div>
+</li>
+    </ul>
+  </nav>
+
+  <div class="content" id="content">
+    <div class="content-inner">
+<section class="top-section" id="sec-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-1-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">1</span> Resumo</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-1-body">
+    <div class="section-main"><p><strong>S9.1c — Espalhar layouts no palco 3D com LOD — design</strong></p>
+<p>title: &quot;S9.1c — Espalhar layouts no palco 3D com LOD — design&quot; type: spec solution: Layers status: draft created: 2026-10-19 Fatia da <a href="../../text-specs/2026-10-17-s9-1-layouts-newlogic.md">S9.1 layouts newlogic</a>. Parte do fluxo <strong>V3 Híbrido</strong> decidido em [](2026-10-17-s3-5-s9-1-design-decisions.md) (board <code>S91Fluxos</code>). Plano de implementação: [](../plans/2026-10-19-s9-1c-espalhar-layouts-no-palco.md). Issue #91. Um projeto com várias telas (S9.1a) só mostra uma por vez (Foco). O Espalhar mostra várias lado a lado no mesmo palco 3D, sem montar todas por inteiro, para o usuário comparar e navega…</p></div>
+  </div>
+  
+</section>
+<section class="top-section" id="sec-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-body" data-sub="sec-2-subs" data-tree="sec-2" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">2</span> Solicitação &amp; Spec</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-2-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-2-subs"><section class="sub-section" id="sec-2-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.1</span> Spec definida</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-1-body">
+    <div class="section-main"><p><strong>S9.1c — Espalhar layouts no palco 3D com LOD — design</strong></p>
+<p>title: &quot;S9.1c — Espalhar layouts no palco 3D com LOD — design&quot; type: spec solution: Layers status: draft created: 2026-10-19 Fatia da <a href="../../text-specs/2026-10-17-s9-1-layouts-newlogic.md">S9.1 layouts newlogic</a>. Parte do fluxo <strong>V3 Híbrido</strong> decidido em [](2026-10-17-s3-5-s9-1-design-decisions.md) (board <code>S91Fluxos</code>). Plano de implementação: [](../plans/2026-10-19-s9-1c-espalhar-layouts-no-palco.md). Issue #91. Um projeto com várias telas (S9.1a) só mostra uma por vez (Foco). O Espalhar mostra várias lado a lado no mesmo palco 3D, sem montar todas por inteiro, para o usuário comparar e navega…</p>
+<p><a href="../specs/2026-10-19-s9-1c-espalhar-lod-design.md">Ver spec completa: <code>docs\superpowers\specs\2026-10-19-s9-1c-espalhar-lod-design.md</code></a></p></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-body" data-sub="sec-3-subs" data-tree="sec-3" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">3</span> Mudanças</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-3-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-3-subs"><section class="sub-section" id="sec-3-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.1</span> Added (4)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-1-body">
+    <div class="section-main"><ul><li><code>changelog.d/feature-261019-91-s9-1c-espalhar-lod.md</code> (+15/-0, doc)</li><li><code>docs/superpowers/plans/2026-10-19-s9-1c-espalhar-layouts-no-palco.md</code> (+232/-0, doc)</li><li><code>docs/superpowers/specs/2026-10-19-s9-1c-espalhar-lod-design.md</code> (+68/-0, test)</li><li><code>e2e/spread.spec.js</code> (+1712/-0, src)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-2-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.2</span> Changed (16)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-2-body">
+    <div class="section-main"><ul><li><code>README.md</code> (+3/-0, doc)</li><li><code>bench/core.bench.js</code> (+6/-0, src)</li><li><code>bench/workloads.js</code> (+7/-1, src)</li><li><code>docs/ARCHITECTURE.md</code> (+111/-8, doc)</li><li><code>docs/RELEASE-CHECKLIST.md</code> (+4/-1, doc)</li><li><code>docs/_index.md</code> (+3/-2, doc)</li><li><code>docs/layers-json.md</code> (+4/-0, doc)</li><li><code>docs/roadmap.config.json</code> (+2/-1, doc)</li><li><code>docs/roadmap.data.json</code> (+46/-2, doc)</li><li><code>docs/roadmap.md</code> (+2/-1, doc)</li><li><code>docs/superpowers/specs/2026-10-17-s3-5-s9-1-design-decisions.md</code> (+20/-0, test)</li><li><code>e2e/layouts.spec.js</code> (+1/-1, src)</li><li><code>e2e/perf.spec.js</code> (+183/-0, src)</li><li><code>index.html</code> (+273/-51, other)</li><li><code>lib/layers-core.js</code> (+95/-3, src)</li><li><code>test/layers-core.test.js</code> (+280/-0, test)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-3-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.3</span> Changelog fragment</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-3-body">
+    <div class="section-main"><p><strong>Added:</strong></p>
+<ul><li>Espalhar layouts: <code>⊞ ESPALHAR ▾</code> (faixa LAYOUTS, 2+ layouts) mostra os layouts lado a lado no palco 3D, o ativo completo e os demais como retratos congelados em LOD (varredura rasa, borda tracejada). Popover Foco | Todos | 1–N com distância; clicar num plano LOD ativa o layout e seleciona o mesmo nó; aviso, sem bloquear, acima de 1.500 planos.</li><li>Câmera de visão geral que enquadra todas as páginas (o zoom não aproxima o olho); a câmera normal é guardada e volta ao desligar. Seleção, distância e câmera persistem em <code>session › spread</code>.</li><li>Core puro: <code>spreadPicked</code>, <code>spreadOffsets</code>, <code>lodNodes</code>, <code>spreadPlaneTotal</code>, <code>spreadSessionEntry</code>, <code>overviewFit</code>; <code>viewCuller</code> aceita <code>zs</code>. <code>loadProject</code> dividido em <code>buildMockDom</code>/<code>mountMockDom</code>/<code>scanRoot</code>; <code>readText(path, quiet)</code>.</li><li>Só o ativo edita; edição, undo e watch entre layouts ficam na S9.1d.</li></ul>
+<p><strong>Tests:</strong></p>
+<ul><li>Vitest: 644 testes (44 novos). Playwright: <code>spread</code> (106 testes) e os orçamentos do Espalhar em <code>perf</code>.</li></ul>
+<p><strong>Perf:</strong></p>
+<ul><li>measured — 2026-10-19: em Node (<code>npm run bench</code>), <code>overviewFit</code> de 8 páginas 1,6 µs e <code>lodNodes</code> de 1.500 nós 3,7 µs; no Chromium (e2e), ligar com 3 layouts 373 ms (orçamento 746), órbita de 3 páginas 17,6 ms (36), pior caso de 3.303 planos 99 ms, ~10 fps (198), órbita em <code>main</code> pesado ligado 19,5 contra 20,8 ms desligado (a visão geral desenha menor; <code>scene()</code> custa 1,05 ms desligado e 0,89 ms ligado por chamada). Desligado, nada muda.</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-4">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-body" data-sub="sec-4-subs" data-tree="sec-4" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">4</span> Arquivos tocados</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-4-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-4-subs"><section class="sub-section" id="sec-4-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">4.1</span> src (6)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-4-1-body">
+    <div class="section-main"><ul><li><a href="../../../bench/core.bench.js"><code>bench/core.bench.js</code></a> — M (+6/-0)</li><li><a href="../../../bench/workloads.js"><code>bench/workloads.js</code></a> — M (+7/-1)</li><li><a href="../../../e2e/layouts.spec.js"><code>e2e/layouts.spec.js</code></a> — M (+1/-1)</li><li><a href="../../../e2e/perf.spec.js"><code>e2e/perf.spec.js</code></a> — M (+183/-0)</li><li><a href="../../../e2e/spread.spec.js"><code>e2e/spread.spec.js</code></a> — A (+1712/-0)</li><li><a href="../../../lib/layers-core.js"><code>lib/layers-core.js</code></a> — M (+95/-3)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-4-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-2-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">4.2</span> test (3)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-4-2-body">
+    <div class="section-main"><ul><li><a href="../specs/2026-10-17-s3-5-s9-1-design-decisions.md"><code>docs/superpowers/specs/2026-10-17-s3-5-s9-1-design-decisions.md</code></a> — M (+20/-0)</li><li><a href="../specs/2026-10-19-s9-1c-espalhar-lod-design.md"><code>docs/superpowers/specs/2026-10-19-s9-1c-espalhar-lod-design.md</code></a> — A (+68/-0)</li><li><a href="../../../test/layers-core.test.js"><code>test/layers-core.test.js</code></a> — M (+280/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-4-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-3-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">4.3</span> doc (10)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-4-3-body">
+    <div class="section-main"><ul><li><a href="../../../README.md"><code>README.md</code></a> — M (+3/-0)</li><li><a href="../../../changelog.d/feature-261019-91-s9-1c-espalhar-lod.md"><code>changelog.d/feature-261019-91-s9-1c-espalhar-lod.md</code></a> — A (+15/-0)</li><li><a href="../../ARCHITECTURE.md"><code>docs/ARCHITECTURE.md</code></a> — M (+111/-8)</li><li><a href="../../RELEASE-CHECKLIST.md"><code>docs/RELEASE-CHECKLIST.md</code></a> — M (+4/-1)</li><li><a href="../../_index.md"><code>docs/_index.md</code></a> — M (+3/-2)</li><li><a href="../../layers-json.md"><code>docs/layers-json.md</code></a> — M (+4/-0)</li><li><a href="../../roadmap.config.json"><code>docs/roadmap.config.json</code></a> — M (+2/-1)</li><li><a href="../../roadmap.data.json"><code>docs/roadmap.data.json</code></a> — M (+46/-2)</li><li><a href="../../roadmap.md"><code>docs/roadmap.md</code></a> — M (+2/-1)</li><li><a href="../plans/2026-10-19-s9-1c-espalhar-layouts-no-palco.md"><code>docs/superpowers/plans/2026-10-19-s9-1c-espalhar-layouts-no-palco.md</code></a> — A (+232/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-4-4">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-4-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">4.4</span> other (1)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-4-4-body">
+    <div class="section-main"><ul><li><a href="../../../index.html"><code>index.html</code></a> — M (+273/-51)</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-5">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-5-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">5</span> Testes</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-5-body">
+    <div class="section-main"><ul><li><strong>Atributos <code>[Fact]</code>/<code>[Theory]</code> em arquivos de teste tocados:</strong> 0</li></ul>
+<p><strong>Arquivos:</strong></p>
+<ul><li><a href="../../../test/layers-core.test.js"><code>test/layers-core.test.js</code></a></li></ul></div>
+  </div>
+  
+</section>
+<section class="top-section" id="sec-6">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-6-body" data-sub="sec-6-subs" data-tree="sec-6" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">6</span> Commits ↔ changelog</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-6-body">
+    <div class="section-main"><ul><li><strong>Added:</strong> Espalhar layouts: <code>⊞ ESPALHAR ▾</code> (faixa LAYOUTS, 2+ layouts) mostra os layouts lado a lado no palco 3D, o ativo completo e os demais como retratos congelados em LOD (varredura rasa, borda tracejada). Popover Foco | Todos | 1–N com distância; clicar num plano LOD ativa o layout e seleciona o mesmo nó; aviso, sem bloquear, acima de 1.500 planos.</li><li><a href="https://github.com/brunomaida/Layers/commit/fff2ce3a2b6b813db25e4e31540eb360d7ff2fd4"><code>fff2ce3</code></a> docs: add S9.1c Espalhar design spec</li><li><a href="https://github.com/brunomaida/Layers/commit/d68b58f605f4c04fcd069e4c1ca2f9dd5d3d4e53"><code>d68b58f</code></a> feat(core): add spread layout helpers (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/3ca6d010b7798b912f7d90e2bf02c931024211e3"><code>3ca6d01</code></a> feat(ui): freeze other layouts as LOD snapshots for Espalhar (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/103da9a7f40faf31d8b7fb3983f200be63e5ab0e"><code>103da9a</code></a> test(e2e): harden Espalhar freeze and race tests (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c03a4d9a2a06f5ef6df3d9b02dfcc1aebec376f"><code>0c03a4d</code></a> feat(ui): render spread layouts with LOD planes and overview camera (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/cd0703441c39c68f9e764bf06da097fe26051883"><code>cd07034</code></a> test(perf): add Espalhar orbit measurement (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/0d6d9876a0ec891160c080b9d114090f4b7a2fd9"><code>0d6d987</code></a> fix(ui): fit the Espalhar overview camera under perspective (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/b8aed4131c1bd3c8cb9675d1a78055f84364ee41"><code>b8aed41</code></a> test(e2e): cover overview fit at real page sizes and minors (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/29f10b65a48abc19c8ed5b34613589d934aa1ca9"><code>29f10b6</code></a> test(e2e): cover overview zoom on every page (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/56b8d6b60b33304992cb93e39b2163b3b5ffc136"><code>56b8d6b</code></a> feat(ui): add Espalhar button and popover with plane warning (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/1f5d521610802647ab8a7944e9264728c0e772cd"><code>1f5d521</code></a> test(e2e): cover the Espalhar popover (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/4fc0bfc795248dca055bc3799aae6a4e1f1d8a56"><code>4fc0bfc</code></a> feat(ui): activate layouts from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c0e20206d8172faba52ebe9bf922fda37ca6621"><code>0c0e202</code></a> test(e2e): cover activation from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/aafd1a7222a016aeda7b383bbca5babdf086ddca"><code>aafd1a7</code></a> test(e2e): cover the Espalhar camera and session (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/e36bd744b297fd833515167ca780727603f28bcd"><code>e36bd74</code></a> fix(ui): polish the Espalhar popover (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/bd24c83e3790c4107e8dd0eb2a388faec2970c43"><code>bd24c83</code></a> test(e2e): cover the Espalhar popover polish (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/255a14f9cca8d8e180df853f43f6f8a9f6ff21d4"><code>255a14f</code></a> fix(ui): keep the layout left behind on the stage after a 1-N LOD click (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a6bc707ee48438bfbbf8e0a8c0f64a12a2ebece7"><code>a6bc707</code></a> test(e2e): cover 1-N LOD activation and hover cleanup (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/2348cab3722a6aa6efa6be461ad642ef006f9e49"><code>2348cab</code></a> fix(ui): keep the stage when switching layouts in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/12656ecf24689b4ace8bb0e7a5213dd093704008"><code>12656ec</code></a> fix(ui): keep per-layout cameras when toggling Espalhar (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a0d111d59ca034f91dafca280def7d8fe200d443"><code>a0d111d</code></a> fix(ui): prefer active planes over LOD planes under the pointer (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/772140f2c73bc16b201330ec790c99948f0c80f5"><code>772140f</code></a> test(e2e): cover the Espalhar fix round (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/f1733bc5340c911fb6d55fc7aecd860b74dee14a"><code>f1733bc</code></a> test(perf): fix Espalhar budgets and record measures (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/54dabb69df7c4ca4882ee59e3dd7b2930c9a6685"><code>54dabb6</code></a> docs: document Espalhar and close S9.1c (S9.1c Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/32decf1b857fd405c412b59d3e2576ca570eddce"><code>32decf1</code></a> fix(ui): drop an Espalhar toggle made during another project&#x27;s load (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/1c58393725dabaacdb8bb9077df956385eeacaa1"><code>1c58393</code></a> fix(ui): restore the right camera when leaving Espalhar on another layout (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/6f0881d3e94ffb141da0c248cd5bb9ce58b347ab"><code>6f0881d</code></a> fix(ui): keep fixture sessions free of Espalhar and clamp the overview pivot in state (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/aced25964e053c0db878158e87ad55d93e35a099"><code>aced259</code></a> fix(ui): skip LOD hover when an active plane is in front (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/20f8d9ab13d59a709105a06b84bd1340a5236e3b"><code>20f8d9a</code></a> test(perf): state what the Espalhar drag comparison measures (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/6c645be272827a32e69a94a665978149b1eb4e4f"><code>6c645be</code></a> docs: fix residual Espalhar camera and sceneMs wording (S9.1c final review)</li><li><strong>Added:</strong> Câmera de visão geral que enquadra todas as páginas (o zoom não aproxima o olho); a câmera normal é guardada e volta ao desligar. Seleção, distância e câmera persistem em <code>session › spread</code>.</li><li><a href="https://github.com/brunomaida/Layers/commit/d68b58f605f4c04fcd069e4c1ca2f9dd5d3d4e53"><code>d68b58f</code></a> feat(core): add spread layout helpers (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/bc8dba2b9f2420af5f785d727c67d6c9a9a64f82"><code>bc8dba2</code></a> fix(core): keep spread cam in session entry and guard offsets (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/60803cc80ad648631a69c5077df41ac4037d5957"><code>60803cc</code></a> fix(ui): clear frozen snapshots on every project entry and reset spread per project (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c03a4d9a2a06f5ef6df3d9b02dfcc1aebec376f"><code>0c03a4d</code></a> feat(ui): render spread layouts with LOD planes and overview camera (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/b8aed4131c1bd3c8cb9675d1a78055f84364ee41"><code>b8aed41</code></a> test(e2e): cover overview fit at real page sizes and minors (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/9e2d0ecd64489306fd23c437044188310482adc0"><code>9e2d0ec</code></a> fix(ui): keep overview zoom 2D so far pages never cross the eye plane (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/29f10b65a48abc19c8ed5b34613589d934aa1ca9"><code>29f10b6</code></a> test(e2e): cover overview zoom on every page (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/4fc0bfc795248dca055bc3799aae6a4e1f1d8a56"><code>4fc0bfc</code></a> feat(ui): activate layouts from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/aafd1a7222a016aeda7b383bbca5babdf086ddca"><code>aafd1a7</code></a> test(e2e): cover the Espalhar camera and session (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/12656ecf24689b4ace8bb0e7a5213dd093704008"><code>12656ec</code></a> fix(ui): keep per-layout cameras when toggling Espalhar (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><strong>Added:</strong> Core puro: <code>spreadPicked</code>, <code>spreadOffsets</code>, <code>lodNodes</code>, <code>spreadPlaneTotal</code>, <code>spreadSessionEntry</code>, <code>overviewFit</code>; <code>viewCuller</code> aceita <code>zs</code>. <code>loadProject</code> dividido em <code>buildMockDom</code>/<code>mountMockDom</code>/<code>scanRoot</code>; <code>readText(path, quiet)</code>.</li><li><a href="https://github.com/brunomaida/Layers/commit/d68b58f605f4c04fcd069e4c1ca2f9dd5d3d4e53"><code>d68b58f</code></a> feat(core): add spread layout helpers (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/bc8dba2b9f2420af5f785d727c67d6c9a9a64f82"><code>bc8dba2</code></a> fix(core): keep spread cam in session entry and guard offsets (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/74a5e9d858fd2983432735ce1f284b56467aa40f"><code>74a5e9d</code></a> refactor(ui): extract buildMockDom and scanRoot from loadProject (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/c01430dbcb051377b459882af84eb19300756374"><code>c01430d</code></a> test(e2e): cover shallow scanRoot ids (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/6a24e2aed02519ec6678100f22a631571a2888b7"><code>6a24e2a</code></a> fix(ui): keep loader mount and singleton writes in one tick (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/a70859363a2c01bed70bf1d6dd4af67ed5972759"><code>a708593</code></a> test(e2e): tighten scanRoot and buildMockDom assertions (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0d6d9876a0ec891160c080b9d114090f4b7a2fd9"><code>0d6d987</code></a> fix(ui): fit the Espalhar overview camera under perspective (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/9e2d0ecd64489306fd23c437044188310482adc0"><code>9e2d0ec</code></a> fix(ui): keep overview zoom 2D so far pages never cross the eye plane (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/81fbc25f9f9c99ce12b9880be41f038badc15c9e"><code>81fbc25</code></a> fix(core): solve the overview fit vertical shift (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a7d777829e7cf1c0901f373df0ebebc0c28e4ea5"><code>a7d7778</code></a> test(e2e): cover the chip path in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><strong>Added:</strong> Só o ativo edita; edição, undo e watch entre layouts ficam na S9.1d.</li><li><a href="https://github.com/brunomaida/Layers/commit/3ca6d010b7798b912f7d90e2bf02c931024211e3"><code>3ca6d01</code></a> feat(ui): freeze other layouts as LOD snapshots for Espalhar (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c03a4d9a2a06f5ef6df3d9b02dfcc1aebec376f"><code>0c03a4d</code></a> feat(ui): render spread layouts with LOD planes and overview camera (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/4fc0bfc795248dca055bc3799aae6a4e1f1d8a56"><code>4fc0bfc</code></a> feat(ui): activate layouts from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/e36bd744b297fd833515167ca780727603f28bcd"><code>e36bd74</code></a> fix(ui): polish the Espalhar popover (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/2348cab3722a6aa6efa6be461ad642ef006f9e49"><code>2348cab</code></a> fix(ui): keep the stage when switching layouts in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><strong>Tests:</strong> Vitest: 644 testes (44 novos). Playwright: <code>spread</code> (106 testes) e os orçamentos do Espalhar em <code>perf</code>.</li><li><a href="https://github.com/brunomaida/Layers/commit/fff2ce3a2b6b813db25e4e31540eb360d7ff2fd4"><code>fff2ce3</code></a> docs: add S9.1c Espalhar design spec</li><li><a href="https://github.com/brunomaida/Layers/commit/d68b58f605f4c04fcd069e4c1ca2f9dd5d3d4e53"><code>d68b58f</code></a> feat(core): add spread layout helpers (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/bc8dba2b9f2420af5f785d727c67d6c9a9a64f82"><code>bc8dba2</code></a> fix(core): keep spread cam in session entry and guard offsets (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/3ca6d010b7798b912f7d90e2bf02c931024211e3"><code>3ca6d01</code></a> feat(ui): freeze other layouts as LOD snapshots for Espalhar (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/60803cc80ad648631a69c5077df41ac4037d5957"><code>60803cc</code></a> fix(ui): clear frozen snapshots on every project entry and reset spread per project (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/103da9a7f40faf31d8b7fb3983f200be63e5ab0e"><code>103da9a</code></a> test(e2e): harden Espalhar freeze and race tests (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c03a4d9a2a06f5ef6df3d9b02dfcc1aebec376f"><code>0c03a4d</code></a> feat(ui): render spread layouts with LOD planes and overview camera (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/cd0703441c39c68f9e764bf06da097fe26051883"><code>cd07034</code></a> test(perf): add Espalhar orbit measurement (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/0d6d9876a0ec891160c080b9d114090f4b7a2fd9"><code>0d6d987</code></a> fix(ui): fit the Espalhar overview camera under perspective (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/56b8d6b60b33304992cb93e39b2163b3b5ffc136"><code>56b8d6b</code></a> feat(ui): add Espalhar button and popover with plane warning (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/1f5d521610802647ab8a7944e9264728c0e772cd"><code>1f5d521</code></a> test(e2e): cover the Espalhar popover (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/4fc0bfc795248dca055bc3799aae6a4e1f1d8a56"><code>4fc0bfc</code></a> feat(ui): activate layouts from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/aafd1a7222a016aeda7b383bbca5babdf086ddca"><code>aafd1a7</code></a> test(e2e): cover the Espalhar camera and session (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/e36bd744b297fd833515167ca780727603f28bcd"><code>e36bd74</code></a> fix(ui): polish the Espalhar popover (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/bd24c83e3790c4107e8dd0eb2a388faec2970c43"><code>bd24c83</code></a> test(e2e): cover the Espalhar popover polish (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/12656ecf24689b4ace8bb0e7a5213dd093704008"><code>12656ec</code></a> fix(ui): keep per-layout cameras when toggling Espalhar (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/772140f2c73bc16b201330ec790c99948f0c80f5"><code>772140f</code></a> test(e2e): cover the Espalhar fix round (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/f1733bc5340c911fb6d55fc7aecd860b74dee14a"><code>f1733bc</code></a> test(perf): fix Espalhar budgets and record measures (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/54dabb69df7c4ca4882ee59e3dd7b2930c9a6685"><code>54dabb6</code></a> docs: document Espalhar and close S9.1c (S9.1c Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/32decf1b857fd405c412b59d3e2576ca570eddce"><code>32decf1</code></a> fix(ui): drop an Espalhar toggle made during another project&#x27;s load (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/1c58393725dabaacdb8bb9077df956385eeacaa1"><code>1c58393</code></a> fix(ui): restore the right camera when leaving Espalhar on another layout (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/6f0881d3e94ffb141da0c248cd5bb9ce58b347ab"><code>6f0881d</code></a> fix(ui): keep fixture sessions free of Espalhar and clamp the overview pivot in state (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/20f8d9ab13d59a709105a06b84bd1340a5236e3b"><code>20f8d9a</code></a> test(perf): state what the Espalhar drag comparison measures (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/8ee4aec0b7cc40d32f0967c97df633b4de8f0759"><code>8ee4aec</code></a> docs: record the S9.1c final review fixes and the S9.1d perf follow-up (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/6c645be272827a32e69a94a665978149b1eb4e4f"><code>6c645be</code></a> docs: fix residual Espalhar camera and sceneMs wording (S9.1c final review)</li><li><strong>Perf:</strong> measured — 2026-10-19: em Node (<code>npm run bench</code>), <code>overviewFit</code> de 8 páginas 1,6 µs e <code>lodNodes</code> de 1.500 nós 3,7 µs; no Chromium (e2e), ligar com 3 layouts 373 ms (orçamento 746), órbita de 3 páginas 17,6 ms (36), pior caso de 3.303 planos 99 ms, ~10 fps (198), órbita em <code>main</code> pesado ligado 19,5 contra 20,8 ms desligado (a visão geral desenha menor; <code>scene()</code> custa 1,05 ms desligado e 0,89 ms ligado por chamada). Desligado, nada muda.</li><li><a href="https://github.com/brunomaida/Layers/commit/c01430dbcb051377b459882af84eb19300756374"><code>c01430d</code></a> test(e2e): cover shallow scanRoot ids (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/a70859363a2c01bed70bf1d6dd4af67ed5972759"><code>a708593</code></a> test(e2e): tighten scanRoot and buildMockDom assertions (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/3ca6d010b7798b912f7d90e2bf02c931024211e3"><code>3ca6d01</code></a> feat(ui): freeze other layouts as LOD snapshots for Espalhar (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/103da9a7f40faf31d8b7fb3983f200be63e5ab0e"><code>103da9a</code></a> test(e2e): harden Espalhar freeze and race tests (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c03a4d9a2a06f5ef6df3d9b02dfcc1aebec376f"><code>0c03a4d</code></a> feat(ui): render spread layouts with LOD planes and overview camera (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/0d6d9876a0ec891160c080b9d114090f4b7a2fd9"><code>0d6d987</code></a> fix(ui): fit the Espalhar overview camera under perspective (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/b8aed4131c1bd3c8cb9675d1a78055f84364ee41"><code>b8aed41</code></a> test(e2e): cover overview fit at real page sizes and minors (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/9e2d0ecd64489306fd23c437044188310482adc0"><code>9e2d0ec</code></a> fix(ui): keep overview zoom 2D so far pages never cross the eye plane (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/81fbc25f9f9c99ce12b9880be41f038badc15c9e"><code>81fbc25</code></a> fix(core): solve the overview fit vertical shift (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/29f10b65a48abc19c8ed5b34613589d934aa1ca9"><code>29f10b6</code></a> test(e2e): cover overview zoom on every page (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/1f5d521610802647ab8a7944e9264728c0e772cd"><code>1f5d521</code></a> test(e2e): cover the Espalhar popover (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/4fc0bfc795248dca055bc3799aae6a4e1f1d8a56"><code>4fc0bfc</code></a> feat(ui): activate layouts from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c0e20206d8172faba52ebe9bf922fda37ca6621"><code>0c0e202</code></a> test(e2e): cover activation from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/aafd1a7222a016aeda7b383bbca5babdf086ddca"><code>aafd1a7</code></a> test(e2e): cover the Espalhar camera and session (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/e36bd744b297fd833515167ca780727603f28bcd"><code>e36bd74</code></a> fix(ui): polish the Espalhar popover (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/bd24c83e3790c4107e8dd0eb2a388faec2970c43"><code>bd24c83</code></a> test(e2e): cover the Espalhar popover polish (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a6bc707ee48438bfbbf8e0a8c0f64a12a2ebece7"><code>a6bc707</code></a> test(e2e): cover 1-N LOD activation and hover cleanup (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/2348cab3722a6aa6efa6be461ad642ef006f9e49"><code>2348cab</code></a> fix(ui): keep the stage when switching layouts in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a7d777829e7cf1c0901f373df0ebebc0c28e4ea5"><code>a7d7778</code></a> test(e2e): cover the chip path in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/772140f2c73bc16b201330ec790c99948f0c80f5"><code>772140f</code></a> test(e2e): cover the Espalhar fix round (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/37dece9a11a7c0af45fe5bbc5075bccca5ead1fc"><code>37dece9</code></a> test(e2e): cover the overview camera on a first two-page switch (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/803f989518ecd251e033d659b0278c76a80815ea"><code>803f989</code></a> test(e2e): cover the S9.1c final review fixes (S9.1c final review)</li></ul></div>
+  </div>
+  <div class="subsections" id="sec-6-subs"><section class="sub-section" id="sec-6-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-6-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">6.1</span> Todos os commits</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-6-1-body">
+    <div class="section-main"><ul><li><a href="https://github.com/brunomaida/Layers/commit/4ca9f8481bbc14c0fba2c5482fb4b6efc47b7a14"><code>4ca9f84</code></a> docs: register S9.1c leaf in the roadmap</li><li><a href="https://github.com/brunomaida/Layers/commit/fff2ce3a2b6b813db25e4e31540eb360d7ff2fd4"><code>fff2ce3</code></a> docs: add S9.1c Espalhar design spec</li><li><a href="https://github.com/brunomaida/Layers/commit/2e8b08362f9507ea4f043b4b7a4d40074f3fad1f"><code>2e8b083</code></a> docs: add S9.1c implementation plan and link it in the roadmap</li><li><a href="https://github.com/brunomaida/Layers/commit/0b9709cdb0126089d1ceb9199121decd798d1658"><code>0b9709c</code></a> docs: rebuild roadmap data and index for the S9.1c plan</li><li><a href="https://github.com/brunomaida/Layers/commit/d68b58f605f4c04fcd069e4c1ca2f9dd5d3d4e53"><code>d68b58f</code></a> feat(core): add spread layout helpers (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/3580e9e29662109c2ffc409fd437bf1226c99c9e"><code>3580e9e</code></a> docs: register S9.1d leaf in the roadmap (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/bc8dba2b9f2420af5f785d727c67d6c9a9a64f82"><code>bc8dba2</code></a> fix(core): keep spread cam in session entry and guard offsets (S9.1c Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/74a5e9d858fd2983432735ce1f284b56467aa40f"><code>74a5e9d</code></a> refactor(ui): extract buildMockDom and scanRoot from loadProject (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/c01430dbcb051377b459882af84eb19300756374"><code>c01430d</code></a> test(e2e): cover shallow scanRoot ids (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/6a24e2aed02519ec6678100f22a631571a2888b7"><code>6a24e2a</code></a> fix(ui): keep loader mount and singleton writes in one tick (S9.1c Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/a70859363a2c01bed70bf1d6dd4af67ed5972759"><code>a708593</code></a> test(e2e): tighten scanRoot and buildMockDom assertions (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/3ca6d010b7798b912f7d90e2bf02c931024211e3"><code>3ca6d01</code></a> feat(ui): freeze other layouts as LOD snapshots for Espalhar (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/60803cc80ad648631a69c5077df41ac4037d5957"><code>60803cc</code></a> fix(ui): clear frozen snapshots on every project entry and reset spread per project (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/103da9a7f40faf31d8b7fb3983f200be63e5ab0e"><code>103da9a</code></a> test(e2e): harden Espalhar freeze and race tests (S9.1c Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c03a4d9a2a06f5ef6df3d9b02dfcc1aebec376f"><code>0c03a4d</code></a> feat(ui): render spread layouts with LOD planes and overview camera (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/cd0703441c39c68f9e764bf06da097fe26051883"><code>cd07034</code></a> test(perf): add Espalhar orbit measurement (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/0d6d9876a0ec891160c080b9d114090f4b7a2fd9"><code>0d6d987</code></a> fix(ui): fit the Espalhar overview camera under perspective (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/b8aed4131c1bd3c8cb9675d1a78055f84364ee41"><code>b8aed41</code></a> test(e2e): cover overview fit at real page sizes and minors (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/9e2d0ecd64489306fd23c437044188310482adc0"><code>9e2d0ec</code></a> fix(ui): keep overview zoom 2D so far pages never cross the eye plane (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/81fbc25f9f9c99ce12b9880be41f038badc15c9e"><code>81fbc25</code></a> fix(core): solve the overview fit vertical shift (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/29f10b65a48abc19c8ed5b34613589d934aa1ca9"><code>29f10b6</code></a> test(e2e): cover overview zoom on every page (S9.1c Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/56b8d6b60b33304992cb93e39b2163b3b5ffc136"><code>56b8d6b</code></a> feat(ui): add Espalhar button and popover with plane warning (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/1f5d521610802647ab8a7944e9264728c0e772cd"><code>1f5d521</code></a> test(e2e): cover the Espalhar popover (S9.1c Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/4fc0bfc795248dca055bc3799aae6a4e1f1d8a56"><code>4fc0bfc</code></a> feat(ui): activate layouts from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c0e20206d8172faba52ebe9bf922fda37ca6621"><code>0c0e202</code></a> test(e2e): cover activation from LOD planes (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/ea9f1fcca7476792f125b9689425e53f0b564587"><code>ea9f1fc</code></a> feat(ui): persist the Espalhar session and keep the normal camera (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/aafd1a7222a016aeda7b383bbca5babdf086ddca"><code>aafd1a7</code></a> test(e2e): cover the Espalhar camera and session (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/e36bd744b297fd833515167ca780727603f28bcd"><code>e36bd74</code></a> fix(ui): polish the Espalhar popover (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/bd24c83e3790c4107e8dd0eb2a388faec2970c43"><code>bd24c83</code></a> test(e2e): cover the Espalhar popover polish (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/255a14f9cca8d8e180df853f43f6f8a9f6ff21d4"><code>255a14f</code></a> fix(ui): keep the layout left behind on the stage after a 1-N LOD click (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a6bc707ee48438bfbbf8e0a8c0f64a12a2ebece7"><code>a6bc707</code></a> test(e2e): cover 1-N LOD activation and hover cleanup (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/2348cab3722a6aa6efa6be461ad642ef006f9e49"><code>2348cab</code></a> fix(ui): keep the stage when switching layouts in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a7d777829e7cf1c0901f373df0ebebc0c28e4ea5"><code>a7d7778</code></a> test(e2e): cover the chip path in 1-N mode (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/12656ecf24689b4ace8bb0e7a5213dd093704008"><code>12656ec</code></a> fix(ui): keep per-layout cameras when toggling Espalhar (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a0d111d59ca034f91dafca280def7d8fe200d443"><code>a0d111d</code></a> fix(ui): prefer active planes over LOD planes under the pointer (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/772140f2c73bc16b201330ec790c99948f0c80f5"><code>772140f</code></a> test(e2e): cover the Espalhar fix round (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/1773f6ab6267b0eb8691701dedf44f15f570231f"><code>1773f6a</code></a> fix(ui): take the overview camera when a switch first draws two pages (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/37dece9a11a7c0af45fe5bbc5075bccca5ead1fc"><code>37dece9</code></a> test(e2e): cover the overview camera on a first two-page switch (S9.1c Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/b771f1d9d387f96987657e7c4d8267207d7571d1"><code>b771f1d</code></a> test(perf): measure Espalhar cost (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/f1733bc5340c911fb6d55fc7aecd860b74dee14a"><code>f1733bc</code></a> test(perf): fix Espalhar budgets and record measures (S9.1c Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/54dabb69df7c4ca4882ee59e3dd7b2930c9a6685"><code>54dabb6</code></a> docs: document Espalhar and close S9.1c (S9.1c Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/fe2423102a375bf956a1caed8b9124a6c74d4a68"><code>fe24231</code></a> docs: mark S9.1c done and rebuild the roadmap (S9.1c Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/32decf1b857fd405c412b59d3e2576ca570eddce"><code>32decf1</code></a> fix(ui): drop an Espalhar toggle made during another project&#x27;s load (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/1c58393725dabaacdb8bb9077df956385eeacaa1"><code>1c58393</code></a> fix(ui): restore the right camera when leaving Espalhar on another layout (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/6f0881d3e94ffb141da0c248cd5bb9ce58b347ab"><code>6f0881d</code></a> fix(ui): keep fixture sessions free of Espalhar and clamp the overview pivot in state (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/aced25964e053c0db878158e87ad55d93e35a099"><code>aced259</code></a> fix(ui): skip LOD hover when an active plane is in front (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/803f989518ecd251e033d659b0278c76a80815ea"><code>803f989</code></a> test(e2e): cover the S9.1c final review fixes (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/20f8d9ab13d59a709105a06b84bd1340a5236e3b"><code>20f8d9a</code></a> test(perf): state what the Espalhar drag comparison measures (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/8ee4aec0b7cc40d32f0967c97df633b4de8f0759"><code>8ee4aec</code></a> docs: record the S9.1c final review fixes and the S9.1d perf follow-up (S9.1c final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/6c645be272827a32e69a94a665978149b1eb4e4f"><code>6c645be</code></a> docs: fix residual Espalhar camera and sceneMs wording (S9.1c final review)</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-7">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-7-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">7</span> Custo (tokens + tempo)</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-7-body">
+    <div class="section-main"><table><thead><tr><th>Sessão</th><th>Início</th><th>Duração</th><th>Input</th><th>Output</th><th>Cache read</th><th>Cache create</th></tr></thead><tbody><tr><td><code>64344da4</code></td><td>2026-10-18 17:13</td><td>25.19h</td><td>1.0k</td><td>571.3k</td><td>127.63M</td><td>1.75M</td></tr><tr><td><code>agent-a6</code></td><td>2026-10-19 11:28</td><td>2.7m</td><td>54</td><td>1.5k</td><td>1.47M</td><td>153.1k</td></tr><tr><td><code>agent-ac</code></td><td>2026-10-19 11:31</td><td>2.9m</td><td>32</td><td>103</td><td>505.6k</td><td>64.5k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 11:34</td><td>2.4m</td><td>36</td><td>4.2k</td><td>901.2k</td><td>75.7k</td></tr><tr><td><code>agent-a6</code></td><td>2026-10-19 11:38</td><td>16.5m</td><td>116</td><td>10.2k</td><td>4.75M</td><td>197.4k</td></tr><tr><td><code>agent-a2</code></td><td>2026-10-19 11:54</td><td>8.2m</td><td>56</td><td>3.3k</td><td>1.38M</td><td>112.8k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 12:03</td><td>6.8m</td><td>54</td><td>394</td><td>1.84M</td><td>170.1k</td></tr><tr><td><code>agent-a5</code></td><td>2026-10-19 12:10</td><td>5.2m</td><td>60</td><td>2.7k</td><td>1.05M</td><td>93.6k</td></tr><tr><td><code>agent-ae</code></td><td>2026-10-19 12:16</td><td>17.2m</td><td>126</td><td>3.3k</td><td>6.95M</td><td>217.5k</td></tr><tr><td><code>agent-a9</code></td><td>2026-10-19 12:34</td><td>7.0m</td><td>118</td><td>18.3k</td><td>3.84M</td><td>265.1k</td></tr><tr><td><code>agent-a9</code></td><td>2026-10-19 12:41</td><td>17.0m</td><td>96</td><td>4.0k</td><td>4.16M</td><td>161.4k</td></tr><tr><td><code>agent-a4</code></td><td>2026-10-19 12:58</td><td>29.6m</td><td>216</td><td>11.3k</td><td>14.40M</td><td>758.6k</td></tr><tr><td><code>agent-a4</code></td><td>2026-10-19 13:28</td><td>13.1m</td><td>98</td><td>1.5k</td><td>3.34M</td><td>214.4k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 13:42</td><td>19.6m</td><td>188</td><td>5.4k</td><td>11.19M</td><td>295.7k</td></tr><tr><td><code>agent-a5</code></td><td>2026-10-19 14:02</td><td>10.7m</td><td>120</td><td>8.1k</td><td>4.30M</td><td>189.8k</td></tr><tr><td><code>agent-a8</code></td><td>2026-10-19 14:13</td><td>18.5m</td><td>156</td><td>564</td><td>7.76M</td><td>537.6k</td></tr><tr><td><code>agent-ac</code></td><td>2026-10-19 14:32</td><td>28.6m</td><td>204</td><td>4.3k</td><td>12.63M</td><td>621.7k</td></tr><tr><td><code>agent-a1</code></td><td>2026-10-19 15:01</td><td>10.4m</td><td>116</td><td>16.7k</td><td>4.40M</td><td>236.7k</td></tr><tr><td><code>agent-a8</code></td><td>2026-10-19 15:13</td><td>49.2m</td><td>292</td><td>5.5k</td><td>27.05M</td><td>1.25M</td></tr><tr><td><code>agent-af</code></td><td>2026-10-19 16:02</td><td>17.2m</td><td>152</td><td>30.0k</td><td>7.91M</td><td>301.2k</td></tr><tr><td><code>agent-ac</code></td><td>2026-10-19 16:20</td><td>35.2m</td><td>272</td><td>7.2k</td><td>16.59M</td><td>1.02M</td></tr><tr><td><code>agent-a6</code></td><td>2026-10-19 16:56</td><td>4.7m</td><td>94</td><td>3.6k</td><td>4.43M</td><td>223.6k</td></tr><tr><td><code>agent-ab</code></td><td>2026-10-19 17:00</td><td>4.4m</td><td>24</td><td>86</td><td>139.0k</td><td>33.1k</td></tr><tr><td><code>agent-a9</code></td><td>2026-10-19 17:09</td><td>14.8m</td><td>226</td><td>4.6k</td><td>19.40M</td><td>429.2k</td></tr><tr><td><code>agent-af</code></td><td>2026-10-19 17:24</td><td>24.1m</td><td>194</td><td>24.1k</td><td>10.82M</td><td>385.2k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 17:49</td><td>23.9m</td><td>158</td><td>2.1k</td><td>7.98M</td><td>550.1k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 18:13</td><td>9.6m</td><td>146</td><td>16.1k</td><td>6.43M</td><td>245.6k</td></tr><tr><td><strong>Total (27)</strong></td><td>—</td><td><strong>31.85h</strong></td><td><strong>4.4k</strong></td><td><strong>760.3k</strong></td><td><strong>313.22M</strong></td><td><strong>10.55M</strong></td></tr></tbody></table></div>
+  </div>
+  
+</section>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSection(btn) {
+  const body = document.getElementById(btn.dataset.body);
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶' : '▼';
+
+  if (btn.dataset.sub) {
+    const sub = document.getElementById(btn.dataset.sub);
+    if (sub) sub.classList.toggle('collapsed', collapsed);
+  }
+
+  if (btn.dataset.tree) {
+    const treeChildren = document.getElementById('tree-' + btn.dataset.tree + '-children');
+    const treeToggle   = document.querySelector('#tree-' + btn.dataset.tree + ' .tree-row .tree-toggle:not(.hidden)');
+    if (treeChildren) treeChildren.classList.toggle('collapsed', collapsed);
+    if (treeToggle)   treeToggle.textContent = collapsed ? '▶' : '▼';
+  }
+}
+
+function syncTree(sectionId) {
+  const treeChildren = document.getElementById('tree-' + sectionId + '-children');
+  const treeToggle   = document.querySelector('#tree-' + sectionId + ' .tree-row .tree-toggle:not(.hidden)');
+  if (!treeChildren || !treeToggle) return;
+  const collapsed = treeChildren.classList.toggle('collapsed');
+  treeToggle.textContent = collapsed ? '▶' : '▼';
+  const subEl   = document.getElementById(sectionId + '-subs');
+  const bodyBtn = document.querySelector('[data-tree="' + sectionId + '"]');
+  if (subEl)   subEl.classList.toggle('collapsed', collapsed);
+  if (bodyBtn) bodyBtn.textContent = collapsed ? '▶' : '▼';
+}
+
+const __activeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
+      const match = document.querySelector('.tree-item[data-section="' + id + '"]');
+      if (match) {
+        match.classList.add('active');
+        match.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  });
+}, { rootMargin: '-15% 0px -65% 0px', threshold: 0 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('section[id]').forEach(s => __activeObserver.observe(s));
+});
+</script>
+</body>
+</html>

@@ -62,3 +62,9 @@ describe('coverage', () => {
   bench('html-regions-1500-tags', () => { core.coverageModel(w.coverage.oneHtml); }, opts);
   bench('model-200-html', () => { core.coverageModel(w.coverage.manyHtml); }, opts);
 });
+
+describe('spread', () => {
+  // S9.1c: the per-render pure parts of Espalhar: the overview camera fit (bisection over 8 projected corners) and the LOD slice of a 1,500-node scan
+  bench('overview-fit-8-pages', () => { core.overviewFit(w.spread.fit); }, opts);
+  bench('lod-nodes-1500', () => { core.lodNodes(w.spread.nodes, 1); }, opts);
+});
