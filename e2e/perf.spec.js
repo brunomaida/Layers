@@ -35,6 +35,7 @@ const EXPECTED = [
   'orbit/1500-tags-v1-tree-ideal/mean-frame-ms',
   'orbit/1500-tags-flat/mean-frame-ms',
   'orbit/1500-tags-branch-exploded/mean-frame-ms',
+  'spread/multi-layout/orbit-mean-frame-ms',
   'tree/traval/hover-ms',
   'tree/traval/select-ms',
   'tree/1500-tags/hover-ms',
@@ -467,6 +468,36 @@ test('Explode_Toggle_ReportsFrameCost', async ({ page }) => {
     return performance.now() - t0;
   });
   rec('explode/traval/toggle-ms', ms);
+});
+
+// S9.1c Task 4: orbit with Espalhar on in multi-layout: 3 pages (main full + config and replay in LOD; broken is unavailable and takes no slot).
+// The target stays > 50 fps (Orbit_Budget_Above50Fps); the budget below is provisional until the Task 7 measurement run.
+const SPREAD_ORBIT_BUDGET_MS = 60; // PROVISIONAL: fixed in Task 7
+test('Orbit_SpreadThreePages_RecordsFrameInterval', async ({ page }) => {
+  await instrument(page);
+  await page.goto('/?layers=fixtures/multi-layout/');
+  await waitForScan(page);
+  await act(page, 'spreadOn', true);
+  await expect.poll(() => page.evaluate(() => window.__logic.spreadFrozen.size)).toBe(3);
+  await page.waitForTimeout(600); // let the page set and the camera settle
+  const pages = await page.evaluate(() => document.querySelectorAll('[data-spread-page]').length);
+  expect(pages).toBe(3);
+  const census = await planeCensus(page);
+  const o = await orbitDrag(page, 1500);
+  rec('spread/multi-layout/orbit-mean-frame-ms', o.meanFrameMs, {
+    fps: o.fps,
+    p95FrameMs: o.p95FrameMs,
+    frames: o.frames,
+    loafCount: o.loafCount,
+    loafScriptShare: o.loafScriptShare,
+    gcsPerFrame: o.gcsPerFrame,
+    main: o.main,
+    pages,
+    lodPlanes: await page.evaluate(() => document.querySelectorAll('[data-lod-plane]').length),
+    census,
+  });
+  expect(o.frames).toBeGreaterThanOrEqual(30);
+  expect(o.meanFrameMs, `mean frame ${o.meanFrameMs.toFixed(1)} ms (${o.fps.toFixed(0)} fps), p95 ${o.p95FrameMs.toFixed(1)} ms`).toBeLessThan(SPREAD_ORBIT_BUDGET_MS);
 });
 
 // S9.1a Task 7a: layout switch vs a reload of the active layout, in the same page, on ~1,500-node mocks. The multi-layout mocks are
