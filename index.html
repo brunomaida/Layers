@@ -1587,6 +1587,7 @@ class Component extends DCLogic {
     // S2.14: so a carga vencedora chega aqui. Fonte que falhou na leitura torna o hash nao confiavel:
     // nada e restaurado, a sessao nao grava e a entrada salva fica intacta.
     if (!newProject && layouts.length < 2 && this.state.spread.on) this.leaveSpread(); // a reload that leaves one layout: Espalhar has no button any more, so it must not stay on
+    if (newProject && this.state.spread.on) this.leaveSpread(); // a toggle made against the outgoing project's UI during this load: discarded, its normalCam must not leak into the new project
     const keepCam = !newProject && this.state.spread.on, ps = this.takeSpreadSession(layouts, curLayout.id); // S9.1c Task 6: Espalhar on keeps the overview camera across a layout switch; ps = the saved Espalhar to restore after this project's first load
     const incomplete = warn.some(w => /^(css não encontrado|dcSource não lido)/.test(w));
     const phCss = {}; css.forEach(c => { phCss[c.file] = this.partHash(c.text); });
