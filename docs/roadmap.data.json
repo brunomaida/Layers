@@ -2540,7 +2540,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 64,
+    "progress": 72,
     "docs": [],
     "children": [
       {
@@ -2681,12 +2681,12 @@
         "name": "Espalhar layouts no palco 3D com LOD",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
@@ -2705,6 +2705,12 @@
             "type": "spec",
             "path": "/docs/superpowers/specs/2026-10-19-s9-1c-espalhar-lod-design.md",
             "title": "S9.1c — Espalhar layouts no palco 3D com LOD — design"
+          },
+          {
+            "name": "feature-261019-91-s9-1c-espalhar-lod.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261019-91-s9-1c-espalhar-lod.md)",
+            "title": "feature-261019-91-s9-1c-espalhar-lod.md)"
           }
         ],
         "reason": "Hosts por layout, câmera de visão geral, popover Ver todos / 1–N, aviso acima de 1.500 planos",
