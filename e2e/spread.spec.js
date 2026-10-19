@@ -270,11 +270,11 @@ test('Spread_Pick_LeavingUnpickedLayoutStillDowngradesOlderFull', async ({ page 
   await expect.poll(async () => Object.keys(await frozen(page))).toEqual(['replay']);
   await switchTo(page, 'config'); // main is picked: frozen full
   await expect.poll(async () => (await frozen(page)).main?.full).toBe(true);
-  await switchTo(page, 'replay'); // config is not picked: nothing frozen for it, but the older full entry must still drop to LOD
+  await switchTo(page, 'replay'); // config was not picked, but leaving it joins the pick (R19): it is frozen full and the older full entry (main) drops to LOD
   const f = await frozen(page);
   expect(f.main).toMatchObject({ full: false, count: t.main, len: t.main });
-  expect(f.config).toBeUndefined();
-  expect(Object.values(f).filter((e) => e.full).length).toBe(0);
+  expect(f.config).toMatchObject({ full: true });
+  expect(Object.values(f).filter((e) => e.full).length).toBe(1);
 });
 
 test('Spread_ZerarAndOtherProject_ResetSpread', async ({ page }) => {
@@ -1122,6 +1122,22 @@ test('SpreadLod_Click_InPickModeKeepsThePreviousActiveOnTheStage', async ({ page
   expect((await sp(page)).picked).toEqual(['config', 'main']);
   await expect.poll(async () => (await frozen(page)).main).toMatchObject({ full: true, count: n });
   expect(await sel(page)).toBe(p.id);
+});
+
+test('SpreadLod_ChipClick_InPickModeKeepsThePreviousActiveOnTheStage', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true, 'pick');
+  await act(page, 'setSpreadPick', 'pick', ['config']);
+  await settled(page, 1); await flush(page);
+  const n = await page.evaluate(() => window.__logic.state.nodes.length);
+  await page.locator('[data-layout-chip="config"]').click();
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page); await flush(page);
+  expect((await sv(page)).ids).toEqual(['main', 'config']); // same as the LOD path: the stage never shrinks on a switch
+  expect(await pageIds(page)).toEqual(['main', 'config']);
+  expect((await sp(page)).picked).toEqual(['config', 'main']);
+  await expect.poll(async () => (await frozen(page)).main).toMatchObject({ full: true, count: n });
+  expect((await sp(page)).on).toBe(true);
 });
 
 test('SpreadLod_ActivateFromLod_ResolvesTheLayoutAtClickTime', async ({ page }) => {
