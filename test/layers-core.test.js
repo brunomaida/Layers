@@ -4122,9 +4122,10 @@ describe('SpreadDrawPlan', () => {
     expect(out).toEqual({ cfg: 'lod', about: 'full' });
   });
 
-  it('SpreadDrawPlan_Ativo_NuncaNoResultado', () => {
-    const out = core.spreadDrawPlan(5000, [{ id: 'cfg', count: 1, full: true }]);
-    expect(Object.keys(out)).toEqual(['cfg']);
+  it('SpreadDrawPlan_ContagemDoAtivo_EntraNoTotal', () => {
+    const e = [{ id: 'cfg', count: 2, full: true }];
+    expect(core.spreadDrawPlan(1499, e).cfg).toBe('lod');
+    expect(core.spreadDrawPlan(1498, e).cfg).toBe('full');
   });
 
   it('SpreadDrawPlan_MaxAusenteOuInvalido_UsaPlanesMax', () => {
@@ -4145,16 +4146,24 @@ describe('SpreadDrawPlan', () => {
 });
 
 describe('MergeLayoutChanges', () => {
-  const sel = (c) => c.sel;
+  // patched selector differs from c.sel, so a key built from c.sel instead of patchSelFn would show
+  const sel = (c) => 'p' + c.sel;
   const ch = (src, s, prop, to, extra) => Object.assign({ src: src, sel: s, prop: prop, to: to }, extra);
   const order = ['main', 'cfg', 'about'];
 
   it('MergeLayoutChanges_AtivoVence_ValorEOrigemDoAtivo', () => {
-    const by = { main: [ch('a.css|1', '.x', 'color', 'red')], cfg: [ch('a.css|2', '.x', 'color', 'blue')] };
-    const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
+    const by = { cfg: [ch('a.css|2', '.x', 'color', 'blue')], main: [ch('a.css|1', '.x', 'color', 'red')], about: [ch('a.css', '.x', 'color', 'green')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
     expect(out.changes).toHaveLength(1);
+    expect(out.changes[0].to).toBe('red');
+    expect(out.changes[0].layoutId).toBe('main');
+  });
+
+  it('MergeLayoutChanges_AtivoForaDoManifesto_AindaVenceTodos', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], ghost: [ch('a.css', '.x', 'color', 'blue')], about: [ch('a.css', '.x', 'color', 'green')] };
+    const out = core.mergeLayoutChanges(by, 'ghost', order, sel);
     expect(out.changes[0].to).toBe('blue');
-    expect(out.changes[0].layoutId).toBe('cfg');
+    expect(out.changes[0].layoutId).toBe('ghost');
   });
 
   it('MergeLayoutChanges_EntreNaoAtivos_VenceOUltimoDoManifesto', () => {
@@ -4169,10 +4178,41 @@ describe('MergeLayoutChanges', () => {
     const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'blue')], about: [ch('a.css', '.x', 'color', 'red')] };
     const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
     expect(out.conflicts).toEqual([{
-      key: 'a.css|.x|color', file: 'a.css', sel: '.x', prop: 'color',
+      key: 'a.css|p.x|color', file: 'a.css', sel: 'p.x', prop: 'color',
       winner: { layoutId: 'cfg', to: 'blue' },
       losers: [{ layoutId: 'main', to: 'red' }, { layoutId: 'about', to: 'red' }]
     }]);
+  });
+
+  it('MergeLayoutChanges_MesmoLayoutDoisTo_SobrescreveSemConflito', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red'), ch('a.css', '.x', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.changes).toHaveLength(1);
+    expect(out.changes[0].to).toBe('blue');
+    expect(out.conflicts).toEqual([]);
+  });
+
+  it('MergeLayoutChanges_DuplicataNoMesmoLayoutMaisOutroLayout_ConflitoSoEntreLayouts', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red'), ch('a.css', '.x', 'color', 'blue')], cfg: [ch('a.css', '.x', 'color', 'green')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.conflicts).toHaveLength(1);
+    expect(out.conflicts[0].winner).toEqual({ layoutId: 'main', to: 'blue' });
+    expect(out.conflicts[0].losers).toEqual([{ layoutId: 'cfg', to: 'green' }]);
+  });
+
+  it('MergeLayoutChanges_PatchSelFn_DefineSelKeyEConflito', () => {
+    const fn = () => '.z';
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.y', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'cfg', order, fn);
+    expect(out.changes).toHaveLength(1);
+    expect(out.conflicts[0].key).toBe('a.css|.z|color');
+    expect(out.conflicts[0].sel).toBe('.z');
+  });
+
+  it('MergeLayoutChanges_SelsDiferentesMesmoRetornoDoPatchSelFn_Deduplica', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red'), ch('a.css', '.y', 'color', 'red')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, () => '.z');
+    expect(out.changes).toHaveLength(1);
   });
 
   it('MergeLayoutChanges_MesmaChaveEMesmoTo_DeduplicaSemConflito', () => {
@@ -4194,7 +4234,7 @@ describe('MergeLayoutChanges', () => {
     const by = { main: [ch('a.css|1', '.x', 'color', 'red'), ch('a.css|2', '.x', 'margin', '1px')], cfg: [ch('a.css|9', '.x', 'color', 'blue')] };
     const out = core.mergeLayoutChanges(by, 'main', order, sel);
     expect(out.changes).toHaveLength(2);
-    expect(out.conflicts.map((c) => c.key)).toEqual(['a.css|.x|color']);
+    expect(out.conflicts.map((c) => c.key)).toEqual(['a.css|p.x|color']);
   });
 
   it('MergeLayoutChanges_PosicaoDoPrimeiroVisto_Mantida', () => {
@@ -4204,10 +4244,11 @@ describe('MergeLayoutChanges', () => {
     expect(out.changes[0].to).toBe('blue');
   });
 
-  it('MergeLayoutChanges_PatchSelFn_RecebeChangeELayoutId', () => {
+  it('MergeLayoutChanges_PatchSelFn_RecebeIdDoLayoutDoBalde', () => {
     const seen = [];
-    core.mergeLayoutChanges({ main: [ch('a.css', '.x', 'color', 'red')] }, 'main', order, (c, id) => { seen.push(id); return '.z'; });
-    expect(seen).toEqual(['main']);
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.y', 'color', 'red', { layoutId: 'orig' })], about: [ch('a.css', '.w', 'color', 'red')] };
+    core.mergeLayoutChanges(by, 'about', order, (c, id) => { seen.push(c.sel + '@' + id); return c.sel; });
+    expect(seen).toEqual(['.x@main', '.y@cfg', '.w@about']);
   });
 
   it('MergeLayoutChanges_LayoutIdPropriaDaMudanca_Preservado', () => {
