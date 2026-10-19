@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
-import { act } from './ctx-helpers.js';
+import { act, open, reloadWith } from './ctx-helpers.js';
 import { connectFixture, readDisk } from './folder-helpers.js';
 import { planeCensus } from './perf-helpers.js';
 
@@ -1147,5 +1147,114 @@ test('SpreadLod_Switch_KeepsTheOverviewFocusInPlaceOnTheWorld', async ({ page })
   await loadedNow(page);
   const b = await page.evaluate(() => { const L = window.__logic, sv = L.spreadView(); return sv.offs[sv.ai] + L.state.focus.x; });
   expect(b).toBeCloseTo(a, 3);
+});
+
+test('SpreadCamera_OnOff_RestoresTheExactNormalCameraAndNothingLeaks', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', { ...NORMAL, focus: { x: 140, y: 60, zd: null } });
+  const normal = await cam(page);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  expect(await cam(page)).toMatchObject({ yaw: NORMAL.yaw, tilt: NORMAL.tilt, zoom: 1, panX: 0, panY: 0, focus: null }); // overview starts from the defaults, orientation kept
+  await act(page, 'setState', { yaw: -30, tilt: 22, zoom: 3.68, panX: 90, panY: 40, focus: { x: 900, y: 300, zd: null } });
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toEqual(normal);
+  // a second round starts from the defaults again, not from the previous overview
+  await act(page, 'spreadOn', true);
+  expect(await cam(page)).toMatchObject({ zoom: 1, panX: 0, panY: 0, focus: null });
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toEqual(normal);
+});
+
+test('SpreadCamera_SwitchingLayoutInSpreadNeverLeaksTheOverviewIntoTheNormalView', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await act(page, 'setState', { zoom: 3.68, panX: 50 });
+  await act(page, 'switchLayout', 'config');
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page);
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject(NORMAL);
+  await act(page, 'switchLayout', 'main'); // main was cached when it was left, with the normal camera
+  await expect.poll(() => activeId(page)).toBe('main');
+  await loadedNow(page);
+  expect(await cam(page)).toMatchObject({ zoom: 2.5 });
+});
+
+test('SpreadSession_Key_OnlyWithSpreadOnAndTwoOrMoreLayouts', async ({ page }) => {
+  await open(page, 'multi-state'); // 1 layout
+  await act(page);
+  await act(page, 'spreadOn', true); // no-op: nothing to spread
+  const one = await page.evaluate(() => window.__logic.sessionSnapshot());
+  expect('spread' in one).toBe(false);
+  expect(Object.keys(one)).toEqual(['lastProjectId', 'states', 'selId', 'isoId', 'camera', 'explodeFrom', 'collapseAt']);
+  await page.goto('/?layers=fixtures/multi-layout/'); await readNodes(page); await act(page);
+  expect('spread' in (await page.evaluate(() => window.__logic.sessionSnapshot()))).toBe(false); // 2+ layouts, Espalhar off
+  await act(page, 'spreadOn', true);
+  const on = await page.evaluate(() => window.__logic.sessionSnapshot());
+  expect(on.spread).toMatchObject({ on: true, mode: 'all', picked: [], dist: 30 });
+  expect(Object.keys(on.spread.cam).sort()).toEqual(['focus', 'panX', 'panY', 'tilt', 'yaw', 'zoom']);
+  await act(page, 'spreadOn', false);
+  expect('spread' in (await page.evaluate(() => window.__logic.sessionSnapshot()))).toBe(false);
+});
+
+test('SpreadSession_Reload_RestoresModePickedDistanceAndOverviewCamera', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await act(page, 'setSpreadPick', 'pick', ['replay']); await act(page, 'setSpreadDist', 55);
+  const ov = { yaw: -20, tilt: 9, zoom: 1.7, panX: 5, panY: -4 };
+  await act(page, 'setState', ov);
+  await expect.poll(async () => { const s = await sess(page); return s.spread && s.spread.cam && s.spread.cam.yaw; }).toBe(-20);
+  const s = await sess(page);
+  expect(s.spread).toMatchObject({ on: true, mode: 'pick', picked: ['replay'], dist: 55, cam: ov });
+  expect(s.camera).toMatchObject(NORMAL); // the regular camera keys hold the NORMAL camera while Espalhar is on
+  await reloadWith(page);
+  await act(page);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.spread.on)).toBe(true);
+  expect(await page.evaluate(() => window.__logic.state.spread)).toEqual({ on: true, mode: 'pick', picked: ['replay'], dist: 55 });
+  expect(await cam(page)).toMatchObject(ov);
+  await expect.poll(async () => Object.keys(await frozen(page)).sort()).toEqual(['replay']); // the frozen reads were kicked
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject(NORMAL);
+  await expect.poll(async () => 'spread' in (await sess(page))).toBe(false);
+});
+
+test('SpreadSession_Reload_IgnoresGarbageValues', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await reloadWith(page, { spread: { on: true, mode: 'zzz', picked: ['ghost', 7, 'config', 'config'], dist: 'NaN', cam: { yaw: 'x', tilt: 999, zoom: 1e9, panX: null, panY: Infinity, focus: { x: 'a' } } } });
+  await act(page);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.spread.on)).toBe(true);
+  expect(await page.evaluate(() => window.__logic.state.spread)).toEqual({ on: true, mode: 'all', picked: ['config'], dist: 30 });
+  expect(await cam(page)).toEqual({ yaw: 0, tilt: 70, zoom: 12, panX: 0, panY: 0, focus: null });
+  for (const bad of [null, 5, 'on', [], { on: false, mode: 'all' }, { mode: 'pick' }]) {
+    await reloadWith(page, { spread: bad });
+    await act(page);
+    await loadedNow(page);
+    expect(await page.evaluate(() => window.__logic.state.spread.on)).toBe(false);
+  }
+});
+
+test('SpreadSession_Reload_SingleLayoutProjectIgnoresTheKey', async ({ page }) => {
+  await open(page, 'multi-state');
+  await act(page);
+  await reloadWith(page, { spread: { on: true, mode: 'all', picked: [], dist: 30, cam: { zoom: 3 } } });
+  await act(page);
+  await loadedNow(page);
+  expect(await page.evaluate(() => window.__logic.state.spread.on)).toBe(false);
+  expect(await cam(page)).toMatchObject({ zoom: 1 });
+  await expect.poll(async () => 'spread' in (await sess(page))).toBe(false);
+});
+
+test('SpreadSession_Zerar_RemovesTheKeyAndResetsTheSpread', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await expect.poll(async () => 'spread' in (await sess(page))).toBe(true);
+  await act(page, 'resetUI');
+  expect(await page.evaluate(() => window.__logic.state.spread)).toEqual({ on: false, mode: 'all', picked: [], dist: 30 });
+  await expect.poll(async () => 'spread' in (await sess(page))).toBe(false);
 });
 
