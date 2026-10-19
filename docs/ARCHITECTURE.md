@@ -381,7 +381,7 @@ Projetos ▾ › Analisar cobertura ─▶ analyzeCoverage()
    │ man normalizado: base sem barras nas pontas, mock padrão layers/mock.html (como o loader)
    ├─ pasta local ─▶ collectProjectFiles(dir, {html,css,script}, COVERAGE.SKIP_DIRS, base)
    ├─ .zip ───────▶ collectZipFiles(zip, base)         (mesmos tipos, pulos e tetos, em memória)
-   └─ GitHub / fixture HTTP ─▶ sem listagem: files = [], partial = true
+   └─ GitHub / fixture HTTP ─▶ sem listagem: files = mocks declarados + man.styles (lidos como css), partial = true
    │ mocks declarados (layouts × states) lidos por readBytes + TextDecoder
    │ planes[mock montado] = state.nodes.length (nós reais do layout montado)
    ▼
@@ -444,19 +444,21 @@ O trecho `layouts` (`JSON.stringify({ layouts })` de `layoutsSnippet`, com Copia
 | # | Limite | Observação |
 |---|---|---|
 | 1 | Sem router por AST | Rotas de JS/TS só entram por marcadores literais (`role="tab"`, `<dialog`, `aria-modal`, `#/nome`); docs de UI não servem de dica |
-| 2 | Sem listagem em GitHub nem em fixture HTTP: cobertura parcial | Só os mocks declarados são lidos e a confiança fica `parcial`; a regra e o trecho saem dessa visão incompleta |
+| 2 | Sem listagem em GitHub nem em fixture HTTP: cobertura parcial | Só os mocks declarados e os `man.styles` (lidos como css) entram e a confiança fica `parcial`; a regra e o trecho saem dessa visão incompleta |
 | 3 | "Visível" é estático | Vale `hidden`, `display:none` inline, regra CSS de topo `#id`/`.cls` e diálogo sem `open`; classe ligada por JS, `@media` e seletor composto não contam |
 | 4 | Painéis visíveis por padrão ficam dentro da tela | Só um elemento que nasce oculto vira região de painel; os visíveis contam nos elementos da tela que os contém |
 | 5 | A estimativa de planos de um mock desmontado é aproximada | Com várias raízes no `<body>` o loader acrescenta um root sintético, então a estimativa fica 1 abaixo (imaterial frente ao teto de 1.500); o layout montado usa `nodes.length` real |
 | 6 | `.ts/.js` por regex = confiança baixa | Regiões de marcador contam só em `cob_reg` (Elem. `—`) e o modal avisa "App renderizado por JS" |
 | 7 | Tetos por arquivo (HTML/CSS 3 MB, script 256 KB) e de scripts (200 arquivos, 8 MB no total) | Um arquivo acima do próprio teto é pulado sozinho, e passar de 200 scripts ou de 8 MB também; todos marcam a varredura como parcial ("Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora.") |
-| 8 | Sem teste automatizado: `.zip` cujo `base` não existe, teto de 256 KB por script e teto de 8 MB de scripts | O caminho existe no código (erro `base "…" não encontrada na pasta`; arquivo pulado; varredura parcial) |
+| 8 | Sem teste automatizado: `.zip` cujo `base` não existe, teto de 8 MB de scripts e a marca de parcial do teto por arquivo em `collectZipFiles` | O caminho existe no código (erro `base "…" não encontrada na pasta`; varredura parcial); falta um harness de `.zip` (o teto por arquivo de pasta tem teste: `Coverage_OversizedFile_FlagsPartial`) |
 | 9 | Barras arredondadas, texto da regra truncado | Perto dos limiares a barra mostra 85 % enquanto a regra diz 84 % (o texto trunca para não contradizer a comparação estrita) |
 | 10 | `base` com barras invertidas não é normalizado | `analyzeCoverage` usa o mesmo `joinPath` do loader, que só separa por `/` |
 | 11 | Duplo clique em Analisar cobertura dispara duas varreduras | `covRun` descarta a primeira, mas o custo é dobrado |
 | 12 | `?` abre Atalhos por baixo da Cobertura | Mesma paridade do modal de Diff; as teclas de câmera também não são bloqueadas |
 | 13 | O erro `projeto ainda carregando` sobrevive à carga | O overlay fica até o usuário fechá-lo |
 | 14 | A regra 4 só dispara com melhor monovisual ≥ 85 % | Um monovisual abaixo disso com layout acima de 1.500 planos cai na regra 3, sem a marca "dividir" |
+| 15 | `coverageModel` continua quadrático quando muitas páginas distintas compartilham tokens de chrome | 3.000 páginas com nav/rodapé comuns e sub-regiões ocultas levam ~1,8 s (1.000 páginas ~0,2 s); sob demanda e síncrono |
+| 16 | Mock com `/` inicial ou `..` acima da raiz faz `joinPath` (index.html) e `resolvePosix` (lib/layers-core.js) divergirem | A tela do próprio mock só conta como visível por sobreposição de tokens; já existia, também no modo pasta |
 
 ### Guarda de conflito na gravação
 
