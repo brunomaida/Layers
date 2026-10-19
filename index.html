@@ -1134,6 +1134,12 @@ const Plane = React.memo(function Plane(p) {
       return React.createElement('div', props, content);
 });
 
+// S9.1c: plano de outro layout no Espalhar (retrato congelado): sem data-plane, sem handlers, sem hit-test; borda tracejada e opacidade .5 como o board
+const LodPlane = React.memo(function LodPlane({ n, z, lid }) {
+  return React.createElement('div', { 'data-lod-plane': n.id, 'data-layout': lid, style: { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: 'translateZ(' + z + 'px)', contain: 'layout paint',
+    background: n.hasBg ? n.bg : 'transparent', backgroundImage: n.bgImg !== 'none' ? n.bgImg : undefined, border: '1px dashed rgba(173,181,190,.45)', borderRadius: n.radius, opacity: 0.5 * n.opacity, boxSizing: 'border-box', pointerEvents: 'none' } });
+});
+
 const mixHex = (a, b, t) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); const c = i => Math.round((((A >> i) & 255) * (1 - t)) + (((B >> i) & 255) * t)); return '#' + [16, 8, 0].map(i => c(i).toString(16).padStart(2, '0')).join(''); };
 const hexRgb = h => { const n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].join(','); };
 const DARK_SEM = { ok: '#26c281', warn: '#f5a623', err: '#ef5350', violet: '#a78bfa', faint: 'rgba(255,255,255,.03)', shadow: 'rgba(0,0,0,.5)', shadow2: 'rgba(0,0,0,.6)', hlFg: '#ffffff', onAcc: '#06101f', scheme: 'dark' };
@@ -1970,7 +1976,7 @@ class Component extends DCLogic {
     const m = this.mv; this.mv = null; if (this.raf) { cancelAnimationFrame(this.raf); this.raf = 0; } if (!m) return;
     if (m.mode === 'orbit') { const { base } = this.cam(); this.setState({ dragging: true, yaw: clamp(m.yaw + m.dx * .35, -85 - base, 85 - base), tilt: clamp(m.tilt - m.dy * .35, -70, 70) }); }
     else if (m.mode === 'pan') this.setState({ dragging: true, panX: m.panX + m.dx, panY: m.panY + m.dy });
-    else { const { S } = this.cam(); const f = m.focus || { x: this.state.pageW / 2, y: this.state.pageH / 2, zd: null }; this.setState({ dragging: true, focus: { x: f.x - m.dx / S, y: f.y - m.dy / S, zd: f.zd } }); }
+    else { const { S } = this.cam(); const f = m.focus || this.defFocus(); this.setState({ dragging: true, focus: { x: f.x - m.dx / S, y: f.y - m.dy / S, zd: f.zd } }); }
   }
 
   // Appearance: a value saved from the Aparência menu wins, else APPEARANCE_DEFAULTS (S3.4)
@@ -2388,13 +2394,32 @@ class Component extends DCLogic {
       reqExportOff: noDir || !tot, reqExportOp: noDir || !tot ? '.4' : '1', reqCopyOp: tot ? '1' : '.4', reqExportTitle: noDir ? 'Exportar exige uma pasta conectada: grava layers-requests.md dentro dela' : 'Grava layers-requests.md na pasta conectada', reqCopyOff: !tot,
       copyReqItem: this.menuAct(() => this.copyRequests()), exportReqItem: this.menuAct(() => this.exportRequests()) };
   }
+  // S9.1c: pages of the spread in layers.json order (null = render as today: Espalhar off, or fewer than 2 pages). Layouts that came out unavailable leave no slot; pending ones keep theirs.
+  // offs[i] = spreadOffsets; ai = active page; foot = N*pageW + (N-1)*gap; maxD = deepest frozen node (the overview camera's visibleMax over all pages).
+  spreadView() {
+    const s = this.state, sp = s.spread, P = s.project; if (!sp.on || !P || !P.layouts || P.layouts.length < 2) return null;
+    const c = this._sv; if (c && c.P === P && c.lid === P.layoutId && c.sp === sp && c.rev === s.spreadRev && c.w === s.pageW) return c.v;
+    const F = this.spreadFrozen, ids = LayersCore.spreadPicked(P.layouts, sp.mode, sp.picked, P.layoutId).filter(id => { const e = F.get(id); return id === P.layoutId || !(e && e.unavailable); });
+    let v = null;
+    if (ids.length >= 2) { const offs = LayersCore.spreadOffsets(ids.length, s.pageW, sp.dist); let maxD = 0; ids.forEach(id => { const e = F.get(id); if (id !== P.layoutId && e && e.nodes) e.nodes.forEach(n => { if (n.depth > maxD) maxD = n.depth; }); }); v = { ids, offs, ai: ids.indexOf(P.layoutId), foot: offs[offs.length - 1] + s.pageW, maxD }; }
+    this._sv = { P, lid: P.layoutId, sp, rev: s.spreadRev, w: s.pageW, v }; return v;
+  }
+  // camera focus when none is set: the page center, or the center of the whole spread (in active-page coordinates) in the overview
+  defFocus() { const s = this.state, sv = this.spreadView(); return { x: s.pageW / 2 + (sv ? sv.offs[sv.offs.length - 1] / 2 - sv.offs[sv.ai] : 0), y: s.pageH / 2, zd: null }; }
   cam() {
     const s = this.state; const ba = -32;
-    const k = s.flat + '|' + s.spacing + '|' + s.yaw + '|' + s.zoom + '|' + s.stageW + '|' + s.stageH + '|' + (s.focus ? 1 : 0) + '|' + s.isoId + '|' + ba + '|' + s.pageW + '|' + s.pageH + '|' + s.explodeFrom + '|' + s.collapseAt;
+    const sv = this.spreadView(); // S9.1c: overview camera frames every page of the spread; null (Espalhar off) keeps the single-page math
+    const k = s.flat + '|' + s.spacing + '|' + s.yaw + '|' + s.zoom + '|' + s.stageW + '|' + s.stageH + '|' + (s.focus ? 1 : 0) + '|' + s.isoId + '|' + ba + '|' + s.pageW + '|' + s.pageH + '|' + s.explodeFrom + '|' + s.collapseAt + (sv ? '|ov' + sv.foot + '|' + sv.maxD + '|' + s.persp : '');
     const c = this._cam; if (c && c.k === k && c.nodes === s.nodes) return c.v;
     const spacing = s.flat ? 0 : s.spacing; const base = s.flat ? 0 : ba; const yawT = clamp(base + s.yaw, -85, 85); const yr = Math.abs(yawT) * Math.PI / 180;
-    const br = this.branchInfo(); const spreadX = Math.sin(yr) * (spacing * this.visibleMax() + (br ? s.spacing * br.span : 0)); const footW = s.pageW * Math.cos(yr) + spreadX; const fit = Math.min(s.stageW / (footW * 1.18 + 80), s.stageH / (s.pageH + 200)) || 0.5;
-    const v = { spacing, base, yawT, yr, fit, S: fit * s.zoom, shiftX: s.focus ? 0 : Math.sign(yawT || -1) * -spreadX * fit * 0.5 };
+    const br = this.branchInfo(); const spreadX = Math.sin(yr) * (spacing * Math.max(this.visibleMax(), sv ? sv.maxD : 0) + (br ? s.spacing * br.span : 0)); let footW = s.pageW * Math.cos(yr) + spreadX, pageH = s.pageH, ovX = 0;
+    if (sv) { // overview: the nearest page looms under perspective, so fit the projected extent of the footprint corners (x at +-foot/2, z at 0 and at the deepest layer)
+      const sy = Math.sin(yawT * Math.PI / 180), cy = Math.cos(yr), zm = spacing * Math.max(this.visibleMax(), sv.maxD); let lo = 1e9, hi = -1e9, kmax = 1;
+      [-1, 1].forEach(xs => [0, zm].forEach(z => { const x1 = xs * sv.foot / 2, x2 = x1 * cy + z * sy, z2 = -x1 * sy + z * cy, k = s.persp / Math.max(s.persp - z2, 1); lo = Math.min(lo, x2 * k); hi = Math.max(hi, x2 * k); kmax = Math.max(kmax, k); }));
+      footW = hi - lo; pageH = s.pageH * kmax; ovX = -(hi + lo) / 2; // ovX: centers the projected footprint
+    }
+    const fit = Math.min(s.stageW / (footW * 1.18 + 80), s.stageH / (pageH + 200)) || 0.5;
+    const v = { spacing, base, yawT, yr, fit, S: fit * s.zoom, shiftX: s.focus ? 0 : sv ? ovX * fit : Math.sign(yawT || -1) * -spreadX * fit * 0.5 };
     this._cam = { k: k, nodes: s.nodes, v: v }; return v;
   }
   stepActive(d) { this.setState(s => ({ active: clamp(s.active + d, 0, this.visibleMax()) })); }
@@ -2528,7 +2553,7 @@ class Component extends DCLogic {
   }
   resetView() { this.setState({ yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null }); }
   pan(dx, dy, mode) {
-    if (mode === 'plane') { const { S } = this.cam(); const f = this.state.focus || { x: this.state.pageW / 2, y: this.state.pageH / 2, zd: null }; this.setState({ focus: { x: f.x - dx / S, y: f.y - dy / S, zd: f.zd } }); }
+    if (mode === 'plane') { const { S } = this.cam(); const f = this.state.focus || this.defFocus(); this.setState({ focus: { x: f.x - dx / S, y: f.y - dy / S, zd: f.zd } }); }
     else this.setState(st => ({ panX: st.panX + dx, panY: st.panY + dy }));
   }
   orbit(dy, dt) { const { base } = this.cam(); this.setState(st => ({ yaw: clamp(st.yaw + dy, -85 - base, 85 - base), tilt: clamp(st.tilt + dt, -70, 70) })); }
@@ -2784,8 +2809,9 @@ class Component extends DCLogic {
     const { spacing, yawT, fit, shiftX } = this.cam(); const br = this.branchInfo(); const P = s.persp; const wire = s.wire; const wa = s.wireAlpha / 100; const dimOthers = true; const fs = s.focusStr / 100; const hL = s.layerFocus ? (s.hoverLayer != null ? s.hoverLayer : (solo ? active : null)) : null; const oo = s.othersOp / 100;
     const scopeId = isoId || (selId !== '0' ? selId : null); let layerSet = null;
     if (hL != null) { layerSet = new Set(); const all = []; nodes.forEach(n => { if (n.depth !== hL || (isoId && !(n.id === isoId || n.id.startsWith(isoId + '.')))) return; all.push(n.id); if (!scopeId || n.id === scopeId || n.id.startsWith(scopeId + '.')) layerSet.add(n.id); }); if (!layerSet.size) all.forEach(i => layerSet.add(i)); }
-    const fx = focus ? focus.x - s.pageW / 2 : 0, fy = focus ? focus.y - s.pageH / 2 : 0, fz = focus && focus.zd != null ? focus.zd * spacing : active * spacing;
-    const cull = dragging ? LayersCore.viewCuller({ pageW: s.pageW, pageH: s.pageH, stageW: s.stageW, stageH: s.stageH, persp: P, S: fit * zoom, yaw: yawT, tilt: tilt, tx: shiftX + panX, ty: panY, fx: fx, fy: fy, fz: fz, margin: CULL_MARGIN * Math.max(s.stageW, s.stageH) }) : null;
+    const sv = this.spreadView(); const offA = sv ? sv.offs[sv.ai] : 0; // S9.1c: world x of the active page (0 with Espalhar off)
+    const fx = sv ? (focus ? offA + focus.x - s.pageW / 2 : sv.offs[sv.offs.length - 1] / 2) : focus ? focus.x - s.pageW / 2 : 0, fy = focus ? focus.y - s.pageH / 2 : 0, fz = focus && focus.zd != null ? focus.zd * spacing : active * spacing;
+    const cull = dragging ? LayersCore.viewCuller({ pageW: s.pageW, pageH: s.pageH, stageW: s.stageW, stageH: s.stageH, persp: P, S: fit * zoom, yaw: yawT, tilt: tilt, tx: shiftX + panX, ty: panY, fx: fx - offA, fy: fy, fz: fz, margin: CULL_MARGIN * Math.max(s.stageW, s.stageH) }) : null;
     const onPath = id => selId === id || selId.startsWith(id + '.'); const inBranch = id => id === selId || id.startsWith(selId + '.');
     const activeZ = active * spacing; const tr = dragging ? 'none' : 'transform .35s ease, opacity .3s ease';
     const prev = this._prev || {}; const nextPrev = {};
@@ -2837,9 +2863,25 @@ class Component extends DCLogic {
     if (label) planes.push(label);
     // S4.9: durante o arrasto os planos de mesmo z dividem uma camada composta (wrapper sem hit-test; os planos mantem pointerEvents proprio)
     if (leaf.length) { const byPlane = {}; leaf.forEach(l => { byPlane[l.id] = l.el; }); planes.unshift(...LayersCore.groupPlanesByZ(leaf).map(g => React.createElement('div', { key: 'pg' + g.z, 'data-plane-group': '', style: { position: 'absolute', left: 0, top: 0, width: s.pageW, height: s.pageH, transform: 'translateZ(' + g.z + 'px)', willChange: 'transform', pointerEvents: 'none' } }, g.ids.map(id => byPlane[id])))); }
-    const page = React.createElement('div', { style: { position: 'absolute', left: -s.pageW / 2, top: -s.pageH / 2, width: s.pageW, height: s.pageH, transformStyle: 'preserve-3d' } }, planes);
+    const pageSt = { position: 'absolute', left: -s.pageW / 2, top: -s.pageH / 2, width: s.pageW, height: s.pageH, transformStyle: 'preserve-3d' };
+    let kids;
+    if (!sv) kids = React.createElement('div', { style: pageSt }, planes);
+    else { // S9.1c: one page per picked layout inside the same world; the active one keeps its planes, handlers and culling and is only shifted
+      const lays = s.project.layouts, lodEls = this._lodEls || (this._lodEls = new Map()), seen = new Set(); kids = [];
+      const tag = (id, name, on, lod) => React.createElement('div', { key: 'lb', 'data-spread-label': id, style: { position: 'absolute', left: 0, top: -24, transform: 'translateZ(2px)', padding: '3px 7px', background: on ? 'var(--sel)' : 'var(--bg2)', color: on ? 'var(--onSel)' : 'var(--fg1)', font: '700 10px/1 "JetBrains Mono", monospace', borderRadius: 3, whiteSpace: 'nowrap', pointerEvents: 'none' } }, name + (lod ? ' · LOD' : ''));
+      sv.ids.forEach((id, i) => {
+        const off = sv.offs[i], lay = lays.find(l => l.id === id), name = lay ? lay.name : id, e = this.spreadFrozen.get(id);
+        if (id === s.project.layoutId) { kids.push(React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)' } }, [tag(id, name, true, false), React.createElement('div', { key: 'afr', 'data-spread-frame': '', style: { position: 'absolute', left: 0, top: 0, width: s.pageW, height: s.pageH, boxSizing: 'border-box', border: '1px solid rgba(var(--selRgb),.8)', pointerEvents: 'none' } }), ...planes])); return; }
+        if (!e || e.unavailable) return;
+        seen.add(id); const k = spacing + '|' + off + '|' + name + '|' + s.pageW + '|' + s.pageH, c = lodEls.get(id);
+        if (c && c.e === e && c.k === k) { kids.push(c.el); return; }
+        const el = React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)', pointerEvents: 'none' } }, [tag(id, name, false, !e.full), ...e.nodes.map(n => React.createElement(LodPlane, { key: n.id, n: n, z: n.depth * spacing, lid: id }))]);
+        lodEls.set(id, { e, k, el }); kids.push(el);
+      });
+      [...lodEls.keys()].forEach(id => { if (!seen.has(id)) lodEls.delete(id); });
+    }
     const world = React.createElement('div', { style: { position: 'absolute', left: '50%', top: '50%', width: 0, height: 0, transformStyle: 'preserve-3d', willChange: dragging ? 'transform' : 'auto', transition: dragging ? 'none' : 'transform .35s ease',
-      transform: 'translate(' + (shiftX + panX) + 'px,' + panY + 'px) scale(' + (fit * zoom) + ') rotateX(' + tilt + 'deg) rotateY(' + yawT + 'deg) translate3d(' + (-fx) + 'px,' + (-fy) + 'px,' + (-fz) + 'px)' } }, page);
+      transform: 'translate(' + (shiftX + panX) + 'px,' + panY + 'px) scale(' + (fit * zoom) + ') rotateX(' + tilt + 'deg) rotateY(' + yawT + 'deg) translate3d(' + (-fx) + 'px,' + (-fy) + 'px,' + (-fz) + 'px)' } }, kids);
     return React.createElement('div', { style: { position: 'absolute', inset: 0, perspective: P + 'px', perspectiveOrigin: '50% 50%' } }, world);
   }
 
@@ -3149,7 +3191,7 @@ class Component extends DCLogic {
       onMove: e => { const d = this.down; if (!d) return; const dx = e.clientX - d.x, dy = e.clientY - d.y; if (!this.dragged && Math.abs(dx) < 3 && Math.abs(dy) < 3) return; this.dragged = true;
         if (d.mode === 'orbit') { const { base } = this.cam(); this.setState({ dragging: true, yaw: clamp(d.yaw + dx * .35, -85 - base, 85 - base), tilt: clamp(d.tilt - dy * .35, -70, 70) }); }
         else if (d.mode === 'pan') this.setState({ dragging: true, panX: d.panX + dx, panY: d.panY + dy });
-        else { const { S } = this.cam(); const f = d.focus || { x: this.state.pageW / 2, y: this.state.pageH / 2, zd: null }; this.setState({ dragging: true, focus: { x: f.x - dx / S, y: f.y - dy / S, zd: f.zd } }); } },
+        else { const { S } = this.cam(); const f = d.focus || this.defFocus(); this.setState({ dragging: true, focus: { x: f.x - dx / S, y: f.y - dy / S, zd: f.zd } }); } },
       onUp: e => { if (e && e.type === 'mouseup' && this.rdown) { const r = this.rdown; setTimeout(() => { if (this.rdown === r) this.rdown = null; }, 0); } if (this.down) { this.down = null; this.setState({ dragging: false }); setTimeout(() => { this.dragged = false; }, 0); } },
       onStageDbl: () => { if (s.isoId) this.setState({ isoId: null }, () => this.resetView()); else this.resetView(); },
     };
