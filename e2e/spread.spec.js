@@ -614,10 +614,19 @@ for (const dist of [30, 100]) {
     const m = await stageRects(page);
     expect(m.pages.map((p) => p.id)).toEqual(['main', 'config', 'replay', 'broken']);
     expect(m.fit).toBeGreaterThan(0.05);
-    m.pages.forEach((p) => expect(p.w, p.id).toBeGreaterThanOrEqual(dist === 30 ? 120 : 80)); // dist 100: 4 pages + 3 gaps of one page width in a ~940 px stage
+    m.pages.forEach((p) => expect(p.w, p.id).toBeGreaterThanOrEqual(dist === 30 ? 120 : 80)); // default yaw; dist 100: 4 pages + 3 gaps of one page width in a ~940 px stage, foreshortened by the yaw
     const gap = insideStage(m);
     for (const k of ['l', 'r', 't', 'b']) expect(gap[k], `margin ${k}`).toBeGreaterThanOrEqual(0);
     for (let i = 1; i < m.pages.length; i++) expect(m.pages[i].l, 'left-to-right order').toBeGreaterThan(m.pages[i - 1].l);
+  });
+
+  test(`Spread_Overview_RealViewportFourPages_EdgeOnPagesStayWide_Dist${dist}`, async ({ page }) => {
+    await bigSpread(page, dist);
+    await page.evaluate(() => window.__logic.setState({ yaw: 32 })); // base yaw -32: yawT = 0, the spread is edge-on to the eye
+    await flush(page); await page.waitForTimeout(600);
+    const m = await stageRects(page), gap = insideStage(m);
+    m.pages.forEach((p) => expect(p.w, p.id).toBeGreaterThanOrEqual(dist === 30 ? 120 : 100)); // dist 100 caps at ~103 px: 4 pages + 3 gaps in a ~940 px stage
+    for (const k of ['l', 'r', 't', 'b']) expect(gap[k], `margin ${k}`).toBeGreaterThanOrEqual(0);
   });
 
   test(`Spread_Overview_RealViewportFourPages_OrbitKeepsFitAndOrder_Dist${dist}`, async ({ page }) => {
@@ -644,6 +653,14 @@ test('Spread_Overview_RealViewportFlat_PagesKeepEqualSize', async ({ page }) => 
   for (const k of ['l', 'r', 't', 'b']) expect(gap[k], `margin ${k}`).toBeGreaterThanOrEqual(0);
 });
 
+// Every page box of the spread: finite and below 3 stage widths (a page behind the eye plane projects to a huge or flipped box).
+const pagesSane = async (page, tag) => {
+  const m = await stageRects(page);
+  expect(m.pages.length, tag).toBe(4);
+  m.pages.forEach((p) => { expect(Number.isFinite(p.w) && Number.isFinite(p.l) && Number.isFinite(p.t), `${tag} ${p.id} finite`).toBe(true); expect(p.w, `${tag} ${p.id} width`).toBeLessThan(m.stage.w * 3); });
+  return m;
+};
+
 test('Spread_Overview_RealViewport_EnquadrarReachesANormalZoom', async ({ page }) => {
   await bigSpread(page, 30);
   await act(page, 'frame', '0'); await page.waitForTimeout(600);
@@ -657,6 +674,55 @@ test('Spread_Overview_RealViewport_EnquadrarReachesANormalZoom', async ({ page }
   expect(r.w).toBeGreaterThan(r.sw * 0.5);
   expect(r.w).toBeLessThan(r.sw);
   expect(Math.abs(r.cx)).toBeLessThan(r.sw * 0.25);
+  await pagesSane(page, 'main enquadrar');
+});
+
+// zoom is a 2D magnification: it never moves a far page towards the eye, whichever page is active and however the zoom was reached
+for (const id of ['config', 'replay', 'broken']) {
+  test(`Spread_Overview_RealViewport_EnquadrarOnActive_${id}_NoPageCrossesTheEye`, async ({ page }) => {
+    await bigSpread(page, 30);
+    await switchTo(page, id); await settled(page, 3); await flush(page);
+    await act(page, 'frame', '0'); await page.waitForTimeout(600);
+    expect(await page.evaluate(() => window.__logic.state.zoom)).toBeGreaterThan(1);
+    await pagesSane(page, `${id} enquadrar`);
+  });
+}
+
+for (const z of [4, 10]) {
+  test(`Spread_Overview_RealViewport_WheelZoom${z}_NoPageCrossesTheEye`, async ({ page }) => {
+    await bigSpread(page, 30);
+    await page.evaluate((zz) => window.__logic.setState({ zoom: zz, panX: 0, panY: 0, focus: null }), z);
+    await flush(page); await page.waitForTimeout(600);
+    await pagesSane(page, `zoom ${z} focus null`);
+    for (let i = 0; i < 3; i++) await act(page, 'zoomBy', 1.1, 120, -60); // the wheel path (clamped at 12)
+    await page.waitForTimeout(600);
+    await pagesSane(page, `zoom ${z} after wheel`);
+  });
+}
+
+test('Spread_Overview_RealViewport_DragPannedFocusFarOutside_NoPageCrossesTheEye', async ({ page }) => {
+  await bigSpread(page, 100);
+  await switchTo(page, 'broken'); await settled(page, 3); await flush(page);
+  await act(page, 'frame', '0'); await page.waitForTimeout(600);
+  await page.evaluate(() => window.__logic.setState({ focus: { x: -9000, y: 5000, zd: 0 } })); // an in-plane drag can carry the focus anywhere
+  await flush(page); await page.waitForTimeout(600);
+  await pagesSane(page, 'focus far outside');
+});
+
+test('Spread_Overview_PortraitPagesWithTilt_StayCenteredVertically', async ({ page }) => {
+  await page.route('**/fixtures/multi-layout/layers.json', async (route) => { const m = await (await route.fetch()).json(); m.viewport = { width: 390, height: 844 }; await route.fulfill({ json: m }); });
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await page.evaluate(() => window.__logic.setState({ tilt: 45 }));
+  await flush(page); await page.waitForTimeout(600);
+  const r = await page.evaluate((src) => {
+    const st = eval(src).getBoundingClientRect(); let t = Infinity, b = -Infinity;
+    document.querySelectorAll('[data-spread-page], [data-spread-page] [data-lod-plane], [data-spread-page] [data-plane]').forEach((e) => { const q = e.getBoundingClientRect(); if (q.width && q.height) { t = Math.min(t, q.top - st.top); b = Math.max(b, q.bottom - st.top); } });
+    return { top: t, bottom: st.height - b };
+  }, STAGE_JS);
+  expect(r.top).toBeGreaterThanOrEqual(0);
+  expect(r.bottom).toBeGreaterThanOrEqual(0);
+  expect(Math.abs(r.top - r.bottom)).toBeLessThan(3); // without the solved vertical shift the projected range sat ~60 px off center
 });
 
 test('Spread_Overview_PlanePanOnePixel_DoesNotMoveTheFrame', async ({ page }) => {
