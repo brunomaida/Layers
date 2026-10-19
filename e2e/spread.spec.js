@@ -1244,7 +1244,12 @@ test('SpreadSession_Key_OnlyWithSpreadOnAndTwoOrMoreLayouts', async ({ page }) =
   const one = await page.evaluate(() => window.__logic.sessionSnapshot());
   expect('spread' in one).toBe(false);
   expect(Object.keys(one)).toEqual(['lastProjectId', 'states', 'selId', 'isoId', 'camera', 'explodeFrom', 'collapseAt']);
-  await page.goto('/?layers=fixtures/multi-layout/'); await readNodes(page); await act(page);
+});
+
+// Split from the test above: the 2+ layouts half needs a connected folder, fixture mode never writes the entry (SpreadSession_FixtureMode_NeverWritesTheSpreadEntry)
+test('SpreadSession_Key_TwoLayoutsInAConnectedFolder_OnlyWithSpreadOn', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
   expect('spread' in (await page.evaluate(() => window.__logic.sessionSnapshot()))).toBe(false); // 2+ layouts, Espalhar off
   await act(page, 'spreadOn', true);
   const on = await page.evaluate(() => window.__logic.sessionSnapshot());
@@ -1611,4 +1616,97 @@ test('SpreadCamera_PickWithNothingPicked_ASwitchThatDrawsTwoPagesTakesTheOvervie
   expect(await page.evaluate(() => window.__logic.sessionSnapshot().camera)).toMatchObject({ zoom: NORMAL.zoom, panX: NORMAL.panX, panY: NORMAL.panY }); // never the overview camera
   await act(page, 'spreadOn', false);
   expect(await cam(page)).toMatchObject(NORMAL);
+});
+
+// S9.1c final review: F1 and m1-m4
+test('SpreadProject_ToggleDuringAnotherProjectsLoad_IsDiscardedAndNothingLeaks', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await act(page, 'setState', NORMAL);
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('proj2', { create: true });
+    const put = async (name, text) => { const w = await (await dir.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+    await put('layers.json', '{"name":"Other","layouts":[{"id":"a","name":"A","mock":"a.html"},{"id":"b","name":"B","mock":"b.html"}]}');
+    const body = '<!doctype html><html><body><div id="r"><p>x</p></div></body></html>';
+    await put('a.html', body); await put('b.html', body);
+    window.showDirectoryPicker = async () => dir;
+    const l = window.__logic, orig = l.readText.bind(l); // the new project's ACTIVE mock read is held (quiet === false)
+    window.__held = 0; window.__gate = new Promise((r) => { window.__release = r; });
+    l.readText = async (p, quiet) => { if (quiet === false) { window.__held++; await window.__gate; } return orig(p, quiet); };
+  });
+  await act(page, 'pickDir');
+  await page.waitForFunction(() => window.__held >= 1); // the load of the other project is in flight, the outgoing project's UI is still there
+  await act(page, 'spreadOn', true); // a toggle made against the outgoing project
+  const mid = await page.evaluate(() => ({ on: window.__logic.state.spread.on, nc: !!window.__logic.normalCam }));
+  expect(mid).toEqual({ on: true, nc: true }); // it landed inside the window
+  await page.evaluate(() => window.__release());
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project && window.__logic.state.project.name)).toBe('Other');
+  await loadedNow(page); await flush(page);
+  const r = await page.evaluate(() => { const L = window.__logic; return { spread: L.state.spread, nc: L.normalCam, owner: L.normalCamOwner, size: L.spreadFrozen.size, view: !!L.spreadView(), pages: document.querySelectorAll('[data-spread-page]').length, snap: L.sessionSnapshot() }; });
+  expect(r).toMatchObject({ spread: DEFAULT_SPREAD, nc: null, owner: null, size: 0, view: false, pages: 0 });
+  expect(await cam(page)).toMatchObject({ yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null });
+  expect(r.snap.camera).toMatchObject({ yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }); // the old project's camera is nowhere in the session
+  expect('spread' in r.snap).toBe(false);
+});
+
+test('SpreadCamera_LeavingOnAnotherLayout_RestoresThatLayoutsCachedCamera', async ({ page }) => {
+  await loaded(page, FX);
+  const A = { yaw: -20, tilt: 5, zoom: 1.3, panX: 7, panY: 3 };
+  await act(page, 'setState', A); // main's own camera
+  await switchTo(page, 'config');
+  await act(page, 'setState', NORMAL); // config's own camera, cached when it is left
+  await switchTo(page, 'main');
+  await act(page, 'setState', { focus: { x: 140, y: 60, zd: null } });
+  await act(page, 'spreadOn', true); await settled(page, 3); // on at main: its camera is the normal one (owner main)
+  await switchTo(page, 'config');
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject({ ...NORMAL, focus: null }); // config's cached camera, never main's
+  expect(await page.evaluate(() => window.__logic.normalCamOwner)).toBeNull();
+});
+
+test('SpreadCamera_LeavingOnAnotherLayoutWithoutCache_KeepsTheNormalCameraButNotTheOwnersFocus', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', { ...NORMAL, focus: { x: 140, y: 60, zd: null } });
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  await switchTo(page, 'config'); // no cached camera for config
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject({ ...NORMAL, focus: null });
+});
+
+test('SpreadSession_FixtureMode_NeverWritesTheSpreadEntry', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true); await settled(page, 3);
+  expect('spread' in (await page.evaluate(() => window.__logic.sessionSnapshot()))).toBe(false);
+  await act(page, 'writeConfig');
+  expect('spread' in (await sess(page))).toBe(false);
+});
+
+test('SpreadOverview_PlanePanFarOutside_DragBackMovesTheFrameAtOnce', async ({ page }) => {
+  await bigSpread(page, 30);
+  const frameLeft = () => page.evaluate(() => document.querySelector('[data-spread-frame]').getBoundingClientRect().left);
+  await act(page, 'pan', 1e6, 0, 'plane'); await act(page, 'pan', 1e6, 0, 'plane'); await page.waitForTimeout(600); // far past the footprint
+  const bounds = await page.evaluate(() => { const L = window.__logic, s = L.state, sv = L.spreadView(), offA = sv.offs[sv.ai]; return { fx: s.focus.x, min: -offA, max: sv.offs[sv.offs.length - 1] + s.pageW - offA }; });
+  expect(bounds.fx).toBeCloseTo(bounds.min, 6); // the state itself is clamped, not only the render
+  const before = await frameLeft();
+  await act(page, 'pan', -60, 0, 'plane'); await page.waitForTimeout(600); // a small drag back
+  expect(Math.abs((await frameLeft()) - before)).toBeGreaterThan(5);
+  await act(page, 'pan', 0, 1e6, 'plane'); await act(page, 'pan', 0, 1e6, 'plane');
+  expect(await page.evaluate(() => window.__logic.state.focus.y)).toBeCloseTo(0, 6);
+  await act(page, 'pan', 0, -1e6, 'plane'); await act(page, 'pan', 0, -1e6, 'plane');
+  const [fy, ph] = await page.evaluate(() => [window.__logic.state.focus.y, window.__logic.state.pageH]);
+  expect(fy).toBeCloseTo(ph, 6);
+});
+
+test('SpreadLod_Hover_IgnoredWhileAnActivePlaneIsInFront', async ({ page }) => {
+  const h = await lodInFrontOfActive(page);
+  await page.mouse.move(2, 400);
+  await page.mouse.move(h.x, h.y); // the LOD plane receives the mouse but an active plane is in front of it in 3D
+  await flush(page);
+  expect(await page.evaluate(() => window.__logic.state.lodHover)).toBeNull();
+  await act(page, 'setSpreadDist', 30); await flush(page);
+  const p = await lodPick(page, 'replay'); // positive control: a LOD plane with no active plane in front is tracked
+  await page.mouse.move(2, 400);
+  await page.mouse.move(p.x, p.y);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.lodHover)).toBe('replay:' + p.id);
 });
