@@ -4010,15 +4010,25 @@ describe('SpreadSessionEntry', () => {
 });
 
 describe('OverviewFit', () => {
-  // independent projection of the footprint box with scale3d(S,S,S) under perspective, as the browser does it
-  const project = (o, S, tx) => {
+  // independent projection of the footprint box with scale3d(S,S,S) under perspective, as the browser does it (pivot = footprint center)
+  const project = (o, S, tx, ty = 0) => {
     const a = o.yaw * Math.PI / 180, b = o.tilt * Math.PI / 180; let l = Infinity, r = -Infinity, t = Infinity, d = -Infinity, zmax = -Infinity;
     for (const xs of [-1, 1]) for (const ys of [-1, 1]) for (const z of [0, o.zm]) {
       const x1 = xs * o.foot / 2, y1 = ys * o.pageH / 2, x2 = x1 * Math.cos(a) + z * Math.sin(a), z2 = -x1 * Math.sin(a) + z * Math.cos(a);
       const y3 = y1 * Math.cos(b) - z2 * Math.sin(b), z3 = y1 * Math.sin(b) + z2 * Math.cos(b), k = o.persp / (o.persp - S * z3);
-      l = Math.min(l, (S * x2 + tx) * k); r = Math.max(r, (S * x2 + tx) * k); t = Math.min(t, S * y3 * k); d = Math.max(d, S * y3 * k); zmax = Math.max(zmax, S * z3);
+      l = Math.min(l, (S * x2 + tx) * k); r = Math.max(r, (S * x2 + tx) * k); t = Math.min(t, (S * y3 + ty) * k); d = Math.max(d, (S * y3 + ty) * k); zmax = Math.max(zmax, S * z3);
     }
     return { l, r, t, d, zmax };
+  };
+  // largest z3 (towards the eye) of any footprint corner when the camera pivot sits anywhere on the footprint: x and y at its edges, z at either end
+  const worstZ3 = (o) => {
+    const a = o.yaw * Math.PI / 180, b = o.tilt * Math.PI / 180; let zmax = -Infinity;
+    for (const xs of [-1, 1]) for (const ys of [-1, 1]) for (const z of [0, o.zm]) for (const px of [-1, 1]) for (const py of [-1, 1]) for (const pz of [0, o.zm]) {
+      const x1 = xs * o.foot / 2 - px * o.foot / 2, y1 = ys * o.pageH / 2 - py * o.pageH / 2, z1 = z - pz;
+      const z2 = -x1 * Math.sin(a) + z1 * Math.cos(a);
+      zmax = Math.max(zmax, y1 * Math.sin(b) + z2 * Math.cos(b));
+    }
+    return zmax;
   };
   const four = { foot: 4 * 1280 + 3 * 384, pageH: 760, zm: 0, yaw: -32, tilt: 0, persp: 1600, stageW: 940, stageH: 560 };
 
@@ -4044,6 +4054,14 @@ describe('OverviewFit', () => {
     }));
   });
 
+  it('OverviewFit_PivoNoExtremoDoFootprint_NenhumCantoCruzaOPlanoDoOlho', () => {
+    // frame() moves the pivot to the active page, so corner |z| can double: S * z3 must stay <= persp / 2 for any pivot on the footprint
+    [{ N: 4, dist: 30, zm: 360 }, { N: 4, dist: 100, zm: 360 }, { N: 8, dist: 30, zm: 720 }, { N: 8, dist: 100, zm: 720 }, { N: 4, dist: 100, zm: 720, big: 1 }].forEach(c => [-47, -32, -15, 0, 15].forEach(yaw => [0, 30, -45].forEach(tilt => {
+      const o = { ...four, yaw, tilt, zm: c.zm, foot: c.N * 1280 + (c.N - 1) * 1280 * c.dist / 100, ...(c.big ? { stageW: 40000, stageH: 20000 } : {}) }, r = core.overviewFit(o);
+      expect(r.fit * worstZ3(o), JSON.stringify({ ...c, yaw, tilt })).toBeLessThanOrEqual(o.persp / 2 + 1e-6);
+    })));
+  });
+
   it('OverviewFit_MaisLayoutsOuMaisDistancia_NuncaAumentaOFit', () => {
     const f = (o) => core.overviewFit({ ...four, ...o }).fit;
     expect(f({ foot: 6000 })).toBeLessThanOrEqual(f({ foot: 4000 }));
@@ -4057,17 +4075,24 @@ describe('OverviewFit', () => {
   });
 });
 
-describe('ViewCuller uniform scale', () => {
+describe('ViewCuller zs (z scale)', () => {
   const base = { pageW: 1000, pageH: 600, stageW: 800, stageH: 600, persp: 1600, S: 0.5, yaw: 0, tilt: 0, tx: 0, ty: 0, fx: 0, fy: 0, fz: 0, margin: 0 };
 
-  it('Uniform_ZEscaladoPorS_CortaPlanoForaDoPalco', () => {
-    // z = 2000 sits behind the camera plane at scale 1, but S*z = 1000 in the scale3d world: k = 2.67 pushes the plane off the stage
+  it('Zs_ZEscaladoPorZs_CortaPlanoForaDoPalco', () => {
+    // z = 2000 sits behind the camera plane at z scale 1, but zs * z = 1000: k = 2.67 pushes the plane off the stage
     expect(core.viewCuller(base)(950, 250, 50, 50, 2000)).toBe(false);
-    expect(core.viewCuller({ ...base, uniform: true })(950, 250, 50, 50, 2000)).toBe(true);
+    expect(core.viewCuller({ ...base, zs: 0.5 })(950, 250, 50, 50, 2000)).toBe(true);
   });
 
-  it('Uniform_Ausente_MantemMatematicaAnterior', () => {
-    expect(core.viewCuller({ ...base, S: 1 })(950, 250, 50, 50, 0)).toBe(true);
-    expect(core.viewCuller({ ...base, uniform: false })(450, 250, 100, 100, 0)).toBe(false);
+  it('Zs_DiferenteDeS_ZUsaZsEXYUsaS', () => {
+    // overview world = scale(zoom) scale3d(fit): S = fit * zoom scales x/y, zs = fit scales z; zoom must not move the plane towards the eye
+    expect(core.viewCuller({ ...base, S: 2, zs: 0.2 })(950, 250, 50, 50, 1000)).toBe(true); // zs * z = 200: in front of the eye, off the stage
+    expect(core.viewCuller({ ...base, S: 2, zs: 2 })(950, 250, 50, 50, 1000)).toBe(false); // zs * z = 2000: behind the eye never culls
+  });
+
+  it('Zs_Ausente_MantemMatematicaAnterior', () => {
+    // S != 1 and z != 0 so ignoring the flag changes the answer: with zs absent z keeps full size (k = 2.67, off the stage); zs = S shrinks it (k = 1.45, on stage)
+    expect(core.viewCuller(base)(950, 250, 50, 50, 1000)).toBe(true);
+    expect(core.viewCuller({ ...base, zs: 0.5 })(950, 250, 50, 50, 1000)).toBe(false);
   });
 });
