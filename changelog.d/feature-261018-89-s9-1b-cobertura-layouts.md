@@ -8,7 +8,7 @@ adr: none
 - Core puro em `LayersCore`: `COVERAGE`, `coverageScope`, `cssHiddenSelectors`, `htmlRegions`, `scanScriptMarkers`, `coverageModel`, `coverageVerdict`, `suggestLayouts`; `collectProjectFiles` extraído do `autoCreateLayersJson`; fixture `coverage-multi`.
 
 ### Tests
-- Vitest: regiões, escopo, modelo, veredito e sugestão. Playwright: `coverage` e `coverage-modal` (26 testes) e o orçamento da análise em `perf`.
+- Vitest: regiões, escopo, modelo, veredito e sugestão. Playwright: `coverage` e `coverage-modal` (32 testes) e o orçamento da análise em `perf`.
 
 ### Perf
-- measured — Chromium, 2026-10-19: `htmlRegions` com 1.500 tags 2,2 ms e `coverageModel` com 200 HTMLs 26,7 ms (`npm run bench`); `analyzeCoverage` com 200 HTMLs e 1.500 tags, mediana 308 ms contra orçamento de 616 ms (`Coverage_Analyze_CostsUnderBudget`). Só roda sob demanda; o orçamento da carga não muda.
+- measured — 2026-10-19: em Node (`npm run bench`), `coverageModel` sobre 1 HTML de 1.500 tags 2,3 ms e sobre 200 HTMLs 15,6 ms; no Chromium (e2e), `analyzeCoverage` com 200 HTMLs e 1.500 tags, mediana 218 ms contra orçamento de 616 ms (`Coverage_Analyze_CostsUnderBudget`). Só roda sob demanda; o orçamento da carga não muda.
