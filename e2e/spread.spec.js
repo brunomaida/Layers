@@ -108,3 +108,210 @@ test('ReadText_QuietInFolderMode_KeepsMtimeWhileDefaultRecordsIt', async ({ page
   expect(r.afterQuiet).toBe(r.recorded);
   expect(r.afterDefault).toBe(r.disk);
 });
+
+// S9.1c Task 3: frozen LOD snapshots of the other layouts (Espalhar). No rendering yet: the contract is `spreadFrozen`, `state.spread`, `spreadRev`.
+const FX = '/?layers=fixtures/multi-layout/';
+const frozen = (page) => page.evaluate(() => {
+  const L = window.__logic; const out = {};
+  L.spreadFrozen.forEach((v, k) => { out[k] = v.unavailable ? { unavailable: true } : { full: v.full, count: v.count, len: v.nodes.length, maxDepth: Math.max(...v.nodes.map((n) => n.depth)), pageW: v.pageW, pageH: v.pageH }; });
+  return out;
+});
+const settled = (page, n) => expect.poll(async () => Object.keys(await frozen(page)).length).toBe(n);
+const activeId = async (page) => { await act(page); return page.evaluate(() => window.__logic.state.project.layoutId); };
+const depth1 = (page) => page.evaluate(() => window.__logic.state.nodes.filter((n) => n.depth <= 1).length);
+async function switchTo(page, id) {
+  await act(page, 'switchLayout', id);
+  await expect.poll(() => activeId(page)).toBe(id);
+  await page.waitForFunction(() => window.__logic.loadedSeq === window.__logic.loadSeq);
+}
+// With Espalhar off: the depth<=1 node count of each layout, read from the real active scan (independent of scanRoot). Ends on main.
+async function truth(page) {
+  const t = {};
+  for (const id of ['config', 'replay', 'main']) { await switchTo(page, id); t[id] = await depth1(page); }
+  return t;
+}
+const tempHosts = (page) => page.evaluate(() => document.querySelectorAll('[data-lod-host]').length + [...document.body.children].filter((e) => e !== document.querySelector('[data-plane]') && e.style && e.style.left === '-20000px' && e.shadowRoot && e.shadowRoot.childElementCount).length);
+
+test('Spread_Off_ChangesNothing', async ({ page }) => {
+  await loaded(page, FX);
+  const r = await page.evaluate(() => { const L = window.__logic; return { spread: L.state.spread, rev: L.state.spreadRev, size: L.spreadFrozen.size }; });
+  expect(r).toEqual({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, rev: 0, size: 0 });
+  await switchTo(page, 'config');
+  expect(await page.evaluate(() => ({ size: window.__logic.spreadFrozen.size, rev: window.__logic.state.spreadRev }))).toEqual({ size: 0, rev: 0 });
+});
+
+test('Spread_On_FreezesOtherLayoutsInLod', async ({ page }) => {
+  await loaded(page, FX);
+  const t = await truth(page);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  const f = await frozen(page);
+  expect(Object.keys(f).sort()).toEqual(['broken', 'config', 'replay']);
+  expect(f.config).toMatchObject({ full: false, count: t.config, len: t.config });
+  expect(f.replay).toMatchObject({ full: false, count: t.replay, len: t.replay });
+  expect(f.config.maxDepth).toBeLessThanOrEqual(1);
+  expect(f.broken).toEqual({ unavailable: true });
+  const s = await page.evaluate(() => ({ on: window.__logic.state.spread.on, rev: window.__logic.state.spreadRev, w: window.__logic.state.pageW }));
+  expect(s.on).toBe(true);
+  expect(s.rev).toBeGreaterThan(0);
+  expect(f.config.pageW).toBe(s.w);
+  expect(await tempHosts(page)).toBe(0);
+  expect(await page.evaluate(() => document.querySelectorAll('[data-plane]').length === window.__logic.state.nodes.length)).toBe(true);
+});
+
+test('Spread_OnAfterSwitch_FreezesMainFromItsState', async ({ page }) => {
+  await loaded(page, FX);
+  const t = await truth(page); // ends on main
+  await switchTo(page, 'config');
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  const f = await frozen(page);
+  expect(f.main).toMatchObject({ full: false, count: t.main });
+  expect(f.replay).toMatchObject({ full: false, count: t.replay });
+  expect(f.config).toBeUndefined();
+});
+
+test('Spread_SwitchLayout_FreezesLeavingFullAndDowngradesOlder', async ({ page }) => {
+  await loaded(page, FX);
+  const t = await truth(page); // on main
+  const mainFull = await page.evaluate(() => window.__logic.state.nodes.length);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  await switchTo(page, 'config');
+  let f = await frozen(page);
+  expect(f.main).toMatchObject({ full: true, count: mainFull, len: mainFull });
+  expect(f.config).toBeUndefined();
+  expect(f.replay).toMatchObject({ full: false, count: t.replay });
+  const cfgFull = await page.evaluate(() => window.__logic.state.nodes.length);
+  await switchTo(page, 'replay');
+  f = await frozen(page);
+  expect(f.config).toMatchObject({ full: true, count: cfgFull, len: cfgFull });
+  expect(f.main).toMatchObject({ full: false, count: t.main, len: t.main });
+  expect(f.replay).toBeUndefined();
+  expect(Object.values(f).filter((e) => e.full).length).toBe(1);
+  expect(await tempHosts(page)).toBe(0);
+  const roots = await page.evaluate(() => [...document.querySelectorAll('*')].filter((e) => e.shadowRoot && e.shadowRoot.childElementCount).length);
+  expect(roots).toBe(1);
+  // LRU: a later loadSpread (new pick) never overwrites the full entry with an LOD one
+  await act(page, 'setSpreadPick', 'all', []);
+  await page.waitForTimeout(300);
+  expect((await frozen(page)).config.full).toBe(true);
+});
+
+test('Spread_SingleLayoutProject_TurningOnIsNoop', async ({ page }) => {
+  await loaded(page, '/?layers=fixtures/traval/');
+  await act(page, 'spreadOn', true);
+  expect(await page.evaluate(() => ({ on: window.__logic.state.spread.on, size: window.__logic.spreadFrozen.size, rev: window.__logic.state.spreadRev }))).toEqual({ on: false, size: 0, rev: 0 });
+});
+
+test('Spread_Pick_OnlyChosenLayoutsAreFrozen', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  await act(page, 'setSpreadPick', 'pick', ['replay']);
+  await expect.poll(async () => Object.keys(await frozen(page))).toEqual(['replay']);
+  await act(page, 'setSpreadPick', 'pick', ['replay', 'config']);
+  await expect.poll(async () => Object.keys(await frozen(page)).sort()).toEqual(['config', 'replay']);
+  await act(page, 'setSpreadDist', 55);
+  expect(await page.evaluate(() => window.__logic.state.spread.dist)).toBe(55);
+  await act(page, 'spreadOn', false);
+  expect(await page.evaluate(() => ({ on: window.__logic.state.spread.on, size: window.__logic.spreadFrozen.size }))).toEqual({ on: false, size: 0 });
+});
+
+test('Spread_ReloadAndUnload_ClearTheMap', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  const before = await page.evaluate(() => window.__logic.spreadSeq);
+  await act(page, 'doReload');
+  expect(await page.evaluate(() => window.__logic.spreadSeq)).toBeGreaterThan(before); // cleared at once, refilled by the winning reload
+  await settled(page, 3);
+  await act(page, 'unloadProject');
+  expect(await page.evaluate(() => window.__logic.spreadFrozen.size)).toBe(0);
+});
+
+// A read of a non-active layout (readText(path, true)) is held in flight until __release(): the active load is never delayed.
+const holdLodReads = (page) => page.evaluate(() => {
+  const l = window.__logic, orig = l.readText.bind(l);
+  window.__hold = true; window.__held = 0; window.__settled = 0; window.__gate = new Promise((r) => { window.__release = r; });
+  l.readText = async (p, quiet) => {
+    if (quiet === true && window.__hold) { window.__held++; try { await window.__gate; } finally { window.__settled++; } }
+    return orig(p, quiet);
+  };
+});
+const flush = (page) => page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(r, 50)))));
+async function folderSpread(page) {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await holdLodReads(page);
+  await act(page, 'spreadOn', true);
+  await page.waitForFunction(() => window.__held >= 1);
+}
+
+test('Spread_ProjectSwitchDuringLoad_DropsResult', async ({ page }) => {
+  await folderSpread(page);
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('proj2', { create: true });
+    const put = async (name, text) => { const w = await (await dir.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+    await put('layers.json', '{"name":"Other","mock":"index.html"}');
+    await put('index.html', '<!doctype html><html><body><div class="z"><p>z</p></div></body></html>');
+    window.showDirectoryPicker = async () => dir;
+  });
+  await act(page, 'pickDir');
+  expect(await page.evaluate(() => window.__logic.state.project.name)).toBe('Other');
+  expect(await page.evaluate(() => window.__settled)).toBe(0); // the old read is still pending
+  await page.evaluate(() => { window.__hold = false; window.__release(); });
+  await page.waitForFunction(() => window.__settled >= 1);
+  await flush(page);
+  expect(await page.evaluate(() => ({ size: window.__logic.spreadFrozen.size, name: window.__logic.state.project.name }))).toEqual({ size: 0, name: 'Other' });
+  expect(await tempHosts(page)).toBe(0);
+});
+
+test('Spread_ReloadDuringLoad_DropsResult', async ({ page }) => {
+  await folderSpread(page);
+  const staleHeld = await page.evaluate(() => window.__held);
+  await page.evaluate(() => { window.__hold = false; }); // the read in flight stays held; reads started from now on (the reload's own run) pass through
+  await act(page, 'reloadProject');
+  await settled(page, 3); // the winning reload refilled the map
+  expect(await page.evaluate(() => window.__settled)).toBe(0); // the old read is still pending
+  await page.evaluate(() => { const L = window.__logic; window.__snap = { rev: L.state.spreadRev, entries: [...L.spreadFrozen.entries()] }; window.__release(); });
+  await page.waitForFunction((n) => window.__settled >= n, staleHeld);
+  await flush(page);
+  const same = await page.evaluate(() => { const L = window.__logic, s = window.__snap; return L.state.spreadRev === s.rev && L.spreadFrozen.size === s.entries.length && s.entries.every(([k, v]) => L.spreadFrozen.get(k) === v); });
+  expect(same).toBe(true);
+  expect(await tempHosts(page)).toBe(0);
+});
+
+test('Spread_LayoutSwitchDuringLoad_DropsResult', async ({ page }) => {
+  await loaded(page, FX);
+  await holdLodReads(page);
+  await act(page, 'spreadOn', true);
+  await page.waitForFunction(() => window.__held >= 1);
+  await page.evaluate(() => { window.__hold = false; }); // the read in flight stays held; the switch's own run passes through
+  await switchTo(page, 'config');
+  await settled(page, 3);
+  expect(await page.evaluate(() => window.__settled)).toBe(0); // the old read is still pending
+  const before = await frozen(page);
+  expect(before.main.full).toBe(true);
+  await page.evaluate(() => { const L = window.__logic; window.__snap = { rev: L.state.spreadRev, entries: [...L.spreadFrozen.entries()] }; window.__release(); });
+  await page.waitForFunction(() => window.__settled >= 1);
+  await flush(page);
+  const same = await page.evaluate(() => { const L = window.__logic, s = window.__snap; return L.state.spreadRev === s.rev && L.spreadFrozen.size === s.entries.length && s.entries.every(([k, v]) => L.spreadFrozen.get(k) === v); });
+  expect(same).toBe(true);
+  expect(Object.keys(await frozen(page)).sort()).toEqual(['broken', 'main', 'replay']);
+  expect(await tempHosts(page)).toBe(0);
+});
+
+test('Spread_OffDuringLoad_DropsResult', async ({ page }) => {
+  await loaded(page, FX);
+  await holdLodReads(page);
+  await act(page, 'spreadOn', true);
+  await page.waitForFunction(() => window.__held >= 1);
+  await act(page, 'spreadOn', false);
+  await page.evaluate(() => { window.__release(); });
+  await page.waitForFunction(() => window.__settled >= 1);
+  await flush(page);
+  expect(await page.evaluate(() => ({ size: window.__logic.spreadFrozen.size, rev: window.__logic.state.spreadRev, on: window.__logic.state.spread.on }))).toEqual({ size: 0, rev: 0, on: false });
+  expect(await tempHosts(page)).toBe(0);
+});
