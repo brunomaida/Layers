@@ -3830,3 +3830,133 @@ describe('SuggestLayouts', () => {
     expect(out[2].id.endsWith('-2')).toBe(true);
   });
 });
+
+describe('SpreadPicked', () => {
+  const layouts = [{ id: 'main' }, { id: 'cfg' }, { id: 'replay' }, { id: 'about' }];
+
+  it('SpreadPicked_ModoAll_RetornaTodosNaOrdemDoLayersJson', () => {
+    expect(core.spreadPicked(layouts, 'all', [], 'cfg')).toEqual(['main', 'cfg', 'replay', 'about']);
+  });
+
+  it('SpreadPicked_ModoPickDesordenado_SegueOrdemDoLayersJson', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['about', 'cfg'], 'main')).toEqual(['main', 'cfg', 'about']);
+  });
+
+  it('SpreadPicked_AtivoForaDoPick_SempreIncluido', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['about'], 'replay')).toEqual(['replay', 'about']);
+  });
+
+  it('SpreadPicked_IdInexistenteEDuplicado_Descartados', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['ghost', 'cfg', 'cfg'], 'main')).toEqual(['main', 'cfg']);
+  });
+
+  it('SpreadPicked_AtivoInexistente_RetornaApenasPickedValidos', () => {
+    expect(core.spreadPicked(layouts, 'pick', ['cfg', 'ghost'], 'ghost')).toEqual(['cfg']);
+  });
+
+  it('SpreadPicked_EntradasInvalidas_NaoLanca', () => {
+    expect(core.spreadPicked(null, 'pick', null, 'main')).toEqual([]);
+    expect(core.spreadPicked(layouts, 'pick', undefined, 'main')).toEqual(['main']);
+  });
+});
+
+describe('SpreadOffsets', () => {
+  it('SpreadOffsets_DistZero_PaginasEncostadas', () => {
+    expect(core.spreadOffsets(3, 1000, 0)).toEqual([0, 1000, 2000]);
+  });
+
+  it('SpreadOffsets_Dist100_GapIgualALargura', () => {
+    expect(core.spreadOffsets(3, 1000, 100)).toEqual([0, 2000, 4000]);
+  });
+
+  it('SpreadOffsets_Dist50_GapLinearMetadeDaLargura', () => {
+    expect(core.spreadOffsets(3, 800, 50)).toEqual([0, 1200, 2400]);
+  });
+
+  it('SpreadOffsets_DistForaDoIntervalo_Clampada', () => {
+    expect(core.spreadOffsets(2, 1000, -20)).toEqual([0, 1000]);
+    expect(core.spreadOffsets(2, 1000, 250)).toEqual([0, 2000]);
+  });
+
+  it('SpreadOffsets_CountZeroOuUm_PrimeiroNaOrigem', () => {
+    expect(core.spreadOffsets(0, 1000, 40)).toEqual([]);
+    expect(core.spreadOffsets(1, 1000, 40)).toEqual([0]);
+  });
+});
+
+describe('LodNodes', () => {
+  const nodes = [
+    { id: 'a', depth: 0 }, { id: 'b', depth: 1 }, { id: 'c', depth: 2 }, { id: 'd', depth: 1 }, { id: 'e', depth: 3 }
+  ];
+
+  it('LodNodes_MaxDepth1_CortaProfundidadePreservandoIds', () => {
+    expect(core.lodNodes(nodes, 1).map((n) => n.id)).toEqual(['a', 'b', 'd']);
+  });
+
+  it('LodNodes_MaxDepth0_SoRaizes', () => {
+    expect(core.lodNodes(nodes, 0).map((n) => n.id)).toEqual(['a']);
+  });
+
+  it('LodNodes_MaxDepthNegativo_RetornaVazio', () => {
+    expect(core.lodNodes(nodes, -1)).toEqual([]);
+  });
+
+  it('LodNodes_Entrada_NaoMutada', () => {
+    const snap = JSON.stringify(nodes);
+    const out = core.lodNodes(nodes, 1);
+    expect(out).not.toBe(nodes);
+    expect(JSON.stringify(nodes)).toBe(snap);
+  });
+
+  it('LodNodes_EntradaInvalida_RetornaVazio', () => {
+    expect(core.lodNodes(null, 1)).toEqual([]);
+  });
+});
+
+describe('SpreadPlaneTotal', () => {
+  it('SpreadPlaneTotal_AtivoMaisCongelados_Soma', () => {
+    expect(core.spreadPlaneTotal(100, [{ count: 40 }, { count: 60 }])).toBe(200);
+  });
+
+  it('SpreadPlaneTotal_SemCongelados_SoAtivo', () => {
+    expect(core.spreadPlaneTotal(12, [])).toBe(12);
+  });
+
+  it('SpreadPlaneTotal_Exatamente1500_NaoAvisa', () => {
+    expect(core.spreadPlaneTotal(1000, [{ count: 500 }]) > core.COVERAGE.PLANES_MAX).toBe(false);
+  });
+
+  it('SpreadPlaneTotal_1501_Avisa', () => {
+    expect(core.spreadPlaneTotal(1000, [{ count: 501 }]) > core.COVERAGE.PLANES_MAX).toBe(true);
+  });
+
+  it('SpreadPlaneTotal_ContagemInvalida_Ignorada', () => {
+    expect(core.spreadPlaneTotal(5, [{ count: NaN }, {}, null, { count: 3 }])).toBe(8);
+  });
+});
+
+describe('SpreadSessionEntry', () => {
+  const on = { on: true, mode: 'pick', picked: ['cfg'], dist: 30 };
+
+  it('SpreadSessionEntry_EspalharLigadoCom2Layouts_RetornaSpread', () => {
+    expect(core.spreadSessionEntry(on, 2)).toEqual(on);
+  });
+
+  it('SpreadSessionEntry_EspalharDesligado_Null', () => {
+    expect(core.spreadSessionEntry({ on: false, mode: 'all', picked: [], dist: 30 }, 3)).toBeNull();
+  });
+
+  it('SpreadSessionEntry_1Layout_Null', () => {
+    expect(core.spreadSessionEntry(on, 1)).toBeNull();
+  });
+
+  it('SpreadSessionEntry_SpreadAusente_Null', () => {
+    expect(core.spreadSessionEntry(null, 3)).toBeNull();
+    expect(core.spreadSessionEntry(undefined, 3)).toBeNull();
+  });
+
+  it('SpreadSessionEntry_Retorno_NaoCompartilhaPicked', () => {
+    const out = core.spreadSessionEntry(on, 2);
+    expect(out.picked).not.toBe(on.picked);
+  });
+});
