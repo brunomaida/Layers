@@ -1192,6 +1192,9 @@ const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = [
 // Project scan rules shared by the folder walker and the zip filter (autocreate and coverage).
 const SCAN_SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
 const SCAN_MAX = { depth: 6, entries: 5000, fileBytes: 3 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, scriptBytes: 8 * 1024 * 1024 };
+// Template data of the coverage overlay while closed (S9.1b): one shared object, the overlay's handlers only exist while it is open.
+const COV_CLOSED = Object.freeze({ covOpen: false, covRunning: false, covError: false, covDone: false, covErrorMsg: '', covSub: '', covPartial: false, covLowConf: false,
+  covRunBars: Object.freeze(['Monovisual', 'Monovisual + states', 'Múltiplos layouts'].map(label => Object.freeze({ label }))), covBars: Object.freeze([]), covWarns: Object.freeze([]), covRows: Object.freeze([]), closeCoverage: () => {}, copySnippet: () => {} });
 const scanKind = n => /\.html?$/i.test(n) ? 'html' : /\.css$/i.test(n) ? 'css' : /\.(tsx?|jsx?|mjs)$/i.test(n) && !/\.d\.ts$/i.test(n) ? 'script' : null;
 // Seam do loader: sanitiza o mock ja parseado, escopa as folhas e monta a raiz com data-src.
 // So devolve dados; o hoist de @font-face e o mount no shadow root ficam com o chamador.
@@ -1767,6 +1770,8 @@ class Component extends DCLogic {
   // Template data of the coverage overlay (S9.1b). The table lists at most 200 regions; the rest becomes a "+N" line.
   covVals() {
     const c = this.state.coverage, st = c && c.open ? c.status : '', done = st === 'done', pname = this.state.project ? this.state.project.name : '';
+    if (!st) return COV_CLOSED; // closed overlay: orbit re-renders must not allocate
+    const k = this._cov; if (done && k && k.c === c && k.pname === pname) return k.v; // computed once per result (and project name)
     const out = { covOpen: !!st, covRunning: st === 'running', covError: st === 'error', covDone: done, covErrorMsg: st === 'error' ? String(c.error) : '', covSub: pname, covPartial: false, covLowConf: false,
       covRunBars: ['Monovisual', 'Monovisual + states', 'Múltiplos layouts'].map(label => ({ label })), covBars: [], covWarns: [], covRows: [], closeCoverage: () => this.closeCoverage(), copySnippet: () => this.copySnippet() };
     if (!done) return out;
@@ -1791,7 +1796,7 @@ class Component extends DCLogic {
     const vis = [M.mono, M.monoStates, M.multi].map(x => new Set(x.visible)), yes = b => b ? '✓' : '–', col = b => b ? 'var(--ok)' : 'var(--fg3)', tot = x => pct(x.cobReg) + '·' + pct(x.cobEl);
     const rows = m.regions.slice(0, ROWS).map(r => { const a = vis[0].has(r.key), b = vis[1].has(r.key), d = vis[2].has(r.key); return { key: r.key, kind: r.kind, el: r.el === null ? '—' : String(r.el), m1: yes(a), c1: col(a), m2: yes(b), c2: col(b), m3: yes(d), c3: col(d) }; });
     const sel = v.rule !== 0;
-    return { ...out, covSub: (N ? pname + ' · ' : '') + N + (N === 1 ? ' região' : ' regiões'), covPartial: partial, covLowConf: lowConf,
+    const vals = { ...out, covSub: (N ? pname + ' · ' : '') + N + (N === 1 ? ' região' : ' regiões'), covPartial: partial, covLowConf: lowConf,
       covBars: [bar('Monovisual', M.mono, 'var(--fg3)'), bar('Monovisual + states', M.monoStates, 'var(--acc)'), bar('Múltiplos layouts', M.multi, 'var(--sel)')],
       covCols: N ? '240px minmax(0,1fr)' : 'minmax(0,1fr)', covHasRegions: N > 0,
       covVerdict: v.verdict, covSplit: !!v.split, covRule: rule, covExplain: explain, covExplainOn: !!explain, covNote: note, covNoteOn: !!note,
@@ -1800,6 +1805,7 @@ class Component extends DCLogic {
       covRegCount: N + ' detectadas · até ' + ROWS + ' linhas', covRows: rows, covMoreOn: N > ROWS, covMore: '+' + (N - ROWS) + ' regiões',
       covTotEl: fmt(m.regions.reduce((a, r) => a + (r.el === null ? 0 : r.el), 0)), covTot1: tot(M.mono), covTot2: tot(M.monoStates), covTot3: tot(M.multi),
       covSnippetOn: v.verdict === 'Múltiplos layouts' && c.suggestion.length > 0, covSnippet: c.snippet };
+    this._cov = { c, pname, v: vals }; return vals;
   }
   // Zip counterpart of collectProjectFiles: same kinds, skip rules and caps over the in-memory entries.
   collectZipFiles(zip, base) {

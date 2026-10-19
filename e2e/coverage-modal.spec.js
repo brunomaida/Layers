@@ -79,7 +79,24 @@ test('Coverage_OpenFromMenu_ShowsRunningThenVerdictAndSnippet', async ({ page, c
   expect(clip.replace(/\s+/g, '')).toBe(snippet.replace(/\s+/g, '')); // the Windows clipboard pads line ends
 });
 
-test('Coverage_Close_EscBackdropAndFechar', async ({ page }) => {
+test('Coverage_TemplateData_IsSharedWhenClosedAndCachedPerResult', async ({ page }) => {
+  await connect(page);
+  const closed = await page.evaluate(() => { const l = window.__logic; return { same: l.covVals() === l.covVals(), frozen: Object.isFrozen(l.covVals()), open: l.covVals().covOpen }; });
+  expect(closed).toEqual({ same: true, frozen: true, open: false });
+  await openCoverage(page);
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  const done = await page.evaluate(() => { const l = window.__logic, a = l.covVals(), b = l.covVals(); return { same: a === b, rows: a.covRows.length }; });
+  expect(done.same).toBe(true);
+  expect(done.rows).toBeGreaterThan(0);
+  // a new result (new coverage object) must not serve the cached values of the previous one
+  await page.evaluate(() => { const l = window.__logic; window.__before = l.covVals(); l.setState({ coverage: { ...l.state.coverage } }); });
+  await expect.poll(() => page.evaluate(() => window.__logic.covVals() !== window.__before)).toBe(true);
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Veredito', { exact: true })).toHaveCount(0);
+  expect(await page.evaluate(() => { const l = window.__logic; return l.covVals() === l.covVals() && Object.isFrozen(l.covVals()); })).toBe(true);
+});
+
+test('Coverage_Close_EscBackdropAndFechar',async ({ page }) => {
   await connect(page);
   const open = async () => { await openCoverage(page); await expect(page.getByText('Veredito', { exact: true })).toBeVisible(); };
   await open();
