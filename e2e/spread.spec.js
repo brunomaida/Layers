@@ -789,7 +789,9 @@ test('SpreadUi_Button_OnlyWithTwoOrMoreLayouts', async ({ page }) => {
 
 test('SpreadUi_Popover_OpensAndClosesByButtonEscAndOutsideClick', async ({ page }) => {
   await loaded(page, FX);
+  await act(page, 'select', '0.1'); // non-root: the "did not fall into reset" assertion below can fail
   const selBefore = await page.evaluate(() => window.__logic.state.selId);
+  expect(selBefore).toBe('0.1');
   await expect(page.locator(BTN)).toHaveAttribute('aria-expanded', 'false');
   await openPop(page);
   await expect(page.locator(BTN)).toHaveAttribute('aria-expanded', 'true');
@@ -801,7 +803,8 @@ test('SpreadUi_Popover_OpensAndClosesByButtonEscAndOutsideClick', async ({ page 
   await expect(page.locator(POP)).toHaveCount(0);
   expect(await page.evaluate(() => window.__logic.state.selId)).toBe(selBefore);
   await openPop(page);
-  await page.mouse.click(8, 8); // outside click
+  const out = await page.evaluate(() => { const r = document.querySelector('[data-spread-pop]').offsetParent.getBoundingClientRect(); return { x: Math.round(r.left + 60), y: Math.round(r.top + 120) }; }); // inside the stage, away from the top bar
+  await page.mouse.click(out.x, out.y); // outside click
   await expect(page.locator(POP)).toHaveCount(0);
   await openPop(page);
   await page.locator(POP).click({ position: { x: 4, y: 4 } }); // inside click keeps it open
@@ -829,7 +832,7 @@ test('SpreadUi_Segments_FocoTodosPick_DriveTheStage', async ({ page }) => {
   await seg(page, 'pick').click();
   expect(await sp(page)).toMatchObject({ on: true, mode: 'pick' });
   await expect(seg(page, 'pick')).toHaveAttribute('aria-pressed', 'true');
-  await expect(ck(page, 'config')).toHaveAttribute('aria-checked', 'false');
+  await expect(ck(page, 'config')).toHaveAttribute('aria-checked', 'true'); // Task 6 (m4): Todos -> 1-N seeds the pick with the drawn layouts
   await expect(ck(page, 'config')).toBeEnabled();
   await seg(page, 'off').click(); // Foco = Espalhar off
   expect(await sp(page)).toMatchObject({ on: false });
@@ -902,9 +905,10 @@ test('SpreadUi_Counts_ShowActiveFrozenUnavailableAndPending', async ({ page }) =
   await page.evaluate(() => { const L = window.__logic; L.spreadFrozen.delete('replay'); L.spreadBump(); }); // a drawn layout not yet frozen
   await expect(cnt(page, 'replay')).toHaveText('…');
   await expect(page.locator('[data-spread-total]')).toHaveText('Total: ' + (t.n + t.config) + ' planos'); // the pending layout counts 0 until frozen
-  await seg(page, 'pick').click(); // a layout outside the selection is not being read: no pending marker, not in the total
-  await expect(cnt(page, 'replay')).not.toHaveText('…');
-  await expect(page.locator('[data-spread-total]')).toHaveText('Total: ' + t.n + ' planos');
+  await seg(page, 'pick').click(); // Task 6 (m4): 1-N starts from the drawn layouts, so replay is still picked (and read again, being gone from the map)
+  await ck(page, 'replay').click(); // a layout outside the selection is not being read: no pending marker, not in the total
+  await expect(cnt(page, 'replay')).toHaveText('—');
+  await expect(page.locator('[data-spread-total]')).toHaveText('Total: ' + (t.n + t.config) + ' planos');
 });
 
 test('SpreadUi_Warning_AbsentAt1500PresentAt1501AndNeverBlocks', async ({ page }) => {
@@ -1258,3 +1262,118 @@ test('SpreadSession_Zerar_RemovesTheKeyAndResetsTheSpread', async ({ page }) => 
   await expect.poll(async () => 'spread' in (await sess(page))).toBe(false);
 });
 
+// ---- carryover from the Task 5 review ----
+test('SpreadUi_Popover_DoubleClickDoesNotResetTheViewOrClearIsolation', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'pick').click(); await ck(page, 'config').click(); await settled(page, 1);
+  await act(page, 'setState', { yaw: 7, zoom: 2.2, isoId: '0.1' });
+  const before = await cam(page);
+  await ck(page, 'replay').dblclick();
+  await ck(page, 'replay').dblclick();
+  await seg(page, 'all').dblclick();
+  await flush(page);
+  expect(await cam(page)).toEqual({ ...before });
+  expect(await page.evaluate(() => window.__logic.state.isoId)).toBe('0.1');
+});
+
+test('SpreadUi_TodosToPick_SeedsPickedWithTheDrawnLayoutsAndKeepsTheFrozenSnapshots', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'all').click(); await settled(page, 3); await flush(page);
+  await page.evaluate(() => {
+    const L = window.__logic, o = L.readText.bind(L); window.__reads = 0; L.readText = (...a) => { window.__reads++; return o(...a); };
+    window.__entries = { config: L.spreadFrozen.get('config'), replay: L.spreadFrozen.get('replay') };
+  });
+  await seg(page, 'pick').click(); await flush(page);
+  expect((await sp(page)).picked).toEqual(['main', 'config', 'replay']); // the ids drawn (broken is unavailable)
+  expect(await page.evaluate(() => window.__reads)).toBe(0); // no layout was read again
+  expect(await page.evaluate(() => ['config', 'replay'].every((k) => window.__logic.spreadFrozen.get(k) === window.__entries[k]))).toBe(true); // same frozen entries
+  await expect(ck(page, 'config')).toHaveAttribute('aria-checked', 'true');
+  await ck(page, 'config').click(); // the user prunes from the full set
+  expect((await sv(page)).ids).toEqual(['main', 'replay']);
+});
+
+test('SpreadUi_Escape_ClosesThePopoverBeforeTheSelectionReset', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'select', '0.1');
+  await openPop(page);
+  await page.keyboard.press('Escape');
+  await expect(page.locator(POP)).toHaveCount(0);
+  expect(await sel(page)).toBe('0.1'); // a non-root selection survived the Esc that closed the popover
+  await page.keyboard.press('Escape'); // nothing open now: the reset runs
+  expect(await sel(page)).toBe('0');
+});
+
+test('SpreadUi_Escape_OrderWithShortcutsAndContextMenuOpen', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await act(page, 'setState', { shortcuts: true });
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => window.__logic.state.shortcuts)).toBe(false); // Atalhos closes first
+  expect((await sp(page)).menu).toBe(true);
+  await page.keyboard.press('Escape');
+  expect((await sp(page)).menu).toBe(false);
+  await openPop(page);
+  await page.evaluate(() => { window.__logic.setState({ ctx: { x: 300, y: 300, id: '0.1' } }); });
+  await page.keyboard.press('Escape');
+  expect(await page.evaluate(() => !window.__logic.state.ctx)).toBe(true); // the context menu closes first
+  expect((await sp(page)).menu).toBe(true);
+  await page.keyboard.press('Escape');
+  expect((await sp(page)).menu).toBe(false);
+});
+
+test('SpreadUi_Popover_ClosesOnProjectSwitch', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await openPop(page);
+  await page.evaluate(async () => {
+    const root = await navigator.storage.getDirectory();
+    const dir = await root.getDirectoryHandle('proj3', { create: true });
+    const put = async (name, text) => { const w = await (await dir.getFileHandle(name, { create: true })).createWritable(); await w.write(text); await w.close(); };
+    await put('layers.json', '{"name":"Third","layouts":[{"id":"a","name":"A","mock":"a.html"},{"id":"b","name":"B","mock":"b.html"}]}');
+    const body = '<!doctype html><html><body><div id="r"><p>x</p></div></body></html>';
+    await put('a.html', body); await put('b.html', body);
+    window.showDirectoryPicker = async () => dir;
+  });
+  await act(page, 'pickDir');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.project && window.__logic.state.project.name)).toBe('Third');
+  await loadedNow(page);
+  expect((await sp(page)).menu).toBe(false);
+  await expect(page.locator(POP)).toHaveCount(0);
+});
+
+test('SpreadUi_Popover_OutsideClickOnAStableStagePoint', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  const pt = await page.evaluate(() => { const r = document.querySelector('[data-spread-pop]').offsetParent.getBoundingClientRect(); return { x: Math.round(r.left + 60), y: Math.round(r.top + 120) }; });
+  expect(await page.evaluate((p) => { const e = document.elementFromPoint(p.x, p.y); return !!e && !e.closest('[data-spread-pop],[data-spread-btn]'); }, pt)).toBe(true);
+  await page.mouse.click(pt.x, pt.y);
+  await expect(page.locator(POP)).toHaveCount(0);
+});
+
+test('SpreadUi_Checkbox_GlyphFitsItsBoxAtLargeFontScale', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setCfg', 'fontScale', 1.6);
+  await openPop(page);
+  await seg(page, 'all').click(); await settled(page, 3);
+  const r = await page.evaluate(() => {
+    const box = document.querySelector('[data-spread-ck] span'), b = box.getBoundingClientRect();
+    const rg = document.createRange(); rg.selectNodeContents(box); const g = rg.getBoundingClientRect();
+    return { w: b.width, h: b.height, gw: g.width, gh: g.height };
+  });
+  expect(r.gw).toBeLessThanOrEqual(r.w); expect(r.gh).toBeLessThanOrEqual(r.h + 0.5);
+  expect(r.w).toBeCloseTo(13 * 1.6, 0); // the box scales with --fs
+});
+
+test('SpreadUi_Aria_ButtonOpensADialogAndDoesNotClaimToBePressed', async ({ page }) => {
+  await loaded(page, FX);
+  await expect(page.locator(BTN)).not.toHaveAttribute('aria-pressed', /.*/);
+  await expect(page.locator(BTN)).toHaveAttribute('aria-haspopup', 'dialog');
+  await openPop(page);
+  const id = await page.locator(POP).getAttribute('id');
+  expect(id).toBeTruthy();
+  await expect(page.locator(BTN)).toHaveAttribute('aria-controls', id);
+  await expect(page.locator(POP)).toHaveAttribute('role', 'dialog');
+  await expect(page.locator(POP)).toHaveAttribute('aria-label', 'Espalhar layouts');
+});
