@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act } from './ctx-helpers.js';
+import { connectFixture } from './folder-helpers.js';
 
 // S9.1c Task 2: scanRoot / buildMockDom are the pure halves of scan() / loadProject(); the spread (LOD) reader reuses them.
 // Reached through the component instance (`act`), like layouts.spec.js reaches switchLayout.
@@ -34,12 +35,16 @@ test('ScanRoot_MaxDepth1_IdsAreSubsetOfFullScan', async ({ page }) => {
 
 test('ScanRoot_ReturnsOnly_DoesNotWriteState', async ({ page }) => {
   await loaded(page, '/?layers=fixtures/traval/');
-  const same = await page.evaluate(() => {
+  const res = await page.evaluate(() => {
     const L = window.__logic; const nodes = L.state.nodes, els = L.els; let calls = 0; const orig = L.setState; L.setState = function (...a) { calls++; return orig.apply(this, a); };
     try { L.scanRoot(L.pageRef.current, L.mockRoot, { maxDepth: 1 }); } finally { L.setState = orig; }
-    return { calls, same: L.state.nodes === nodes && L.els === els };
+    const same = L.state.nodes === nodes && L.els === els;
+    const control = (() => { let n = 0; const o = L.setState; L.setState = function (...a) { n++; return o.apply(this, a); }; try { L.scan(); } finally { L.setState = o; } return n; })(); // positive control: the same spy sees scan()
+    return { calls, same, control };
   });
-  expect(same).toEqual({ calls: 0, same: true });
+  expect(res.calls).toBe(0);
+  expect(res.same).toBe(true);
+  expect(res.control).toBeGreaterThan(0);
 });
 
 test('BuildMockDom_InactiveHost_LeavesLoaderSingletonsUntouched', async ({ page }) => {
@@ -78,10 +83,28 @@ test('MountMockDom_NonActiveOnStageHost_RefusesAndKeepsStage', async ({ page }) 
     const ids = () => [...host.shadowRoot.querySelectorAll('[id]')].map((e) => e.id).sort();
     const before = ids(), root0 = L.mockRoot;
     const res = L.mountMockDom(host, mb);
-    return { res, before, after: ids(), sameRoot: L.mockRoot === root0 && host.shadowRoot.contains(root0), detached: mb.rootEl.parentNode === null || !host.shadowRoot.contains(mb.rootEl) };
+    return { res, before, after: ids(), sameRoot: L.mockRoot === root0 && host.shadowRoot.contains(root0), detached: mb.rootEl.ownerDocument !== document };
   });
   expect(r.res).toEqual({ refused: 'stage-host' });
   expect(r.after).toEqual(r.before);
   expect(r.sameRoot).toBe(true);
   expect(r.detached).toBe(true);
+});
+
+test('ReadText_QuietInFolderMode_KeepsMtimeWhileDefaultRecordsIt', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  const r = await page.evaluate(async () => {
+    const L = window.__logic; const path = 'layers/shared.css'; const dir = await window.__proj.getDirectoryHandle('layers');
+    const first = await L.readText(path); const recorded = L.mtimes[path];
+    await new Promise((res) => setTimeout(res, 30));
+    const w = await (await dir.getFileHandle('shared.css')).createWritable(); await w.write(first + ' /* touched */'); await w.close();
+    const disk = (await (await dir.getFileHandle('shared.css')).getFile()).lastModified;
+    await L.readText(path, true); const afterQuiet = L.mtimes[path];
+    await L.readText(path); const afterDefault = L.mtimes[path];
+    return { recorded, disk, afterQuiet, afterDefault };
+  });
+  expect(r.disk).toBeGreaterThan(r.recorded);
+  expect(r.afterQuiet).toBe(r.recorded);
+  expect(r.afterDefault).toBe(r.disk);
 });
