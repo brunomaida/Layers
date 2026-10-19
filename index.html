@@ -1528,26 +1528,14 @@ class Component extends DCLogic {
       this.toast('layers.json criado automaticamente.' + (r.capped ? ' Varredura truncada por um teto de tamanho/quantidade — revise o resultado.' : ''), 'ok');
     }
     let man; try { man = JSON.parse(raw); } catch (e) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
-    const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
-    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); if (this.layoutMap[baseKey || '-'] !== undefined && this.layoutMap[baseKey || '-'] !== curLayout.id) delete this.layoutMap[baseKey || '-']; /* stale id (layout removed): drop it so the session view stamp matches the next reload */ this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); const mockPath = P(curState ? curState.mock : curLayout.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
-    let html; try { html = await this.readText(mockPath); } catch (e) { if (seq !== this.loadSeq) return; if (curState) delete this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]; delete this.layoutMap[baseKey || '-']; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija ' + (curState ? 'o "mock" do estado "' + curState.name + '" em "states" (recarregar abre o primeiro estado)' : 'o campo "mock"') + ' ou gere o arquivo.' + (layouts.length > 1 ? ' Layout "' + curLayout.name + '": recarregar abre o primeiro layout.' : '') }); return; }
-    const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
-    // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
-    doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
-    (Array.isArray(man.styles) ? man.styles : []).forEach(f => { const p = P(f); if (!cssFiles.includes(p)) cssFiles.push(p); });
-    (Array.isArray(man.fonts) ? man.fonts : []).forEach(u => useLocalFaces(u, warn));
-    const css = []; for (const f of cssFiles) { try { css.push({ file: f, text: await this.readText(f) }); } catch (e) { warn.push('css não encontrado: ' + f); } }
-    let dcFile = man.dcSource ? P(man.dcSource) : null; let dcText = null;
-    if (dcFile && !/\.html?$/i.test(dcFile)) { warn.push('dcSource deve ser um .html: ' + dcFile); dcFile = null; }
-    if (dcFile) { try { dcText = await this.readText(dcFile); } catch (e) { warn.push('dcSource não lido: ' + dcFile); } }
-    const built = buildProjectFromHtml({ doc, html, man, css, dcFile, dcText, mockPath, mockDir, warn });
-    if (built.empty) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
-    if (seq !== this.loadSeq) return; // outra conexao comecou durante a leitura de mock/css
-    // warnings written by the hoist land after the build's (utility sheet, dc map, rules): a write-disabling one outranks a missing project font for warn[0]
-    await this.hoistFaces(built.faces, warn); if (seq !== this.loadSeq) return; this.varIdx = built.varIdx;
-    const { rootEl, scoped, inlineScoped, utility, snapMock, dc, hostAttrs } = built;
-    const host = this.pageRef.current; if (!host) { if (seq === this.loadSeq) this.loadedSeq = seq; return; } const sh = host.shadowRoot || host.attachShadow({ mode: 'open' });
-    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).concat(hostAttrs.vars.length ? [':host{' + hostAttrs.vars.map(v => v.name + ':' + v.value + ' !important').join(';') + '}'] : []).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl)); this.applyHostAttrs(host, hostAttrs); this.mockRoot = rootEl;
+    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); if (this.layoutMap[baseKey || '-'] !== undefined && this.layoutMap[baseKey || '-'] !== curLayout.id) delete this.layoutMap[baseKey || '-']; /* stale id (layout removed): drop it so the session view stamp matches the next reload */ this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); 
+    const mb = await this.buildMockDom(man, curLayout, () => this.pageRef.current, { active: true, state: curState, isStale: () => seq !== this.loadSeq });
+    if (mb.missing) { const mockPath = mb.mockPath; if (seq !== this.loadSeq) return; if (curState) delete this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]; delete this.layoutMap[baseKey || '-']; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija ' + (curState ? 'o "mock" do estado "' + curState.name + '" em "states" (recarregar abre o primeiro estado)' : 'o campo "mock"') + ' ou gere o arquivo.' + (layouts.length > 1 ? ' Layout "' + curLayout.name + '": recarregar abre o primeiro layout.' : '') }); return; }
+    if (mb.empty) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mb.mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
+    if (mb.stale) return; // outra conexao comecou durante a leitura de mock/css ou o hoist das fontes
+    this.varIdx = mb.built.varIdx; if (mb.noHost) { if (seq === this.loadSeq) this.loadedSeq = seq; return; }
+    const { built, html, css, mockPath, dcFile, dcText, warn, rootEl, sh, dc, host } = mb; const { utility, snapMock, hostAttrs } = built;
+    this.applyHostAttrs(host, hostAttrs); this.mockRoot = rootEl;
     if (!this.mo) this.mo = new ResizeObserver(() => this.scanSoon()); this.mo.disconnect(); this.mo.observe(rootEl);
     // interactions escritas contra o app real costumam mirar classes que o mock nao tem (S2.12)
     const inter = LayersCore.interactionsFor(man.interactions, curLayout.id); // S9.1a: filtered once per load; the Interagir menu keeps the ORIGINAL index for its keys
@@ -1593,6 +1581,29 @@ class Component extends DCLogic {
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
     this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man)); // sem await: nao atrasa a carga
+  }
+  // Reads mock+css of `layout` into host's shadow root (host: element or getter); only opts.active hoists fonts and records mtimes.
+  async buildMockDom(man, layout, host, opts = {}) {
+    const rd = p => this.readText(p, !opts.active);
+    const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
+    const mockPath = P(opts.state ? opts.state.mock : layout.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
+    let html; try { html = await rd(mockPath); } catch (e) { return { missing: true, mockPath }; }
+    const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
+    // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
+    doc.querySelectorAll('link[rel~="stylesheet"]').forEach(l => { const href = l.getAttribute('href') || ''; if (/^https?:/i.test(href)) { useLocalFaces(href, warn); } else if (href) cssFiles.push(joinPath(mockDir, href.replace(/^\/+/, ''))); });
+    (Array.isArray(man.styles) ? man.styles : []).forEach(f => { const p = P(f); if (!cssFiles.includes(p)) cssFiles.push(p); });
+    (Array.isArray(man.fonts) ? man.fonts : []).forEach(u => useLocalFaces(u, warn));
+    const css = []; for (const f of cssFiles) { try { css.push({ file: f, text: await rd(f) }); } catch (e) { warn.push('css não encontrado: ' + f); } }
+    let dcFile = man.dcSource ? P(man.dcSource) : null; let dcText = null;
+    if (dcFile && !/\.html?$/i.test(dcFile)) { warn.push('dcSource deve ser um .html: ' + dcFile); dcFile = null; }
+    if (dcFile) { try { dcText = await rd(dcFile); } catch (e) { warn.push('dcSource não lido: ' + dcFile); } }
+    const built = buildProjectFromHtml({ doc, html, man, css, dcFile, dcText, mockPath, mockDir, warn });
+    if (built.empty) return { empty: true, mockPath };
+    if (opts.active) { if (opts.isStale()) return { stale: true }; await this.hoistFaces(built.faces, warn); if (opts.isStale()) return { stale: true }; } // warnings written by the hoist land after the build's (utility sheet, dc map, rules): a write-disabling one outranks a missing project font for warn[0]
+    const { rootEl, scoped, inlineScoped, hostAttrs } = built; const h = typeof host === 'function' ? host() : host; if (!h) return { noHost: true, built };
+    const sh = h.shadowRoot || h.attachShadow({ mode: 'open' });
+    sh.innerHTML = ''; const st = document.createElement('style'); st.textContent = ':host{display:block}\n' + scoped.map(c => '/* ' + c.file + ' */\n' + c.css).concat(inlineScoped).concat(hostAttrs.vars.length ? [':host{' + hostAttrs.vars.map(v => v.name + ':' + v.value + ' !important').join(';') + '}'] : []).join('\n'); sh.appendChild(st); sh.appendChild(document.adoptNode(rootEl));
+    return { sh, host: h, rootEl, dc: built.dc, built, html, css, mockPath, dcFile, dcText, warn };
   }
   // S2.21: mtime das fontes TS/JS citadas em data-src/root.src. Entram no watch (o foco as vigia) e,
   // se alguma e mais nova que o mock, state.drift avisa que o layout mostrado ficou para tras.
@@ -2141,9 +2152,9 @@ class Component extends DCLogic {
     window.addEventListener('mousemove', mv); window.addEventListener('mouseup', up);
   }
 
-  scan() {
-    const host = this.pageRef.current, root = this.mockRoot; if (!host || !root || !root.isConnected) { if (this.state.nodes.length) this.setState({ nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null }); return; }
-    const rr = host.getBoundingClientRect(); const nodes = []; const byId = {}; const els = {}; let maxDepth = 0;
+  // Pure walk of root (measured against host): returns {nodes, byId, els, maxDepth}; opts.maxDepth caps the depth (default unlimited); no state writes.
+  scanRoot(host, root, opts = {}) {
+    const rr = host.getBoundingClientRect(); const nodes = []; const byId = {}; const els = {}; let maxDepth = 0; const maxDepthCap = opts.maxDepth === undefined ? Infinity : opts.maxDepth;
     const walk = (el, id, depth, parent, src) => {
       const r = el.getBoundingClientRect(); if (r.width === 0 || r.height === 0) return;
       const cs = getComputedStyle(el); const s = el.dataset.src || src;
@@ -2158,9 +2169,14 @@ class Component extends DCLogic {
         font: cs.fontStyle + ' ' + cs.fontWeight + ' ' + cs.fontSize + '/' + cs.lineHeight + ' ' + cs.fontFamily, ls: cs.letterSpacing, tt: cs.textTransform, ta: cs.textAlign, jc: cs.justifyContent, pad: cs.padding,
         text, own: !!el.dataset.src, svg: isSvg ? el.outerHTML : null, isCheck, radio: isInput && el.type === 'radio', checked: isCheck && el.checked, kids: kids.length };
       nodes.push(n); byId[id] = n; els[id] = el; if (depth > maxDepth) maxDepth = depth;
-      kids.forEach((k, i) => walk(k, id + '.' + i, depth + 1, id, s));
+      if (depth < maxDepthCap) kids.forEach((k, i) => walk(k, id + '.' + i, depth + 1, id, s)); // child index counts every child, so capped ids are a subset of the full walk's
     };
     walk(root, '0', 0, null, root.dataset.src || '');
+    return { nodes, byId, els, maxDepth };
+  }
+  scan() {
+    const host = this.pageRef.current, root = this.mockRoot; if (!host || !root || !root.isConnected) { if (this.state.nodes.length) this.setState({ nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null }); return; }
+    const { nodes, byId, els, maxDepth } = this.scanRoot(host, root);
     this.els = els;
     const selId = byId[this.state.selId] ? this.state.selId : '0';
     const ef = this.state.explodeFrom; // S3.5: raiz do ramo que sumiu no scan desfaz o ramo
@@ -2528,8 +2544,8 @@ class Component extends DCLogic {
     if (this.fixtureBase) { const r = await fetch(this.fixtureBase + p.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + p); return new Uint8Array(await r.arrayBuffer()); }
     throw new Error('nenhum projeto conectado');
   }
-  async readText(path) {
-    if (this.state.dir) { const mt = this.mtimes = this.mtimes || {}; const h = await this.fileHandle(path, false); const f = await h.getFile(); mt[path] = f.lastModified; return f.text(); }
+  async readText(path, quiet) { // quiet: do not record the mtime (reads that must not feed the watch/external-edit guard)
+    if (this.state.dir) { const mt = this.mtimes = this.mtimes || {}; const h = await this.fileHandle(path, false); const f = await h.getFile(); if (!quiet) mt[path] = f.lastModified; return f.text(); }
     if (this.fixtureBase && !this.zip && !this.repo) { const r = await fetch(this.fixtureBase + path.split('/').map(encodeURIComponent).join('/')); if (!r.ok) throw new Error(r.status + ' ' + path); return r.text(); }
     return new TextDecoder().decode(await this.readBytes(path));
   }
