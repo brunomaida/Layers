@@ -98,7 +98,7 @@ chip LAYOUTS / ⊞ ESPALHAR ▾ ──▶ popover { Ver todos | 1–N, distânci
 ## Implementation Outline
 
 - `lib/layers-core.js`: `spreadPicked`, `spreadOffsets`, `lodNodes`, `spreadPlaneTotal`, `spreadSessionEntry`.
-- `index.html`: extrair do `loadProject` a leitura/montagem do mock em função reutilizável (`buildMockDom`) e `scan()` → `scanRoot(host, root, {maxDepth})` sem `setState`; `loadSpread`/`clearSpread`; `scene()` com páginas por layout e `LodPlane`; ramo de visão geral em `cam()`; botão + popover; sessão (`sessionSnapshot`/`restoreSession`); guardas em `loadProject`/`unloadProject`/Recarregar/Reanalisar/Zerar.
+- `index.html`: extrair do `loadProject` a leitura do mock em função reutilizável (`buildMockDom(man, layout, opts)`, só lê e monta) mais a montagem síncrona `mountMockDom(host, mb, active)` e `scan()` → `scanRoot(host, root, {maxDepth})` sem `setState`; `loadSpread`/`clearSpread`; `scene()` com páginas por layout e `LodPlane`; ramo de visão geral em `cam()`; botão + popover; sessão (`sessionSnapshot`/`restoreSession`); guardas em `loadProject`/`unloadProject`/Recarregar/Reanalisar/Zerar.
 - Testes: `test/layers-core.test.js`, `e2e/spread.spec.js` (novo), `e2e/perf.spec.js` (+ orçamento), fixture `fixtures/multi-layout` (existente) e, se faltar, `fixtures/spread-heavy/`.
 - Docs: ARCHITECTURE § Espalhar (S9.1c), `layers-json.md` (nota), RELEASE-CHECKLIST §§ C/D/E, decisions doc, README, changelog, roadmap (S9.1c `done`, S9.1d `registered`).
 
@@ -119,7 +119,7 @@ chip LAYOUTS / ⊞ ESPALHAR ▾ ──▶ popover { Ver todos | 1–N, distânci
 
 **Files:** Modify `index.html` (`loadProject` ~1499-1596, `scan` ~2144-2168); Test `e2e/layouts.spec.js`, `e2e/perf.spec.js` (existentes).
 
-**Interfaces:** Produces `buildMockDom(man, layout, host) → Promise<{sh, rootEl, dc}>` (lê mock/CSS, monta no shadow root do `host` dado, sem tocar singletons) e `scanRoot(host, root, {maxDepth}) → {nodes, byId, maxDepth}` (só retorna, sem `setState`).
+**Interfaces:** Produces `buildMockDom(man, layout, opts) → Promise<{rootEl, styleText, built, html, css, mockPath, dcFile, dcText, warn, dc} | {missing} | {empty} | {stale}>` (só lê e monta, nunca toca num host nem nos singletons; `opts` = `{active, state, isStale}`) e `mountMockDom(host, mb, active) → {sh, rootEl}` (síncrono; quem chama com `active` falso checa o `seq` e remove o host) e `scanRoot(host, root, {maxDepth}) → {nodes, byId, maxDepth}` (só retorna, sem `setState`).
 
 - [ ] **Step 1:** rodar antes `npm test` e `npx playwright test e2e/layouts.spec.js e2e/multi-state.spec.js e2e/autocreate.spec.js e2e/coverage.spec.js --project=chromium` e anotar a contagem (rede de segurança: nenhum teste existente editado).
 - [ ] **Step 2:** extrair as duas funções mantendo `loadProject`/`scan` como chamadoras; fontes hoisted, `applyHostAttrs` e `probeLayout` continuam só no caminho do ativo (parâmetro `{active:true}`). Teste novo `ScanRoot_MaxDepth1_IdsAreSubsetOfFullScan` (ids da varredura rasa ⊂ ids da cheia, mesmo mock).
