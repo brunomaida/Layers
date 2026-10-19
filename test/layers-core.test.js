@@ -4008,3 +4008,66 @@ describe('SpreadSessionEntry', () => {
     expect(core.spreadSessionEntry(on, undefined)).toBeNull();
   });
 });
+
+describe('OverviewFit', () => {
+  // independent projection of the footprint box with scale3d(S,S,S) under perspective, as the browser does it
+  const project = (o, S, tx) => {
+    const a = o.yaw * Math.PI / 180, b = o.tilt * Math.PI / 180; let l = Infinity, r = -Infinity, t = Infinity, d = -Infinity, zmax = -Infinity;
+    for (const xs of [-1, 1]) for (const ys of [-1, 1]) for (const z of [0, o.zm]) {
+      const x1 = xs * o.foot / 2, y1 = ys * o.pageH / 2, x2 = x1 * Math.cos(a) + z * Math.sin(a), z2 = -x1 * Math.sin(a) + z * Math.cos(a);
+      const y3 = y1 * Math.cos(b) - z2 * Math.sin(b), z3 = y1 * Math.sin(b) + z2 * Math.cos(b), k = o.persp / (o.persp - S * z3);
+      l = Math.min(l, (S * x2 + tx) * k); r = Math.max(r, (S * x2 + tx) * k); t = Math.min(t, S * y3 * k); d = Math.max(d, S * y3 * k); zmax = Math.max(zmax, S * z3);
+    }
+    return { l, r, t, d, zmax };
+  };
+  const four = { foot: 4 * 1280 + 3 * 384, pageH: 760, zm: 0, yaw: -32, tilt: 0, persp: 1600, stageW: 940, stageH: 560 };
+
+  it('OverviewFit_QuatroPaginasYawPadrao_NaoColapsa', () => {
+    const { fit } = core.overviewFit(four);
+    expect(fit).toBeGreaterThan(0.1); // the 2D-scale camera gave ~0.07 here and ~3e-4 once orbited
+  });
+
+  it('OverviewFit_YawZero_SemPerspectivaNoPlano_UsaLarguraDoPalco', () => {
+    const o = { ...four, yaw: 0 }, r = core.overviewFit(o);
+    expect(r.fit).toBeCloseTo(Math.min(o.stageW / (o.foot * 1.18 + 80), o.stageH / (o.pageH + 200)), 6);
+    expect(r.tx).toBeCloseTo(0, 6);
+  });
+
+  it('OverviewFit_OrbitaMais15Menos15_FitSaudavelEDentroDoPalco', () => {
+    [-47, -32, -17, 0, 25].forEach(yaw => [30, 100].forEach(dist => {
+      const o = { ...four, yaw, foot: 4 * 1280 + 3 * 1280 * dist / 100, zm: 360 }, r = core.overviewFit(o), p = project(o, r.fit, r.tx);
+      expect(r.fit, 'yaw ' + yaw + ' dist ' + dist).toBeGreaterThan(0.04);
+      expect(p.zmax).toBeLessThanOrEqual(o.persp / 2 + 1e-6);
+      expect(p.r - p.l).toBeLessThanOrEqual(o.stageW / 1.18);
+      expect(p.d - p.t).toBeLessThanOrEqual(o.stageH);
+      expect(Math.abs(p.l + p.r)).toBeLessThan(2); // centered
+    }));
+  });
+
+  it('OverviewFit_MaisLayoutsOuMaisDistancia_NuncaAumentaOFit', () => {
+    const f = (o) => core.overviewFit({ ...four, ...o }).fit;
+    expect(f({ foot: 6000 })).toBeLessThanOrEqual(f({ foot: 4000 }));
+    expect(f({ foot: 9000 })).toBeLessThan(f({ foot: 6000 }));
+  });
+
+  it('OverviewFit_PalcoMinusculo_NaoDaNaNNemNegativo', () => {
+    const r = core.overviewFit({ ...four, stageW: 10, stageH: 10 });
+    expect(Number.isFinite(r.fit) && r.fit >= 0).toBe(true);
+    expect(Number.isFinite(r.tx)).toBe(true);
+  });
+});
+
+describe('ViewCuller uniform scale', () => {
+  const base = { pageW: 1000, pageH: 600, stageW: 800, stageH: 600, persp: 1600, S: 0.5, yaw: 0, tilt: 0, tx: 0, ty: 0, fx: 0, fy: 0, fz: 0, margin: 0 };
+
+  it('Uniform_ZEscaladoPorS_CortaPlanoForaDoPalco', () => {
+    // z = 2000 sits behind the camera plane at scale 1, but S*z = 1000 in the scale3d world: k = 2.67 pushes the plane off the stage
+    expect(core.viewCuller(base)(950, 250, 50, 50, 2000)).toBe(false);
+    expect(core.viewCuller({ ...base, uniform: true })(950, 250, 50, 50, 2000)).toBe(true);
+  });
+
+  it('Uniform_Ausente_MantemMatematicaAnterior', () => {
+    expect(core.viewCuller({ ...base, S: 1 })(950, 250, 50, 50, 0)).toBe(true);
+    expect(core.viewCuller({ ...base, uniform: false })(450, 250, 100, 100, 0)).toBe(false);
+  });
+});
