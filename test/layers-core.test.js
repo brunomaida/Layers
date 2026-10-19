@@ -4009,6 +4009,234 @@ describe('SpreadSessionEntry', () => {
   });
 });
 
+describe('UseKey', () => {
+  it('UseKey_Folha_FormataSrcTagEUm', () => {
+    expect(core.useKey('a.css', 'div', true)).toBe('a.css|div|1');
+  });
+
+  it('UseKey_NaoFolha_FormataSrcTagEZero', () => {
+    expect(core.useKey('a.css', 'div', false)).toBe('a.css|div|0');
+    expect(core.useKey('a.css', 'div')).toBe('a.css|div|0');
+  });
+});
+
+describe('CountUses', () => {
+  const nodes = [
+    { src: 'a.css', tag: 'li', kids: 0 },
+    { src: 'a.css', tag: 'li', kids: 0 },
+    { src: 'a.css', tag: 'li', kids: 2 },
+    { src: 'a.css', tag: 'ul', kids: 0 },
+    { src: 'b.css', tag: 'li', kids: 0 },
+    { tag: 'li', kids: 0 },
+    null
+  ];
+
+  it('CountUses_SrcTagEFolha_ContaSoOsIguais', () => {
+    expect(core.countUses(nodes, 'a.css', 'li', true)).toBe(2);
+  });
+
+  it('CountUses_NaoFolha_ContaSoNosComFilhos', () => {
+    expect(core.countUses(nodes, 'a.css', 'li', false)).toBe(1);
+  });
+
+  it('CountUses_NoSemSrc_NuncaContado', () => {
+    expect(core.countUses(nodes, undefined, 'li', true)).toBe(0);
+    expect(core.countUses(nodes, '', 'li', true)).toBe(0);
+  });
+
+  it('CountUses_NoSemOwn_Contado', () => {
+    expect(core.countUses([{ src: 'a.css', tag: 'li', kids: 0, own: false }], 'a.css', 'li', true)).toBe(1);
+  });
+
+  it('CountUses_EntradaNaoArray_Zero', () => {
+    expect(core.countUses(null, 'a.css', 'li', true)).toBe(0);
+    expect(core.countUses({}, 'a.css', 'li', true)).toBe(0);
+  });
+});
+
+describe('UndoStepApplies', () => {
+  const ids = ['main', 'cfg'];
+
+  it('UndoStepApplies_PassoDoAtivo_Here', () => {
+    expect(core.undoStepApplies({ layoutId: 'main' }, 'main', ids)).toBe('here');
+  });
+
+  it('UndoStepApplies_PassoDeOutroLayoutExistente_Switch', () => {
+    expect(core.undoStepApplies({ layoutId: 'cfg' }, 'main', ids)).toBe('switch');
+  });
+
+  it('UndoStepApplies_PassoDeLayoutRemovido_Drop', () => {
+    expect(core.undoStepApplies({ layoutId: 'ghost' }, 'main', ids)).toBe('drop');
+    expect(core.undoStepApplies({ layoutId: 'cfg' }, 'main', null)).toBe('drop');
+  });
+
+  it('UndoStepApplies_PassoLegadoSemLayoutId_Here', () => {
+    expect(core.undoStepApplies({}, 'main', ids)).toBe('here');
+    expect(core.undoStepApplies({ layoutId: '' }, 'main', ids)).toBe('here');
+    expect(core.undoStepApplies({ layoutId: null }, 'main', ids)).toBe('here');
+  });
+
+  it('UndoStepApplies_PassoAusente_Drop', () => {
+    expect(core.undoStepApplies(null, 'main', ids)).toBe('drop');
+    expect(core.undoStepApplies(undefined, 'main', ids)).toBe('drop');
+  });
+});
+
+describe('StaleLayouts', () => {
+  const paths = { 'a.css': ['main', 'cfg'], 'b.css': ['cfg', 'about'], 'c.html': ['replay'] };
+
+  it('StaleLayouts_PathsEmString_LayoutsNaOrdemDeAparicaoSemRepetir', () => {
+    expect(core.staleLayouts(paths, ['b.css', 'a.css'])).toEqual(['cfg', 'about', 'main']);
+  });
+
+  it('StaleLayouts_PathsEmObjetoPath_MesmoResultado', () => {
+    expect(core.staleLayouts(paths, [{ path: 'b.css' }, { path: 'a.css' }])).toEqual(['cfg', 'about', 'main']);
+  });
+
+  it('StaleLayouts_PathSemMapeamento_Ignorado', () => {
+    expect(core.staleLayouts(paths, ['ghost.css', 'c.html', null])).toEqual(['replay']);
+  });
+
+  it('StaleLayouts_EntradasInvalidas_Vazio', () => {
+    expect(core.staleLayouts(null, ['a.css'])).toEqual([]);
+    expect(core.staleLayouts(paths, null)).toEqual([]);
+    expect(core.staleLayouts([], ['a.css'])).toEqual([]);
+    expect(core.staleLayouts(paths, {})).toEqual([]);
+  });
+});
+
+describe('SpreadDrawPlan', () => {
+  it('SpreadDrawPlan_Exatamente1500_MantemCheia', () => {
+    const out = core.spreadDrawPlan(1000, [{ id: 'cfg', count: 500, full: true }]);
+    expect(out).toEqual({ cfg: 'full' });
+  });
+
+  it('SpreadDrawPlan_1501_RebaixaSoACheia', () => {
+    const out = core.spreadDrawPlan(1000, [{ id: 'cfg', count: 501, full: true }, { id: 'about', count: 0, full: false }]);
+    expect(out.cfg).toBe('lod');
+    expect(out.about).toBe('lod');
+  });
+
+  it('SpreadDrawPlan_Rasa_SemprePermaneceLod', () => {
+    const out = core.spreadDrawPlan(10, [{ id: 'cfg', count: 5, full: false }, { id: 'about', count: 5, full: true }]);
+    expect(out).toEqual({ cfg: 'lod', about: 'full' });
+  });
+
+  it('SpreadDrawPlan_Ativo_NuncaNoResultado', () => {
+    const out = core.spreadDrawPlan(5000, [{ id: 'cfg', count: 1, full: true }]);
+    expect(Object.keys(out)).toEqual(['cfg']);
+  });
+
+  it('SpreadDrawPlan_MaxAusenteOuInvalido_UsaPlanesMax', () => {
+    const e = [{ id: 'cfg', count: 501, full: true }];
+    expect(core.spreadDrawPlan(1000, e).cfg).toBe('lod');
+    expect(core.spreadDrawPlan(1000, e, NaN).cfg).toBe('lod');
+    expect(core.spreadDrawPlan(1000, [{ id: 'cfg', count: 500, full: true }], undefined).cfg).toBe('full');
+  });
+
+  it('SpreadDrawPlan_MaxExplicito_Respeitado', () => {
+    expect(core.spreadDrawPlan(10, [{ id: 'cfg', count: 5, full: true }], 14).cfg).toBe('lod');
+    expect(core.spreadDrawPlan(10, [{ id: 'cfg', count: 5, full: true }], 15).cfg).toBe('full');
+  });
+
+  it('SpreadDrawPlan_EntradaInvalida_ObjetoVazio', () => {
+    expect(Object.keys(core.spreadDrawPlan(5, null))).toEqual([]);
+  });
+});
+
+describe('MergeLayoutChanges', () => {
+  const sel = (c) => c.sel;
+  const ch = (src, s, prop, to, extra) => Object.assign({ src: src, sel: s, prop: prop, to: to }, extra);
+  const order = ['main', 'cfg', 'about'];
+
+  it('MergeLayoutChanges_AtivoVence_ValorEOrigemDoAtivo', () => {
+    const by = { main: [ch('a.css|1', '.x', 'color', 'red')], cfg: [ch('a.css|2', '.x', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
+    expect(out.changes).toHaveLength(1);
+    expect(out.changes[0].to).toBe('blue');
+    expect(out.changes[0].layoutId).toBe('cfg');
+  });
+
+  it('MergeLayoutChanges_EntreNaoAtivos_VenceOUltimoDoManifesto', () => {
+    const by = { about: [ch('a.css', '.x', 'color', 'green')], main: [ch('a.css', '.x', 'color', 'red')] };
+    const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
+    expect(out.changes).toHaveLength(1);
+    expect(out.changes[0].to).toBe('green');
+    expect(out.changes[0].layoutId).toBe('about');
+  });
+
+  it('MergeLayoutChanges_Conflito_ReportaVencedorEPerdedores', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'blue')], about: [ch('a.css', '.x', 'color', 'red')] };
+    const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
+    expect(out.conflicts).toEqual([{
+      key: 'a.css|.x|color', file: 'a.css', sel: '.x', prop: 'color',
+      winner: { layoutId: 'cfg', to: 'blue' },
+      losers: [{ layoutId: 'main', to: 'red' }, { layoutId: 'about', to: 'red' }]
+    }]);
+  });
+
+  it('MergeLayoutChanges_MesmaChaveEMesmoTo_DeduplicaSemConflito', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'red')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.changes).toHaveLength(1);
+    expect(out.conflicts).toEqual([]);
+  });
+
+  it('MergeLayoutChanges_Layouts_ListaTodosOsContribuintes', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'red')], about: [ch('a.css', '.y', 'color', 'red')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    const x = out.changes.filter((c) => c.sel === '.x')[0];
+    expect(x.layouts).toEqual(['cfg', 'main']);
+    expect(out.changes.filter((c) => c.sel === '.y')[0].layouts).toEqual(['about']);
+  });
+
+  it('MergeLayoutChanges_ChaveUsaArquivoSemSufixoDeSrc_EPropDiferenteNaoColide', () => {
+    const by = { main: [ch('a.css|1', '.x', 'color', 'red'), ch('a.css|2', '.x', 'margin', '1px')], cfg: [ch('a.css|9', '.x', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.changes).toHaveLength(2);
+    expect(out.conflicts.map((c) => c.key)).toEqual(['a.css|.x|color']);
+  });
+
+  it('MergeLayoutChanges_PosicaoDoPrimeiroVisto_Mantida', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red'), ch('a.css', '.y', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
+    expect(out.changes.map((c) => c.sel)).toEqual(['.x', '.y']);
+    expect(out.changes[0].to).toBe('blue');
+  });
+
+  it('MergeLayoutChanges_PatchSelFn_RecebeChangeELayoutId', () => {
+    const seen = [];
+    core.mergeLayoutChanges({ main: [ch('a.css', '.x', 'color', 'red')] }, 'main', order, (c, id) => { seen.push(id); return '.z'; });
+    expect(seen).toEqual(['main']);
+  });
+
+  it('MergeLayoutChanges_LayoutIdPropriaDaMudanca_Preservado', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red', { layoutId: 'orig' })] };
+    expect(core.mergeLayoutChanges(by, 'main', order, sel).changes[0].layoutId).toBe('orig');
+  });
+
+  it('MergeLayoutChanges_IdForaDaOrdem_VaiDepoisPorInsercao', () => {
+    const by = { zzz: [ch('a.css', '.x', 'color', 'red')], yyy: [ch('a.css', '.x', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.changes[0].to).toBe('blue');
+    expect(out.changes[0].layouts).toEqual(['zzz', 'yyy']);
+  });
+
+  it('MergeLayoutChanges_Entradas_NaoMutadas', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'blue')] };
+    const snap = JSON.stringify(by);
+    const out = core.mergeLayoutChanges(by, 'cfg', order, sel);
+    expect(JSON.stringify(by)).toBe(snap);
+    expect(out.changes[0]).not.toBe(by.cfg[0]);
+  });
+
+  it('MergeLayoutChanges_EntradasVaziasOuInvalidas_SemMudancas', () => {
+    expect(core.mergeLayoutChanges({}, 'main', order, sel)).toEqual({ changes: [], conflicts: [] });
+    expect(core.mergeLayoutChanges(null, 'main', order, sel)).toEqual({ changes: [], conflicts: [] });
+    expect(core.mergeLayoutChanges({ main: 'x', cfg: [null] }, 'main', order, sel)).toEqual({ changes: [], conflicts: [] });
+  });
+});
+
 describe('OverviewFit', () => {
   // independent projection of the footprint box with scale3d(S,S,S) under perspective, as the browser does it (pivot = footprint center)
   const project = (o, S, tx, ty = 0) => {
