@@ -1490,6 +1490,7 @@ class Component extends DCLogic {
     this.dirViaClick = !!viaClick;
     this.zip = null; this.repo = null;
     const id = 'folder:' + dir.name; const switched = this.projectId !== id; this.projectId = id; this.markTab(); // S3.5: outro projeto nao herda o ramo do anterior (restore e retry de permissao mantem o id)
+    this.clearSpread(); // a re-opened project of the same name must not reuse the previous run's frozen layouts
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
@@ -1529,7 +1530,7 @@ class Component extends DCLogic {
       this.toast('layers.json criado automaticamente.' + (r.capped ? ' Varredura truncada por um teto de tamanho/quantidade — revise o resultado.' : ''), 'ok');
     }
     let man; try { man = JSON.parse(raw); } catch (e) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
-    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; if (this.spreadKey !== baseKey) { this.spreadKey = baseKey; this.clearSpread(); } /* another project: the frozen layouts (and any read still in flight) are not its own */ const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); if (this.layoutMap[baseKey || '-'] !== undefined && this.layoutMap[baseKey || '-'] !== curLayout.id) delete this.layoutMap[baseKey || '-']; /* stale id (layout removed): drop it so the session view stamp matches the next reload */ this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); 
+    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; const newProject = this.spreadKey !== baseKey; if (newProject) { this.spreadKey = baseKey; this.clearSpread(); this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 } }); } /* another project: the frozen layouts (and any read still in flight) are not its own */ const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); if (this.layoutMap[baseKey || '-'] !== undefined && this.layoutMap[baseKey || '-'] !== curLayout.id) delete this.layoutMap[baseKey || '-']; /* stale id (layout removed): drop it so the session view stamp matches the next reload */ this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); 
     const mb = await this.buildMockDom(man, curLayout, { active: true, state: curState, isStale: () => seq !== this.loadSeq });
     if (mb.missing) { const mockPath = mb.mockPath; if (seq !== this.loadSeq) return; if (curState) delete this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]; delete this.layoutMap[baseKey || '-']; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija ' + (curState ? 'o "mock" do estado "' + curState.name + '" em "states" (recarregar abre o primeiro estado)' : 'o campo "mock"') + ' ou gere o arquivo.' + (layouts.length > 1 ? ' Layout "' + curLayout.name + '": recarregar abre o primeiro layout.' : '') }); return; }
     if (mb.empty) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mb.mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
@@ -1583,7 +1584,7 @@ class Component extends DCLogic {
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
     this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man)); // sem await: nao atrasa a carga
-    if (this.state.spread.on && layouts.length > 1) this.loadSpread(seq, { man, activeId: curLayout.id, pageW: W, pageH: H }).catch(() => {}); // S9.1c: the other layouts, frozen in LOD; the final setState above may not have flushed, so the context travels as arguments
+    if (!newProject && this.state.spread.on && layouts.length > 1) this.loadSpread(seq, { man, activeId: curLayout.id, pageW: W, pageH: H }).catch(e => console.warn('loadSpread', e)); // S9.1c: the other layouts, frozen in LOD; the final setState above may not have flushed, so the context travels as arguments
   }
   // Reads and builds mock+css of `layout`; never touches a host element (mount is mountMockDom's job). Only opts.active hoists fonts and records mtimes.
   // Caller contract: active:true needs opts.isStale; a non-active caller does its own seq check after the await, then mountMockDom on a temporary host, scanRoot, and removes that host.
@@ -1667,7 +1668,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.clearSpread(); this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.clearSpread(); this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 } }); this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Varre a pasta conectada e devolve o texto dos arquivos dos `kinds` pedidos ('html'|'css'|'script'); `exclude` = nomes de pasta extras a pular; `base` = subpasta onde a varredura comeca (caminhos seguem relativos a raiz).
   async collectProjectFiles(dir, kinds, exclude, base) {
     const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX;
@@ -1883,6 +1884,7 @@ class Component extends DCLogic {
     const root = LayersCore.zipRoot(z.files);
     this.zip = { files: z.files, root }; this.repo = null;
     const id = 'zip:' + file.name; const switched = this.projectId !== id; this.projectId = id; this.markTab();
+    this.clearSpread();
     this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     this.touchHist({ id, kind: 'zip', name: file.name, path: file.name });
     if (z.skipped.length) this.toast(z.skipped.length + ' entrada(s) do .zip recusada(s) por caminho inseguro: ' + z.skipped[0], 'warn');
@@ -1908,6 +1910,7 @@ class Component extends DCLogic {
     } catch (e) { this.toast('Sem resposta do GitHub: ' + e.message); return; }
     this.repo = { owner: r.owner, repo: r.repo, ref }; this.zip = null;
     const switched = this.projectId !== 'repo:' + name; this.projectId = 'repo:' + name; this.markTab();
+    this.clearSpread();
     this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name, label: ref });
   }
@@ -2086,17 +2089,18 @@ class Component extends DCLogic {
     const s = this.state; on = !!on; if (on === s.spread.on || (on && !this.multiLayout())) return;
     const spread = { ...s.spread, on }; this.setState({ spread });
     if (!on) { this.clearSpread(); return; }
-    if (this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(() => {}); // a load in flight starts it at its own tail
+    if (this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(e => console.warn('loadSpread', e)); // a load in flight starts it at its own tail
   }
   setSpreadPick(mode, picked) {
     const spread = { ...this.state.spread, mode: mode === 'pick' ? 'pick' : 'all', picked: Array.isArray(picked) ? picked.slice() : [] }; this.setState({ spread });
-    if (spread.on && this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(() => {});
+    if (spread.on && this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(e => console.warn('loadSpread', e));
   }
   setSpreadDist(n) { const dist = Math.min(100, Math.max(0, Math.round(+n))); if (Number.isFinite(dist)) this.setState({ spread: { ...this.state.spread, dist } }); }
   // LRU of 2 (R1): the layout being left is frozen at full depth, an older full entry drops to LOD, the entering layout's entry goes (it is the live one now). Sync, before loadProject.
   freezeLeaving(leavingId, enteringId) {
-    const c = this.state, F = this.spreadFrozen, sp = c.spread; if (!LayersCore.spreadPicked(LayersCore.projectLayouts(c.project.man), sp.mode, sp.picked, enteringId).includes(leavingId)) { if (F.delete(enteringId)) this.spreadBump(); return; }
-    [...F.entries()].forEach(([k, e]) => { if (e.full) { const nodes = LayersCore.lodNodes(e.nodes, 1); F.set(k, { ...e, nodes, full: false, count: nodes.length }); } });
+    const c = this.state, F = this.spreadFrozen, sp = c.spread; let dirty = false;
+    [...F.entries()].forEach(([k, e]) => { if (e.full) { const nodes = LayersCore.lodNodes(e.nodes, 1); F.set(k, { ...e, nodes, full: false, count: nodes.length }); dirty = true; } }); // older full entries drop first, even when the leaving layout is not frozen
+    if (!LayersCore.spreadPicked(LayersCore.projectLayouts(c.project.man), sp.mode, sp.picked, enteringId).includes(leavingId)) { if (F.delete(enteringId) || dirty) this.spreadBump(); return; }
     F.set(leavingId, { nodes: c.nodes.slice(), pageW: c.pageW, pageH: c.pageH, full: true, count: c.nodes.length }); F.delete(enteringId); this.spreadBump();
   }
   // Freezes every picked layout except the active one, one at a time. ctx: {man, activeId, spread, pageW, pageH} (defaults: current state). Dies when a newer load, clear or loadSpread starts.
