@@ -4041,16 +4041,18 @@ describe('OverviewFit', () => {
     const o = { ...four, yaw: 0 }, r = core.overviewFit(o);
     expect(r.fit).toBeCloseTo(Math.min(o.stageW / (o.foot * 1.18 + 80), o.stageH / (o.pageH + 200)), 6);
     expect(r.tx).toBeCloseTo(0, 6);
+    expect(r.ty).toBeCloseTo(0, 6);
   });
 
   it('OverviewFit_OrbitaMais15Menos15_FitSaudavelEDentroDoPalco', () => {
     [-47, -32, -17, 0, 25].forEach(yaw => [30, 100].forEach(dist => {
-      const o = { ...four, yaw, foot: 4 * 1280 + 3 * 1280 * dist / 100, zm: 360 }, r = core.overviewFit(o), p = project(o, r.fit, r.tx);
+      const o = { ...four, yaw, foot: 4 * 1280 + 3 * 1280 * dist / 100, zm: 360 }, r = core.overviewFit(o), p = project(o, r.fit, r.tx, r.ty);
       expect(r.fit, 'yaw ' + yaw + ' dist ' + dist).toBeGreaterThan(0.04);
       expect(p.zmax).toBeLessThanOrEqual(o.persp / 2 + 1e-6);
       expect(p.r - p.l).toBeLessThanOrEqual(o.stageW / 1.18);
       expect(p.d - p.t).toBeLessThanOrEqual(o.stageH);
       expect(Math.abs(p.l + p.r)).toBeLessThan(2); // centered
+      expect(Math.abs(p.t + p.d)).toBeLessThan(2);
     }));
   });
 
@@ -4060,6 +4062,17 @@ describe('OverviewFit', () => {
       const o = { ...four, yaw, tilt, zm: c.zm, foot: c.N * 1280 + (c.N - 1) * 1280 * c.dist / 100, ...(c.big ? { stageW: 40000, stageH: 20000 } : {}) }, r = core.overviewFit(o);
       expect(r.fit * worstZ3(o), JSON.stringify({ ...c, yaw, tilt })).toBeLessThanOrEqual(o.persp / 2 + 1e-6);
     })));
+  });
+
+  it('OverviewFit_PaginasRetratoComTilt_CentralizaVerticalmente', () => {
+    // tilt makes the projected y range asymmetric: without ty the top edge lost 59-65px at tilt 30-70
+    [30, 45, 70].forEach(tilt => {
+      const o = { foot: 3 * 390 + 2 * 117, pageH: 844, zm: 720, yaw: -32, tilt, persp: 1600, stageW: 940, stageH: 724 }, r = core.overviewFit(o), p = project(o, r.fit, r.tx, r.ty);
+      expect(Math.abs(r.ty), 'tilt ' + tilt).toBeGreaterThan(1);
+      expect(p.t).toBeGreaterThanOrEqual(-o.stageH / 2 - 1e-6);
+      expect(p.d).toBeLessThanOrEqual(o.stageH / 2 + 1e-6);
+      expect(Math.abs(p.t + p.d)).toBeLessThan(2);
+    });
   });
 
   it('OverviewFit_MaisLayoutsOuMaisDistancia_NuncaAumentaOFit', () => {
@@ -4072,6 +4085,7 @@ describe('OverviewFit', () => {
     const r = core.overviewFit({ ...four, stageW: 10, stageH: 10 });
     expect(Number.isFinite(r.fit) && r.fit >= 0).toBe(true);
     expect(Number.isFinite(r.tx)).toBe(true);
+    expect(Number.isFinite(r.ty)).toBe(true);
   });
 });
 

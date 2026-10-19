@@ -2406,8 +2406,8 @@ class Component extends DCLogic {
   }
   // camera focus when none is set: the page center, or the center of the whole spread (in active-page coordinates) in the overview
   defFocus() { const s = this.state, sv = this.spreadView(); return { x: s.pageW / 2 + (sv ? sv.offs[sv.offs.length - 1] / 2 - sv.offs[sv.ai] : 0), y: s.pageH / 2, zd: null }; }
-  // in-plane pan result: the overview framing shift (cam().shiftX) is 0 once focus is set, so it moves into panX the moment focus goes from null to set (no jump)
-  panFocus(f, x, y) { const s = this.state, o = { focus: { x, y, zd: f.zd } }; if (!s.focus && this.spreadView()) o.panX = s.panX + this.cam().shiftX; return o; }
+  // in-plane pan result: the overview framing shift (cam().shiftX/shiftY) is 0 once focus is set, so it moves into panX/panY the moment focus goes from null to set (no jump)
+  panFocus(f, x, y) { const s = this.state, o = { focus: { x, y, zd: f.zd } }; if (!s.focus && this.spreadView()) { const c = this.cam(); o.panX = s.panX + c.shiftX; o.panY = s.panY + c.shiftY; } return o; }
   cam() {
     const s = this.state; const ba = -32;
     const sv = this.spreadView(); // S9.1c: overview camera frames every page of the spread; null (Espalhar off) keeps the single-page math
@@ -2415,12 +2415,12 @@ class Component extends DCLogic {
     const c = this._cam; if (c && c.k === k && c.nodes === s.nodes) return c.v;
     const spacing = s.flat ? 0 : s.spacing; const base = s.flat ? 0 : ba; const yawT = clamp(base + s.yaw, -85, 85); const yr = Math.abs(yawT) * Math.PI / 180;
     const br = this.branchInfo(); const spreadX = Math.sin(yr) * (spacing * Math.max(this.visibleMax(), sv ? sv.maxD : 0) + (br ? s.spacing * br.span : 0)); let footW = s.pageW * Math.cos(yr) + spreadX, pageH = s.pageH;
-    let fit, ovTx = 0;
-    if (sv) { // overview: world = scale(zoom) scale3d(fit) (see scene()); fit solved against the perspective-projected footprint, ovTx centers it
+    let fit, ovTx = 0, ovTy = 0;
+    if (sv) { // overview: world = scale(zoom) scale3d(fit) (see scene()); fit solved against the perspective-projected footprint, ovTx/ovTy center it
       const o = LayersCore.overviewFit({ foot: sv.foot, pageH: s.pageH, zm: spacing * Math.max(this.visibleMax(), sv.maxD), yaw: yawT, tilt: s.tilt, persp: s.persp, stageW: s.stageW, stageH: s.stageH });
-      fit = o.fit || 0.5; ovTx = o.tx;
+      fit = o.fit || 0.5; ovTx = o.tx; ovTy = o.ty;
     } else fit = Math.min(s.stageW / (footW * 1.18 + 80), s.stageH / (pageH + 200)) || 0.5;
-    const v = { spacing, base, yawT, yr, fit, S: fit * s.zoom, shiftX: s.focus ? 0 : sv ? ovTx : Math.sign(yawT || -1) * -spreadX * fit * 0.5 };
+    const v = { spacing, base, yawT, yr, fit, S: fit * s.zoom, shiftX: s.focus ? 0 : sv ? ovTx : Math.sign(yawT || -1) * -spreadX * fit * 0.5, shiftY: s.focus || !sv ? 0 : ovTy };
     this._cam = { k: k, nodes: s.nodes, v: v }; return v;
   }
   stepActive(d) { this.setState(s => ({ active: clamp(s.active + d, 0, this.visibleMax()) })); }
@@ -2558,7 +2558,7 @@ class Component extends DCLogic {
     else this.setState(st => ({ panX: st.panX + dx, panY: st.panY + dy }));
   }
   orbit(dy, dt) { const { base } = this.cam(); this.setState(st => ({ yaw: clamp(st.yaw + dy, -85 - base, 85 - base), tilt: clamp(st.tilt + dt, -70, 70) })); }
-  zoomBy(f, cx = 0, cy = 0) { const sx = this.cam().shiftX; this.setState(st => { const z = clamp(st.zoom * f, .2, 12); const r = z / st.zoom; const ex = sx + st.panX; return { zoom: z, panX: cx - (cx - ex) * r - sx, panY: cy - (cy - st.panY) * r }; }); }
+  zoomBy(f, cx = 0, cy = 0) { const { shiftX: sx, shiftY: sy } = this.cam(); this.setState(st => { const z = clamp(st.zoom * f, .2, 12); const r = z / st.zoom; const ex = sx + st.panX, ey = sy + st.panY; return { zoom: z, panX: cx - (cx - ex) * r - sx, panY: cy - (cy - ey) * r - sy }; }); }
   escape() {
     const s = this.state;
     if (s.ctx) this.closeCtx(); else if (s.shortcuts) this.setState({ shortcuts: false }); else if (s.pending) this.decide(false); else if (s.diff) this.setState({ diff: null }); else if (s.coverage && s.coverage.open) this.closeCoverage(); else if (s.modal) this.setState({ modal: null }); else if (s.cbOpen) this.setState({ cbOpen: null }); else if (this.menuCur.menu) this.menuEscape();
@@ -2807,13 +2807,13 @@ class Component extends DCLogic {
 
   scene() {
     const s = this.state; const { nodes, byId, selId, hoverId, isoId, active, solo, tilt, zoom, panX, panY, focus, dragging, interact } = s;
-    const { spacing, yawT, fit, shiftX } = this.cam(); const br = this.branchInfo(); const P = s.persp; const wire = s.wire; const wa = s.wireAlpha / 100; const dimOthers = true; const fs = s.focusStr / 100; const hL = s.layerFocus ? (s.hoverLayer != null ? s.hoverLayer : (solo ? active : null)) : null; const oo = s.othersOp / 100;
+    const { spacing, yawT, fit, shiftX, shiftY } = this.cam(); const br = this.branchInfo(); const P = s.persp; const wire = s.wire; const wa = s.wireAlpha / 100; const dimOthers = true; const fs = s.focusStr / 100; const hL = s.layerFocus ? (s.hoverLayer != null ? s.hoverLayer : (solo ? active : null)) : null; const oo = s.othersOp / 100;
     const scopeId = isoId || (selId !== '0' ? selId : null); let layerSet = null;
     if (hL != null) { layerSet = new Set(); const all = []; nodes.forEach(n => { if (n.depth !== hL || (isoId && !(n.id === isoId || n.id.startsWith(isoId + '.')))) return; all.push(n.id); if (!scopeId || n.id === scopeId || n.id.startsWith(scopeId + '.')) layerSet.add(n.id); }); if (!layerSet.size) all.forEach(i => layerSet.add(i)); }
     const sv = this.spreadView(); const offA = sv ? sv.offs[sv.ai] : 0; // S9.1c: world x of the active page (0 with Espalhar off)
     // overview pivot stays on the footprint: overviewFit bounds the eye-plane distance for a pivot there, a drag-panned focus far outside would break that bound
     const fx = sv ? (focus ? clamp(offA + focus.x - s.pageW / 2, -s.pageW / 2, sv.offs[sv.offs.length - 1] + s.pageW / 2) : sv.offs[sv.offs.length - 1] / 2) : focus ? focus.x - s.pageW / 2 : 0, fy = focus ? (sv ? clamp(focus.y - s.pageH / 2, -s.pageH / 2, s.pageH / 2) : focus.y - s.pageH / 2) : 0, fz = focus && focus.zd != null ? focus.zd * spacing : active * spacing;
-    const cull = dragging ? LayersCore.viewCuller({ pageW: s.pageW, pageH: s.pageH, stageW: s.stageW, stageH: s.stageH, persp: P, S: fit * zoom, zs: sv ? fit : 1, yaw: yawT, tilt: tilt, tx: shiftX + panX, ty: panY, fx: fx - offA, fy: fy, fz: fz, margin: CULL_MARGIN * Math.max(s.stageW, s.stageH) }) : null;
+    const cull = dragging ? LayersCore.viewCuller({ pageW: s.pageW, pageH: s.pageH, stageW: s.stageW, stageH: s.stageH, persp: P, S: fit * zoom, zs: sv ? fit : 1, yaw: yawT, tilt: tilt, tx: shiftX + panX, ty: shiftY + panY, fx: fx - offA, fy: fy, fz: fz, margin: CULL_MARGIN * Math.max(s.stageW, s.stageH) }) : null;
     const onPath = id => selId === id || selId.startsWith(id + '.'); const inBranch = id => id === selId || id.startsWith(selId + '.');
     const activeZ = active * spacing; const tr = dragging ? 'none' : 'transform .35s ease, opacity .3s ease';
     const prev = this._prev || {}; const nextPrev = {};
@@ -2884,7 +2884,7 @@ class Component extends DCLogic {
       [...lodEls.keys()].forEach(id => { if (!seen.has(id)) lodEls.delete(id); });
     }
     const world = React.createElement('div', { style: { position: 'absolute', left: '50%', top: '50%', width: 0, height: 0, transformStyle: 'preserve-3d', willChange: dragging ? 'transform' : 'auto', transition: dragging ? 'none' : 'transform .35s ease',
-      transform: 'translate(' + (shiftX + panX) + 'px,' + panY + 'px) ' + (sv ? 'scale(' + zoom + ') scale3d(' + fit + ',' + fit + ',' + fit + ')' : 'scale(' + (fit * zoom) + ')') + ' rotateX(' + tilt + 'deg) rotateY(' + yawT + 'deg) translate3d(' + (-fx) + 'px,' + (-fy) + 'px,' + (-fz) + 'px)' } }, kids);
+      transform: 'translate(' + (shiftX + panX) + 'px,' + (shiftY + panY) + 'px) ' + (sv ? 'scale(' + zoom + ') scale3d(' + fit + ',' + fit + ',' + fit + ')' : 'scale(' + (fit * zoom) + ')') + ' rotateX(' + tilt + 'deg) rotateY(' + yawT + 'deg) translate3d(' + (-fx) + 'px,' + (-fy) + 'px,' + (-fz) + 'px)' } }, kids);
     return React.createElement('div', { style: { position: 'absolute', inset: 0, perspective: P + 'px', perspectiveOrigin: '50% 50%' } }, world);
   }
 
