@@ -29,7 +29,7 @@ Entrega: item "Analisar cobertura" em Projetos ▾ → varre o repo (sem rodar o
 | 5 | Regra (constantes no core): melhor mono ≥ 85 % e ≤ 1.500 planos → Monovisual; senão, ganho ≥ 15 p.p. → Múltiplos; layout > 1.500 planos → dividir; capturas com ≥ 60 % de nós comuns viram *states* (avisa, mescla no cálculo). **Meu preenchimento**: mono < 85 % e ganho < 15 p.p. → "Monovisual (layouts não ajudam)"; 0 regiões → "Indeterminado" | O board não cobre esses dois casos |
 | 6 | Fonte dos arquivos: pasta local = varredura (extrai o walker de `autoCreateLayersJson` para `collectProjectFiles`, mesmos tetos 5.000/depth 6/3 MB/20 MB); zip = `this.zip.files`; GitHub/fixture **não têm listagem** → só os mocks declarados (leitura por `readText`, já usada pelo loader), selo `cobertura parcial`. `analyzeCoverage` mantém as guardas de corrida do `autoCreateLayersJson`: captura `dir` antes do 1º `await`, rechecando `dir` e `loadSeq` antes de gravar `state.coverage` | Fatos do loader: `repo` sem tree API; fixture só por caminho; troca de projeto durante a varredura |
 | 7 | App renderizado por JS (shell) → selo `confiança baixa` (regiões vêm só de entradas/states/layouts) | Honestidade do modelo estático |
-| 8 | Sugestão: `suggestLayouts(files, man)` lista `{id,name,mock}` de telas estáticas ainda não cobertas (id válido `^[A-Za-z0-9_-]{1,40}$`, `main` = mock atual); `styles` é do projeto, não do layout. Só Copiar | `deriveManifest` fica intacto |
+| 8 | Sugestão: `suggestLayouts(model, man, files)` lista `{id,name,mock}` de telas estáticas ainda não cobertas (id válido `^[A-Za-z0-9_-]{1,40}$`, `main` = mock atual); `styles` é do projeto, não do layout. Só Copiar | `deriveManifest` fica intacto |
 
 ```
  Projetos ▾ › Analisar cobertura
