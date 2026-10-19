@@ -245,7 +245,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
     <sc-if value="{{ hasProject }}" hint-placeholder-val="{{ false }}">
     <div style="position:absolute;left:12px;right:12px;bottom:0;z-index:8;display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 12px;pointer-events:none">
       <sc-if value="{{ hasLayouts }}" hint-placeholder-val="{{ false }}">
-      <div data-layout-strip style="pointer-events:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px;max-width:100%;padding:3px 6px;border-radius:6px;background:rgba(var(--bg0Rgb),.82)">
+      <div data-layout-strip onDoubleClick="{{ stop }}" style="pointer-events:auto;display:flex;flex-wrap:wrap;align-items:center;justify-content:flex-start;gap:4px;max-width:100%;padding:3px 6px;border-radius:6px;background:rgba(var(--bg0Rgb),.82)">
         <span style="font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.5px;text-transform:uppercase;color:var(--fg3);margin-right:8px">Layouts</span>
         <sc-for list="{{ layoutChips }}" as="c" hint-placeholder-count="3">
           <button onClick="{{ c.pick }}" title="{{ c.title }}" aria-pressed="{{ c.pressed }}" data-layout-chip="{{ c.id }}" style="height:24px;padding:0 8px;border-radius:4px;border:1px solid {{ c.bdr }};background:{{ c.bg }};color:{{ c.color }};font:600 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;cursor:pointer">{{ c.mark }}{{ c.name }}<sc-if value="{{ c.hasBadge }}" hint-placeholder-val="{{ false }}"> <span data-layout-badge="{{ c.id }}" style="font-weight:400;opacity:.6">{{ c.badge }}</span></sc-if></button>
@@ -1613,7 +1613,7 @@ class Component extends DCLogic {
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -2014,7 +2014,7 @@ class Component extends DCLogic {
     enter: id => { if (this.state.hoverId !== id) this.setState({ hoverId: id }); },
     leave: () => { if (this.state.hoverId !== null) this.setState({ hoverId: null }); },
     // S9.1c Task 6: LOD planes (frozen layouts). Click = the same 3 px threshold as the planes (`dragged`); hover is ignored while a button is down so an orbit never writes state per plane it sweeps over.
-    lodClick: (lid, id, e) => { e.stopPropagation(); if (this.dragged) return; this.activateFromLod(lid, id); },
+    lodClick: (lid, id, e) => { e.stopPropagation(); if (this.dragged) return; const pl = this.activePlaneAt(e); if (pl) this.H.click(pl.dataset.plane, e); else this.activateFromLod(lid, id); }, // an active plane under the pointer wins over a LOD plane in front of it
     lodDbl: e => e.stopPropagation(),
     lodEnter: (lid, id) => { if (this.down) return; const k = lid + ':' + id; if (this.state.lodHover !== k) this.setState({ lodHover: k }); },
     lodLeave: () => { if (this.state.lodHover !== null) this.setState({ lodHover: null }); },
@@ -2358,10 +2358,16 @@ class Component extends DCLogic {
   }
   // S3.5: stage context menu. `ctx` = {x, y, id} (cursor + target) plus the fitted position {fx, fy, flip} from fitCtx.
   ctxRef = React.createRef(); rdown = null;
+  // The plane an event aims at: its own target, or (target is a LOD plane of a frozen page, 3D can put it in front of an active plane) the topmost ACTIVE plane under the pointer. Null when none.
+  activePlaneAt(e) {
+    const t = e.target, own = t && t.closest ? t.closest('[data-plane]') : null; if (own || !(t && t.closest && t.closest('[data-lod-plane]'))) return own;
+    for (const el of document.elementsFromPoint(e.clientX, e.clientY)) { const p = el.closest ? el.closest('[data-plane]') : null; if (p) return p; }
+    return null;
+  }
   onStageCtx(e) {
     e.preventDefault(); const r = this.rdown; this.rdown = null;
     if (r && (Math.abs(e.clientX - r.x) > 3 || Math.abs(e.clientY - r.y) > 3)) return;
-    const pl = e.target && e.target.closest ? e.target.closest('[data-plane]') : null; const id = (pl && pl.dataset.plane) || this.state.hoverId;
+    const pl = this.activePlaneAt(e); const id = (pl && pl.dataset.plane) || this.state.hoverId;
     if (id) this.openCtx(e, id);
   }
   openCtx(e, id) {
