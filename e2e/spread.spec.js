@@ -467,6 +467,29 @@ test('Spread_LodPages_HaveLodPlanesWithoutDataPlane', async ({ page }) => {
   expect(look).toEqual({ op: '0.5', style: 'dashed', color: 'rgba(173, 181, 190, 0.45)', pe: 'none', cursor: '' });
 });
 
+test('Spread_FullFrozenPage_IsDrawnAsTheBoardDimMode', async ({ page }) => {
+  await spreadReady(page);
+  await switchTo(page, 'config'); await settled(page, 3); await flush(page);
+  const look = await page.evaluate(() => {
+    const of = (id) => [...document.querySelectorAll('[data-spread-page="' + id + '"] [data-lod-plane]')].map((e) => { const cs = getComputedStyle(e); return { op: cs.opacity, style: cs.borderTopStyle, color: cs.borderTopColor, bg: cs.backgroundColor }; });
+    return { full: of('main'), lod: of('replay') };
+  });
+  expect(look.full.length).toBeGreaterThan(0);
+  look.full.forEach((p) => { expect(p.style).toBe('solid'); expect(p.color).toBe('rgba(173, 181, 190, 0.35)'); expect(Number(p.op)).toBeLessThanOrEqual(0.5); });
+  look.lod.forEach((p) => { expect(p.style).toBe('dashed'); expect(p.color).toBe('rgba(173, 181, 190, 0.45)'); });
+  // board backgrounds: depth 0 rgba(14,17,22,.9), deeper planes bg1 at .3 (same for dim and lod)
+  expect(look.lod[0].bg).toBe('rgba(14, 17, 22, 0.9)');
+  expect(new Set(look.lod.slice(1).map((p) => p.bg)).size).toBe(1);
+  expect(look.lod[1].bg).toMatch(/^rgba\(\d+, \d+, \d+, 0\.3\)$/);
+});
+
+test('Spread_Off_ReleasesTheLodElementCache', async ({ page }) => {
+  await spreadReady(page);
+  expect(await page.evaluate(() => window.__logic._lodEls && window.__logic._lodEls.size)).toBeGreaterThan(0);
+  await act(page, 'spreadOn', false); await flush(page);
+  expect(await page.evaluate(() => window.__logic._lodEls || null)).toBeNull();
+});
+
 test('Spread_LodLabels_CarryLodSuffix', async ({ page }) => {
   await spreadReady(page);
   const pages = await pagesInfo(page);
@@ -527,8 +550,11 @@ test('Spread_Off_DomIsIdenticalToBaselineAndLeavesNoSpreadMarks', async ({ page 
 
 test('Spread_SingleLayoutProject_RendersNoPages', async ({ page }) => {
   await loaded(page, '/?layers=fixtures/traval/');
-  await act(page, 'spreadOn', true); await flush(page);
-  expect(await page.evaluate(() => document.querySelectorAll('[data-spread-page]').length)).toBe(0);
+  // spreadOn() refuses a single-layout project, so force the state to reach the `layouts.length < 2` guard of spreadView/scene
+  await page.evaluate(() => window.__logic.setState({ spread: { on: true, mode: 'all', picked: [], dist: 30 } }));
+  await flush(page);
+  expect(await page.evaluate(() => window.__logic.spreadView())).toBeNull();
+  expect(await page.evaluate(() => document.querySelectorAll('[data-spread-page],[data-lod-plane],[data-spread-label],[data-spread-frame]').length)).toBe(0);
 });
 
 test('Spread_Overview_FitsAllPagesInTheStage', async ({ page }) => {
@@ -549,13 +575,98 @@ test('Spread_Overview_CameraFollowsFootprintAndReturnsWhenOff', async ({ page })
   await act(page, 'spreadOn', true); await settled(page, 3);
   const fitOn = await page.evaluate(() => window.__logic.cam().fit);
   expect(fitOn).toBeLessThan(fit0);
+  expect(fitOn).toBeGreaterThan(fit0 / 10); // 3 small pages: shrinks, never collapses
   await act(page, 'setSpreadDist', 100);
   const fitWide = await page.evaluate(() => window.__logic.cam().fit);
   expect(fitWide).toBeLessThan(fitOn);
+  expect(fitWide).toBeGreaterThan(fitOn / 10);
   await page.evaluate(() => window.__logic.setState({ persp: 800 }));
   expect(await page.evaluate(() => window.__logic.cam().fit)).not.toBe(fitWide); // the overview fit reads the perspective: it is part of the memo key
   await act(page, 'spreadOn', false);
   expect(await page.evaluate(() => window.__logic.cam().fit)).toBe(fit0);
+});
+
+// Real page size: the same manifest at the app default viewport (1280x760) with a 4th available layout (broken -> a copy of replay).
+// The world is scaled in 3D under perspective: a 2D scale left the nearest corner crossing the camera plane and the fit collapsed.
+async function bigSpread(page, dist) {
+  await page.route('**/fixtures/multi-layout/layers.json', async (route) => {
+    const m = await (await route.fetch()).json();
+    m.viewport = { width: 1280, height: 760 };
+    m.layouts.find((l) => l.id === 'broken').mock = 'layers/replay.html';
+    await route.fulfill({ json: m });
+  });
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  await act(page, 'setSpreadDist', dist);
+  await flush(page);
+  await page.waitForTimeout(600); // the world transform eases for .35 s
+}
+const stageRects = (page) => page.evaluate((src) => {
+  const st = eval(src).getBoundingClientRect(), r = (q) => ({ l: q.left - st.left, r: q.right - st.left, t: q.top - st.top, b: q.bottom - st.top, w: q.width });
+  return { stage: { w: st.width, h: st.height }, fit: window.__logic.cam().fit, pages: [...document.querySelectorAll('[data-spread-page]')].map((p) => ({ id: p.dataset.spreadPage, ...r(p.getBoundingClientRect()) })) };
+}, STAGE_JS);
+const insideStage = (m) => { const l = Math.min(...m.pages.map((p) => p.l)), r = Math.max(...m.pages.map((p) => p.r)), t = Math.min(...m.pages.map((p) => p.t)), b = Math.max(...m.pages.map((p) => p.b)); return { l, r: m.stage.w - r, t, b: m.stage.h - b }; };
+
+for (const dist of [30, 100]) {
+  test(`Spread_Overview_RealViewportFourPages_FitsAndStaysReadable_Dist${dist}`, async ({ page }) => {
+    await bigSpread(page, dist);
+    const m = await stageRects(page);
+    expect(m.pages.map((p) => p.id)).toEqual(['main', 'config', 'replay', 'broken']);
+    expect(m.fit).toBeGreaterThan(0.05);
+    m.pages.forEach((p) => expect(p.w, p.id).toBeGreaterThanOrEqual(dist === 30 ? 120 : 80)); // dist 100: 4 pages + 3 gaps of one page width in a ~940 px stage
+    const gap = insideStage(m);
+    for (const k of ['l', 'r', 't', 'b']) expect(gap[k], `margin ${k}`).toBeGreaterThanOrEqual(0);
+    for (let i = 1; i < m.pages.length; i++) expect(m.pages[i].l, 'left-to-right order').toBeGreaterThan(m.pages[i - 1].l);
+  });
+
+  test(`Spread_Overview_RealViewportFourPages_OrbitKeepsFitAndOrder_Dist${dist}`, async ({ page }) => {
+    await bigSpread(page, dist);
+    for (const yaw of [-15, 15]) {
+      await page.evaluate((y) => window.__logic.setState({ yaw: y }), yaw);
+      await flush(page); await page.waitForTimeout(600);
+      const m = await stageRects(page), gap = insideStage(m);
+      expect(m.fit, `yaw ${yaw}`).toBeGreaterThan(0.05);
+      m.pages.forEach((p) => expect(p.w, `yaw ${yaw} ${p.id}`).toBeGreaterThanOrEqual(60));
+      for (const k of ['l', 'r', 't', 'b']) expect(gap[k], `yaw ${yaw} margin ${k}`).toBeGreaterThanOrEqual(0);
+      for (let i = 1; i < m.pages.length; i++) expect(m.pages[i].l, `yaw ${yaw} order`).toBeGreaterThan(m.pages[i - 1].l);
+    }
+  });
+}
+
+test('Spread_Overview_RealViewportFlat_PagesKeepEqualSize', async ({ page }) => {
+  await bigSpread(page, 30);
+  await page.evaluate(() => window.__logic.setState({ flat: true, yaw: 0 })); // yawT = 0: the footprint is edge-on to the eye, z = 0, k = 1
+  await flush(page); await page.waitForTimeout(600);
+  const m = await stageRects(page), gap = insideStage(m), ws = m.pages.map((p) => p.w);
+  expect(Math.max(...ws) - Math.min(...ws)).toBeLessThan(1);
+  expect(ws[0]).toBeGreaterThanOrEqual(120);
+  for (const k of ['l', 'r', 't', 'b']) expect(gap[k], `margin ${k}`).toBeGreaterThanOrEqual(0);
+});
+
+test('Spread_Overview_RealViewport_EnquadrarReachesANormalZoom', async ({ page }) => {
+  await bigSpread(page, 30);
+  await act(page, 'frame', '0'); await page.waitForTimeout(600);
+  const r = await page.evaluate((src) => {
+    const L = window.__logic, st = eval(src).getBoundingClientRect(), p = document.querySelector('[data-spread-page="main"] [data-plane="0"]').getBoundingClientRect();
+    return { zoom: L.state.zoom, fit: L.cam().fit, w: p.width, sw: st.width, cx: p.left + p.width / 2 - (st.left + st.width / 2) };
+  }, STAGE_JS);
+  expect(r.zoom).toBeGreaterThan(1);
+  expect(r.zoom).toBeLessThan(12); // the clamp is not what decides the framing
+  expect(r.fit * r.zoom).toBeGreaterThan(0.3);
+  expect(r.w).toBeGreaterThan(r.sw * 0.5);
+  expect(r.w).toBeLessThan(r.sw);
+  expect(Math.abs(r.cx)).toBeLessThan(r.sw * 0.25);
+});
+
+test('Spread_Overview_PlanePanOnePixel_DoesNotMoveTheFrame', async ({ page }) => {
+  await bigSpread(page, 30);
+  const frameLeft = () => page.evaluate(() => document.querySelector('[data-spread-frame]').getBoundingClientRect().left);
+  const before = await frameLeft();
+  expect(await page.evaluate(() => window.__logic.state.focus)).toBeNull();
+  await act(page, 'pan', 1, 0, 'plane'); await page.waitForTimeout(600);
+  expect(await page.evaluate(() => window.__logic.state.focus)).not.toBeNull();
+  expect(Math.abs((await frameLeft()) - before)).toBeLessThan(3);
 });
 
 test('Spread_Frame_AimsInsideTheActivePage', async ({ page }) => {
@@ -576,4 +687,7 @@ test('Spread_DefaultFocus_IsTheCenterOfTheWholeSpread', async ({ page }) => {
   await spreadReady(page);
   const r = await page.evaluate(() => { const L = window.__logic, s = L.state, offs = LayersCore.spreadOffsets(3, s.pageW, s.spread.dist), f = L.defFocus(); return { fx: f.x, expect: s.pageW / 2 + offs[2] / 2 }; });
   expect(r.fx).toBeCloseTo(r.expect, 6); // active = main (offset 0): the spread center is page-relative offs[2]/2
+  await switchTo(page, 'config'); await settled(page, 3);
+  const c = await page.evaluate(() => { const L = window.__logic, s = L.state, offs = LayersCore.spreadOffsets(3, s.pageW, s.spread.dist), f = L.defFocus(); return { fx: f.x, expect: s.pageW / 2 + offs[2] / 2 - offs[1] }; });
+  expect(c.fx).toBeCloseTo(c.expect, 6); // active = config (offset offs[1]): the same center, in config-page coordinates
 });
