@@ -378,7 +378,7 @@ const right = async (loc) => { const b = await loc.boundingBox(); return b.x + b
 
 test('Layouts_Strip_RowsHugTheirContent', async ({ page }) => {
   await loaded(page);
-  const chips = page.locator('[data-layout-chip]');
+  const chips = page.locator('[data-layout-chip], [data-spread-btn]'); // S9.1c Task 5: the Espalhar button is now the last item of the row
   const strip = page.locator('[data-layout-strip]');
   expect((await right(strip)) - (await right(chips.last()))).toBeLessThanOrEqual(12);
   const rail = bar(page).locator('button').last();

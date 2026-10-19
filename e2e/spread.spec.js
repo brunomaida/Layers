@@ -757,3 +757,238 @@ test('Spread_DefaultFocus_IsTheCenterOfTheWholeSpread', async ({ page }) => {
   const c = await page.evaluate(() => { const L = window.__logic, s = L.state, offs = LayersCore.spreadOffsets(3, s.pageW, s.spread.dist), f = L.defFocus(); return { fx: f.x, expect: s.pageW / 2 + offs[2] / 2 - offs[1] }; });
   expect(c.fx).toBeCloseTo(c.expect, 6); // active = config (offset offs[1]): the same center, in config-page coordinates
 });
+
+// S9.1c Task 5: the `⊞ ESPALHAR ▾` button and its popover (UI over the Task 3 logic). Driven by real clicks; __logic only reads state.
+const BTN = '[data-spread-btn]', POP = '[data-spread-pop]';
+const seg = (page, k) => page.locator('[data-spread-seg="' + k + '"]');
+const row = (page, id) => page.locator('[data-spread-row="' + id + '"]');
+const ck = (page, id) => row(page, id).locator('[data-spread-ck]');
+const cnt = (page, id) => row(page, id).locator('[data-spread-count]');
+const sp = (page) => page.evaluate(() => { const s = window.__logic.state; return { on: s.spread.on, mode: s.spread.mode, picked: s.spread.picked, dist: s.spread.dist, menu: s.spreadMenu }; });
+const sv = (page) => page.evaluate(() => { const v = window.__logic.spreadView(); return v && { ids: v.ids, offs: v.offs, ai: v.ai }; });
+const pageIds = (page) => page.evaluate(() => [...document.querySelectorAll('[data-spread-page]')].map((p) => p.dataset.spreadPage));
+const openPop = async (page) => { await page.locator(BTN).click(); await expect(page.locator(POP)).toBeVisible(); };
+// the exact boundary: one frozen entry's count is rewritten so that active + frozen == total (counts only feed the popover total)
+const forceTotal = (page, total) => page.evaluate((t) => {
+  const L = window.__logic, F = L.spreadFrozen, ids = [...F.keys()].filter((k) => !F.get(k).unavailable), first = ids[0];
+  const rest = ids.slice(1).reduce((a, k) => a + F.get(k).count, 0);
+  F.set(first, { ...F.get(first), count: t - L.state.nodes.length - rest }); L.spreadBump();
+}, total);
+
+test('SpreadUi_Button_OnlyWithTwoOrMoreLayouts', async ({ page }) => {
+  await loaded(page, FX);
+  await expect(page.locator(BTN)).toHaveCount(1);
+  await expect(page.locator(BTN)).toContainText('ESPALHAR');
+  expect(await page.evaluate((b) => document.querySelector('[data-layout-strip]').lastElementChild === document.querySelector(b), BTN)).toBe(true); // last item of the row
+  await expect(page.locator(POP)).toHaveCount(0); // never opened: no popover DOM
+  await page.goto('/?layers=fixtures/traval/');
+  await readNodes(page);
+  await expect(page.locator('[data-layout-strip]')).toHaveCount(0);
+  expect(await page.evaluate(() => document.querySelectorAll('[data-spread-btn],[data-spread-pop]').length)).toBe(0);
+});
+
+test('SpreadUi_Popover_OpensAndClosesByButtonEscAndOutsideClick', async ({ page }) => {
+  await loaded(page, FX);
+  const selBefore = await page.evaluate(() => window.__logic.state.selId);
+  await expect(page.locator(BTN)).toHaveAttribute('aria-expanded', 'false');
+  await openPop(page);
+  await expect(page.locator(BTN)).toHaveAttribute('aria-expanded', 'true');
+  expect(await page.evaluate(() => !window.__logic.state.modal && !window.__logic.state.pending && !window.__logic.state.diff)).toBe(true); // not a modal overlay
+  await page.locator(BTN).click(); // toggle closes
+  await expect(page.locator(POP)).toHaveCount(0);
+  await openPop(page);
+  await page.keyboard.press('Escape'); // closes first; the Esc chain does not fall through to the selection reset
+  await expect(page.locator(POP)).toHaveCount(0);
+  expect(await page.evaluate(() => window.__logic.state.selId)).toBe(selBefore);
+  await openPop(page);
+  await page.mouse.click(8, 8); // outside click
+  await expect(page.locator(POP)).toHaveCount(0);
+  await openPop(page);
+  await page.locator(POP).click({ position: { x: 4, y: 4 } }); // inside click keeps it open
+  await expect(page.locator(POP)).toBeVisible();
+  await seg(page, 'all').click(); await settled(page, 3);
+  await page.locator('[data-spread-dist]').focus();
+  await page.keyboard.press('Escape'); // focus in the slider: the global key handler ignores inputs, the slider closes it itself
+  await expect(page.locator(POP)).toHaveCount(0);
+});
+
+test('SpreadUi_Segments_FocoTodosPick_DriveTheStage', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await expect(seg(page, 'off')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-spread-row]')).toHaveCount(0); // Foco: no rows, no slider
+  await expect(page.locator('[data-spread-dist]')).toHaveCount(0);
+  await seg(page, 'all').click();
+  await settled(page, 3);
+  expect(await sp(page)).toMatchObject({ on: true, mode: 'all' });
+  expect((await sv(page)).ids).toEqual(['main', 'config', 'replay']);
+  await expect(seg(page, 'all')).toHaveAttribute('aria-pressed', 'true');
+  await expect(page.locator('[data-spread-row]')).toHaveCount(4);
+  await expect(page.locator('[data-spread-dist]')).toHaveCount(1);
+  for (const id of ['main', 'config', 'replay', 'broken']) { await expect(ck(page, id)).toHaveAttribute('aria-checked', 'true'); await expect(ck(page, id)).toBeDisabled(); } // Todos: all checked, read-only
+  await seg(page, 'pick').click();
+  expect(await sp(page)).toMatchObject({ on: true, mode: 'pick' });
+  await expect(seg(page, 'pick')).toHaveAttribute('aria-pressed', 'true');
+  await expect(ck(page, 'config')).toHaveAttribute('aria-checked', 'false');
+  await expect(ck(page, 'config')).toBeEnabled();
+  await seg(page, 'off').click(); // Foco = Espalhar off
+  expect(await sp(page)).toMatchObject({ on: false });
+  expect(await sv(page)).toBeNull();
+  expect(await pageIds(page)).toEqual([]);
+  await expect(page.locator('[data-spread-row]')).toHaveCount(0);
+  await expect(page.locator(POP)).toBeVisible(); // the popover stays open across segment changes
+  await seg(page, 'pick').click(); // straight from Foco to 1-N: one state write, mode pick
+  expect(await sp(page)).toMatchObject({ on: true, mode: 'pick' });
+});
+
+test('SpreadUi_Pick_ExcludesLayoutsAndKeepsTheActiveOne', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'pick').click();
+  expect(await sv(page)).toBeNull(); // only the active layout: nothing to spread
+  await expect(ck(page, 'main')).toHaveAttribute('aria-checked', 'true'); // the active one is always checked
+  await expect(ck(page, 'main')).toBeDisabled();
+  await ck(page, 'config').click();
+  await settled(page, 1);
+  expect((await sp(page)).picked).toEqual(['config']);
+  expect((await sv(page)).ids).toEqual(['main', 'config']);
+  expect(await pageIds(page)).toEqual(['main', 'config']); // replay stays out of the stage
+  await expect(ck(page, 'config')).toHaveAttribute('aria-checked', 'true');
+  await expect(ck(page, 'replay')).toHaveAttribute('aria-checked', 'false');
+  await ck(page, 'replay').click();
+  await settled(page, 2);
+  expect((await sv(page)).ids).toEqual(['main', 'config', 'replay']);
+  await ck(page, 'config').click(); // uncheck
+  expect((await sv(page)).ids).toEqual(['main', 'replay']);
+  await ck(page, 'config').click();
+  await page.locator(BTN).click(); // close; the pick survives, then switch the active layout through the chip
+  await page.locator('[data-layout-chip="config"]').click();
+  await page.waitForFunction(() => window.__logic.state.project.layoutId === 'config' && window.__logic.loadedSeq === window.__logic.loadSeq);
+  await openPop(page);
+  await expect(ck(page, 'config')).toHaveAttribute('aria-checked', 'true'); // the new active layout: checked and disabled
+  await expect(ck(page, 'config')).toBeDisabled();
+  expect((await sv(page)).ids).toContain('config');
+});
+
+test('SpreadUi_Slider_ChangesThePageSpacing', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'all').click(); await settled(page, 3);
+  const slider = page.locator('[data-spread-dist]');
+  await expect(slider).toHaveAttribute('min', '0'); await expect(slider).toHaveAttribute('max', '100');
+  await expect(slider).toHaveValue('30');
+  const w = await page.evaluate(() => window.__logic.state.pageW);
+  expect((await sv(page)).offs[1]).toBeCloseTo(w * 1.3, 3);
+  await slider.fill('100');
+  expect((await sp(page)).dist).toBe(100);
+  expect((await sv(page)).offs[1]).toBeCloseTo(w * 2, 3);
+  await slider.fill('0');
+  expect((await sv(page)).offs[1]).toBeCloseTo(w, 3);
+  await flush(page);
+  const xs = await page.evaluate(() => [...document.querySelectorAll('[data-spread-page]')].map((p) => /translateX\(([-\d.e]+)px\)/.exec(p.style.transform)[1]));
+  expect(xs.map(Number)).toEqual((await sv(page)).offs); // the stage follows
+});
+
+test('SpreadUi_Counts_ShowActiveFrozenUnavailableAndPending', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'all').click(); await settled(page, 3); await flush(page);
+  const t = await page.evaluate(() => { const L = window.__logic; return { n: L.state.nodes.length, config: L.spreadFrozen.get('config').count, replay: L.spreadFrozen.get('replay').count }; });
+  await expect(cnt(page, 'main')).toHaveText(String(t.n));
+  await expect(cnt(page, 'config')).toHaveText(String(t.config));
+  await expect(cnt(page, 'replay')).toHaveText(String(t.replay));
+  await expect(cnt(page, 'broken')).toHaveText('indisponível');
+  await expect(row(page, 'main')).toContainText('Main');
+  await page.evaluate(() => { const L = window.__logic; L.spreadFrozen.delete('replay'); L.spreadBump(); }); // a drawn layout not yet frozen
+  await expect(cnt(page, 'replay')).toHaveText('…');
+  await expect(page.locator('[data-spread-total]')).toHaveText('Total: ' + (t.n + t.config) + ' planos'); // the pending layout counts 0 until frozen
+  await seg(page, 'pick').click(); // a layout outside the selection is not being read: no pending marker, not in the total
+  await expect(cnt(page, 'replay')).not.toHaveText('…');
+  await expect(page.locator('[data-spread-total]')).toHaveText('Total: ' + t.n + ' planos');
+});
+
+test('SpreadUi_Warning_AbsentAt1500PresentAt1501AndNeverBlocks', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'all').click(); await settled(page, 3); await flush(page);
+  expect(await page.evaluate(() => LayersCore.COVERAGE.PLANES_MAX)).toBe(1500);
+  await forceTotal(page, 1500);
+  await expect(page.locator('[data-spread-total]')).toContainText('1.500');
+  await expect(page.locator('[data-spread-warn]')).toHaveCount(0);
+  await expect(page.locator(BTN)).not.toContainText('⚠');
+  await forceTotal(page, 1501);
+  await expect(page.locator('[data-spread-warn]')).toHaveText('Acima de 1.500 planos (1.501): a órbita pode degradar. Selecione menos layouts.');
+  await expect(page.locator(BTN)).toContainText('⚠');
+  // never blocks: slider, segments, chips and the orbit keep working with the warning up
+  await page.locator('[data-spread-dist]').fill('60');
+  expect((await sp(page)).dist).toBe(60);
+  await seg(page, 'pick').click();
+  expect((await sp(page)).mode).toBe('pick');
+  await seg(page, 'all').click();
+  await page.locator('[data-layout-chip="config"]').click();
+  await page.waitForFunction(() => window.__logic.state.project.layoutId === 'config' && window.__logic.loadedSeq === window.__logic.loadSeq);
+  expect(await page.evaluate(() => window.__logic.state.modal)).toBeFalsy();
+  await settled(page, 3); await flush(page);
+  await forceTotal(page, 1500);
+  await expect(page.locator('[data-spread-warn]')).toHaveCount(0);
+  await openPop(page); // the chip click was an outside click: the popover closed
+  await seg(page, 'off').click(); // Foco: nothing is spread, no warning, no badge
+  await expect(page.locator('[data-spread-warn]')).toHaveCount(0);
+  await expect(page.locator(BTN)).not.toContainText('⚠');
+});
+
+test('SpreadUi_Total_IsCachedAcrossRenders', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await seg(page, 'all').click(); await settled(page, 3); await flush(page);
+  const calls = await page.evaluate(async () => {
+    const L = window.__logic; let n = 0; const o = LayersCore.spreadPlaneTotal; LayersCore.spreadPlaneTotal = (...a) => { n++; return o(...a); };
+    try {
+      for (let i = 1; i <= 6; i++) { L.setState({ yaw: i }); await new Promise((r) => setTimeout(r, 30)); } // orbit-like renders
+      const during = n;
+      L.spreadBump(); await new Promise((r) => setTimeout(r, 60)); // a frozen update recomputes once
+      return { during, after: n };
+    } finally { LayersCore.spreadPlaneTotal = o; }
+  });
+  expect(calls.during).toBe(0);
+  expect(calls.after).toBe(1);
+});
+
+test('SpreadUi_ProjectUnload_ClosesThePopover', async ({ page }) => {
+  await loaded(page, FX);
+  await openPop(page);
+  await act(page, 'unloadProject');
+  expect((await sp(page)).menu).toBe(false);
+  await expect(page.locator(POP)).toHaveCount(0);
+});
+
+for (const [key, name] of [['dark', 'Dark'], ['gray', 'Gray · 1 Grafite'], ['light', 'Bright · 1 Papel']]) {
+  test('SpreadUi_Visual_' + key + '_MatchesTheBoard', async ({ page }) => {
+    await loaded(page, FX);
+    await act(page, 'setCfg', 'theme', name);
+    await openPop(page);
+    await seg(page, 'pick').click();
+    await ck(page, 'config').click(); await settled(page, 1); await flush(page);
+    const r = await page.evaluate((b) => {
+      const pop = document.querySelector('[data-spread-pop]'), btn = document.querySelector(b), cs = getComputedStyle(pop), bs = getComputedStyle(btn);
+      const probe = document.createElement('i'); const color = (v) => { probe.style.color = v; document.body.appendChild(probe); const c = getComputedStyle(probe).color; probe.remove(); return c; };
+      const rect = pop.getBoundingClientRect(), par = pop.offsetParent.getBoundingClientRect(), sep = btn.previousElementSibling;
+      return {
+        w: rect.width, right: par.right - rect.right, bottom: par.bottom - rect.bottom, pos: cs.position, bg: cs.backgroundColor, bgTok: color('var(--bg2)'), border: cs.borderTopColor, borderTok: color('var(--line1)'), radius: cs.borderTopLeftRadius, pad: cs.paddingTop + ' ' + cs.paddingLeft,
+        btnBorder: bs.borderTopColor, selTok: color('var(--sel)'), btnColor: bs.color, btnFont: bs.fontFamily, btnWeight: bs.fontWeight, sepW: getComputedStyle(sep).width, sepBg: getComputedStyle(sep).backgroundColor, line1Tok: color('var(--line1)'),
+        title: pop.firstElementChild.textContent,
+      };
+    }, BTN);
+    expect(r.pos).toBe('absolute');
+    expect(r.w).toBeCloseTo(176, 0);
+    expect(r.right).toBeCloseTo(10, 0);
+    expect(r.bottom).toBeCloseTo(52, 0);
+    expect(r.bg).toBe(r.bgTok); expect(r.border).toBe(r.borderTok); expect(r.radius).toBe('6px'); expect(r.pad).toBe('7px 8px');
+    expect(r.btnBorder).toBe(r.selTok); expect(r.btnColor).toBe(r.selTok); expect(r.btnFont).toMatch(/JetBrains Mono/); expect(r.btnWeight).toBe('700');
+    expect(r.sepW).toBe('1px'); expect(r.sepBg).toBe(r.line1Tok); // 1px separator before the button
+    expect(r.title).toBe('Espalhar layouts');
+    await page.evaluate(() => { clearTimeout(window.__logic.toastT); window.__logic.setState({ toast: null }); }); // the load toast would cover the popover
+    await flush(page);
+    await page.screenshot({ path: 'test-results/spread-ui/popover-' + key + '.png' });
+  });
+}
