@@ -3719,10 +3719,36 @@ describe('LayoutsSnippet', () => {
     expect(s.layouts[0]).toEqual({ id: 'main', name: 'App', mock: 'main.html', states: man.states });
     expect(s.layouts.slice(1).every((l) => !l.states)).toBe(true);
   });
+
+  it('SoStatesSemMockNoTopo_MainImplicitoLevaMockEStatesEPreservaAoColar', () => {
+    const man = { name: 'App', states: [{ name: 's1', mock: 'a.html' }, { name: 's2', mock: 'b.html' }] };
+    const files = [
+      { path: 'a.html', kind: 'html', text: COV_MAIN },
+      { path: 'b.html', kind: 'html', text: COV_CONFIG },
+      { path: 'other.html', kind: 'html', text: COV_REPLAY }
+    ];
+    const s = snip(man, files, { 'a.html': COV_MAIN, 'b.html': COV_CONFIG });
+    expect(s.layouts.map((l) => l.id)).toEqual(['main', 'other']);
+    expect(s.layouts[0]).toEqual({ id: 'main', name: 'App', mock: 'a.html', states: man.states });
+    expect(s.added).toBe(1);
+    const pasted = core.projectLayouts({ layouts: s.layouts });
+    expect(pasted.map((l) => l.id)).toEqual(['main', 'other']);
+    expect(pasted[0].states.map((x) => x.mock)).toEqual(['a.html', 'b.html']);
+  });
 });
 
 describe('SuggestLayouts', () => {
   const run = (man, files, mocks) => core.suggestLayouts(core.coverageModel({ man, files, mocks }), man, files);
+
+  it('IdDeclaradoInvalidoComMockVazio_SugestaoNaoReusaOId', () => {
+    const man = { name: 'App', mock: 'main.html', layouts: [{ id: 'other', mock: '' }] };
+    const files = [
+      { path: 'main.html', kind: 'html', text: COV_MAIN },
+      { path: 'other.html', kind: 'html', text: COV_CONFIG }
+    ];
+    const out = run(man, files, { 'main.html': COV_MAIN });
+    expect(out.map((l) => l.id)).toEqual(['main', 'other-2']);
+  });
 
   it('SemLayouts_MainEDuasTelas', () => {
     const man = { name: 'App', mock: 'main.html' };
