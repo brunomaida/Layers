@@ -3882,6 +3882,23 @@ describe('SpreadOffsets', () => {
     expect(core.spreadOffsets(0, 1000, 40)).toEqual([]);
     expect(core.spreadOffsets(1, 1000, 40)).toEqual([0]);
   });
+
+  it('SpreadOffsets_LarguraInvalida_ResultadoFinito', () => {
+    expect(core.spreadOffsets(2, NaN, 50)).toEqual([0, 0]);
+    expect(core.spreadOffsets(2, -5, 50)).toEqual([0, 0]);
+    expect(core.spreadOffsets(2, Infinity, 50)).toEqual([0, 0]);
+  });
+
+  it('SpreadOffsets_LarguraEnorme_NaoTransbordaParaInfinity', () => {
+    const out = core.spreadOffsets(2, 1e308, 100);
+    expect(out).toHaveLength(2);
+    expect(out.every(Number.isFinite)).toBe(true);
+  });
+
+  it('SpreadOffsets_DistNaNOuString_NaNViraZeroStringNumericaVale', () => {
+    expect(core.spreadOffsets(2, 1000, NaN)).toEqual([0, 1000]);
+    expect(core.spreadOffsets(2, 1000, '50')).toEqual([0, 1500]);
+  });
 });
 
 describe('LodNodes', () => {
@@ -3906,6 +3923,13 @@ describe('LodNodes', () => {
     const out = core.lodNodes(nodes, 1);
     expect(out).not.toBe(nodes);
     expect(JSON.stringify(nodes)).toBe(snap);
+  });
+
+  it('LodNodes_Resultado_MesmasReferenciasDosNos', () => {
+    const out = core.lodNodes(nodes, 1);
+    expect(out[0]).toBe(nodes[0]);
+    expect(out[1]).toBe(nodes[1]);
+    expect(out[2]).toBe(nodes[3]);
   });
 
   it('LodNodes_EntradaInvalida_RetornaVazio', () => {
@@ -3958,5 +3982,29 @@ describe('SpreadSessionEntry', () => {
   it('SpreadSessionEntry_Retorno_NaoCompartilhaPicked', () => {
     const out = core.spreadSessionEntry(on, 2);
     expect(out.picked).not.toBe(on.picked);
+  });
+
+  it('SpreadSessionEntry_ConCam_PreservaCam', () => {
+    const withCam = { on: true, mode: 'all', picked: [], dist: 10, cam: { x: 5, y: -3, z: 0.5 } };
+    const out = core.spreadSessionEntry(withCam, 2);
+    expect(out.cam).toEqual({ x: 5, y: -3, z: 0.5 });
+    expect(out.cam).not.toBe(withCam.cam);
+  });
+
+  it('SpreadSessionEntry_ModoDesconhecido_ViraPick', () => {
+    expect(core.spreadSessionEntry({ on: true, mode: 'bogus', picked: [], dist: 0 }, 2).mode).toBe('pick');
+    expect(core.spreadSessionEntry({ on: true, picked: [], dist: 0 }, 2).mode).toBe('pick');
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', picked: [], dist: 0 }, 2).mode).toBe('all');
+  });
+
+  it('SpreadSessionEntry_Dist_ClampadaENaNViraZero', () => {
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', dist: 250 }, 2).dist).toBe(100);
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', dist: -4 }, 2).dist).toBe(0);
+    expect(core.spreadSessionEntry({ on: true, mode: 'all', dist: NaN }, 2).dist).toBe(0);
+  });
+
+  it('SpreadSessionEntry_ContagemInvalida_Null', () => {
+    expect(core.spreadSessionEntry(on, NaN)).toBeNull();
+    expect(core.spreadSessionEntry(on, undefined)).toBeNull();
   });
 });
