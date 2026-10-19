@@ -9,7 +9,7 @@ adr: none
 - Só o ativo edita; edição, undo e watch entre layouts ficam na S9.1d.
 
 ### Tests
-- Vitest: 644 testes (44 novos). Playwright: `spread` (99 testes) e os orçamentos do Espalhar em `perf`.
+- Vitest: 644 testes (44 novos). Playwright: `spread` (106 testes) e os orçamentos do Espalhar em `perf`.
 
 ### Perf
-- measured — 2026-10-19: em Node (`npm run bench`), `overviewFit` de 8 páginas 1,6 µs e `lodNodes` de 1.500 nós 3,7 µs; no Chromium (e2e), ligar com 3 layouts 373 ms (orçamento 746), órbita de 3 páginas 17,6 ms (36), pior caso de 3.303 planos 99 ms, ~10 fps (198), arrasto ligado 19,5 contra 20,8 ms desligado. Desligado, nada muda.
+- measured — 2026-10-19: em Node (`npm run bench`), `overviewFit` de 8 páginas 1,6 µs e `lodNodes` de 1.500 nós 3,7 µs; no Chromium (e2e), ligar com 3 layouts 373 ms (orçamento 746), órbita de 3 páginas 17,6 ms (36), pior caso de 3.303 planos 99 ms, ~10 fps (198), órbita em `main` pesado ligado 19,5 contra 20,8 ms desligado (a visão geral desenha menor; o custo de `scene()` fica em `sceneMsPerCall`). Desligado, nada muda.

@@ -2739,7 +2739,7 @@
             "title": "2026-10-17-s9-1-layouts-newlogic.md)"
           }
         ],
-        "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo",
+        "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo. Acompanhamento do Espalhar (S9.1c): a entrada cheia congelada não tem teto e os `LodPlane` não têm culling nem agrupamento por `z` no arrasto; um total abaixo de 1.500 com entrada cheia (ex.: 700 + 700) não foi medido e pode cair abaixo de 50 fps sem aviso: desenhar a cheia congelada como LOD quando o total passar de `PLANES_MAX`, agrupar os `LodPlane` por `z` no arrasto e medir um caso de ~1.400 planos",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
