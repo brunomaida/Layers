@@ -1772,14 +1772,14 @@ class Component extends DCLogic {
     if (!done) return out;
     const C = LayersCore.COVERAGE, m = c.model, M = m.models, N = m.regions.length, v = c.verdict, ROWS = 200;
     const fmt = n => n.toLocaleString('pt-BR'), pct = x => x === null ? '—' : String(Math.round(x * 100)), pcs = x => x === null ? '—' : Math.round(x * 100) + '%', reg = x => x.cobReg === null ? 0 : x.cobReg;
-    const bm = reg(M.monoStates) > reg(M.mono) ? M.monoStates : M.mono, best = Math.round(reg(bm) * 100), gain = Math.round(v.gainPp), mono = Math.round(C.MONO_MIN * 100), gmin = Math.round(C.GAIN_MIN * 100);
+    const bm = reg(M.monoStates) > reg(M.mono) ? M.monoStates : M.mono, best = Math.round(reg(bm) * 100), bestLo = Math.floor(reg(bm) * 100 + 1e-9), gain = Math.round(v.gainPp), gainLo = Math.floor(v.gainPp + 1e-9), mono = Math.round(C.MONO_MIN * 100), gmin = Math.round(C.GAIN_MIN * 100);
     const bar = (label, x, color) => ({ label, pct: pct(x.cobReg) + ' · ' + pct(x.cobEl), color: N ? color : 'var(--fg3)', hasBar: N > 0, w: Math.round(reg(x) * 100) + '%', sub: x.visible.length + '/' + N + ' regiões · ' + pcs(x.cobEl) + ' elem. · máx. ' + fmt(x.maxPlanes) + ' planos' });
     let rule, explain = '', note = '';
     if (v.rule === 0) { rule = 'regra 0 · nenhuma região detectada'; note = 'Tabela vazia: docs/, test/, e2e/, fixtures/, bench/, tools/, vendor/ e *.dc.html ficam fora do escopo. Sem trecho.'; }
     else if (v.rule === 2) { rule = 'regra 2 · ' + best + '% ≥ ' + mono + '% e ' + fmt(bm.maxPlanes) + ' ≤ ' + fmt(C.PLANES_MAX) + ' planos'; note = 'Sem trecho layouts nem Copiar: o manifesto atual já cobre o app.'; }
     else if (v.rule === 4) { rule = 'regra 4 · ' + fmt(bm.maxPlanes) + ' planos (> ' + fmt(C.PLANES_MAX) + ')'; explain = 'Cobertura ' + best + '% ≥ ' + mono + '%, mas um layout passa do limite do orbit.'; }
-    else if (v.verdict === 'Múltiplos layouts') { rule = 'regra 3 · ganho ' + (gain >= 0 ? '+' : '') + gain + ' p.p. (≥ ' + gmin + ')'; explain = 'Melhor monovisual ' + best + '% < ' + mono + '%; layouts somam ' + gain + ' p.p.'; }
-    else { rule = 'regra 3 · ganho ' + (gain >= 0 ? '+' : '') + gain + ' p.p. (< ' + gmin + ')'; note = 'Melhor monovisual ' + best + '% < ' + mono + '%, mas layouts somam pouco. Sem trecho.'; }
+    else if (v.verdict === 'Múltiplos layouts') { rule = 'regra 3 · ganho ' + (gain >= 0 ? '+' : '') + gain + ' p.p. (≥ ' + gmin + ')'; explain = 'Melhor monovisual ' + bestLo + '% < ' + mono + '%; layouts somam ' + gain + ' p.p.'; }
+    else { rule = 'regra 3 · ganho ' + (gainLo >= 0 ? '+' : '') + gainLo + ' p.p. (< ' + gmin + ')'; note = 'Melhor monovisual ' + bestLo + '% < ' + mono + '%, mas layouts somam pouco. Sem trecho.'; }
     const code = t => ({ t, font: "500 calc(10px*var(--fs))/1.4 'JetBrains Mono',monospace", color: 'var(--fg1)' }), txt = t => ({ t, font: 'inherit', color: 'inherit' });
     const partial = m.confidence === 'parcial' || !!c.capped, lowConf = m.confidence === 'baixa' || m.regions.some(r => r.lowConf);
     const warns = [].concat(
@@ -1791,7 +1791,7 @@ class Component extends DCLogic {
     const vis = [M.mono, M.monoStates, M.multi].map(x => new Set(x.visible)), yes = b => b ? '✓' : '–', col = b => b ? 'var(--ok)' : 'var(--fg3)', tot = x => pct(x.cobReg) + '·' + pct(x.cobEl);
     const rows = m.regions.slice(0, ROWS).map(r => { const a = vis[0].has(r.key), b = vis[1].has(r.key), d = vis[2].has(r.key); return { key: r.key, kind: r.kind, el: r.el === null ? '—' : String(r.el), m1: yes(a), c1: col(a), m2: yes(b), c2: col(b), m3: yes(d), c3: col(d) }; });
     const sel = v.rule !== 0;
-    return { ...out, covSub: pname + ' · ' + N + (N === 1 ? ' região' : ' regiões'), covPartial: partial, covLowConf: lowConf,
+    return { ...out, covSub: (N ? pname + ' · ' : '') + N + (N === 1 ? ' região' : ' regiões'), covPartial: partial, covLowConf: lowConf,
       covBars: [bar('Monovisual', M.mono, 'var(--fg3)'), bar('Monovisual + states', M.monoStates, 'var(--acc)'), bar('Múltiplos layouts', M.multi, 'var(--sel)')],
       covCols: N ? '240px minmax(0,1fr)' : 'minmax(0,1fr)', covHasRegions: N > 0,
       covVerdict: v.verdict, covSplit: !!v.split, covRule: rule, covExplain: explain, covExplainOn: !!explain, covNote: note, covNoteOn: !!note,
