@@ -2157,7 +2157,7 @@ class Component extends DCLogic {
     this.normalCam = this.camOf(s); this.normalCamOwner = s.project.layoutId; this.setState({ zoom: 1, panX: 0, panY: 0, focus: null }); // overview starts centred at zoom 1, orientation kept
   }
   // Camera keys to restore when Espalhar goes off (null: the overview camera never took over)
-  leaveCam() { const c = this.normalCam; this.normalCam = null; this.normalCamOwner = null; return c; }
+  leaveCam() { const c = this.normalCam, o = this.normalCamOwner, p = this.state.project; this.normalCam = null; this.normalCamOwner = null; if (!c || !p || o === p.layoutId) return c; const v = this.viewCache[LayersCore.stateMapKey(this.baseKey, p.layoutId)]; return v ? { yaw: v.yaw, tilt: v.tilt, zoom: v.zoom, panX: v.panX, panY: v.panY, focus: null } : { ...c, focus: null }; } // owner != active layout (switched while on): that layout's cached camera, else the saved one without the owner's focus (page coordinates of another layout)
   // Espalhar off without the user asking (a reload left one layout): same as spreadOn(false)
   leaveSpread() { this.clearSpread(); this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.leaveCam() }); }
   // Click on a LOD plane: the layout is resolved NOW against what is drawn now (spreadView + the frozen entry), never from the offsets/picked of render time. The node is selected after the load through switchLayout's pending view.
