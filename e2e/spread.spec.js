@@ -1595,3 +1595,20 @@ test('SpreadProject_OtherProjectOverALiveEspalhar_StartsOnTheDefaultCamera', asy
   expect(r).toEqual({ spread: DEFAULT_SPREAD, nc: null, owner: null, size: 0 });
   expect(await cam(page)).toMatchObject({ yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null }); // the overview camera does not leak into the new project
 });
+
+test('SpreadCamera_PickWithNothingPicked_ASwitchThatDrawsTwoPagesTakesTheOverviewCamera', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'setState', NORMAL);
+  await act(page, 'spreadOn', true, 'pick'); // nothing picked: one page, the normal camera stays live
+  expect(await page.evaluate(() => window.__logic.normalCam)).toBeNull();
+  await page.locator('[data-layout-chip="config"]').click(); // the layout left behind joins the pick: two pages are drawn from now on
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page); await flush(page);
+  expect((await sv(page)).ids).toEqual(['main', 'config']);
+  expect(await cam(page)).toMatchObject({ yaw: NORMAL.yaw, tilt: NORMAL.tilt, zoom: 1, panX: 0, panY: 0, focus: null });
+  expect(await page.evaluate(() => ({ nc: window.__logic.normalCam, owner: window.__logic.normalCamOwner }))).toMatchObject({ nc: NORMAL, owner: 'main' });
+  await act(page, 'setState', { yaw: -30, tilt: 22, zoom: 3.1, panX: 90, panY: 40 }); // orbit and zoom the overview
+  expect(await page.evaluate(() => window.__logic.sessionSnapshot().camera)).toMatchObject({ zoom: NORMAL.zoom, panX: NORMAL.panX, panY: NORMAL.panY }); // never the overview camera
+  await act(page, 'spreadOn', false);
+  expect(await cam(page)).toMatchObject(NORMAL);
+});
