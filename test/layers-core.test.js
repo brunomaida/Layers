@@ -3401,6 +3401,24 @@ describe('HtmlRegionsHardening', () => {
     expect(() => core.htmlRegions(text)).not.toThrow();
     expect(performance.now() - t0).toBeLessThan(500);
   });
+
+  it('FechamentoSemAbertura_LinearEmTempo', () => {
+    const text = '<body>' + '<div>'.repeat(80000) + '</span>'.repeat(80000) + '</body>';
+    const t0 = performance.now();
+    const r = core.htmlRegions(text);
+    expect(performance.now() - t0).toBeLessThan(1000);
+    expect(r.nodes).toBe(80000);
+  });
+
+  it('FechamentoSemAbertura_SaidaIgualASemOtimizacao', () => {
+    const run = (t) => { const r = core.htmlRegions(t); return { nodes: r.nodes, visibleNodes: r.visibleNodes, rootEl: r.rootEl, tokens: r.tokens, regions: r.regions }; };
+    expect(run('<body><div><p>a</span><i>b</i></p></div></body>')).toEqual({ nodes: 3, visibleNodes: 3, rootEl: 3, tokens: {}, regions: [] });
+    expect(run('<body><div id="a"><span></div><p hidden>x</p></body>')).toEqual({ nodes: 3, visibleNodes: 2, rootEl: 3, tokens: { 'div#a': false }, regions: [] });
+    expect(run('<body><div hidden><b><i></b><u>q</u></i></div><section>y</section></body>')).toEqual({ nodes: 5, visibleNodes: 1, rootEl: 5, tokens: {}, regions: [] });
+    expect(run('<body><div><div hidden></span></div><dialog id="d"><p></div></p></dialog></body>')).toEqual({
+      nodes: 4, visibleNodes: 1, rootEl: 2, tokens: { 'dialog#d': true }, regions: [{ sel: 'dialog#d', kind: 'diálogo', el: 2, hidden: true }]
+    });
+  });
 });
 
 describe('ScanScriptMarkersHardening', () => {
