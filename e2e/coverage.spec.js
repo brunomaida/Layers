@@ -125,6 +125,21 @@ test('Coverage_HttpFixture_ReportsPartial', async ({ page }) => {
   expect(c.model.confidence).toBe('parcial');
   await expect(page.getByText('cobertura parcial', { exact: true })).toBeVisible();
   await expect(page.getByText('Não foi possível analisar.')).toHaveCount(0);
+  // spec decision 6: without a listing only the declared mocks are analyzed, so the model is never empty here
+  expect(c.model.regions.length).toBeGreaterThan(0);
+  expect(c.verdict.rule).not.toBe(0);
+  expect(c.verdict.verdict).not.toBe('Indeterminado');
+});
+
+test('Coverage_HttpSingleScreenFixture_VerdictMonovisual', async ({ page }) => {
+  await page.goto('/?layers=fixtures/traval/');
+  await readNodes(page);
+  await act(page);
+  await openCoverage(page);
+  const c = await done(page);
+  expect(c.model.confidence).toBe('parcial');
+  expect(c.model.regions.length).toBeGreaterThan(0);
+  expect(c.verdict.verdict).toBe('Monovisual');
 });
 
 test('Coverage_Load_DoesNotScan', async ({ page }) => {

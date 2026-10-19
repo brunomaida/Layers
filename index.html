@@ -1745,11 +1745,15 @@ class Component extends DCLogic {
         ({ files, capped } = await this.collectProjectFiles(dir, new Set(['html', 'css', 'script']), new Set(LayersCore.COVERAGE.SKIP_DIRS), baseDir));
       } else if (zip) {
         ({ files, capped } = this.collectZipFiles(zip, baseDir));
-      } else partial = true;
+      } else partial = true; // no listing (GitHub, HTTP fixture): only the declared mocks and styles are analyzed (spec decision 6)
       const layouts = LayersCore.projectLayouts(man), mocks = {};
       const names = []; layouts.forEach(l => (l.states.length ? l.states.map(s => s.mock) : [l.mock]).forEach(m => { if (m && !names.includes(m)) names.push(m); }));
       // readBytes, not readText: readText would refresh this.mtimes and mask the external-edit guard of writeText
       for (const n of names) { try { mocks[n] = new TextDecoder().decode(await this.readBytes(P(n))); } catch (e) { /* unreadable mock = absent */ } }
+      if (partial) {
+        for (const n of names) if (typeof mocks[n] === 'string') files.push({ kind: 'html', path: P(n), text: mocks[n] });
+        for (const f of Array.isArray(man.styles) ? man.styles : []) { try { files.push({ kind: 'css', path: P(f), text: new TextDecoder().decode(await this.readBytes(P(f))) }); } catch (e) { /* unreadable style = absent */ } }
+      }
       const cur = layouts.find(l => l.id === proj.layoutId) || layouts[0], st = cur.states.find(s => s.name === proj.stateName) || null;
       const mounted = st ? st.mock : cur.mock;
       const planes = {}; if (mounted) planes[mounted] = this.state.nodes.length;
