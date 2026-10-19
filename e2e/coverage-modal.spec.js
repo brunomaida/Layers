@@ -76,7 +76,7 @@ test('Coverage_OpenFromMenu_ShowsRunningThenVerdictAndSnippet', async ({ page, c
   await page.getByRole('button', { name: 'Copiar' }).click();
   await expect(page.getByText('Trecho layouts copiado.')).toBeVisible();
   const clip = await page.evaluate(() => navigator.clipboard.readText());
-  expect(clip.replace(/\s+/g, '')).toBe(snippet.replace(/\s+/g, '')); // the Windows clipboard pads line ends
+  expect(clip.replace(/\r\n/g, '\n')).toBe(snippet); // the Windows clipboard turns \n into \r\n
 });
 
 test('Coverage_TemplateData_IsSharedWhenClosedAndCachedPerResult', async ({ page }) => {
@@ -198,11 +198,12 @@ test('Coverage_Rule0_ShowsRegionCountOnlyAndNoSnippet', async ({ page }) => {
 
 test('Coverage_Rule2_ShowsMonovisualCopyAndNoSnippet', async ({ page }) => {
   await connect(page);
-  await synth(page, { n: 20, mono: [0.8, 10], monoStates: [0.9, 640], multi: [0.95, 700], verdict: { verdict: 'Monovisual', rule: 2, split: false, gainPp: 5 } });
+  await synth(page, { n: 20, mono: [0.8, 10], monoStates: [0.9, 640], multi: [0.95, 700], verdict: { verdict: 'Monovisual', rule: 2, split: false, gainPp: 5 }, suggestion: [{ id: 'main', name: 'Main', mock: 'index.html' }] });
   await expect(page.getByText('Demo · 20 regiões')).toBeVisible();
   await expect(page.getByText('regra 2 · 90% ≥ 85% e 640 ≤ 1.500 planos')).toBeVisible();
   await expect(page.getByText('Sem trecho layouts nem Copiar', { exact: false })).toBeVisible();
   await expect(page.getByText('dividir', { exact: true })).toHaveCount(0);
+  await expect(page.locator('pre')).toHaveCount(0); // a non-empty suggestion must still not show the snippet under rule 2
   await expect(page.getByRole('button', { name: 'Copiar' })).toHaveCount(0);
 });
 

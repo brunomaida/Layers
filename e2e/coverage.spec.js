@@ -70,7 +70,9 @@ test('Coverage_Menu_ShowsThreeBarsAndMultiVerdict', async ({ page }) => {
   await expect(page.getByText('Monovisual', { exact: true })).toHaveCount(1);
   await expect(page.getByText('Monovisual + states', { exact: true })).toHaveCount(1);
   await expect(page.getByText('Múltiplos layouts', { exact: true })).toHaveCount(2); // third bar + verdict
-  await expect(page.getByText(/^regra 3 · ganho \+\d+ p\.p\. \(≥ 15\)$/)).toBeVisible();
+  await expect(page.getByText('regra 3 · ganho +29 p.p. (≥ 15)', { exact: true })).toBeVisible(); // deterministic fixture: gain 28.57
+  const kinds = c.model.regions.map((r) => r.kind);
+  for (const k of ['aba', 'diálogo', 'painel']) expect(kinds).toContain(k);
   await expect(page.getByText('Trecho layouts', { exact: false }).first()).toBeVisible();
 });
 
@@ -97,7 +99,7 @@ test('Coverage_Copy_PutsSnippetOnClipboard', async ({ page, context }) => {
   await page.getByRole('button', { name: 'Copiar' }).click();
   await expect(page.getByText('Trecho layouts copiado.')).toBeVisible();
   const clip = await page.evaluate(() => navigator.clipboard.readText());
-  expect(clip.replace(/\s+/g, '')).toBe(c.snippet.replace(/\s+/g, '')); // the Windows clipboard pads line ends
+  expect(clip.replace(/\r\n/g, '\n')).toBe(c.snippet); // the Windows clipboard turns \n into \r\n
 });
 
 test('Coverage_SingleScreenFixture_VerdictMonovisual', async ({ page }) => {
@@ -107,6 +109,7 @@ test('Coverage_SingleScreenFixture_VerdictMonovisual', async ({ page }) => {
   const c = await done(page);
   expect(c.model.regions).toHaveLength(1);
   expect(c.model.models.mono.cobReg).toBe(1);
+  expect(c.suggestion.length).toBeGreaterThan(0); // a suggestion exists here, so the missing snippet below is the rule's doing
   expect(c.verdict).toMatchObject({ verdict: 'Monovisual', rule: 2 });
   await expect(page.getByText(/^regra 2 · 100% ≥ 85%/)).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copiar' })).toHaveCount(0);
@@ -147,6 +150,9 @@ test('Coverage_ProjectSwitchDuringScan_DropsResult', async ({ page }) => {
     window.showDirectoryPicker = async () => dir;
   });
   await act(page, 'pickDir');
+  // the switch landed while the first read was still pending: otherwise the result is dropped for the wrong reason
+  expect(await page.evaluate(() => window.__reads)).toBe(0);
+  expect(await page.evaluate(() => window.__logic.state.project.name)).toBe('Other');
   await page.waitForFunction(() => window.__reads >= 1); // the old run settled
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))); // let its continuation run
   expect(await page.evaluate(() => window.__logic.state.coverage)).toBeNull();
