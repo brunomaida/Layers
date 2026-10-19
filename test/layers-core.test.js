@@ -3689,6 +3689,38 @@ describe('CoverageVerdict', () => {
   });
 });
 
+describe('LayoutsSnippet', () => {
+  const snip = (man, files, mocks) => core.layoutsSnippet(man, core.suggestLayouts(core.coverageModel({ man, files, mocks }), man, files));
+
+  it('DoisDeclaradosEUmaTelaFaltando_TrechoTrazOsTres', () => {
+    const man = { layouts: [{ id: 'main', name: 'Main', mock: 'main.html', states: [{ name: 'a', mock: 'main.html' }] }, { id: 'config', mock: 'config.html' }] };
+    const s = snip(man, covFiles(), { 'main.html': COV_MAIN, 'config.html': COV_CONFIG });
+    expect(s.layouts.map((l) => l.id)).toEqual(['main', 'config', 'replay']);
+    expect(s.layouts[0]).toBe(man.layouts[0]); // declared entries keep their own fields
+    expect(s.added).toBe(1);
+  });
+
+  it('SemLayoutsENenhumaTela_SoMainImplicitoNaoAdicionaNada', () => {
+    const files = [{ path: 'main.html', kind: 'html', text: COV_MAIN }];
+    const s = snip({ name: 'App', mock: 'main.html' }, files, { 'main.html': COV_MAIN });
+    expect(s.layouts).toEqual([{ id: 'main', name: 'App', mock: 'main.html' }]);
+    expect(s.added).toBe(0);
+  });
+
+  it('SemLayoutsComTelas_MainMaisSugeridas', () => {
+    const s = snip({ name: 'App', mock: 'main.html' }, covFiles(), { 'main.html': COV_MAIN });
+    expect(s.layouts.map((l) => l.id)).toEqual(['main', 'config', 'replay']);
+    expect(s.added).toBe(2);
+  });
+
+  it('SemLayoutsComStates_MainImplicitoLevaOsStates', () => {
+    const man = { name: 'App', mock: 'main.html', states: [{ name: 'base', mock: 'main.html' }, { name: 'aberto', mock: 'main.open.html' }] };
+    const s = snip(man, covFiles(), { 'main.html': COV_MAIN, 'main.open.html': COV_MAIN });
+    expect(s.layouts[0]).toEqual({ id: 'main', name: 'App', mock: 'main.html', states: man.states });
+    expect(s.layouts.slice(1).every((l) => !l.states)).toBe(true);
+  });
+});
+
 describe('SuggestLayouts', () => {
   const run = (man, files, mocks) => core.suggestLayouts(core.coverageModel({ man, files, mocks }), man, files);
 

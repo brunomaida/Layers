@@ -168,12 +168,12 @@ test('Coverage_MoreThan200Regions_CapsTableAndShowsPlusN', async ({ page }) => {
 });
 
 // Synthetic results (same technique as the 250-regions test): the verdict copy is a pure function of the state.
-const synth = (page, { n = 3, mono, monoStates = mono, multi, verdict, suggestion = [], snippet = '{}' }) => page.evaluate(({ n, mono, monoStates, multi, verdict, suggestion, snippet }) => {
+const synth = (page, { n = 3, mono, monoStates = mono, multi, verdict, suggestion = [], snippet = '{}', added = 0 }) => page.evaluate(({ n, mono, monoStates, multi, verdict, suggestion, snippet, added }) => {
   const regions = Array.from({ length: n }, (_, i) => ({ key: 'p' + i + '.html', kind: 'tela', name: 'p' + i, el: 3, lowConf: false }));
   const m = (x, planes) => ({ mocks: [], visible: regions.slice(0, Math.round(x * n)).map((r) => r.key), cobReg: n ? x : null, cobEl: n ? x : null, planes: {}, maxPlanes: planes });
   const model = { regions, models: { mono: m(mono[0], mono[1]), monoStates: m(monoStates[0], monoStates[1]), multi: m(multi[0], multi[1]) }, sharedStates: [], unreadable: [], estimates: {}, confidence: 'ok' };
-  window.__logic.setState({ coverage: { open: true, status: 'done', model, verdict, suggestion, snippet, capped: false } });
-}, { n, mono, monoStates, multi, verdict, suggestion, snippet });
+  window.__logic.setState({ coverage: { open: true, status: 'done', model, verdict, suggestion, snippet, added, capped: false } });
+}, { n, mono, monoStates, multi, verdict, suggestion, snippet, added });
 
 test('Coverage_Error_ShowsMessageWithoutBarsOrSnippet', async ({ page }) => {
   await connect(page);
@@ -213,6 +213,24 @@ test('Coverage_Rule4_ShowsSplitTagAndPlanesCopy', async ({ page }) => {
   await expect(page.getByText('dividir', { exact: true })).toBeVisible();
   await expect(page.getByText('regra 4 · 1.600 planos (> 1.500)')).toBeVisible();
   await expect(page.getByText('Cobertura 90% ≥ 85%, mas um layout passa do limite do orbit.')).toBeVisible();
+});
+
+test('Coverage_Rule4_OnlyTheImplicitMain_HidesSnippetAndCopy', async ({ page }) => {
+  await connect(page);
+  // no candidate screen: the snippet would be {"layouts":[main]}, which changes nothing in layers.json
+  await synth(page, { n: 20, mono: [0.9, 1600], multi: [1, 1600], verdict: { verdict: 'Múltiplos layouts', rule: 4, split: true, gainPp: 10 }, suggestion: [{ id: 'main', name: 'Main', mock: 'index.html' }], snippet: '{"layouts":[{"id":"main","name":"Main","mock":"index.html"}]}', added: 0 });
+  await expect(page.getByText('dividir', { exact: true })).toBeVisible();
+  await expect(page.getByText('Trecho layouts', { exact: false })).toHaveCount(0);
+  await expect(page.locator('pre')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Copiar' })).toHaveCount(0);
+});
+
+test('Coverage_Rule4_WithACandidateScreen_ShowsSnippetAndCopy', async ({ page }) => {
+  await connect(page);
+  const snippet = '{"layouts":[{"id":"main","name":"Main","mock":"index.html"},{"id":"other","name":"other","mock":"other.html"}]}';
+  await synth(page, { n: 20, mono: [0.9, 1600], multi: [1, 1600], verdict: { verdict: 'Múltiplos layouts', rule: 4, split: true, gainPp: 10 }, suggestion: [{ id: 'main', name: 'Main', mock: 'index.html' }, { id: 'other', name: 'other', mock: 'other.html' }], snippet, added: 1 });
+  await expect(page.locator('pre')).toHaveText(snippet);
+  await expect(page.getByRole('button', { name: 'Copiar' })).toBeVisible();
 });
 
 test('Coverage_MultiVerdictWithoutSuggestion_HidesSnippetAndCopy', async ({ page }) => {

@@ -1758,9 +1758,9 @@ class Component extends DCLogic {
       const mounted = st ? st.mock : cur.mock;
       const planes = {}; if (mounted) planes[mounted] = this.state.nodes.length;
       const model = LayersCore.coverageModel({ man, files, mocks, planes, partial });
-      const verdict = LayersCore.coverageVerdict(model), suggestion = LayersCore.suggestLayouts(model, man, files);
+      const verdict = LayersCore.coverageVerdict(model), suggestion = LayersCore.suggestLayouts(model, man, files), sn = LayersCore.layoutsSnippet(man, suggestion); // sn: declared layouts + suggested, safe to paste over the array
       if (stale()) return;
-      this.setState({ coverage: { open: true, status: 'done', model, verdict, suggestion, snippet: JSON.stringify({ layouts: suggestion }, null, 2), capped } });
+      this.setState({ coverage: { open: true, status: 'done', model, verdict, suggestion, snippet: JSON.stringify({ layouts: sn.layouts }, null, 2), added: sn.added, capped } });
     } catch (e) {
       if (stale()) return;
       this.setState({ coverage: { open: true, status: 'error', error: e.message } });
@@ -1808,7 +1808,7 @@ class Component extends DCLogic {
       covWarns: warns, covWarnOn: warns.length > 0,
       covRegCount: N + ' detectadas · até ' + ROWS + ' linhas', covRows: rows, covMoreOn: N > ROWS, covMore: '+' + (N - ROWS) + ' regiões',
       covTotEl: fmt(m.regions.reduce((a, r) => a + (r.el === null ? 0 : r.el), 0)), covTot1: tot(M.mono), covTot2: tot(M.monoStates), covTot3: tot(M.multi),
-      covSnippetOn: v.verdict === 'Múltiplos layouts' && c.suggestion.length > 0, covSnippet: c.snippet };
+      covSnippetOn: v.verdict === 'Múltiplos layouts' && c.added > 0, covSnippet: c.snippet };
     this._cov = { c, pname, v: vals }; return vals;
   }
   // Zip counterpart of collectProjectFiles: same kinds, skip rules and caps over the in-memory entries.

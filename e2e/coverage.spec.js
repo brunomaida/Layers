@@ -142,6 +142,18 @@ test('Coverage_HttpSingleScreenFixture_VerdictMonovisual', async ({ page }) => {
   expect(c.verdict.verdict).toBe('Monovisual');
 });
 
+test('Coverage_DeclaredLayouts_SnippetKeepsThemAndAddsTheMissingScreen', async ({ page }) => {
+  const other = '<!doctype html><html><body><section id="cfg"><ul class="opts"><li>x</li><li>y</li></ul><form class="f"><label>z</label></form></section></body></html>';
+  const third = '<!doctype html><html><body><nav id="nv"><a class="lk">q</a><footer class="ft"><i>r</i></footer></nav></body></html>';
+  const layouts = '{"name":"x","layouts":[{"id":"main","mock":"index.html"},{"id":"cfg","mock":"cfg.html"}]}';
+  await connectFiles(page, [['layers.json', layouts], ['index.html', PAGE], ['cfg.html', other], ['third.html', third]]);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  // pasting replaces the layouts array, so the snippet carries the declared layouts too
+  expect(JSON.parse(c.snippet).layouts.map((l) => l.id)).toEqual(['main', 'cfg', 'third']);
+  expect(c.added).toBe(1);
+});
+
 test('Coverage_Load_DoesNotScan', async ({ page }) => {
   await open(page, 'coverage-multi');
   await act(page);
