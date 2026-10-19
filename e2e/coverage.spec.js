@@ -208,11 +208,13 @@ test('Coverage_ScriptFiles_IgnoreDtsAndHiddenDirsButKeepWellKnown', async ({ pag
 });
 
 test('Coverage_MoreThan200ScriptFiles_StopsAtTheCapAndFlagsPartial', async ({ page }) => {
-  const scripts = Array.from({ length: 201 }, (_, i) => ['s/f' + i + '.js', 'var a = ' + i + ';']);
+  // every script carries the same marker, so exactly the files past the cap are missing from the model (whichever the walk reaches last)
+  const scripts = Array.from({ length: 201 }, (_, i) => ['s/f' + i + '.js', 'var a = "<dialog>"; // ' + i]);
   await connectFiles(page, [['layers.json', '{"name":"x","mock":"index.html"}'], ['index.html', PAGE], ...scripts]);
   const c = await analyze(page);
   expect(c.status).toBe('done');
   expect(c.capped).toBe(true);
+  expect(c.model.regions.filter((r) => r.key.startsWith('s/f') && r.kind === 'diálogo')).toHaveLength(200);
   await expect(page.getByText('cobertura parcial', { exact: true })).toBeVisible();
-  await expect(page.getByText('Varredura parou no teto', { exact: false })).toBeVisible();
+  await expect(page.getByText('Varredura parcial: arquivos ou tamanho acima dos tetos', { exact: false })).toBeVisible();
 });

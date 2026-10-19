@@ -162,7 +162,7 @@ test('Coverage_MoreThan200Regions_CapsTableAndShowsPlusN', async ({ page }) => {
   await expect(page.getByText('p200.html', { exact: true })).toHaveCount(0);
   await expect(page.getByText('cobertura parcial', { exact: true })).toBeVisible();
   await expect(page.getByText('confiança baixa', { exact: true })).toBeVisible();
-  await expect(page.getByText('Varredura parou no teto', { exact: false })).toBeVisible();
+  await expect(page.getByText('Varredura parcial: arquivos ou tamanho acima dos tetos', { exact: false })).toBeVisible();
   await expect(page.getByText('Mock ilegível, ignorado:', { exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Copiar' })).toHaveCount(0);
 });

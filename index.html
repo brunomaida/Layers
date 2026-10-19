@@ -1791,7 +1791,7 @@ class Component extends DCLogic {
       m.unreadable.map(p => [txt('Mock ilegível, ignorado: '), code(p)]),
       m.sharedStates.map(p => [code(p[0]), txt(' e '), code(p[1]), txt(' dividem ≥ ' + Math.round(C.SHARED_MIN * 100) + '% dos nós: contadas como states (regra 5)')]),
       m.confidence === 'parcial' ? [[txt('GitHub ou fixture: sem listagem de arquivos, só os mocks declarados foram lidos.')]] : [],
-      c.capped ? [[txt('Varredura parou no teto (' + fmt(SCAN_MAX.entries) + ' entradas ou ' + SCAN_MAX.totalBytes / 1048576 + ' MB): parte da pasta ficou fora.')]] : [],
+      c.capped ? [[txt('Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora.')]] : [], // capped covers the entries, byte and script-file caps
       lowConf ? [[txt('App renderizado por JS: regiões de marcadores em .js/.ts contam só em cob_reg (Elem. —).')]] : []).map(parts => ({ parts }));
     const vis = [M.mono, M.monoStates, M.multi].map(x => new Set(x.visible)), yes = b => b ? '✓' : '–', col = b => b ? 'var(--ok)' : 'var(--fg3)', tot = x => pct(x.cobReg) + '·' + pct(x.cobEl);
     const rows = m.regions.slice(0, ROWS).map(r => { const a = vis[0].has(r.key), b = vis[1].has(r.key), d = vis[2].has(r.key); return { key: r.key, kind: r.kind, el: r.el === null ? '—' : String(r.el), m1: yes(a), c1: col(a), m2: yes(b), c2: col(b), m3: yes(d), c3: col(d) }; });
