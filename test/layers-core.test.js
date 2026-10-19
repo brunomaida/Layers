@@ -3602,6 +3602,22 @@ describe('CoverageModelMerge', () => {
   });
 });
 
+describe('CoverageModelScale', () => {
+  it('TresMilTelasDistintas_ModeloEmTempoLimitado', () => {
+    const mock = '<body><div id="m"><p>m</p></div></body>';
+    const files = [{ path: 'main.html', kind: 'html', text: mock }];
+    for (let i = 0; i < 3000; i++) files.push({ path: 'screens/s' + i + '.html', kind: 'html', text: '<body><div id="s' + i + '" class="c' + i + '"><p class="p' + i + '">x</p><span class="q' + i + '"></span><b id="b' + i + '"></b></div></body>' });
+    const man = { mock: 'main.html' };
+    const t0 = performance.now();
+    const m = core.coverageModel({ man, files, mocks: { 'main.html': mock } });
+    const out = core.suggestLayouts(m, man, files);
+    expect(performance.now() - t0).toBeLessThan(1000); // quadratic scans took 2 s here, lookups take well under 100 ms
+    expect(m.regions).toHaveLength(3001);
+    expect(m.models.multi.cobReg).toBe(1);
+    expect(out).toHaveLength(3001);
+  });
+});
+
 describe('CoverageVerdict', () => {
   const model = (man, files, mocks, extra) => core.coverageModel({ man, files, mocks, ...extra });
 
