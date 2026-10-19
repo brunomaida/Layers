@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Implementation Report — s9-1b-cobertura-layouts</title>
+  <style>
+:root {
+  --bg:              #ffffff;
+  --bg-sidebar:      #fafafa;
+  --bg-header:       #ffffff;
+  --bg-footer:       #fafafa;
+  --bg-code:         #f4f4f5;
+  --bg-decision:     #f9f9f9;
+  --border:          #e8e8e8;
+  --border-decision: #d4d4d8;
+  --border-indent:   #e4e4e7;
+  --text:            #1c1c1e;
+  --text-muted:      #71717a;
+  --text-code:       #3f3f46;
+  --accent-active:   #1c1c1e;
+  --accent-active-bg:#f0f0f0;
+  --decision-icon:   #71717a;
+
+  --btn-approve-bg:     #f0fdf4;
+  --btn-approve-border: #bbf7d0;
+  --btn-approve-text:   #15803d;
+  --btn-decline-bg:     #fff1f2;
+  --btn-decline-border: #fecdd3;
+  --btn-decline-text:   #be123c;
+  --btn-revision-bg:    #f4f4f5;
+  --btn-revision-border:#d4d4d8;
+  --btn-revision-text:  #3f3f46;
+
+  --fs-scale:   1;
+  --fs-body:    calc(var(--fs-scale) * 17.5px);
+  --fs-sm:      calc(var(--fs-scale) * 16px);
+  --fs-xs:      calc(var(--fs-scale) * 14px);
+  --fs-code:    calc(var(--fs-scale) * 15.5px);
+  --fs-h2:      calc(var(--fs-scale) * 21px);
+  --fs-h3:      calc(var(--fs-scale) * 17.5px);
+  --fs-h4:      calc(var(--fs-scale) * 16px);
+  --fs-btn:     calc(var(--fs-scale) * 16px);
+  --fs-chip:    calc(var(--fs-scale) * 13.75px);
+  --fs-sidebar: calc(var(--fs-scale) * 16px);
+  --fs-sub-sidebar: calc(var(--fs-scale) * 15.5px);
+  --fs-label:   calc(var(--fs-scale) * 11px);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: var(--fs-body);
+  color: var(--text);
+  background: var(--bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+header {
+  min-height: 52px;
+  background: var(--bg-header);
+  border-bottom: 1px solid var(--border);
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 10px 20px;
+  flex-shrink: 0;
+  box-shadow: 0 1px 0 var(--border);
+}
+.header-left { display: flex; align-items: center; gap: 8px; min-width: 0; flex-wrap: wrap; row-gap: 2px; }
+.header-label {
+  font-weight: 700; font-size: 13px; color: var(--text-muted);
+  text-transform: uppercase; letter-spacing: 0.05em; white-space: nowrap;
+}
+.header-sep { color: #d1d5db; font-size: 18px; }
+.header-filename {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 14px; font-weight: 600; color: var(--text);
+  overflow-wrap: anywhere; white-space: normal;
+}
+.header-center { display: flex; align-items: center; gap: 8px; justify-content: center; }
+.chip {
+  font-size: var(--fs-chip); padding: 3px 11px; border-radius: 999px;
+  background: var(--bg); border: 1px solid var(--border);
+  color: var(--text-muted); white-space: nowrap;
+}
+.chip-warn { background: #f4f4f5; border-color: #d4d4d8; color: #52525b; }
+
+.body { flex: 1; display: flex; overflow: hidden; }
+
+.sidebar {
+  width: 290px; flex-shrink: 0; background: var(--bg-sidebar);
+  border-right: 1px solid var(--border); display: flex;
+  flex-direction: column; overflow-y: auto;
+}
+.sidebar-title {
+  padding: 16px 18px 8px; font-size: var(--fs-label); font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-muted);
+}
+.tree { padding: 4px 10px 16px; list-style: none; }
+.tree-row { display: flex; align-items: center; }
+.tree-toggle {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 10px; width: 22px; height: 30px; display: flex;
+  align-items: center; justify-content: center; flex-shrink: 0;
+  border-radius: 4px; transition: background 0.1s; padding: 0;
+}
+.tree-toggle:hover { background: rgba(0,0,0,0.06); }
+.tree-toggle.hidden { visibility: hidden; pointer-events: none; }
+
+.tree-item > .tree-row > a {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  padding: 5px 8px 5px 4px; border-radius: 6px; text-decoration: none;
+  color: var(--text); font-size: var(--fs-sidebar); line-height: 1.3;
+  font-weight: 500; transition: background 0.15s ease, color 0.15s ease;
+}
+.tree-item > .tree-row > a:hover { background: rgba(0,0,0,0.035); }
+.tree-item.active > .tree-row > a {
+  background: var(--accent-active-bg); color: var(--accent-active); font-weight: 600;
+}
+
+.tree-children {
+  list-style: none; padding-left: 0; margin-left: 22px;
+  border-left: 2px solid var(--border-indent); padding-left: 8px;
+  margin-top: 2px; margin-bottom: 4px;
+}
+.tree-children.collapsed { display: none; }
+.tree-children .tree-item > .tree-row > a {
+  font-size: var(--fs-sub-sidebar); color: var(--text-muted); font-weight: 400;
+}
+.tree-children .tree-item.active > .tree-row > a {
+  color: var(--accent-active); background: var(--accent-active-bg); font-weight: 500;
+}
+.tree-num {
+  font-variant-numeric: tabular-nums; color: var(--text-muted);
+  font-size: 0.9em; margin-right: 2px;
+}
+.tree-badge {
+  font-size: 11px; padding: 1px 6px; border-radius: 4px;
+  background: #f4f4f5; color: #71717a;
+  border: 1px solid #d4d4d8; margin-left: auto;
+}
+.sidebar-divider { margin: 8px 18px; border: none; border-top: 1px solid var(--border); }
+.sidebar-legend {
+  padding: 2px 18px 16px; font-size: var(--fs-xs); color: var(--text-muted);
+  display: flex; flex-direction: column; gap: 6px;
+}
+.legend-item { display: flex; align-items: center; gap: 7px; }
+
+.content { flex: 1; overflow-y: auto; min-width: 0; }
+.content-inner { max-width: 1280px; margin: 0 auto; padding: 32px 36px 24px; }
+
+.plan-preamble {
+  font-size: var(--fs-sm); color: var(--text-muted);
+  margin-bottom: 28px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+}
+.plan-preamble p { margin: 0 0 8px; }
+.plan-preamble p:last-child { margin-bottom: 0; }
+
+section.top-section { margin-bottom: 44px; scroll-margin-top: 16px; }
+
+.section-heading {
+  display: flex; align-items: center; gap: 10px; margin-bottom: 18px;
+  padding: 10px 14px; background: #f4f4f5; border-radius: 8px;
+}
+.section-heading h2 { font-size: var(--fs-h2); font-weight: 700; margin: 0; flex: 1; }
+.section-heading h3 { font-size: var(--fs-h3); font-weight: 600; margin: 0; flex: 1; }
+.section-num-badge {
+  display: inline-flex; align-items: center; justify-content: flex-start;
+  min-width: 28px; color: #1c1c1e; font-size: 19px; font-weight: 800;
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-variant-numeric: tabular-nums; letter-spacing: -0.02em;
+  flex-shrink: 0; margin-right: 4px;
+}
+
+.section-collapse {
+  background: none; border: none; color: var(--text-muted); cursor: pointer;
+  font-size: 12px; width: 22px; height: 22px; display: flex;
+  align-items: center; justify-content: center; border-radius: 4px;
+  flex-shrink: 0; transition: background 0.1s; padding: 0;
+}
+.section-collapse:hover { background: rgba(0,0,0,0.06); }
+
+.section-body {
+  display: grid; grid-template-columns: 1fr 300px; gap: 28px; align-items: start;
+}
+.section-body.collapsed { display: none; }
+.section-body.no-aside { grid-template-columns: 1fr; }
+.section-main { min-width: 0; }
+
+.section-aside { position: sticky; top: 16px; }
+.aside-label {
+  font-size: var(--fs-label); font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.07em; color: var(--text-muted); margin-bottom: 8px;
+}
+.aside-textarea {
+  width: 100%; min-height: 100px; padding: 10px 12px;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--bg-sidebar); font-size: var(--fs-sm); font-family: inherit;
+  resize: vertical; color: var(--text); line-height: 1.55;
+  transition: border-color 0.15s, background 0.15s;
+}
+.aside-textarea:focus { outline: none; border-color: #a1a1aa; background: #fff; box-shadow: 0 0 0 3px rgba(161,161,170,0.1); }
+.aside-textarea::placeholder { color: #9ca3af; }
+
+.subsections {
+  margin-top: 8px; margin-left: 20px; padding-left: 24px;
+  border-left: 2px solid var(--border-indent);
+}
+.subsections.collapsed { display: none; }
+
+section.sub-section { margin-bottom: 36px; scroll-margin-top: 16px; }
+section.sub-section .section-heading {
+  background: #fafafa; border: 1px solid var(--border);
+  margin-bottom: 12px; padding: 7px 12px;
+}
+section.sub-section .section-num-badge { font-size: 15px; color: #52525b; min-width: 36px; }
+
+h4 { font-size: var(--fs-h4); font-weight: 600; margin: 16px 0 8px; color: var(--text-muted); }
+p { margin-bottom: 12px; line-height: 1.7; }
+
+code {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: var(--fs-code); background: var(--bg-code);
+  padding: 2px 6px; border-radius: 4px; color: var(--text-code);
+}
+pre {
+  background: var(--bg-code); border: 1px solid var(--border);
+  border-radius: 8px; padding: 16px 18px; overflow-x: auto;
+  margin: 14px 0; font-size: var(--fs-code);
+}
+pre code { background: none; padding: 0; }
+
+ul, ol { padding-left: 22px; margin-bottom: 12px; }
+li { margin-bottom: 6px; line-height: 1.65; }
+
+table { width: 100%; border-collapse: collapse; margin: 14px 0; font-size: var(--fs-sm); table-layout: fixed; }
+th, td { padding: 10px 14px; border: 1px solid var(--border); text-align: left; vertical-align: top; overflow-wrap: anywhere; word-break: break-word; }
+th { background: var(--bg-sidebar); font-weight: 600; }
+tr:nth-child(even) td { background: #fafafa; }
+
+blockquote {
+  border-left: 3px solid var(--border); padding: 4px 14px;
+  color: var(--text-muted); margin: 12px 0; font-style: italic;
+}
+
+strong { font-weight: 600; }
+
+.decision-callout {
+  background: #3f3f46; border: none; border-left: 3px solid #71717a;
+  border-radius: 10px; padding: 16px 18px; margin: 18px 0;
+}
+.decision-header {
+  display: flex; align-items: center; gap: 7px; font-weight: 600;
+  font-size: var(--fs-sm); color: #f4f4f5; margin-bottom: 10px;
+}
+.decision-body {
+  font-size: var(--fs-sm); color: #d4d4d8;
+  margin-bottom: 12px; line-height: 1.65;
+}
+.decision-body ul { padding-left: 20px; }
+.decision-body strong { color: #ffffff; }
+.decision-body code { background: #52525b; color: #f4f4f5; }
+.decision-callout textarea {
+  width: 100%; min-height: 56px; padding: 9px 12px;
+  border: 1px solid #52525b; border-radius: 8px; background: #52525b;
+  font-size: var(--fs-sm); font-family: inherit; resize: vertical;
+  color: #f4f4f5; line-height: 1.55;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.decision-callout textarea:focus {
+  outline: none; border-color: #a1a1aa;
+  box-shadow: 0 0 0 3px rgba(161,161,170,0.2);
+}
+.decision-callout textarea::placeholder { color: #a1a1aa; }
+
+footer {
+  background: var(--bg-footer); border-top: 1px solid var(--border);
+  padding: 18px 28px 20px; flex-shrink: 0;
+  display: flex; flex-direction: column; gap: 14px;
+}
+.footer-notes-label {
+  font-size: var(--fs-xs); font-weight: 600;
+  color: var(--text-muted); margin-bottom: 8px;
+}
+.footer-notes-textarea {
+  width: 100%; min-height: 80px; padding: 10px 14px;
+  border: 1px solid var(--border); border-radius: 8px;
+  font-size: var(--fs-sm); font-family: inherit; color: var(--text);
+  background: var(--bg); resize: vertical; line-height: 1.6;
+}
+.footer-notes-textarea:focus { outline: none; border-color: #a1a1aa; box-shadow: 0 0 0 3px rgba(161,161,170,0.1); transition: border-color 0.15s, box-shadow 0.15s; }
+.footer-actions { display: flex; justify-content: center; gap: 14px; }
+
+button {
+  padding: 0 24px; height: 44px; border: 1px solid transparent;
+  border-radius: 10px; font-size: var(--fs-btn); font-weight: 500;
+  cursor: pointer; display: flex; align-items: center; gap: 7px;
+  transition: background 0.15s ease, border-color 0.15s ease,
+              box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s;
+}
+button:active:not(:disabled) { transform: scale(0.98); }
+button:disabled { opacity: 0.4; cursor: default; }
+
+.btn-approve {
+  background: var(--btn-approve-bg); border-color: var(--btn-approve-border);
+  color: var(--btn-approve-text); min-width: 144px; justify-content: center;
+}
+.btn-approve:hover:not(:disabled) { background: #dcfce7; box-shadow: 0 1px 4px rgba(21,128,61,0.12); }
+.btn-decline {
+  background: var(--btn-decline-bg); border-color: var(--btn-decline-border);
+  color: var(--btn-decline-text); min-width: 144px; justify-content: center;
+}
+.btn-decline:hover:not(:disabled) { background: #ffe4e6; box-shadow: 0 1px 4px rgba(190,18,60,0.12); }
+.btn-revision {
+  background: var(--btn-revision-bg); border-color: var(--btn-revision-border);
+  color: var(--btn-revision-text); min-width: 184px; justify-content: center;
+}
+.btn-revision:hover:not(:disabled) { background: #ececec; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+.decision-banner {
+  display: none; position: fixed; top: 60px; left: 50%;
+  transform: translateX(-50%); color: white; padding: 12px 28px;
+  border-radius: 9px; font-size: var(--fs-sm); font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.2); z-index: 200;
+  animation: slideDown 0.2s ease; white-space: nowrap;
+}
+@keyframes slideDown {
+  from { opacity: 0; top: 52px; }
+  to   { opacity: 1; top: 60px; }
+}
+
+.delta-pos { color: #be123c; font-weight: 600; }
+.delta-neg { color: #15803d; font-weight: 600; }
+.delta-zero { color: var(--text-muted); }
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #e4e4e7; border-radius: 3px; transition: background 0.15s; }
+::-webkit-scrollbar-thumb:hover { background: #a1a1aa; }
+
+.header-right {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px; min-width: 0;
+}
+.header-json-name {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', monospace;
+  font-size: 12px; color: var(--text-muted);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 230px;
+}
+.btn-copy-json {
+  background: none; border: 1px solid var(--border); border-radius: 6px;
+  padding: 0 9px; height: 26px; font-size: 12px; font-weight: 500;
+  cursor: pointer; color: var(--text-muted); flex-shrink: 0;
+  display: flex; align-items: center; gap: 5px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+.btn-copy-json:hover:not(:disabled) { background: var(--accent-active-bg); color: var(--text); border-color: #a1a1aa; }
+.btn-copy-json.copied { color: #15803d; border-color: #bbf7d0; background: #f0fdf4; }
+
+.mobile-toolbar { display: none; }
+
+@media (max-width: 768px) {
+  /* App-shell (fixed header/toolbar + internal scroll pane) wastes too much
+     of a phone's vertical space when the header wraps to 2-3 rows. Switch to
+     a normal scrolling document so header/toolbar scroll away with content
+     instead of staying pinned. */
+  body { height: auto; overflow: visible; }
+  .body { overflow: visible; }
+  .content { overflow: visible; }
+
+  .sidebar { display: none; }
+  .content-inner { padding: 16px 14px 20px; max-width: 100%; }
+  .section-body, .section-body.no-aside { grid-template-columns: 1fr; gap: 16px; }
+  .section-aside { position: static; }
+  header { grid-template-columns: 1fr; height: auto; row-gap: 6px; padding: 10px 14px; }
+  .header-center { flex-wrap: wrap; justify-content: flex-start; }
+
+  .section-heading {
+    background: none; border-radius: 0; padding: 8px 0; margin-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  section.sub-section .section-heading {
+    background: none; border: none; padding: 6px 0; margin-bottom: 10px;
+  }
+
+  .mobile-toolbar {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px; border-bottom: 1px solid var(--border);
+    background: var(--bg-header); flex-shrink: 0;
+  }
+  .mt-group { display: flex; gap: 4px; }
+  .mt-group button {
+    height: 26px; padding: 0 10px; font-size: 12px; min-width: 0;
+    border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-muted);
+  }
+  .mt-group button.on { background: var(--accent-active-bg); color: var(--accent-active); font-weight: 600; }
+
+  body.density-compact .content-inner { padding: 10px 12px 16px; }
+  body.density-compact section.top-section { margin-bottom: 26px; }
+  body.density-compact section.sub-section { margin-bottom: 20px; }
+  body.density-compact p { margin-bottom: 8px; line-height: 1.5; }
+  body.density-compact li { margin-bottom: 3px; line-height: 1.45; }
+  body.density-compact .section-heading { padding: 4px 0; margin-bottom: 8px; }
+  body.density-compact th, body.density-compact td { padding: 6px 8px; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <span class="header-label">Implementation Report</span>
+    <span class="header-sep">›</span>
+    <span class="header-filename">s9-1b-cobertura-layouts</span>
+  </div>
+  <div class="header-center">
+    <span class="chip">2026-10-19</span>
+    <span class="chip">6 sections</span>
+    <span class="chip">35 commits</span>
+    <span class="chip chip-warn">final</span>
+  </div>
+  <div></div>
+</header>
+
+<div class="body">
+
+  <nav class="sidebar">
+    <div class="sidebar-title">Structure</div>
+    <ul class="tree">
+<li class="tree-item" data-section="sec-1" id="tree-sec-1">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-1"><span class="tree-num">1.</span> Resumo</a>
+  </div>
+</li>
+<li class="tree-item" data-section="sec-2" id="tree-sec-2">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-2')">▼</button>
+    <a href="#sec-2"><span class="tree-num">2.</span> Mudanças</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-2-children">
+    <li class="tree-item" data-section="sec-2-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-1"><span class="tree-num">2.1</span> Added (13)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-2-2">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-2"><span class="tree-num">2.2</span> Changed (18)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-2-3">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-2-3"><span class="tree-num">2.3</span> Changelog fragment</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-3" id="tree-sec-3">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-3')">▼</button>
+    <a href="#sec-3"><span class="tree-num">3.</span> Arquivos tocados</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-3-children">
+    <li class="tree-item" data-section="sec-3-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-1"><span class="tree-num">3.1</span> src (8)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-2">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-2"><span class="tree-num">3.2</span> test (3)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-3">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-3"><span class="tree-num">3.3</span> doc (14)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-4">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-4"><span class="tree-num">3.4</span> config (1)</a></div>
+    </li>
+    <li class="tree-item" data-section="sec-3-5">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-3-5"><span class="tree-num">3.5</span> other (5)</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-4" id="tree-sec-4">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-4"><span class="tree-num">4.</span> Testes</a>
+  </div>
+</li>
+<li class="tree-item" data-section="sec-5" id="tree-sec-5">
+  <div class="tree-row">
+    <button class="tree-toggle" onclick="syncTree('sec-5')">▼</button>
+    <a href="#sec-5"><span class="tree-num">5.</span> Commits ↔ changelog</a>
+  </div>
+  <ul class="tree-children" id="tree-sec-5-children">
+    <li class="tree-item" data-section="sec-5-1">
+      <div class="tree-row"><button class="tree-toggle hidden">▼</button>
+        <a href="#sec-5-1"><span class="tree-num">5.1</span> Todos os commits</a></div>
+    </li>
+  </ul>
+</li>
+<li class="tree-item" data-section="sec-6" id="tree-sec-6">
+  <div class="tree-row">
+    <button class="tree-toggle hidden">▼</button>
+    <a href="#sec-6"><span class="tree-num">6.</span> Custo (tokens + tempo)</a>
+  </div>
+</li>
+    </ul>
+  </nav>
+
+  <div class="content" id="content">
+    <div class="content-inner">
+<section class="top-section" id="sec-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-1-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">1</span> Resumo</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-1-body">
+    <div class="section-main"><p>Projetos ▾ › Analisar cobertura: varre o repositório sem rodar o app e abre um modal com a cobertura de Monovisual, Monovisual + states e Múltiplos layouts (<code>cob_reg · cob_el</code>, planos), a regra de decisão, a tabela de regiões e, com o veredito Múltiplos layouts, o trecho <code>layouts</code> com Copiar. Só leitura: nada é gravado e a carga do projeto não varre.</p></div>
+  </div>
+  
+</section>
+<section class="top-section" id="sec-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-body" data-sub="sec-2-subs" data-tree="sec-2" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">2</span> Mudanças</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-2-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-2-subs"><section class="sub-section" id="sec-2-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.1</span> Added (13)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-1-body">
+    <div class="section-main"><ul><li><code>changelog.d/feature-261018-89-s9-1b-cobertura-layouts.md</code> (+14/-0, doc)</li><li><code>docs/design/ui-mock/boards/S91CoberturaModal.dc.html</code> (+322/-0, doc)</li><li><code>docs/superpowers/plans/2026-10-18-s9-1b-cobertura-modelo-painel.md</code> (+259/-0, doc)</li><li><code>docs/superpowers/specs/2026-10-18-s9-1b-modelo-de-cobertura-mono-design.md</code> (+114/-0, test)</li><li><code>e2e/autocreate.spec.js</code> (+96/-0, src)</li><li><code>e2e/coverage-modal.spec.js</code> (+254/-0, src)</li><li><code>e2e/coverage.spec.js</code> (+266/-0, src)</li><li><code>fixtures/coverage-multi/config.html</code> (+10/-0, other)</li><li><code>fixtures/coverage-multi/docs/page.html</code> (+5/-0, doc)</li><li><code>fixtures/coverage-multi/layers.json</code> (+6/-0, config)</li><li><code>fixtures/coverage-multi/main.html</code> (+16/-0, other)</li><li><code>fixtures/coverage-multi/replay.html</code> (+10/-0, other)</li><li><code>fixtures/coverage-multi/style.css</code> (+3/-0, other)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-2-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-2-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.2</span> Changed (18)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-2-body">
+    <div class="section-main"><ul><li><code>.claude/skills/layers-ui-mock/SKILL.md</code> (+1/-1, doc)</li><li><code>README.md</code> (+3/-0, doc)</li><li><code>bench/core.bench.js</code> (+6/-0, src)</li><li><code>bench/workloads.js</code> (+20/-1, src)</li><li><code>docs/ARCHITECTURE.md</code> (+93/-1, doc)</li><li><code>docs/RELEASE-CHECKLIST.md</code> (+5/-2, doc)</li><li><code>docs/_index.md</code> (+3/-2, doc)</li><li><code>docs/design/ui-mock/README.md</code> (+2/-0, doc)</li><li><code>docs/design/ui-mock/canvas.json</code> (+1/-1, doc)</li><li><code>docs/layers-json.md</code> (+4/-0, doc)</li><li><code>docs/roadmap.data.json</code> (+22/-4, doc)</li><li><code>docs/roadmap.md</code> (+1/-1, doc)</li><li><code>docs/superpowers/specs/2026-10-17-s3-5-s9-1-design-decisions.md</code> (+14/-0, test)</li><li><code>e2e/folder-helpers.js</code> (+6/-1, src)</li><li><code>e2e/perf.spec.js</code> (+36/-0, src)</li><li><code>index.html</code> (+264/-35, other)</li><li><code>lib/layers-core.js</code> (+437/-1, src)</li><li><code>test/layers-core.test.js</code> (+648/-0, test)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-2-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-2-3-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">2.3</span> Changelog fragment</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-2-3-body">
+    <div class="section-main"><p><strong>Added:</strong></p>
+<ul><li>Projetos ▾ › Analisar cobertura: varre o repositório sem rodar o app e abre um modal com a cobertura de Monovisual, Monovisual + states e Múltiplos layouts (<code>cob_reg · cob_el</code>, planos), a regra de decisão, a tabela de regiões e, com o veredito Múltiplos layouts, o trecho <code>layouts</code> com Copiar. Só leitura: nada é gravado e a carga do projeto não varre.</li><li>Pasta local e <code>.zip</code> são varridos; GitHub e fixture HTTP não listam arquivos e dão cobertura parcial. <code>.ts/.js</code> entram por regex com selo de confiança baixa.</li><li>Core puro em <code>LayersCore</code>: <code>COVERAGE</code>, <code>coverageScope</code>, <code>cssHiddenSelectors</code>, <code>htmlRegions</code>, <code>scanScriptMarkers</code>, <code>coverageModel</code>, <code>coverageVerdict</code>, <code>suggestLayouts</code>; <code>collectProjectFiles</code> extraído do <code>autoCreateLayersJson</code>; fixture <code>coverage-multi</code>.</li></ul>
+<p><strong>Tests:</strong></p>
+<ul><li>Vitest: regiões, escopo, modelo, veredito e sugestão. Playwright: <code>coverage</code> e <code>coverage-modal</code> (32 testes) e o orçamento da análise em <code>perf</code>.</li></ul>
+<p><strong>Perf:</strong></p>
+<ul><li>measured — 2026-10-19: em Node (<code>npm run bench</code>), <code>coverageModel</code> sobre 1 HTML de 1.500 tags 2,3 ms e sobre 200 HTMLs 15,6 ms; no Chromium (e2e), <code>analyzeCoverage</code> com 200 HTMLs e 1.500 tags, mediana 218 ms contra orçamento de 616 ms (<code>Coverage_Analyze_CostsUnderBudget</code>). Só roda sob demanda; o orçamento da carga não muda.</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-body" data-sub="sec-3-subs" data-tree="sec-3" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">3</span> Arquivos tocados</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-3-body">
+    <div class="section-main"></div>
+  </div>
+  <div class="subsections" id="sec-3-subs"><section class="sub-section" id="sec-3-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.1</span> src (8)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-1-body">
+    <div class="section-main"><ul><li><a href="../../../bench/core.bench.js"><code>bench/core.bench.js</code></a> — M (+6/-0)</li><li><a href="../../../bench/workloads.js"><code>bench/workloads.js</code></a> — M (+20/-1)</li><li><a href="../../../e2e/autocreate.spec.js"><code>e2e/autocreate.spec.js</code></a> — A (+96/-0)</li><li><a href="../../../e2e/coverage-modal.spec.js"><code>e2e/coverage-modal.spec.js</code></a> — A (+254/-0)</li><li><a href="../../../e2e/coverage.spec.js"><code>e2e/coverage.spec.js</code></a> — A (+266/-0)</li><li><a href="../../../e2e/folder-helpers.js"><code>e2e/folder-helpers.js</code></a> — M (+6/-1)</li><li><a href="../../../e2e/perf.spec.js"><code>e2e/perf.spec.js</code></a> — M (+36/-0)</li><li><a href="../../../lib/layers-core.js"><code>lib/layers-core.js</code></a> — M (+437/-1)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-2">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-2-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.2</span> test (3)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-2-body">
+    <div class="section-main"><ul><li><a href="../specs/2026-10-17-s3-5-s9-1-design-decisions.md"><code>docs/superpowers/specs/2026-10-17-s3-5-s9-1-design-decisions.md</code></a> — M (+14/-0)</li><li><a href="../specs/2026-10-18-s9-1b-modelo-de-cobertura-mono-design.md"><code>docs/superpowers/specs/2026-10-18-s9-1b-modelo-de-cobertura-mono-design.md</code></a> — A (+114/-0)</li><li><a href="../../../test/layers-core.test.js"><code>test/layers-core.test.js</code></a> — M (+648/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-3">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-3-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.3</span> doc (14)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-3-body">
+    <div class="section-main"><ul><li><a href="../../../.claude/skills/layers-ui-mock/SKILL.md"><code>.claude/skills/layers-ui-mock/SKILL.md</code></a> — M (+1/-1)</li><li><a href="../../../README.md"><code>README.md</code></a> — M (+3/-0)</li><li><a href="../../../changelog.d/feature-261018-89-s9-1b-cobertura-layouts.md"><code>changelog.d/feature-261018-89-s9-1b-cobertura-layouts.md</code></a> — A (+14/-0)</li><li><a href="../../ARCHITECTURE.md"><code>docs/ARCHITECTURE.md</code></a> — M (+93/-1)</li><li><a href="../../RELEASE-CHECKLIST.md"><code>docs/RELEASE-CHECKLIST.md</code></a> — M (+5/-2)</li><li><a href="../../_index.md"><code>docs/_index.md</code></a> — M (+3/-2)</li><li><a href="../../design/ui-mock/README.md"><code>docs/design/ui-mock/README.md</code></a> — M (+2/-0)</li><li><a href="../../design/ui-mock/boards/S91CoberturaModal.dc.html"><code>docs/design/ui-mock/boards/S91CoberturaModal.dc.html</code></a> — A (+322/-0)</li><li><a href="../../design/ui-mock/canvas.json"><code>docs/design/ui-mock/canvas.json</code></a> — M (+1/-1)</li><li><a href="../../layers-json.md"><code>docs/layers-json.md</code></a> — M (+4/-0)</li><li><a href="../../roadmap.data.json"><code>docs/roadmap.data.json</code></a> — M (+22/-4)</li><li><a href="../../roadmap.md"><code>docs/roadmap.md</code></a> — M (+1/-1)</li><li><a href="../plans/2026-10-18-s9-1b-cobertura-modelo-painel.md"><code>docs/superpowers/plans/2026-10-18-s9-1b-cobertura-modelo-painel.md</code></a> — A (+259/-0)</li><li><a href="../../../fixtures/coverage-multi/docs/page.html"><code>fixtures/coverage-multi/docs/page.html</code></a> — A (+5/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-4">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-4-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.4</span> config (1)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-4-body">
+    <div class="section-main"><ul><li><a href="../../../fixtures/coverage-multi/layers.json"><code>fixtures/coverage-multi/layers.json</code></a> — A (+6/-0)</li></ul></div>
+  </div>
+</section>
+<section class="sub-section" id="sec-3-5">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-3-5-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">3.5</span> other (5)</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-3-5-body">
+    <div class="section-main"><ul><li><a href="../../../fixtures/coverage-multi/config.html"><code>fixtures/coverage-multi/config.html</code></a> — A (+10/-0)</li><li><a href="../../../fixtures/coverage-multi/main.html"><code>fixtures/coverage-multi/main.html</code></a> — A (+16/-0)</li><li><a href="../../../fixtures/coverage-multi/replay.html"><code>fixtures/coverage-multi/replay.html</code></a> — A (+10/-0)</li><li><a href="../../../fixtures/coverage-multi/style.css"><code>fixtures/coverage-multi/style.css</code></a> — A (+3/-0)</li><li><a href="../../../index.html"><code>index.html</code></a> — M (+264/-35)</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-4">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-4-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">4</span> Testes</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-4-body">
+    <div class="section-main"><ul><li><strong>Atributos <code>[Fact]</code>/<code>[Theory]</code> em arquivos de teste tocados:</strong> 0</li></ul>
+<p><strong>Arquivos:</strong></p>
+<ul><li><a href="../../../test/layers-core.test.js"><code>test/layers-core.test.js</code></a></li></ul></div>
+  </div>
+  
+</section>
+<section class="top-section" id="sec-5">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-5-body" data-sub="sec-5-subs" data-tree="sec-5" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">5</span> Commits ↔ changelog</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-5-body">
+    <div class="section-main"><ul><li><strong>Added:</strong> Projetos ▾ › Analisar cobertura: varre o repositório sem rodar o app e abre um modal com a cobertura de Monovisual, Monovisual + states e Múltiplos layouts (<code>cob_reg · cob_el</code>, planos), a regra de decisão, a tabela de regiões e, com o veredito Múltiplos layouts, o trecho <code>layouts</code> com Copiar. Só leitura: nada é gravado e a carga do projeto não varre.</li><li><a href="https://github.com/brunomaida/Layers/commit/4d690c81f8a372d93d6bde16e3531807b16b33be"><code>4d690c8</code></a> docs: add S9.1b coverage modal board (S9.1b Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/ec93005a67b2314aee72596a63b041cd3b2c1079"><code>ec93005</code></a> feat(ui): add coverage modal to the Projetos menu (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/b11e7746bdd8ad95e96bd2249c68c22a73834d51"><code>b11e774</code></a> test(e2e): cover the coverage modal (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/37511475edcf3de074f667c61d7027dd518a4597"><code>3751147</code></a> test(e2e): cover coverage modal error, rules 0/2/4 and copy (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/a8d008dd03031e96f5f59a7ea6c00e4714cbb64a"><code>a8d008d</code></a> fix(ui): make the layouts snippet safe to paste and hide it when it adds nothing (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/a1c28a8b6a92b06d182aec7892addb0b0996580d"><code>a1c28a8</code></a> docs: describe the paste-safe layouts snippet (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/701fc01914fd3ecb6a9b68e72db9ca27eb4d704d"><code>701fc01</code></a> fix(core): emit implicit main for states-only manifests and reserve invalid declared ids (S9.1b final review)</li><li><strong>Added:</strong> Pasta local e <code>.zip</code> são varridos; GitHub e fixture HTTP não listam arquivos e dão cobertura parcial. <code>.ts/.js</code> entram por regex com selo de confiança baixa.</li><li><a href="https://github.com/brunomaida/Layers/commit/ec93005a67b2314aee72596a63b041cd3b2c1079"><code>ec93005</code></a> feat(ui): add coverage modal to the Projetos menu (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/5ac65ad113956d02711ec52def02d8c0f7db96be"><code>5ac65ad</code></a> test(e2e): cover coverage analysis flows (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/f33ee0ee6d314e9c8b8cb0b95e40fe6034a01d5b"><code>f33ee0e</code></a> docs: sync coverage limits with F1 styles read, zip cap gap and quadratic/joinPath notes (S9.1b final review)</li><li><strong>Added:</strong> Core puro em <code>LayersCore</code>: <code>COVERAGE</code>, <code>coverageScope</code>, <code>cssHiddenSelectors</code>, <code>htmlRegions</code>, <code>scanScriptMarkers</code>, <code>coverageModel</code>, <code>coverageVerdict</code>, <code>suggestLayouts</code>; <code>collectProjectFiles</code> extraído do <code>autoCreateLayersJson</code>; fixture <code>coverage-multi</code>.</li><li><a href="https://github.com/brunomaida/Layers/commit/995caddba6af6d5acea093d834364baadcd2582d"><code>995cadd</code></a> docs: add S9.1b coverage model design spec</li><li><a href="https://github.com/brunomaida/Layers/commit/07e1ac4313d89afc185b55ce36f597d835b240a7"><code>07e1ac4</code></a> feat(core): add coverage region detection (S9.1b Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/acbe7d78408890a86e3ec767066b932818951962"><code>acbe7d7</code></a> fix(core): harden coverage region detection (S9.1b Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/4d690c81f8a372d93d6bde16e3531807b16b33be"><code>4d690c8</code></a> docs: add S9.1b coverage modal board (S9.1b Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/64f823d589709a003ec3ba1718361f4b958f2860"><code>64f823d</code></a> feat(core): add coverage model, verdict and layout suggestion (S9.1b Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c76ba0f70cce397278249246aba67043fa96e19"><code>0c76ba0</code></a> fix(core): correct suggestion ids, layout dedupe and tela merge (S9.1b Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/05cf3c305d8caaa2dc49f0ad98dcc2fa6efeb4e1"><code>05cf3c3</code></a> test(e2e): characterize autoCreateLayersJson (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/22e150c7adf26904038105a7772febd8bf1ee15a"><code>22e150c</code></a> fix(ui): normalize coverage base like the loader (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/ec93005a67b2314aee72596a63b041cd3b2c1079"><code>ec93005</code></a> feat(ui): add coverage modal to the Projetos menu (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/b11e7746bdd8ad95e96bd2249c68c22a73834d51"><code>b11e774</code></a> test(e2e): cover the coverage modal (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/50944613288990ab5b90d2ab022a3a32f6e8b3eb"><code>5094461</code></a> fix(ui): keep coverage verdict copy consistent with the strict rule (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/37511475edcf3de074f667c61d7027dd518a4597"><code>3751147</code></a> test(e2e): cover coverage modal error, rules 0/2/4 and copy (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/5ac65ad113956d02711ec52def02d8c0f7db96be"><code>5ac65ad</code></a> test(e2e): cover coverage analysis flows (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/cfc727a94f88d902ce1df4c451d3652de590bedd"><code>cfc727a</code></a> test(perf): add coverage analysis benches and budget test (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/c7822fef0aea80d180bb0332a0abce5a8a378410"><code>c7822fe</code></a> refactor(ui): stop allocating coverage template data on every render (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/7d6ec229187f1849d3550f0511d597ff31f620e1"><code>7d6ec22</code></a> test(e2e): tighten coverage spec assertions (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/31fecdfffb024502c81e7492c12ca877d38917ca"><code>31fecdf</code></a> test(perf): set coverage analysis budget and record measures (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/81680e18ac9a3725c84bda077eee93617496d416"><code>81680e1</code></a> docs: document coverage analysis and close S9.1b (S9.1b Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/ff43e5ad8071cda117caaf53f16e2bd893dd9bd8"><code>ff43e5a</code></a> fix(core): ignore unmatched closing tags in constant time (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/29b9bf2ef96a54d737f62410d47209f856bafaeb"><code>29b9bf2</code></a> fix(core): look up screens by path and token index in coverageModel (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/1577648e291d2446802d12d44c6f144770639f17"><code>1577648</code></a> fix(ui): flag the coverage scan as partial when a file exceeds its own cap (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/9ced7f1d9c7742410b1e8a97529fc0b392ed25c5"><code>9ced7f1</code></a> docs: name the per-file caps in coverage limit 7 (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/39ffff2f6f34846ac5c564cdde797a80a7f4dbc0"><code>39ffff2</code></a> docs: fix perf labels and recount coverage tests (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/701fc01914fd3ecb6a9b68e72db9ca27eb4d704d"><code>701fc01</code></a> fix(core): emit implicit main for states-only manifests and reserve invalid declared ids (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/f33ee0ee6d314e9c8b8cb0b95e40fe6034a01d5b"><code>f33ee0e</code></a> docs: sync coverage limits with F1 styles read, zip cap gap and quadratic/joinPath notes (S9.1b final review)</li><li><strong>Tests:</strong> Vitest: regiões, escopo, modelo, veredito e sugestão. Playwright: <code>coverage</code> e <code>coverage-modal</code> (32 testes) e o orçamento da análise em <code>perf</code>.</li><li><a href="https://github.com/brunomaida/Layers/commit/995caddba6af6d5acea093d834364baadcd2582d"><code>995cadd</code></a> docs: add S9.1b coverage model design spec</li><li><a href="https://github.com/brunomaida/Layers/commit/07e1ac4313d89afc185b55ce36f597d835b240a7"><code>07e1ac4</code></a> feat(core): add coverage region detection (S9.1b Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/acbe7d78408890a86e3ec767066b932818951962"><code>acbe7d7</code></a> fix(core): harden coverage region detection (S9.1b Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/4d690c81f8a372d93d6bde16e3531807b16b33be"><code>4d690c8</code></a> docs: add S9.1b coverage modal board (S9.1b Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/64f823d589709a003ec3ba1718361f4b958f2860"><code>64f823d</code></a> feat(core): add coverage model, verdict and layout suggestion (S9.1b Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/22e150c7adf26904038105a7772febd8bf1ee15a"><code>22e150c</code></a> fix(ui): normalize coverage base like the loader (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/ec93005a67b2314aee72596a63b041cd3b2c1079"><code>ec93005</code></a> feat(ui): add coverage modal to the Projetos menu (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/b11e7746bdd8ad95e96bd2249c68c22a73834d51"><code>b11e774</code></a> test(e2e): cover the coverage modal (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/50944613288990ab5b90d2ab022a3a32f6e8b3eb"><code>5094461</code></a> fix(ui): keep coverage verdict copy consistent with the strict rule (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/37511475edcf3de074f667c61d7027dd518a4597"><code>3751147</code></a> test(e2e): cover coverage modal error, rules 0/2/4 and copy (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/5ac65ad113956d02711ec52def02d8c0f7db96be"><code>5ac65ad</code></a> test(e2e): cover coverage analysis flows (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/cfc727a94f88d902ce1df4c451d3652de590bedd"><code>cfc727a</code></a> test(perf): add coverage analysis benches and budget test (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/c7822fef0aea80d180bb0332a0abce5a8a378410"><code>c7822fe</code></a> refactor(ui): stop allocating coverage template data on every render (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/7d6ec229187f1849d3550f0511d597ff31f620e1"><code>7d6ec22</code></a> test(e2e): tighten coverage spec assertions (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/31fecdfffb024502c81e7492c12ca877d38917ca"><code>31fecdf</code></a> test(perf): set coverage analysis budget and record measures (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/81680e18ac9a3725c84bda077eee93617496d416"><code>81680e1</code></a> docs: document coverage analysis and close S9.1b (S9.1b Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/1577648e291d2446802d12d44c6f144770639f17"><code>1577648</code></a> fix(ui): flag the coverage scan as partial when a file exceeds its own cap (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/9ced7f1d9c7742410b1e8a97529fc0b392ed25c5"><code>9ced7f1</code></a> docs: name the per-file caps in coverage limit 7 (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/39ffff2f6f34846ac5c564cdde797a80a7f4dbc0"><code>39ffff2</code></a> docs: fix perf labels and recount coverage tests (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/f33ee0ee6d314e9c8b8cb0b95e40fe6034a01d5b"><code>f33ee0e</code></a> docs: sync coverage limits with F1 styles read, zip cap gap and quadratic/joinPath notes (S9.1b final review)</li><li><strong>Perf:</strong> measured — 2026-10-19: em Node (<code>npm run bench</code>), <code>coverageModel</code> sobre 1 HTML de 1.500 tags 2,3 ms e sobre 200 HTMLs 15,6 ms; no Chromium (e2e), <code>analyzeCoverage</code> com 200 HTMLs e 1.500 tags, mediana 218 ms contra orçamento de 616 ms (<code>Coverage_Analyze_CostsUnderBudget</code>). Só roda sob demanda; o orçamento da carga não muda.</li><li><a href="https://github.com/brunomaida/Layers/commit/05cf3c305d8caaa2dc49f0ad98dcc2fa6efeb4e1"><code>05cf3c3</code></a> test(e2e): characterize autoCreateLayersJson (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/226dd19377f0a2d5fcfe05b5c744bbe032db8ad7"><code>226dd19</code></a> feat(ui): add project file collection and analyzeCoverage (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/e7168ec8e9ba92d3750d93770bbdcefbb6ea78c8"><code>e7168ec</code></a> fix(ui): honor base, default mock and load guard in analyzeCoverage (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/b11e7746bdd8ad95e96bd2249c68c22a73834d51"><code>b11e774</code></a> test(e2e): cover the coverage modal (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/37511475edcf3de074f667c61d7027dd518a4597"><code>3751147</code></a> test(e2e): cover coverage modal error, rules 0/2/4 and copy (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/5ac65ad113956d02711ec52def02d8c0f7db96be"><code>5ac65ad</code></a> test(e2e): cover coverage analysis flows (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/7d6ec229187f1849d3550f0511d597ff31f620e1"><code>7d6ec22</code></a> test(e2e): tighten coverage spec assertions (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/ff43e5ad8071cda117caaf53f16e2bd893dd9bd8"><code>ff43e5a</code></a> fix(core): ignore unmatched closing tags in constant time (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/29b9bf2ef96a54d737f62410d47209f856bafaeb"><code>29b9bf2</code></a> fix(core): look up screens by path and token index in coverageModel (S9.1b final review)</li></ul></div>
+  </div>
+  <div class="subsections" id="sec-5-subs"><section class="sub-section" id="sec-5-1">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-5-1-body" onclick="toggleSection(this)">▼</button>
+    <h3><span class="section-num-badge">5.1</span> Todos os commits</h3>
+  </div>
+  <div class="section-body no-aside" id="sec-5-1-body">
+    <div class="section-main"><ul><li><a href="https://github.com/brunomaida/Layers/commit/640bddea18ba11902b6d87c7d49d265c10582c11"><code>640bdde</code></a> docs: open S9.1b leaf in the roadmap (#89)</li><li><a href="https://github.com/brunomaida/Layers/commit/995caddba6af6d5acea093d834364baadcd2582d"><code>995cadd</code></a> docs: add S9.1b coverage model design spec</li><li><a href="https://github.com/brunomaida/Layers/commit/0f30f5c414dcae92683a29e5c6413080c197a7d7"><code>0f30f5c</code></a> docs: add S9.1b implementation plan and link it in the roadmap</li><li><a href="https://github.com/brunomaida/Layers/commit/07e1ac4313d89afc185b55ce36f597d835b240a7"><code>07e1ac4</code></a> feat(core): add coverage region detection (S9.1b Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/acbe7d78408890a86e3ec767066b932818951962"><code>acbe7d7</code></a> fix(core): harden coverage region detection (S9.1b Task 2)</li><li><a href="https://github.com/brunomaida/Layers/commit/4d690c81f8a372d93d6bde16e3531807b16b33be"><code>4d690c8</code></a> docs: add S9.1b coverage modal board (S9.1b Task 1)</li><li><a href="https://github.com/brunomaida/Layers/commit/64f823d589709a003ec3ba1718361f4b958f2860"><code>64f823d</code></a> feat(core): add coverage model, verdict and layout suggestion (S9.1b Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/0c76ba0f70cce397278249246aba67043fa96e19"><code>0c76ba0</code></a> fix(core): correct suggestion ids, layout dedupe and tela merge (S9.1b Task 3)</li><li><a href="https://github.com/brunomaida/Layers/commit/05cf3c305d8caaa2dc49f0ad98dcc2fa6efeb4e1"><code>05cf3c3</code></a> test(e2e): characterize autoCreateLayersJson (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/226dd19377f0a2d5fcfe05b5c744bbe032db8ad7"><code>226dd19</code></a> feat(ui): add project file collection and analyzeCoverage (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/e7168ec8e9ba92d3750d93770bbdcefbb6ea78c8"><code>e7168ec</code></a> fix(ui): honor base, default mock and load guard in analyzeCoverage (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/22e150c7adf26904038105a7772febd8bf1ee15a"><code>22e150c</code></a> fix(ui): normalize coverage base like the loader (S9.1b Task 4)</li><li><a href="https://github.com/brunomaida/Layers/commit/ec93005a67b2314aee72596a63b041cd3b2c1079"><code>ec93005</code></a> feat(ui): add coverage modal to the Projetos menu (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/b11e7746bdd8ad95e96bd2249c68c22a73834d51"><code>b11e774</code></a> test(e2e): cover the coverage modal (S9.1b Task 5)</li><li><a href="https://github.com/brunomaida/Layers/commit/50944613288990ab5b90d2ab022a3a32f6e8b3eb"><code>5094461</code></a> fix(ui): keep coverage verdict copy consistent with the strict rule (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/37511475edcf3de074f667c61d7027dd518a4597"><code>3751147</code></a> test(e2e): cover coverage modal error, rules 0/2/4 and copy (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/5ac65ad113956d02711ec52def02d8c0f7db96be"><code>5ac65ad</code></a> test(e2e): cover coverage analysis flows (S9.1b Task 6)</li><li><a href="https://github.com/brunomaida/Layers/commit/cfc727a94f88d902ce1df4c451d3652de590bedd"><code>cfc727a</code></a> test(perf): add coverage analysis benches and budget test (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/c7822fef0aea80d180bb0332a0abce5a8a378410"><code>c7822fe</code></a> refactor(ui): stop allocating coverage template data on every render (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/7d6ec229187f1849d3550f0511d597ff31f620e1"><code>7d6ec22</code></a> test(e2e): tighten coverage spec assertions (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/64f924988a474e01e3c899f4d587c7ad27555214"><code>64f9249</code></a> fix(ui): make the scan-cap warning accurate for every cap (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/31fecdfffb024502c81e7492c12ca877d38917ca"><code>31fecdf</code></a> test(perf): set coverage analysis budget and record measures (S9.1b Task 7)</li><li><a href="https://github.com/brunomaida/Layers/commit/81680e18ac9a3725c84bda077eee93617496d416"><code>81680e1</code></a> docs: document coverage analysis and close S9.1b (S9.1b Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/58d683a24f736dce95e1c0b571c94a252e28a26e"><code>58d683a</code></a> docs: mark S9.1b done and rebuild the roadmap (S9.1b Task 8)</li><li><a href="https://github.com/brunomaida/Layers/commit/70f47aba37904757c5129e41352a950dd747ea3c"><code>70f47ab</code></a> fix(ui): analyze the declared mocks when the project has no file listing (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/ff43e5ad8071cda117caaf53f16e2bd893dd9bd8"><code>ff43e5a</code></a> fix(core): ignore unmatched closing tags in constant time (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/29b9bf2ef96a54d737f62410d47209f856bafaeb"><code>29b9bf2</code></a> fix(core): look up screens by path and token index in coverageModel (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/a8d008dd03031e96f5f59a7ea6c00e4714cbb64a"><code>a8d008d</code></a> fix(ui): make the layouts snippet safe to paste and hide it when it adds nothing (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/a1c28a8b6a92b06d182aec7892addb0b0996580d"><code>a1c28a8</code></a> docs: describe the paste-safe layouts snippet (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/1577648e291d2446802d12d44c6f144770639f17"><code>1577648</code></a> fix(ui): flag the coverage scan as partial when a file exceeds its own cap (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/9ced7f1d9c7742410b1e8a97529fc0b392ed25c5"><code>9ced7f1</code></a> docs: name the per-file caps in coverage limit 7 (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/39ffff2f6f34846ac5c564cdde797a80a7f4dbc0"><code>39ffff2</code></a> docs: fix perf labels and recount coverage tests (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/701fc01914fd3ecb6a9b68e72db9ca27eb4d704d"><code>701fc01</code></a> fix(core): emit implicit main for states-only manifests and reserve invalid declared ids (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/f33ee0ee6d314e9c8b8cb0b95e40fe6034a01d5b"><code>f33ee0e</code></a> docs: sync coverage limits with F1 styles read, zip cap gap and quadratic/joinPath notes (S9.1b final review)</li><li><a href="https://github.com/brunomaida/Layers/commit/85289413eeccf7bf04cd2845597e02b1053a6793"><code>8528941</code></a> docs: fix stale COVERAGE_BUDGET_MS comment (S9.1b final review)</li></ul></div>
+  </div>
+</section></div>
+</section>
+<section class="top-section" id="sec-6">
+  <div class="section-heading">
+    <button class="section-collapse" data-body="sec-6-body" onclick="toggleSection(this)">▼</button>
+    <h2><span class="section-num-badge">6</span> Custo (tokens + tempo)</h2>
+  </div>
+  <div class="section-body no-aside" id="sec-6-body">
+    <div class="section-main"><table><thead><tr><th>Sessão</th><th>Início</th><th>Duração</th><th>Input</th><th>Output</th><th>Cache read</th><th>Cache create</th></tr></thead><tbody><tr><td><code>64344da4</code></td><td>2026-10-18 17:13</td><td>17.71h</td><td>590</td><td>354.7k</td><td>62.08M</td><td>1.12M</td></tr><tr><td><code>agent-ac</code></td><td>2026-10-18 17:32</td><td>1.4m</td><td>10</td><td>7.0k</td><td>209.8k</td><td>92.7k</td></tr><tr><td><code>agent-aa</code></td><td>2026-10-18 17:39</td><td>15.1m</td><td>178</td><td>23.2k</td><td>10.75M</td><td>481.7k</td></tr><tr><td><code>agent-a1</code></td><td>2026-10-18 17:39</td><td>13.4m</td><td>92</td><td>6.0k</td><td>2.83M</td><td>379.3k</td></tr><tr><td><code>agent-a0</code></td><td>2026-10-18 17:43</td><td>6.6m</td><td>56</td><td>14.6k</td><td>1.04M</td><td>176.7k</td></tr><tr><td><code>agent-a3</code></td><td>2026-10-18 17:53</td><td>2.7m</td><td>24</td><td>548</td><td>309.6k</td><td>45.1k</td></tr><tr><td><code>agent-ae</code></td><td>2026-10-18 17:56</td><td>17.9m</td><td>108</td><td>13.0k</td><td>4.42M</td><td>428.4k</td></tr><tr><td><code>agent-a8</code></td><td>2026-10-18 18:04</td><td>8.4m</td><td>80</td><td>10.6k</td><td>1.89M</td><td>198.0k</td></tr><tr><td><code>agent-a0</code></td><td>2026-10-18 18:15</td><td>2.9m</td><td>38</td><td>615</td><td>608.1k</td><td>89.3k</td></tr><tr><td><code>agent-ab</code></td><td>2026-10-18 18:18</td><td>28.6m</td><td>184</td><td>8.6k</td><td>8.00M</td><td>540.8k</td></tr><tr><td><code>agent-a1</code></td><td>2026-10-18 18:30</td><td>6.1m</td><td>90</td><td>14.4k</td><td>2.43M</td><td>199.1k</td></tr><tr><td><code>agent-a6</code></td><td>2026-10-18 18:40</td><td>3.9m</td><td>58</td><td>428</td><td>984.8k</td><td>82.6k</td></tr><tr><td><code>agent-a8</code></td><td>2026-10-18 18:47</td><td>1.3m</td><td>36</td><td>4.1k</td><td>419.1k</td><td>66.8k</td></tr><tr><td><code>agent-ab</code></td><td>2026-10-19 08:57</td><td>18.6m</td><td>168</td><td>21.4k</td><td>10.49M</td><td>382.6k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 09:16</td><td>6.3m</td><td>88</td><td>13.4k</td><td>3.32M</td><td>212.9k</td></tr><tr><td><code>agent-a4</code></td><td>2026-10-19 09:22</td><td>10.7m</td><td>106</td><td>8.0k</td><td>4.51M</td><td>278.4k</td></tr><tr><td><code>agent-a7</code></td><td>2026-10-19 09:33</td><td>7.9m</td><td>116</td><td>19.5k</td><td>2.93M</td><td>162.9k</td></tr><tr><td><code>agent-a0</code></td><td>2026-10-19 09:41</td><td>10.9m</td><td>194</td><td>9.7k</td><td>9.62M</td><td>352.8k</td></tr><tr><td><code>agent-a8</code></td><td>2026-10-19 09:52</td><td>3.9m</td><td>30</td><td>5.0k</td><td>169.3k</td><td>47.6k</td></tr><tr><td><code>agent-a5</code></td><td>2026-10-19 10:00</td><td>7.2m</td><td>132</td><td>3.5k</td><td>8.67M</td><td>462.3k</td></tr><tr><td><code>agent-a0</code></td><td>2026-10-19 10:08</td><td>12.4m</td><td>136</td><td>8.4k</td><td>8.01M</td><td>334.7k</td></tr><tr><td><code>agent-a4</code></td><td>2026-10-19 10:21</td><td>21.9m</td><td>222</td><td>4.1k</td><td>13.00M</td><td>366.3k</td></tr><tr><td><code>agent-ab</code></td><td>2026-10-19 10:43</td><td>8.6m</td><td>142</td><td>6.5k</td><td>5.75M</td><td>300.6k</td></tr><tr><td><code>agent-af</code></td><td>2026-10-19 10:52</td><td>3.4m</td><td>50</td><td>1.3k</td><td>1.41M</td><td>152.3k</td></tr><tr><td><strong>Total (24)</strong></td><td>—</td><td><strong>21.37h</strong></td><td><strong>2.9k</strong></td><td><strong>558.4k</strong></td><td><strong>163.86M</strong></td><td><strong>6.96M</strong></td></tr></tbody></table></div>
+  </div>
+  
+</section>
+    </div>
+  </div>
+</div>
+
+<script>
+function toggleSection(btn) {
+  const body = document.getElementById(btn.dataset.body);
+  const collapsed = body.classList.toggle('collapsed');
+  btn.textContent = collapsed ? '▶' : '▼';
+
+  if (btn.dataset.sub) {
+    const sub = document.getElementById(btn.dataset.sub);
+    if (sub) sub.classList.toggle('collapsed', collapsed);
+  }
+
+  if (btn.dataset.tree) {
+    const treeChildren = document.getElementById('tree-' + btn.dataset.tree + '-children');
+    const treeToggle   = document.querySelector('#tree-' + btn.dataset.tree + ' .tree-row .tree-toggle:not(.hidden)');
+    if (treeChildren) treeChildren.classList.toggle('collapsed', collapsed);
+    if (treeToggle)   treeToggle.textContent = collapsed ? '▶' : '▼';
+  }
+}
+
+function syncTree(sectionId) {
+  const treeChildren = document.getElementById('tree-' + sectionId + '-children');
+  const treeToggle   = document.querySelector('#tree-' + sectionId + ' .tree-row .tree-toggle:not(.hidden)');
+  if (!treeChildren || !treeToggle) return;
+  const collapsed = treeChildren.classList.toggle('collapsed');
+  treeToggle.textContent = collapsed ? '▶' : '▼';
+  const subEl   = document.getElementById(sectionId + '-subs');
+  const bodyBtn = document.querySelector('[data-tree="' + sectionId + '"]');
+  if (subEl)   subEl.classList.toggle('collapsed', collapsed);
+  if (bodyBtn) bodyBtn.textContent = collapsed ? '▶' : '▼';
+}
+
+const __activeObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const id = entry.target.id;
+      document.querySelectorAll('.tree-item').forEach(i => i.classList.remove('active'));
+      const match = document.querySelector('.tree-item[data-section="' + id + '"]');
+      if (match) {
+        match.classList.add('active');
+        match.scrollIntoView({ block: 'nearest' });
+      }
+    }
+  });
+}, { rootMargin: '-15% 0px -65% 0px', threshold: 0 });
+
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('section[id]').forEach(s => __activeObserver.observe(s));
+});
+</script>
+</body>
+</html>
