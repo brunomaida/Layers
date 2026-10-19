@@ -2540,7 +2540,7 @@
     "tags": [
       "scaffold"
     ],
-    "progress": 80,
+    "progress": 64,
     "docs": [],
     "children": [
       {
@@ -2708,6 +2708,32 @@
           }
         ],
         "reason": "Hosts por layout, câmera de visão geral, popover Ver todos / 1–N, aviso acima de 1.500 planos",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S9.1d",
+        "type": "spec",
+        "name": "Edição entre layouts: undo, watch, escopo all e Aplicar junta tudo",
+        "start": "2026-10-17",
+        "end": "2026-10-19",
+        "status": "todo",
+        "statusLabel": "Registered",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 0,
+        "docs": [
+          {
+            "name": "2026-10-17-s9-1-layouts-newlogic.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
+            "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          }
+        ],
+        "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
