@@ -234,6 +234,25 @@ test('Coverage_ScriptFiles_IgnoreDtsAndHiddenDirsButKeepWellKnown', async ({ pag
   expect(c.model.regions.map((r) => r.key).sort()).toEqual(['.well-known/w.html', 'app.ts:dialog', 'index.html']);
 });
 
+// A file over its own cap is skipped alone and must still mark the scan as partial (S9.1b final review F6).
+test.describe('Coverage_OversizedFile_FlagsPartial', () => {
+  const big = (n, fill) => fill.repeat(Math.ceil(n / fill.length));
+  const cases = [
+    ['Html3MB', 'big.html', '<!doctype html><html><body>' + big(3 * 1024 * 1024 + 16, '<p>x</p>') + '</body></html>'],
+    ['Script256KB', 's/big.js', 'var a = 1; // ' + big(256 * 1024 + 16, 'x')]
+  ];
+  for (const [name, path, text] of cases) {
+    test(name, async ({ page }) => {
+      await connectFiles(page, [['layers.json', '{"name":"x","mock":"index.html"}'], ['index.html', PAGE], [path, text]]);
+      const c = await analyze(page);
+      expect(c.status).toBe('done');
+      expect(c.capped).toBe(true);
+      expect(c.model.regions.map((r) => r.key)).not.toContain(path);
+      await expect(page.getByText('Varredura parcial: arquivos ou tamanho acima dos tetos', { exact: false })).toBeVisible();
+    });
+  }
+});
+
 test('Coverage_MoreThan200ScriptFiles_StopsAtTheCapAndFlagsPartial', async ({ page }) => {
   // every script carries the same marker, so exactly the files past the cap are missing from the model (whichever the walk reaches last)
   const scripts = Array.from({ length: 201 }, (_, i) => ['s/f' + i + '.js', 'var a = "<dialog>"; // ' + i]);

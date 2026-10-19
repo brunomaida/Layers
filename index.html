@@ -1670,8 +1670,9 @@ class Component extends DCLogic {
         let file; try { file = await handle.getFile(); } catch (e) { continue; }
         // arquivo grande demais: pula SO ele — nao aborta a varredura inteira (um vendor/bundle.css
         // de 4 MB enumerado antes do index.html nao pode fazer a analise inteira falhar)
-        if (file.size > MAX_FILE_BYTES) continue;
-        if (kind === 'script' && file.size > LayersCore.COVERAGE.SCRIPT_BYTES_MAX) continue;
+        // the coverage call (kinds has 'script') also reports the skip as partial; autoCreateLayersJson keeps its silent skip
+        if (file.size > MAX_FILE_BYTES) { if (kinds.has('script')) trunc = true; continue; }
+        if (kind === 'script' && file.size > LayersCore.COVERAGE.SCRIPT_BYTES_MAX) { trunc = true; continue; }
         if (kind === 'script' && scriptBytes + file.size > MAX_SCRIPT_BYTES) { trunc = true; continue; }
         if (kind !== 'script' && totalBytes + file.size > MAX_TOTAL_BYTES) { capped = true; continue; }
         let text; try { text = await file.text(); } catch (e) { continue; }
@@ -1828,7 +1829,7 @@ class Component extends DCLogic {
       if (++visited > MAX_ENTRIES) { capped = true; break; }
       const kind = scanKind(name); if (!kind) continue;
       if (kind === 'script' && scripts >= C.SCRIPT_FILES_MAX) { capped = true; continue; }
-      if (bytes.length > MAX_FILE_BYTES || (kind === 'script' && bytes.length > C.SCRIPT_BYTES_MAX)) continue;
+      if (bytes.length > MAX_FILE_BYTES || (kind === 'script' && bytes.length > C.SCRIPT_BYTES_MAX)) { capped = true; continue; }
       if (kind === 'script' && scriptBytes + bytes.length > MAX_SCRIPT_BYTES) { capped = true; continue; }
       if (kind !== 'script' && totalBytes + bytes.length > MAX_TOTAL_BYTES) { capped = true; continue; }
       if (kind === 'script') { scriptBytes += bytes.length; scripts++; } else totalBytes += bytes.length;
