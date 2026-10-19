@@ -768,9 +768,10 @@ test('Orbit_SpreadHeavyOverWarningLimit_RecordsFrameInterval', async ({ page }) 
   expect(o.meanFrameMs, `heavy mean frame ${o.meanFrameMs.toFixed(1)} ms (${o.fps.toFixed(0)} fps), p95 ${o.p95FrameMs.toFixed(1)} ms, ${info.total} planes`).toBeLessThan(SPREAD_HEAVY_ORBIT_FLOOR_MS);
 });
 
-// Per-frame cost of the spread bookkeeping while dragging (the `[tag, frame, ...planes]` copies in scene(), flagged in the Task 4 review).
-// A/B on the same project in the same test: only main is big (~1,500 planes), config and replay stay at fixture size, so Espalhar adds a handful
-// of LOD planes and the difference is the spread overhead, not more planes. scene() is timed per call through an instance wrapper.
+// Orbit-drag frame time with Espalhar ON vs OFF on the same project in the same test: only main is heavy (~1,500 planes), config and replay stay at
+// fixture size. It does NOT isolate the spread overhead: spread-on draws the overview smaller (fit), so ON can be cheaper than OFF; the relative bound
+// only guards against ON being much worse. The bookkeeping cost (the `[tag, frame, ...planes]` copies in scene(), flagged in the Task 4 review) is the
+// number recorded as `sceneMsPerCall`: scene() is timed per call through an instance wrapper.
 test('Drag_SpreadOnVsOff_CostsNoMoreThanRelativeBound', async ({ page }) => {
   await instrument(page);
   await bigLayouts(page, [['main', 'mm']]);
