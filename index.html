@@ -1159,7 +1159,7 @@ const Plane = React.memo(function Plane(p) {
 const LodPlane = React.memo(function LodPlane({ n, z, lid, full, hot, H }) {
   return React.createElement('div', { 'data-lod-plane': n.id, 'data-layout': lid, ...(hot ? { 'data-lod-hot': '' } : null), style: { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: 'translateZ(' + z + 'px)', contain: 'layout paint',
     background: hot ? 'rgba(var(--selRgb),.16)' : n.depth === 0 ? 'rgba(14,17,22,.9)' : 'rgba(var(--bg1Rgb),.3)', border: hot ? '1px solid var(--sel)' : full ? '1px solid rgba(173,181,190,.35)' : '1px dashed rgba(173,181,190,.45)', borderRadius: n.radius, opacity: hot ? .9 : 0.5 * n.opacity, boxSizing: 'border-box', pointerEvents: 'auto' },
-    onClick: e => H.lodClick(lid, n.id, e), onDoubleClick: H.lodDbl, onMouseEnter: () => H.lodEnter(lid, n.id), onMouseLeave: H.lodLeave });
+    onClick: e => H.lodClick(lid, n.id, e), onDoubleClick: H.lodDbl, onMouseEnter: e => H.lodEnter(lid, n.id, e), onMouseLeave: H.lodLeave });
 });
 
 const mixHex = (a, b, t) => { const A = parseInt(a.slice(1), 16), B = parseInt(b.slice(1), 16); const c = i => Math.round((((A >> i) & 255) * (1 - t)) + (((B >> i) & 255) * t)); return '#' + [16, 8, 0].map(i => c(i).toString(16).padStart(2, '0')).join(''); };
@@ -2017,7 +2017,7 @@ class Component extends DCLogic {
     // S9.1c Task 6: LOD planes (frozen layouts). Click = the same 3 px threshold as the planes (`dragged`); hover is ignored while a button is down so an orbit never writes state per plane it sweeps over.
     lodClick: (lid, id, e) => { e.stopPropagation(); if (this.dragged) return; const pl = this.activePlaneAt(e); if (pl) this.H.click(pl.dataset.plane, e); else this.activateFromLod(lid, id); }, // an active plane under the pointer wins over a LOD plane in front of it
     lodDbl: e => e.stopPropagation(),
-    lodEnter: (lid, id) => { if (this.down) return; const k = lid + ':' + id; if (this.state.lodHover !== k) this.setState({ lodHover: k }); },
+    lodEnter: (lid, id, e) => { if (this.down || (e && this.activePlaneAt(e))) return; const k = lid + ':' + id; if (this.state.lodHover !== k) this.setState({ lodHover: k }); },
     lodLeave: () => { if (this.state.lodHover !== null) this.setState({ lodHover: null }); },
   };
   flushMove() {
