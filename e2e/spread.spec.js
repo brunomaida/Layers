@@ -35,11 +35,11 @@ test('ScanRoot_MaxDepth1_IdsAreSubsetOfFullScan', async ({ page }) => {
 test('ScanRoot_ReturnsOnly_DoesNotWriteState', async ({ page }) => {
   await loaded(page, '/?layers=fixtures/traval/');
   const same = await page.evaluate(() => {
-    const L = window.__logic; const nodes = L.state.nodes, els = L.els;
-    L.scanRoot(L.pageRef.current, L.mockRoot, { maxDepth: 1 });
-    return L.state.nodes === nodes && L.els === els;
+    const L = window.__logic; const nodes = L.state.nodes, els = L.els; let calls = 0; const orig = L.setState; L.setState = function (...a) { calls++; return orig.apply(this, a); };
+    try { L.scanRoot(L.pageRef.current, L.mockRoot, { maxDepth: 1 }); } finally { L.setState = orig; }
+    return { calls, same: L.state.nodes === nodes && L.els === els };
   });
-  expect(same).toBe(true);
+  expect(same).toEqual({ calls: 0, same: true });
 });
 
 test('BuildMockDom_InactiveHost_LeavesLoaderSingletonsUntouched', async ({ page }) => {
@@ -50,17 +50,38 @@ test('BuildMockDom_InactiveHost_LeavesLoaderSingletonsUntouched', async ({ page 
     const snap = () => JSON.stringify({ mt: L.mtimes, w: L.watch, ha: L.hostApplied, st: L.structural, ld: L.loaded && L.loaded.mockPath, pk: L.pendingKey });
     const before = snap(), root0 = L.mockRoot, nodes0 = L.state.nodes, planes0 = document.querySelectorAll('[data-plane]').length;
     const tmp = document.createElement('div'); tmp.style.cssText = 'position:fixed;left:-99999px;top:0;width:1280px'; document.body.appendChild(tmp);
-    const mb = await L.buildMockDom(man, other, tmp, { active: false });
+    const mb = await L.buildMockDom(man, other, { active: false });
+    const tmpBefore = tmp.shadowRoot;
+    const m = L.mountMockDom(tmp, mb);
     const scanned = L.scanRoot(tmp, mb.rootEl);
     const ids = [...tmp.shadowRoot.querySelectorAll('[id]')].map((e) => e.id).sort();
     tmp.remove();
     return {
       same: snap() === before && L.mockRoot === root0 && L.state.nodes === nodes0 && document.querySelectorAll('[data-plane]').length === planes0,
-      ids, scannedCount: scanned.nodes.length, hostAttrs: tmp.getAttributeNames().sort(), mainIds: [...document.querySelectorAll('*')].filter((e) => e.shadowRoot && e.shadowRoot !== tmp.shadowRoot && e.shadowRoot.childElementCount).map((e) => [...e.shadowRoot.querySelectorAll('[id]')].map((x) => x.id).sort()),
+      ids, scannedCount: scanned.nodes.length, hostAttrs: tmp.getAttributeNames().filter((n) => n !== 'style').sort(), mounted: !m.refused && tmpBefore === null && m.rootEl === mb.rootEl, mainIds: [...document.querySelectorAll('*')].filter((e) => e.shadowRoot && e.shadowRoot !== tmp.shadowRoot && e.shadowRoot.childElementCount).map((e) => [...e.shadowRoot.querySelectorAll('[id]')].map((x) => x.id).sort()),
     };
   });
   expect(r.same).toBe(true);
+  expect(r.mounted).toBe(true);
+  expect(r.hostAttrs).toEqual([]);
   expect(r.ids).toEqual(['cfg-field', 'cfg-panel', 'cfg-title']);
   expect(r.scannedCount).toBeGreaterThan(0);
   expect(r.mainIds).toEqual([['main-a', 'main-title']]);
+});
+
+test('MountMockDom_NonActiveOnStageHost_RefusesAndKeepsStage', async ({ page }) => {
+  await loaded(page, '/?layers=fixtures/multi-layout/');
+  const r = await page.evaluate(async () => {
+    const L = window.__logic; const man = L.state.project.man; const host = L.pageRef.current;
+    const other = LayersCore.projectLayouts(man).find((l) => l.id === 'config');
+    const mb = await L.buildMockDom(man, other, { active: false });
+    const ids = () => [...host.shadowRoot.querySelectorAll('[id]')].map((e) => e.id).sort();
+    const before = ids(), root0 = L.mockRoot;
+    const res = L.mountMockDom(host, mb);
+    return { res, before, after: ids(), sameRoot: L.mockRoot === root0 && host.shadowRoot.contains(root0), detached: mb.rootEl.parentNode === null || !host.shadowRoot.contains(mb.rootEl) };
+  });
+  expect(r.res).toEqual({ refused: 'stage-host' });
+  expect(r.after).toEqual(r.before);
+  expect(r.sameRoot).toBe(true);
+  expect(r.detached).toBe(true);
 });
