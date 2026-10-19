@@ -59,6 +59,9 @@ de snapshot: `tools/layers-snapshot.js` (ver [docs/layers-json.md](docs/layers-j
 ### Vários layouts
 `layers.json` pode declarar `layouts` (`id`, `name`, `mock`, `states?`): telas distintas do mesmo projeto. Com 2 ou mais, a faixa **LAYOUTS** aparece acima de Camadas na barra inferior (some com um só). Um layout fica montado por vez: clicar noutro chip recarrega só o mock dele; seleção, explosão, câmera e ajustes pendentes ficam atrelados ao layout (o chip dos outros mostra um badge com os pendentes), e as requisições saem agrupadas por layout. **Aplicar** e **Salvar** agem só no layout montado. Contrato em [docs/layers-json.md](docs/layers-json.md#layouts); exemplo em `fixtures/multi-layout/`.
 
+### Cobertura de layouts
+**Projetos ▾ › Analisar cobertura** varre o repositório sem rodar o app e mostra num modal quanto dele cada abordagem cobre (Monovisual, Monovisual + states e Múltiplos layouts), a regra que decidiu e, quando vale dividir em layouts, um trecho `layouts` para **Copiar** e colar no `layers.json`. É só leitura: nada é gravado. GitHub e fixture HTTP não listam arquivos e dão cobertura parcial. Regras e limites em [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md#cobertura-s91b); exemplo em `fixtures/coverage-multi/`.
+
 ### Menu de contexto e requisições
 Botão direito num componente do palco ou da Árvore abre o menu de contexto: as camadas L0–Ln com o
 selecionado em destaque, **Explodir daqui** / **Recolher até aqui** (na vista plana, só o ramo ganha

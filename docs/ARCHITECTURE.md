@@ -79,6 +79,7 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 | `checkStale`, `reloadProject`, `doReload`, `dismissStale`, `onFocus` | Recarregar projeto e aviso de "arquivos mudaram no disco" (ver § Loader de projeto). Helpers puros em `LayersCore`: `staleFiles`, `hasUnsaved`, `pickWatched`. |
 | `probeLayout`, `restructureProject`, `doRestructure`, `backupLayout` | Deriva do layout e Reanalisar do 0 (S2.21, § Reanalisar do 0). Helpers puros em `LayersCore`: `citedSources`, `layoutDrift`, `staleKind`, `layoutBackupPaths`. |
 | `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
+| `analyzeCoverage`, `collectProjectFiles`, `collectZipFiles`, `covVals`, `closeCoverage`, `copySnippet`; `LayersCore.COVERAGE`, `coverageScope`, `cssHiddenSelectors`, `htmlRegions`, `scanScriptMarkers`, `coverageModel`, `coverageVerdict`, `suggestLayouts`, `layoutsSnippet` | Projetos ▾ › Analisar cobertura (S9.1b): varre o repositório sem rodar o app e abre um modal com a cobertura de Monovisual, Monovisual + states e Múltiplos layouts, o veredito e um trecho `layouts` copiável. Só leitura; nada é gravado (§ Cobertura). |
 | Menus (Projetos, Aparência, Interagir, Ações), dropdowns customizados, toast | Chrome da interface. Os quatro menus seguem um padrão só, decidido por `LayersCore.menuStep` (puro) e aplicado por `menuGo`: hover abre (0 ms), saída fecha após 260 ms, clique fixa, `pointerdown` fora (captura), Esc, foco saindo e item de ação fecham; um menu aberto por vez (`menu`, `menuPin`). Os dropdowns de valor (`cbOpen`) abrem por clique e fecham no blur ou no Esc. Os popovers não usam `role=menu`: a navegação por setas nos itens fica fora do escopo. O menu de contexto do palco (linha abaixo) não segue esse padrão de hover: abre só por botão direito. |
 | Menu de contexto (`ctx`, `onStageCtx`, `openCtx`, `closeCtx`, `ctxPick`, `ctxRun`, `fitCtx`); `LayersCore.ctxMenuModel`, `ancestorAt` | Botão direito num plano (ou numa linha da árvore) abre um painel fixo (`role=menu`, `aria-label="Camadas do componente"`) com as camadas L0 a Ln do componente e o selecionado destacado; o submenu "Ações do ramo" (`role=menu`) traz Explodir daqui, Recolher até aqui e Requisição. `onStageCtx` sempre chama `preventDefault`; sem plano sob o cursor (nem `hoverId`) não abre, e um arrasto com o botão direito (> 3 px entre `mousedown` e `contextmenu`) também não. Clicar numa camada seleciona o ancestral e mantém o menu aberto. Fecha com Esc (primeiro da cadeia em `escape()`), `pointerdown` fora (primeira instrução de `onDocDown`), qualquer tecla que resolva outra ação em `onKey`, ação executada, `unloadProject` e `scan()` quando o nó-alvo some. `fitCtx` mantém painel e submenu dentro da viewport (o submenu inverte para a esquerda perto da borda). Modelo puro em `ctxMenuModel` (contagens por profundidade, `inBranch`, itens disponíveis); o painel fica no topo do template, fora do palco. |
 | Explodir ramo (`explodeFrom`, `collapseAt`, `explodeHere`, `collapseHere`, `branchInfo`); `LayersCore.branchOf`, `inBranchOf`, `branchZ` | Na vista plana só o ramo escolhido ganha profundidade: `scene()` põe cada nó do ramo em `LayersCore.branchZ(depth, raiz.depth, collapseAt, spacing)` e o resto fica em z 0; `cam()` soma `s.spacing * span` ao afastamento lateral. `collapseAt` (profundidade) achata os níveis abaixo dele no plano daquele nível. `branchInfo()` memoiza conjunto, raiz e `span` por (`nodes`, `explodeFrom`, `collapseAt`) e devolve `null` fora da vista plana. O ramo se identifica por prefixo de id pontuado (`inBranchOf`). Marcas: selo `▤ Plana · ▧ ramo` no palco (canto inferior direito), `▧` na linha da árvore e no chip da régua. Não há plano fantasma tracejado para os níveis recolhidos, nem esmaecimento dos irmãos do ramo. |
@@ -92,6 +93,7 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 - Ramo explodido (S3.5): `explodeFrom` (id da raiz do ramo, ou `null`) e `collapseAt` (profundidade a partir da qual o ramo volta ao plano daquele nível, ou `null`). Só valem na vista plana. Limpam explicitamente em `unloadProject`, na troca de projeto (`useDir`/`pickZip`/`loadRepo`) e em Reanalisar do 0; `loadProject` também os zera sempre que não há seleção a reaproveitar (`pendingSel` nulo, caso de Trocar de estado). O `scan()` os limpa só quando a raiz some de `byId`, o que inclui a raiz de tamanho zero (por exemplo após Interagir); desfazer não restaura o ramo.
 - Menu de contexto: `ctx` é `null` ou `{x, y, id, fx, fy, flip}` (cursor, nó-alvo, posição ajustada à viewport e se o submenu inverte). Limpa no fechamento, em `unloadProject` e quando o `id` some no `scan()`.
 - Requisições: `requests` (as do layout ativo; registros do ramo de requisição, ver § Fluxo de dados) mais `reqSel` (id expandido) e `mdOpen` (rodapé Markdown aberto), ambos só de interface.
+- Cobertura (S9.1b): `coverage` (`null` ou `{open, status, …}`) no state; `covRun` (contador da corrida) e `_cov` (cache dos dados do modal) são campos de instância (§ Cobertura).
 - Layouts (S9.1a): `project.layouts`/`project.layoutId`/`project.inter` e `layoutBadges` (no state); `layoutMap`, `viewCache`, `pendingView`, `otherRequests`, `reqFloor` e `baseKey` são campos de instância (§ Layouts).
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots de `changes`, 100 passos) são campos de instância, fora do `state`, e zeram em `loadProject`, `unloadProject` e `approve`. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
@@ -309,7 +311,7 @@ escolhido limpa a entrada e o erro cita `states`; recarregar abre o primeiro est
 
 ### Layouts (S9.1a)
 
-`layers.json › layouts` (`[{ id, name, mock, states? }]`, contrato em [layers-json.md](layers-json.md)) deixa um projeto ter várias telas. **Foco**: um layout montado por vez, no mesmo shadow root; trocar de layout recarrega só o mock dele. Espalhar (vários montados) é a S9.1c e a cobertura % é a S9.1b.
+`layers.json › layouts` (`[{ id, name, mock, states? }]`, contrato em [layers-json.md](layers-json.md)) deixa um projeto ter várias telas. **Foco**: um layout montado por vez, no mesmo shadow root; trocar de layout recarrega só o mock dele. Espalhar (vários montados) é a S9.1c; a cobertura % é a S9.1b ([§ Cobertura](#cobertura-s91b)).
 
 ```
 layers.json ── LayersCore.projectLayouts(man) ──▶ [{id,name,mock,states}]   (sem layouts: 'main' implícito)
@@ -367,6 +369,96 @@ chip da faixa LAYOUTS ─▶ switchLayout(id)               ▼
 | k | Um `<base>` (nome de pasta ou `.zip`) com `\|` pode colidir com `<base>\|<id>` | O `<id>` nunca contém `\|`, mas o nome da pasta pode |
 | l | Ids de layout são deduplicados sem diferenciar maiúsculas (vale o primeiro) | `Main` e `main` contam como o mesmo layout; só o `main` exato, em minúsculas, usa as chaves antigas (`Main` usa `<base>\|Main`) |
 | m | O backup do Reanalisar lê do disco o mock dos outros layouts; só o ativo vem da memória (`this.loaded`) | Um mock sobrescrito no disco entra no backup já alterado; leitura que falha vira aviso |
+
+### Cobertura (S9.1b)
+
+`Projetos ▾ › Analisar cobertura` (só com projeto carregado) responde, sem rodar o app e sem rede, quanto do repositório cada abordagem mostra: **Monovisual** (o mock do `main`), **Monovisual + states** (mais os `states` dele) e **Múltiplos layouts** (todos os layouts declarados ou, sem `layouts`, as telas estáticas candidatas). Só leitura: nada é gravado, e Copiar usa a área de transferência. A análise é sob demanda; carregar o projeto não varre (`Coverage_Load_DoesNotScan`).
+
+```
+Projetos ▾ › Analisar cobertura ─▶ analyzeCoverage()
+   │ guarda: loadedSeq !== loadSeq ─▶ erro "projeto ainda carregando"
+   │ captura dir, seq, zip e run (covRun) ANTES do 1º await; state.coverage = {open, status:'running'}
+   │ man normalizado: base sem barras nas pontas, mock padrão layers/mock.html (como o loader)
+   ├─ pasta local ─▶ collectProjectFiles(dir, {html,css,script}, COVERAGE.SKIP_DIRS, base)
+   ├─ .zip ───────▶ collectZipFiles(zip, base)         (mesmos tipos, pulos e tetos, em memória)
+   └─ GitHub / fixture HTTP ─▶ sem listagem: files = mocks declarados + man.styles (lidos como css), partial = true
+   │ mocks declarados (layouts × states) lidos por readBytes + TextDecoder
+   │ planes[mock montado] = state.nodes.length (nós reais do layout montado)
+   ▼
+LayersCore.coverageModel({man, files, mocks, planes, partial})        (puro, sem DOM)
+   │ coverageScope ─▶ htmlRegions / scanScriptMarkers ─▶ regiões detectadas
+   │ build(mono | monoStates | multi) ─▶ cobReg, cobEl, planes, maxPlanes
+   ▼
+coverageVerdict(model) ─▶ {verdict, rule, split, gainPp}
+suggestLayouts(model, man, files) ─▶ [{id, name, mock}]
+layoutsSnippet(man, suggestion) ─▶ {layouts: declarados + sugeridos, added}
+   │ stale()? (dir, seq ou run mudou) ─▶ descarta o resultado
+   ▼
+state.coverage = {open, status:'done', model, verdict, suggestion, snippet, added, capped} ─▶ covVals() ─▶ modal
+```
+
+**Região.** Tela (cada `.html` estático do escopo), aba (`role="tabpanel"`), diálogo (`<dialog>`, `aria-modal="true"` ou classe `modal`) e painel (elemento com `hidden`, `display:none` inline ou regra CSS de topo `#id`/`.cls` com `display:none`). `coverageScope` exclui `docs/`, `test/`, `tests/`, `testing/`, `e2e/`, `fixtures/`, `bench/`, `tools/`, `vendor/`, `node_modules/`, `.design-history/` e `*.dc.html`, e com `base` só olha abaixo dele. Um HTML de shell (corpo só com a raiz do app) não vira tela e marca a confiança como baixa.
+
+**Contratos do core** (`LayersCore`, todos puros, em `test/layers-core.test.js`):
+
+| Função | Entrada → saída |
+|---|---|
+| `COVERAGE` | `MONO_MIN 0.85`, `GAIN_MIN 0.15`, `PLANES_MAX 1500`, `SHARED_MIN 0.6`, `SCRIPT_FILES_MAX 200`, `SCRIPT_BYTES_MAX 262144` e `SKIP_DIRS` (as pastas acima) |
+| `coverageScope(path, base)` | boolean: o arquivo pertence ao app analisado |
+| `cssHiddenSelectors(cssTexts)` | seletores `#id`/`.cls` de regras de topo com `display:none` |
+| `htmlRegions(text, hiddenSels)` | `{nodes, visibleNodes, rootEl, tokens, regions[{sel, kind, el, hidden}]}`; tokenizador por regex com pilha, numa passada linear que descarta comentários, `<script>`, `<style>` e `<template>` |
+| `scanScriptMarkers(path, text)` | regiões de baixa confiança (`{key, kind, name, el: null, lowConf: true, marker}`): `role="tab"`, `<dialog`/`aria-modal` e rotas `#/nome` |
+| `coverageModel({man, files, mocks, planes, partial})` | `{regions, models: {mono, monoStates, multi}, sharedStates, unreadable, estimates, confidence}`; cada modelo traz `mocks`, `visible`, `cobReg`, `cobEl`, `planes`, `maxPlanes`; `confidence` é `ok`, `baixa` ou `parcial` |
+| `coverageVerdict(model)` | `{verdict, rule, split, gainPp}` |
+| `suggestLayouts(model, man, files)` | `[{id, name, mock}]`: o `main` implícito (só sem `layouts`) mais uma entrada por tela que nenhum mock do modelo mostra |
+| `layoutsSnippet(man, suggestion)` | `{layouts, added}`: os `layouts` declarados (como estão no manifesto) seguidos da sugestão, já que colar substitui o array inteiro; o `main` implícito leva os `states` da raiz; `added` = entradas sugeridas com um `mock` que nenhum layout atual tem |
+
+**Cálculo.** A identidade da região é o `key`: o caminho (tela) ou `<caminho>#<sel>` (sub-região; `sel` = `tag#id`, senão `tag.cls`, senão `tag[role=tabpanel]`, `dialog` ou `tag[aria-modal]`, com `~N` no N-ésimo repetido). Um mock **contém** a tela se o caminho é o mesmo ou se divide ≥ 60 % dos tokens de nó (`SHARED_MIN`) com o HTML dela; o mesmo teste funde mock autoral e fonte numa região só e gera o aviso de *states* (regra 5), mantendo o caminho mais curto e a união das sub-regiões. Uma sub-região é **visível** num mock quando o mock a tem sem `hidden`/`display:none` próprio nem de ancestral; uma região de marcador (`.js/.ts`) é visível quando o texto do mock casa o marcador. `cobReg` = regiões visíveis / detectadas; `cobEl` = Σ elementos visíveis / Σ elementos estimados (as regiões de marcador têm `el: null` e contam só em `cobReg`). Planos: `nodes.length` real para o layout montado e, para os demais mocks, os elementos visíveis do HTML (estimativa).
+
+**Veredito** (`coverageVerdict`; `best` = melhor entre Monovisual e Monovisual + states, `gainPp` = Múltiplos menos `best`, em pontos percentuais):
+
+| Regra | Condição | Veredito |
+|---|---|---|
+| 0 | nenhuma região detectada | `Indeterminado` (sem trecho) |
+| 2 | `best` ≥ 85 % e maior layout ≤ 1.500 planos | `Monovisual` |
+| 4 | `best` ≥ 85 % e maior layout > 1.500 planos | `Múltiplos layouts`, com a marca "dividir" (`split`) |
+| 3 | `best` < 85 % e ganho ≥ 15 p.p. | `Múltiplos layouts` |
+| 3 | `best` < 85 % e ganho < 15 p.p. | `Monovisual (layouts não ajudam)` (sem trecho) |
+
+O trecho `layouts` (`JSON.stringify({ layouts })` de `layoutsSnippet`, com Copiar) só aparece com o veredito `Múltiplos layouts` e `added > 0`: o `main` implícito sozinho não muda o `layers.json`, então sem tela a acrescentar não há trecho nem Copiar. Como colar substitui o array `layouts`, o trecho traz os layouts declarados primeiro e depois as telas sugeridas. O `styles` é do projeto, não do layout, e o `deriveManifest` não muda.
+
+**Estado.** `state.coverage` é `null` (fechado) ou `{open: true, status, …}`:
+
+| `status` | Campos | Quando |
+|---|---|---|
+| `running` | — | do clique até o resultado ou o erro |
+| `done` | `model`, `verdict`, `suggestion`, `snippet`, `added`, `capped` | análise concluída; `capped` = algum teto de varredura estourou |
+| `error` | `error` (mensagem) | `projeto ainda carregando`, base inválida ou ausente, permissão de leitura negada ou falha na leitura |
+
+`covVals()` deriva os dados do modal (`covOpen`, `covBars`, `covRows`, `covWarns`, `covSnippet`, …): um objeto congelado compartilhado com o modal fechado (o orbit re-renderiza sem alocar) e um cache por resultado e nome de projeto. A tabela mostra no máximo 200 regiões e o resto vira a linha `+N regiões`; as barras mostram `cob_reg · cob_el` arredondados. O modal é um overlay próprio de `z-index: 100`, como o de Atalhos; Esc o fecha na cadeia de `escape()` (depois do menu de contexto, dos Atalhos, dos pendentes e do diff, antes do modal genérico).
+
+**Guardas.** (1) `loadedSeq !== loadSeq` na entrada: carga em curso vira o erro `projeto ainda carregando`. (2) `dir`, `loadSeq` e `zip` são capturados antes do primeiro `await`; `stale()` compara de novo antes de gravar o resultado e antes de gravar o erro. (3) `covRun` conta as corridas: `closeCoverage` (Fechar, Esc, fundo) e um novo clique o incrementam, e a corrida em voo descarta o que leu. (4) `loadProject` e `unloadProject` zeram `state.coverage`, então um resultado nunca sobrevive ao projeto que leu. (5) Os mocks são lidos com `readBytes` + `TextDecoder`, não `readText`, para não renovar `this.mtimes` e mascarar a guarda de edição externa do `writeText`. (6) Os tetos da varredura de pasta e de `.zip` são os do `autoCreateLayersJson` (5.000 entradas, 6 níveis, 3 MB por arquivo e 20 MB no total para HTML/CSS), mais os de scripts; `collectProjectFiles` é o walker extraído do `autoCreateLayersJson`, que segue pedindo só `html`/`css` com o comportamento de antes.
+
+#### Limites da Cobertura
+
+| # | Limite | Observação |
+|---|---|---|
+| 1 | Sem router por AST | Rotas de JS/TS só entram por marcadores literais (`role="tab"`, `<dialog`, `aria-modal`, `#/nome`); docs de UI não servem de dica |
+| 2 | Sem listagem em GitHub nem em fixture HTTP: cobertura parcial | Só os mocks declarados e os `man.styles` (lidos como css) entram e a confiança fica `parcial`; a regra e o trecho saem dessa visão incompleta |
+| 3 | "Visível" é estático | Vale `hidden`, `display:none` inline, regra CSS de topo `#id`/`.cls` e diálogo sem `open`; classe ligada por JS, `@media` e seletor composto não contam |
+| 4 | Painéis visíveis por padrão ficam dentro da tela | Só um elemento que nasce oculto vira região de painel; os visíveis contam nos elementos da tela que os contém |
+| 5 | A estimativa de planos de um mock desmontado é aproximada | Com várias raízes no `<body>` o loader acrescenta um root sintético, então a estimativa fica 1 abaixo (imaterial frente ao teto de 1.500); o layout montado usa `nodes.length` real |
+| 6 | `.ts/.js` por regex = confiança baixa | Regiões de marcador contam só em `cob_reg` (Elem. `—`) e o modal avisa "App renderizado por JS" |
+| 7 | Tetos por arquivo (HTML/CSS 3 MB, script 256 KB) e de scripts (200 arquivos, 8 MB no total) | Um arquivo acima do próprio teto é pulado sozinho, e passar de 200 scripts ou de 8 MB também; todos marcam a varredura como parcial ("Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora.") |
+| 8 | Sem teste automatizado: `.zip` cujo `base` não existe, teto de 8 MB de scripts e a marca de parcial do teto por arquivo em `collectZipFiles` | O caminho existe no código (erro `base "…" não encontrada na pasta`; varredura parcial); falta um harness de `.zip` (o teto por arquivo de pasta tem teste: `Coverage_OversizedFile_FlagsPartial`) |
+| 9 | Barras arredondadas, texto da regra truncado | Perto dos limiares a barra mostra 85 % enquanto a regra diz 84 % (o texto trunca para não contradizer a comparação estrita) |
+| 10 | `base` com barras invertidas não é normalizado | `analyzeCoverage` usa o mesmo `joinPath` do loader, que só separa por `/` |
+| 11 | Duplo clique em Analisar cobertura dispara duas varreduras | `covRun` descarta a primeira, mas o custo é dobrado |
+| 12 | `?` abre Atalhos por baixo da Cobertura | Mesma paridade do modal de Diff; as teclas de câmera também não são bloqueadas |
+| 13 | O erro `projeto ainda carregando` sobrevive à carga | O overlay fica até o usuário fechá-lo |
+| 14 | A regra 4 só dispara com melhor monovisual ≥ 85 % | Um monovisual abaixo disso com layout acima de 1.500 planos cai na regra 3, sem a marca "dividir" |
+| 15 | `coverageModel` continua quadrático quando muitas páginas distintas compartilham tokens de chrome | 3.000 páginas com nav/rodapé comuns e sub-regiões ocultas levam ~1,8 s (1.000 páginas ~0,2 s); sob demanda e síncrono |
+| 16 | Mock com `/` inicial ou `..` acima da raiz faz `joinPath` (index.html) e `resolvePosix` (lib/layers-core.js) divergirem | A tela do próprio mock só conta como visível por sobreposição de tokens; já existia, também no modo pasta |
 
 ### Guarda de conflito na gravação
 

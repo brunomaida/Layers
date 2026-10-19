@@ -17,6 +17,11 @@ function fixtureFiles(name) {
 }
 
 export async function connectFixture(page, name) {
+  await connectEntries(page, fixtureFiles(name));
+}
+
+// Same folder harness for files built in the test: entries = [[relPath, text], ...].
+export async function connectEntries(page, entries) {
   await page.addInitScript(() => {
     window.showDirectoryPicker = async () => window.__proj;
   });
@@ -34,7 +39,7 @@ export async function connectFixture(page, name) {
       await w.close();
     }
     window.__proj = dir;
-  }, fixtureFiles(name));
+  }, entries);
   // the menu opens on hover and pins on click, so a click can close what hover just opened
   const trigger = page.getByText('Nenhum projeto').first();
   const item = page.getByText(/Conectar pasta/i).first();

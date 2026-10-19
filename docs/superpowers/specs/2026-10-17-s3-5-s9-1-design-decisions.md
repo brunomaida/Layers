@@ -63,6 +63,20 @@ Onde o que foi entregue na S9.1a (layouts, faixa LAYOUTS, modo Foco) difere dos 
 | Ajustes com grupos recolhidos por layout | Linha única `outros layouts: Nome (N), …`, só contagem | As requisições dos outros layouts são lidas do `layers/v1/pending` na carga; a lista delas só aparece ao abrir o layout |
 | Custo do Foco: um shadow root montado | Trocar de layout recarrega o mock (como Trocar de estado) e mantém 1 shadow root | A linha de custo do board coincide; medido em [](../../RELEASE-CHECKLIST.md) § D: troca 175,1 ms contra recarga 181,2 ms (razão 0,97) |
 
+## Divergências do código (S9.1b)
+
+Onde o que foi entregue na S9.1b (Analisar cobertura) difere do board `S91Cobertura` e da spec [](2026-10-18-s9-1b-modelo-de-cobertura-mono-design.md). Os boards seguem como referência visual; as linhas abaixo são desvios conhecidos, não decisões novas. Fluxo, contratos e limites em [](../../ARCHITECTURE.md#cobertura-s91b).
+
+| Item do board ou da spec | Como ficou no código | Motivo |
+|---|---|---|
+| Regra de decisão cobre mono ≥ 85 % e ganho ≥ 15 p.p. | Dois casos são preenchimentos do código: **mono < 85 % e ganho < 15 p.p.** vira "Monovisual (layouts não ajudam)" e **0 regiões** vira "Indeterminado" | O board não cobre esses dois casos; a decisão fica registrada aqui |
+| Regiões vêm só do HTML estático | `.ts/.js/.tsx/.jsx` entram por regex de marcadores literais (`role="tab"`, `<dialog`, `aria-modal`, rota `#/nome`) com selo "confiança baixa", contando só em `cob_reg` | Decisão do usuário (2026-10-18); router por AST e docs de UI como dica ficam fora |
+| Painel oculto e painel visível como regiões | Só o que nasce oculto (`hidden`, `display:none` inline ou em regra CSS de topo `#id`/`.cls`) vira região de painel; as regiões visíveis por padrão não viram região própria | Contam nos elementos da tela que as contém, então não somam em `cob_reg` |
+| Aviso de varredura parcial do board | O texto virou "Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora." (linha do board editada) | O texto antigo nomeava a causa errada quando o teto de scripts (200 arquivos, 8 MB) estourava; mudar uma string é reversível |
+| Subtítulo da regra 0 com o nome do projeto | Mostra só "0 regiões" | O board mostra só a contagem |
+| Spec, decisão 8: `suggestLayouts(files, man)` | A assinatura real é `suggestLayouts(model, man, files)`; `files` segue na assinatura e não é lido | O modelo já traz as regiões e as telas candidatas |
+| Regra 4 ("dividir") | Só dispara com o melhor monovisual ≥ 85 % e um layout acima de 1.500 planos | A redação do board é ambígua; o código segue a spec (regras 2 e 4 só sob mono ≥ 85 %) e, com cobertura menor, vale a regra 3 |
+
 ## Limites conhecidos dos boards
 
 - `Base` reproduz a UI a 1440×900 com larguras de painel (340 px, coluna de 384 px) e logo reais, medidos no app.

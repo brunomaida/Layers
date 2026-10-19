@@ -1,0 +1,6 @@
+{
+  "name": "Coverage",
+  "viewport": { "width": 900, "height": 520 },
+  "mock": "main.html",
+  "styles": ["style.css"]
+}

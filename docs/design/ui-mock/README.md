@@ -36,6 +36,7 @@ Cópia versionada dos boards `/design` (Opus) do Layers. O canvas privado `https
 | S35Requisicao.dc.html | S3.5 · 2 Requisição em Ajustes | Painel Ajustes |
 | S91Cobertura.dc.html | S9.1 · 2 Cobertura, regra e states × layouts | Palco 3D |
 | S91Fluxos.dc.html | S9.1 · 1 Três fluxos de múltiplos layouts | Palco 3D · Dock |
+| S91CoberturaModal.dc.html | S9.1 · 3 Modal Analisar cobertura | Modal de cobertura · Menus |
 
 ## Matriz
 
@@ -48,4 +49,5 @@ Cópia versionada dos boards `/design` (Opus) do Layers. O canvas privado `https
 | Palco 3D | S91Fluxos.dc.html |
 | Menus | S35Menu.dc.html |
 | Seletor de layout | S91Fluxos.dc.html |
+| Modal de cobertura | S91CoberturaModal.dc.html |
 | Toasts | exempt |
