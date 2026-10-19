@@ -56,3 +56,9 @@ describe('openZip', () => {
     if (!r.files.size) throw new Error('openZip returned no files');
   }, opts);
 });
+
+describe('coverage', () => {
+  // coverageModel is the whole analysis after the file walk: one big HTML (tokenizer) and 200 small ones (model build + overlap)
+  bench('html-regions-1500-tags', () => { core.coverageModel(w.coverage.oneHtml); }, opts);
+  bench('model-200-html', () => { core.coverageModel(w.coverage.manyHtml); }, opts);
+});

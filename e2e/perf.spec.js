@@ -2,6 +2,8 @@ import { test, expect } from '@playwright/test';
 import { instrument, waitForScan, orbitDrag, writeBench, planeCensus, zoomIn, memoComputedStyle, memoClientBox, markScene, hidePlanes, setWireAlpha, countPlaneHovers, groupPlanesByZ, ungroupPlanesByZ, countCompositedLayers, reapplyMarks } from './perf-helpers.js';
 import { inflateTraval, treeMode, noPlaneHits, countHoverSwaps, rowInputCost, scrollFrames } from './tree-perf-helpers.js';
 import { act, goFlat } from './ctx-helpers.js';
+import { connectEntries } from './folder-helpers.js';
+import { coverageHtml } from '../bench/workloads.js';
 
 const EXPECTED = [
   'load/traval/first-scan-ms',
@@ -41,6 +43,7 @@ const EXPECTED = [
   'explode/traval/toggle-ms',
   'layout-switch/multi-layout-1500/switch-ms',
   'layout-switch/multi-layout-1500/reload-ms',
+  'coverage/analyze-200-html-1500-tags/analyze-ms',
 ];
 const results = [];
 let runtime = 'chromium';
@@ -583,6 +586,39 @@ test('LayoutSwitch_NoLeak_AcrossRoundTrips', async ({ page }) => {
     expect(s.faceStyles, `hoisted face <style> after switching to ${id}`).toBe(1);
     expect(s.headStyles, `document.head <style> count after switching to ${id}`).toBe(headBefore);
   }
+});
+
+// S9.1b Task 7: Projetos > Analisar cobertura end to end (folder walk, mock reads, model, verdict) on a connected folder with one
+// 1,500-tag HTML (the mock) and 199 screens of ~30 tags. Timed from the analyzeCoverage() call until it resolves; median of 3 after a
+// warm-up run. The budget is 2x the rounded median measured on the reference machine (same rule as S9.1a).
+const COVERAGE_BUDGET_MS = 5000; // PLACEHOLDER (provisional): Step 7.2 measures the median, Step 7.3 sets this to 2x the rounded median
+
+test('Coverage_Analyze_CostsUnderBudget', async ({ page }) => {
+  const screens = Array.from({ length: 199 }, (_, i) => [`screens/s${i}.html`, coverageHtml('s' + i, 30)]);
+  await connectEntries(page, [['layers.json', '{"name":"Perf","mock":"index.html"}'], ['index.html', coverageHtml('big', 1500)], ...screens]);
+  await act(page);
+  const timed = () => page.evaluate(async () => {
+    const lg = window.__logic;
+    lg.closeCoverage();
+    const t0 = performance.now();
+    await lg.analyzeCoverage();
+    const ms = performance.now() - t0;
+    const c = lg.state.coverage;
+    return { ms, status: c && c.status, regions: c && c.model ? c.model.regions.length : 0, error: c && c.error };
+  });
+  const warm = await timed();
+  expect(warm.status, `warm-up analysis: ${warm.error}`).toBe('done');
+  const runs = [];
+  let regions = 0;
+  for (let i = 0; i < 3; i++) {
+    const r = await timed();
+    expect(r.status, `run ${i}: ${r.error}`).toBe('done');
+    runs.push(r.ms); regions = r.regions;
+  }
+  const ms = median(runs);
+  rec('coverage/analyze-200-html-1500-tags/analyze-ms', ms, { runs, regions });
+  expect(regions, 'one tela per distinct screen plus their sub-regions').toBeGreaterThanOrEqual(200);
+  expect(ms, `analyzeCoverage median ${ms.toFixed(0)} ms (${runs.map((x) => x.toFixed(0))}) vs budget ${COVERAGE_BUDGET_MS} ms`).toBeLessThanOrEqual(COVERAGE_BUDGET_MS);
 });
 
 test.afterAll(() => {

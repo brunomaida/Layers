@@ -20,6 +20,18 @@ function must(rel, what) {
   return rel;
 }
 
+// Synthetic coverage inputs (S9.1b): deterministic, no fixture file changes. Every tag carries a class, so the token sets are non-trivial.
+export function coverageHtml(cls, tags) {
+  const hidden = `<div class="${cls}-panel" hidden><p class="${cls}-hp">h</p></div>`; // 2 tags
+  const dialog = `<dialog class="${cls}-dlg"><p class="${cls}-dp">d</p></dialog>`; // 2 tags
+  const tab = `<div role="tabpanel" class="${cls}-tab"><p class="${cls}-tp">t</p></div>`; // 2 tags
+  const row = (i) => `<div class="${cls}-row${i}"><span class="${cls}-a">x</span><p class="${cls}-b">y</p></div>`; // 3 tags
+  const rows = Math.max(0, Math.floor((tags - 9) / 3)); // html, body, main and the three 2-tag regions take 9 tags
+  let body = '';
+  for (let i = 0; i < rows; i++) body += row(i % 40);
+  return `<!doctype html><html><body><main class="${cls}-main">${hidden}${dialog}${tab}${body}</main></body></html>`;
+}
+
 export function loadWorkloads() {
   const css = [
     { id: 'plain-admin/materialdesignicons', rel: must(findFile('plain-admin', 'materialdesignicons.min.css'), 'materialdesignicons.min.css') },
@@ -46,5 +58,12 @@ export function loadWorkloads() {
   const zipBytes = fs.readFileSync(new URL('zip/evil.zip', root));
   const zip = zipBytes.buffer.slice(zipBytes.byteOffset, zipBytes.byteOffset + zipBytes.byteLength);
 
-  return { css, travalSheets, dcText, manifestFiles, zip };
+  const covOne = coverageHtml('big', 1500);
+  const covMany = Array.from({ length: 200 }, (_, i) => ({ path: `screens/s${i}.html`, kind: 'html', text: coverageHtml('s' + i, 30) }));
+  const coverage = {
+    oneHtml: { man: { mock: 'index.html' }, files: [{ path: 'index.html', kind: 'html', text: covOne }], mocks: { 'index.html': covOne } },
+    manyHtml: { man: { mock: 'screens/s0.html' }, files: covMany, mocks: { 'screens/s0.html': covMany[0].text } },
+  };
+
+  return { css, travalSheets, dcText, manifestFiles, zip, coverage };
 }
