@@ -1081,11 +1081,47 @@ test('SpreadLod_Hover_HighlightsTheHoveredPlaneOnlyAndClears', async ({ page }) 
 test('SpreadLod_Hover_IsNotTrackedWhileDragging', async ({ page }) => {
   await spreadReady(page);
   const p = await lodPick(page, 'config');
-  await page.mouse.move(2, 400);
+  const from = await page.evaluate((src) => { // an empty stage point: inside the stage, on neither a plane nor a control
+    const st = eval(src), r = st.getBoundingClientRect();
+    for (let y = r.top + 40; y < r.bottom - 80; y += 20) for (let x = r.left + 40; x < r.right - 40; x += 20) { const e = document.elementFromPoint(x, y); if (e && st.contains(e) && !e.closest('[data-lod-plane],[data-plane],button,[data-spread-pop],[data-layout-strip]')) return { x, y }; }
+    return null;
+  }, STAGE_JS);
+  expect(from).not.toBeNull();
+  await page.mouse.move(from.x, from.y);
   await page.mouse.down();
-  await page.mouse.move(p.x, p.y, { steps: 6 });
+  expect(await page.evaluate(() => !!window.__logic.down)).toBe(true); // the press landed on the stage: a drag is in progress
+  // a plane sliding under the cursor mid-orbit raises mouseover: replayed here on the plane itself (a real sweep would orbit the plane away first)
+  const over = () => page.evaluate(({ lid, id }) => { document.querySelector('[data-lod-plane="' + id + '"][data-layout="' + lid + '"]').dispatchEvent(new MouseEvent('mouseover', { bubbles: true, relatedTarget: document.body })); }, { lid: 'config', id: p.id });
+  await over();
   expect(await page.evaluate(() => window.__logic.state.lodHover)).toBeNull();
   await page.mouse.up();
+  await flush(page);
+  await over(); // positive control: with no button down the same event does set it
+  expect(await page.evaluate(() => window.__logic.state.lodHover)).toBe('config:' + p.id);
+});
+
+test('SpreadLod_Hover_ClearsWhenTheFrozenPagesAreDropped', async ({ page }) => {
+  await spreadReady(page);
+  await act(page, 'setState', { lodHover: 'config:0.0' }); // as left by a hover (set directly: no live mouse to re-enter or leave)
+  await act(page, 'doReload'); // Recarregar empties the map: the pages unmount without a mouseleave
+  expect(await page.evaluate(() => window.__logic.state.lodHover)).toBeNull();
+});
+
+test('SpreadLod_Click_InPickModeKeepsThePreviousActiveOnTheStage', async ({ page }) => {
+  await loaded(page, FX);
+  await act(page, 'spreadOn', true, 'pick');
+  await act(page, 'setSpreadPick', 'pick', ['config']);
+  await settled(page, 1); await flush(page);
+  const n = await page.evaluate(() => window.__logic.state.nodes.length);
+  const p = await lodPick(page, 'config');
+  await page.mouse.click(p.x, p.y);
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page); await flush(page);
+  expect((await sv(page)).ids).toEqual(['main', 'config']); // the layout left behind stays on the stage instead of collapsing it to one page
+  expect(await pageIds(page)).toEqual(['main', 'config']);
+  expect((await sp(page)).picked).toEqual(['config', 'main']);
+  await expect.poll(async () => (await frozen(page)).main).toMatchObject({ full: true, count: n });
+  expect(await sel(page)).toBe(p.id);
 });
 
 test('SpreadLod_ActivateFromLod_ResolvesTheLayoutAtClickTime', async ({ page }) => {
