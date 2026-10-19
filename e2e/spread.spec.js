@@ -464,7 +464,7 @@ test('Spread_LodPages_HaveLodPlanesWithoutDataPlane', async ({ page }) => {
   expect(await page.evaluate(() => document.querySelectorAll('[data-lod-plane][data-plane]').length)).toBe(0);
   expect(await page.evaluate(() => document.querySelectorAll('[data-lod-plane]:not([data-layout])').length)).toBe(0);
   const look = await page.evaluate(() => { const e = document.querySelector('[data-lod-plane]'); const cs = getComputedStyle(e); return { op: cs.opacity, style: cs.borderTopStyle, color: cs.borderTopColor, pe: cs.pointerEvents, cursor: e.style.cursor }; });
-  expect(look).toEqual({ op: '0.5', style: 'dashed', color: 'rgba(173, 181, 190, 0.45)', pe: 'none', cursor: '' });
+  expect(look).toEqual({ op: '0.5', style: 'dashed', color: 'rgba(173, 181, 190, 0.45)', pe: 'auto', cursor: '' }); // Task 6: LOD planes are clickable (the page div stays pointer-events:none and owns the cursor, which keeps them out of planeCensus)
 });
 
 test('Spread_FullFrozenPage_IsDrawnAsTheBoardDimMode', async ({ page }) => {
@@ -992,3 +992,160 @@ for (const [key, name] of [['dark', 'Dark'], ['gray', 'Gray · 1 Grafite'], ['li
     await page.screenshot({ path: 'test-results/spread-ui/popover-' + key + '.png' });
   });
 }
+
+// ---- S9.1c Task 6: activate from LOD, overview camera, session, popover polish ----
+const cam = (page) => page.evaluate(() => { const s = window.__logic.state; return { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, focus: s.focus }; });
+const sel = (page) => page.evaluate(() => window.__logic.state.selId);
+const sess = (page) => page.evaluate(() => JSON.parse(localStorage.getItem('layers/v1/session') || '{}'));
+const loadedNow = (page) => page.waitForFunction(() => window.__logic.loadedSeq === window.__logic.loadSeq);
+// A depth>=1 LOD plane of `lid` whose centre really hits itself (3D overlap-safe): the point a user would click
+const lodPick = async (page, lid) => { await page.waitForTimeout(450); return lodPoint(page, lid); }; // the world eases over .35s after a camera change: measure once it has settled
+const lodPoint = (page, lid) => page.evaluate((lid) => {
+  const L = window.__logic, ent = L.spreadFrozen.get(lid), depth = {}; ent.nodes.forEach((n) => { depth[n.id] = n.depth; });
+  for (const el of document.querySelectorAll('[data-lod-plane][data-layout="' + lid + '"]')) {
+    const r = el.getBoundingClientRect(), x = Math.round(r.left + r.width / 2), y = Math.round(r.top + r.height / 2);
+    if (depth[el.dataset.lodPlane] >= 1 && r.width > 6 && r.height > 6 && document.elementFromPoint(x, y) === el) return { id: el.dataset.lodPlane, x, y };
+  }
+  return null;
+}, lid);
+const NORMAL = { yaw: 12, tilt: -8, zoom: 2.5, panX: 33, panY: -21 };
+
+test('SpreadLod_Click_ActivatesTheLayoutAndSelectsTheSameNode', async ({ page }) => {
+  await spreadReady(page);
+  await act(page, 'setState', { yaw: 20, tilt: 10, zoom: 1.5, panX: 12, panY: -8 });
+  const p = await lodPick(page, 'config'); expect(p).not.toBeNull();
+  const before = await cam(page);
+  await page.mouse.click(p.x, p.y);
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page);
+  expect(await sel(page)).toBe(p.id);
+  expect(await page.evaluate((id) => !!window.__logic.state.byId[id], p.id)).toBe(true); // the shallow id exists in the full scan
+  expect(await cam(page)).toEqual(before); // overview camera kept
+  expect(await page.evaluate(() => window.__logic.state.spread.on)).toBe(true);
+  await settled(page, 3); // main is frozen now; config is live
+});
+
+test('SpreadLod_Click_PreviousActiveBecomesFullFrozen', async ({ page }) => {
+  await spreadReady(page);
+  expect((await frozen(page)).main).toBeUndefined();
+  const n = await page.evaluate(() => window.__logic.state.nodes.length);
+  const p = await lodPick(page, 'replay');
+  await page.mouse.click(p.x, p.y);
+  await expect.poll(() => activeId(page)).toBe('replay');
+  await loadedNow(page);
+  const f = await frozen(page);
+  expect(f.main).toMatchObject({ full: true, count: n });
+  expect(f.config.full).toBe(false);
+  expect(f.replay).toBeUndefined(); // the live layout has no frozen entry
+});
+
+test('SpreadLod_OrbitDragOverAPlane_DoesNotActivateAndStillOrbits', async ({ page }) => {
+  await spreadReady(page);
+  const p = await lodPick(page, 'config');
+  const y0 = (await cam(page)).yaw;
+  await page.evaluate(() => { window.__lodClicks = 0; document.addEventListener('click', (e) => { if (e.target.closest && e.target.closest('[data-lod-plane]')) window.__lodClicks++; }, true); });
+  await page.mouse.move(p.x, p.y);
+  await page.mouse.down();
+  await page.mouse.move(p.x + 5, p.y, { steps: 2 });
+  await page.mouse.move(p.x + 10, p.y, { steps: 2 });
+  await page.mouse.up(); // released over the same plane: the browser does dispatch a click on it (past the 3 px threshold)
+  await flush(page);
+  expect(await page.evaluate(() => window.__lodClicks)).toBe(1);
+  expect(await activeId(page)).toBe('main');
+  expect(await sel(page)).toBe('0');
+  expect((await cam(page)).yaw).not.toBe(y0); // the drag orbited
+  expect(await page.evaluate(() => !window.__logic.state.modal && !window.__logic.pendingView)).toBe(true);
+});
+
+test('SpreadLod_Hover_HighlightsTheHoveredPlaneOnlyAndClears', async ({ page }) => {
+  await spreadReady(page);
+  const p = await lodPick(page, 'config');
+  await page.mouse.move(p.x, p.y);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.lodHover)).toBe('config:' + p.id);
+  const hot = await page.evaluate(() => [...document.querySelectorAll('[data-lod-plane][data-lod-hot]')].map((e) => e.dataset.layout + ':' + e.dataset.lodPlane));
+  expect(hot).toEqual(['config:' + p.id]);
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('[data-lod-plane][data-layout="config"]')).cursor)).toBe('pointer');
+  await page.mouse.move(2, 400); // leaves the plane
+  await expect.poll(() => page.evaluate(() => window.__logic.state.lodHover)).toBeNull();
+  await flush(page);
+  await page.mouse.move(p.x, p.y);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.lodHover)).toBe('config:' + p.id);
+  await act(page, 'spreadOn', false); // unmount clears it
+  expect(await page.evaluate(() => window.__logic.state.lodHover)).toBeNull();
+});
+
+test('SpreadLod_Hover_IsNotTrackedWhileDragging', async ({ page }) => {
+  await spreadReady(page);
+  const p = await lodPick(page, 'config');
+  await page.mouse.move(2, 400);
+  await page.mouse.down();
+  await page.mouse.move(p.x, p.y, { steps: 6 });
+  expect(await page.evaluate(() => window.__logic.state.lodHover)).toBeNull();
+  await page.mouse.up();
+});
+
+test('SpreadLod_ActivateFromLod_ResolvesTheLayoutAtClickTime', async ({ page }) => {
+  await spreadReady(page);
+  const p = await lodPick(page, 'config');
+  // config turns unavailable between render and click (no bump: the stale plane is still in the DOM)
+  await page.evaluate(() => { const F = window.__logic.spreadFrozen; F.set('config', { ...F.get('config'), unavailable: true }); }); // nodes kept on purpose: only the flag may stop the click
+  await page.mouse.click(p.x, p.y);
+  await flush(page);
+  expect(await activeId(page)).toBe('main');
+  expect(await page.evaluate(() => window.__logic.pendingView)).toBeNull();
+  // the entry point itself, with the render-time plane still "in hand": the flag alone must stop it (the hover re-render above already dropped the plane from the DOM)
+  await page.evaluate((id) => window.__logic.activateFromLod('config', id), p.id);
+  await flush(page);
+  expect(await activeId(page)).toBe('main');
+  expect(await page.evaluate(() => window.__logic.pendingView)).toBeNull();
+  // a layout that is not drawn is not activated either, and neither is the live one
+  await page.evaluate(() => { const L = window.__logic; L.activateFromLod('ghost', '0'); L.activateFromLod('main', '0'); L.activateFromLod('broken', '0'); });
+  await flush(page);
+  expect(await activeId(page)).toBe('main');
+  // the drawn replay still works through the same entry point
+  const q = await lodPick(page, 'replay');
+  await act(page, 'activateFromLod', 'replay', q.id);
+  await expect.poll(() => activeId(page)).toBe('replay');
+  await loadedNow(page);
+  expect(await sel(page)).toBe(q.id);
+});
+
+test('SpreadLod_Click_RespectsTheSwitchGuards', async ({ page }) => {
+  await spreadReady(page);
+  const p = await lodPick(page, 'config');
+  await page.evaluate(() => { window.__logic.setState({ modal: { stage: 'confirm', log: [], title: 'x', label: 'x', text: 'x', onYes: () => {} } }); });
+  await act(page, 'activateFromLod', 'config', p.id);
+  expect(await activeId(page)).toBe('main');
+  expect(await page.evaluate(() => window.__logic.pendingView)).toBeNull();
+  await act(page, 'setState', { modal: null });
+  await act(page, 'activateFromLod', 'config', p.id); // guards released: the same call now goes through
+  await expect.poll(() => activeId(page)).toBe('config');
+});
+
+test('SpreadLod_ChipClick_KeepsTheOverviewCameraAndRestoresSelection', async ({ page }) => {
+  await spreadReady(page);
+  await act(page, 'select', '0.1');
+  await act(page, 'setState', { yaw: -20, tilt: 9, zoom: 1.7, panX: 5, panY: -4 });
+  const before = await cam(page);
+  await page.locator('[data-layout-chip="config"]').click();
+  await expect.poll(() => activeId(page)).toBe('config');
+  await loadedNow(page);
+  expect(await cam(page)).toEqual(before);
+  expect(await sel(page)).toBe('0'); // nothing cached for config
+  await page.locator('[data-layout-chip="main"]').click();
+  await expect.poll(() => activeId(page)).toBe('main');
+  await loadedNow(page);
+  expect(await cam(page)).toEqual(before);
+  expect(await sel(page)).toBe('0.1'); // main's selection comes back from the view cache
+});
+
+test('SpreadLod_Switch_KeepsTheOverviewFocusInPlaceOnTheWorld', async ({ page }) => {
+  await spreadReady(page);
+  const a = await page.evaluate(() => { const L = window.__logic, sv = L.spreadView(); L.setState({ focus: { x: 100, y: 50, zd: null } }); return sv.offs[sv.ai] + 100; });
+  await act(page, 'switchLayout', 'replay');
+  await expect.poll(() => activeId(page)).toBe('replay');
+  await loadedNow(page);
+  const b = await page.evaluate(() => { const L = window.__logic, sv = L.spreadView(); return sv.offs[sv.ai] + L.state.focus.x; });
+  expect(b).toBeCloseTo(a, 3);
+});
+
