@@ -2693,6 +2693,18 @@
             "type": "spec",
             "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
             "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          },
+          {
+            "name": "2026-10-19-s9-1c-espalhar-layouts-no-palco.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-19-s9-1c-espalhar-layouts-no-palco.md)",
+            "title": "2026-10-19-s9-1c-espalhar-layouts-no-palco.md)"
+          },
+          {
+            "name": "2026-10-19-s9-1c-espalhar-lod-design.md",
+            "type": "spec",
+            "path": "/docs/superpowers/specs/2026-10-19-s9-1c-espalhar-lod-design.md",
+            "title": "S9.1c — Espalhar layouts no palco 3D com LOD — design"
           }
         ],
         "reason": "Hosts por layout, câmera de visão geral, popover Ver todos / 1–N, aviso acima de 1.500 planos",
