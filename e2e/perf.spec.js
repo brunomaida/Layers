@@ -476,7 +476,7 @@ test('Explode_Toggle_ReportsFrameCost', async ({ page }) => {
 
 // S9.1c Task 4: orbit with Espalhar on in multi-layout: 3 pages (main full + config and replay in LOD; broken is unavailable and takes no slot).
 // The target stays > 50 fps (Orbit_Budget_Above50Fps); the budget below is provisional until the Task 7 measurement run.
-const SPREAD_ORBIT_BUDGET_MS = 60; // PROVISIONAL: fixed in Task 7
+const SPREAD_ORBIT_BUDGET_MS = 36; // 2x the rounded median (18 ms, vsync-capped) measured 2026-10-19
 test('Orbit_SpreadThreePages_RecordsFrameInterval', async ({ page }) => {
   await instrument(page);
   await page.goto('/?layers=fixtures/multi-layout/');
@@ -658,10 +658,10 @@ test('Coverage_Analyze_CostsUnderBudget', async ({ page }) => {
 
 // S9.1c Task 7: cost of Espalhar on big mocks. Same trick as LayoutSwitch: the multi-layout mocks are tiny, so the bodies of main, config and
 // replay are replaced through page.route with ~1,500-node ones (broken stays missing: it is the unavailable page). Budgets below are
-// PROVISIONAL and generous until Task 7.3 fixes them from the measured medians.
-const SPREAD_ENABLE_BUDGET_MS = 5000; // PROVISIONAL: fixed in Task 7.3
-const SPREAD_HEAVY_ORBIT_FLOOR_MS = 250; // PROVISIONAL: fixed in Task 7.3 (lenient floor, the recorded number is the result; a first run measured ~107 ms at 3,303 planes)
-const SPREAD_DRAG_REL = 1.5, SPREAD_DRAG_ABS_MS = 5; // PROVISIONAL: fixed in Task 7.3 (spread-on drag <= REL x spread-off + ABS)
+// Budgets are 2x the rounded medians measured on the reference machine (same rule as S9.1a).
+const SPREAD_ENABLE_BUDGET_MS = 746; // 2x the rounded median (373 ms) measured 2026-10-19
+const SPREAD_HEAVY_ORBIT_FLOOR_MS = 198; // 2x the rounded median (99 ms, ~10 fps at 3,303 planes: the degradation the warning exists for) measured 2026-10-19
+const SPREAD_DRAG_REL = 1.5, SPREAD_DRAG_ABS_MS = 5; // spread-on drag <= REL x spread-off + ABS; measured 2026-10-19: off 20.8 ms, on 19.5 ms
 const bigLayouts = async (page, files) => {
   for (const [file, cls] of files) {
     await page.route(`**/fixtures/multi-layout/layers/${file}.html`, async (route) => {
