@@ -77,6 +77,7 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 | `pushUndo()`, `undo()`, `redo()`, `stepHistory()`, `LayersCore.inlineDelta`, `LayersCore.pushSnapshot` | Undo/redo global (Ctrl+Z, Ctrl+Shift+Z, Ctrl+Y) sobre snapshots `{layoutId, changes}` (S9.1d: uma pilha para o projeto todo; passo de outro layout troca o layout via `stepAcross`, `LayersCore.undoStepApplies` decide `here`/`switch`/`drop`); `inlineDelta` calcula as escritas inline entre dois snapshots. |
 | `connectDir`, `readText`, `writeText`, `exportFull` | I/O de arquivos. |
 | `checkStale`, `reloadProject`, `doReload`, `dismissStale`, `onFocus` | Recarregar projeto e aviso de "arquivos mudaram no disco" (ver § Loader de projeto). Helpers puros em `LayersCore`: `staleFiles`, `hasUnsaved`, `pickWatched`. |
+| `ensureProbe`, `probeOthers`, `evictProbed`, `buildSaveSet`, `alsoAffects` | Sonda dos outros layouts, Salvar entre layouts e aviso de escopo (S9.1d, § Edição entre layouts). Helpers puros em `LayersCore`: `mergeLayoutChanges`, `countUses`, `useKey`, `undoStepApplies`, `staleLayouts`. |
 | `probeLayout`, `restructureProject`, `doRestructure`, `backupLayout` | Deriva do layout e Reanalisar do 0 (S2.21, § Reanalisar do 0). Helpers puros em `LayersCore`: `citedSources`, `layoutDrift`, `staleKind`, `layoutBackupPaths`. |
 | `autoCreateLayersJson`, `LayersCore.deriveManifest` | Pasta local sem `layers.json`, conectada por clique: varre `.html`/`.css` e grava um manifesto mínimo (ver `docs/layers-json.md` § auto-criação). |
 | `analyzeCoverage`, `collectProjectFiles`, `collectZipFiles`, `covVals`, `closeCoverage`, `copySnippet`; `LayersCore.COVERAGE`, `coverageScope`, `cssHiddenSelectors`, `htmlRegions`, `scanScriptMarkers`, `coverageModel`, `coverageVerdict`, `suggestLayouts`, `layoutsSnippet` | Projetos ▾ › Analisar cobertura (S9.1b): varre o repositório sem rodar o app e abre um modal com a cobertura de Monovisual, Monovisual + states e Múltiplos layouts, o veredito e um trecho `layouts` copiável. Só leitura; nada é gravado (§ Cobertura). |
@@ -96,6 +97,7 @@ requests[]  { id, layoutId, nodeKey, path, name, depth, alvo, caixa, estilos, us
 - Requisições: `requests` (as do layout ativo; registros do ramo de requisição, ver § Fluxo de dados) mais `reqSel` (id expandido) e `mdOpen` (rodapé Markdown aberto), ambos só de interface.
 - Cobertura (S9.1b): `coverage` (`null` ou `{open, status, …}`) no state; `covRun` (contador da corrida) e `_cov` (cache dos dados do modal) são campos de instância (§ Cobertura).
 - Espalhar (S9.1c): `spread` (`{on, mode, picked, dist}`), `spreadRev`, `spreadMenu` e `lodHover` no state; `spreadFrozen`, `spreadSeq`, `spreadKey`, `normalCam`/`normalCamOwner` e `pendingSpread` são campos de instância (§ Espalhar).
+- Sonda (S9.1d): `layoutProbe` (Map), `probeSeq`, `probeRun` e `watchLayouts` são campos de instância; só existem com 2+ layouts ([§ Edição entre layouts](#edição-entre-layouts-s91d)).
 - Layouts (S9.1a): `project.layouts`/`project.layoutId`/`project.inter` e `layoutBadges` (no state); `layoutMap`, `viewCache`, `pendingView`, `otherRequests`, `reqFloor` e `baseKey` são campos de instância (§ Layouts).
 - Seleção: `selId, hoverId, isoId, active (camada ativa), hoverLayer, layerFocus, focusStr, othersOp`.
 - Edição: `changes, history, buf, units, scope, pending, codeBuf, fileText`; as pilhas de undo/redo (`undoS`, `redoS`, snapshots `{layoutId, changes}`, 100 passos) são campos de instância, fora do `state`; cada `change` novo leva `layoutId`. `switchLayout` mantém as pilhas (`keepUndo`, lido no início de `loadProject`); projeto novo, Recarregar, troca de estado e `unloadProject` zeram tudo. `undoHash[layoutId]` guarda o hash da fonte contra o qual os passos foram feitos; `dropUndoFor(layoutId)` tira os passos de um layout cuja fonte mudou entre visitas (hash diferente) ou cuja carga voltou incompleta, do layout que sai perdendo ajustes que não cabem no armazenamento e do layout aplicado em `approve`. `stepHistory` ignora a tecla com carga em curso; um passo de outro layout espera a troca (sem teto enquanto o modal de confirmação está aberto, 10 s depois que a carga começa) e uma barreira de commit antes de aplicar. Os ajustes pendentes (`changes`) também vão para `layers/v1/pending` e voltam em `loadProject` (§ Persistência).
@@ -226,34 +228,7 @@ desde então. Reverter uma aprovação (`rollback`) compara o mtime atual com o 
 lê o `loadSeq` na entrada e desiste se uma carga mais nova começou.
 Uma carga superada (`seq !== loadSeq`) não descarrega nem marca `loadedSeq` por cima da carga mais nova.
 
-S9.1d Task 3: com 2+ layouts, `probeLayout` também faz `getFile()` (sem ler conteúdo) no mock de cada
-OUTRO layout e o acrescenta a `this.watch`; um mock que ainda não existe entra como `'missing'`, e a
-criação dele acusa. `this.watchLayouts` (`{path: [layoutId]}`, fora do state) diz de qual layout é cada
-path, e o banner acrescenta "(layout Config)" quando `LayersCore.staleLayouts` casa, ou "(inclui layout
-Config)" quando a lista mistura um arquivo do layout ativo (folha compartilhada, `layers.json`).
-`this.layoutProbe` (`id → {hash, uses, files} | {unavailable}`) é preenchido sob demanda por
-`ensureProbe`/`probeOthers`: leitura quieta (não grava `this.mtimes`), um layout por vez, host temporário
-`[data-lod-host]`, e só a contagem de usos (`LayersCore.useKey`) fica. O `hash` é o `pendingHash` que a
-carga daquele layout calcularia (`hashSpecOf`), e os `files` do cache voltam ao `watch` com o mtime da
-sonda.
-
-Invalidação do cache: `clearProbe` (junto de `clearSpread` em conectar/zip/repo/unload/Recarregar/
-Reanalisar, em `approve`/`rollback` e numa carga cujo `layers.json` difere do anterior) esvazia o cache e
-mata a sonda em voo. `checkStale` descarta a entrada cujo arquivo tem mtime diferente do da sonda (inclui
-folhas compartilhadas com o layout ativo) e todas quando `layers.json` mudou; `dismissStale` descarta as
-dos layouts nomeados. `switchLayout` mantém o cache e só remove a entrada do layout que fica ativo.
-Projeto de 1 layout: nada disso roda.
-
-Limite: a sonda lê e dá `stat` em cada arquivo em separado, então uma edição no meio dela pode guardar o
-mtime novo com o hash do conteúdo antigo (o aviso some até o Recarregar).
-
-Salvar entre layouts (multi-layout com pendências em outro layout): ao abrir, `buildSaveSet` lê as pendências
-dos demais layouts no storage, confere `pending.hash` com o da sonda (a sonda cujo arquivo mudou é descartada
-antes) e funde por `arquivo|seletor|prop` com `mergeLayoutChanges` (o ativo vence; conflito vira aviso no log).
-Layout indisponível, hash velho ou template dc vira aviso e mantém a pendência. O conjunto fica em
-`modal.set` e é o único que `makeDraft`, `discardDraft` e `approve` usam; `approve` limpa só as pendências
-dos layouts incluídos cujos arquivos foram gravados (as requisições ficam); mudanças do ativo cujo arquivo não foi gravado também ficam. As pendências de um layout não aplicado (ignorado ou mantido) podem ser descartadas ao abrir o layout: a fonte compartilhada (`man.styles`, `dcSource`) entra no hash de todo layout, então gravar um arquivo compartilhado invalida as pendências dos demais (limite anterior à S9.1d). O aviso "também afeta" lê `probe.uses`, iniciado por gesto
-(escopo Todos iguais ou prompt), nunca pelo render. `Ver diff` e `Exportar` seguem só no layout ativo.
+S9.1d: com 2+ layouts o `checkStale` também vigia o mock de cada outro layout e os arquivos da sonda, e o banner nomeia o layout; o fluxo, a invalidação do cache e os limites estão em [Edição entre layouts](#edição-entre-layouts-s91d).
 
 ### Reanalisar do 0 e deriva do layout
 
@@ -388,11 +363,11 @@ chip da faixa LAYOUTS ─▶ switchLayout(id)               ▼
 | # | Limite | Observação |
 |---|---|---|
 | a | Trocar de layout não descarta `changes` (ficam na chave antiga e voltam com hash igual); `codeBuf` sem salvar pede confirmação e é descartado | `changes` que não podem ser gravados (carga incompleta, acima do teto ou armazenamento cheio) se perdem, e o modal diz isso |
-| b | **Aplicar** e **Salvar** agem só no layout montado; os outros mostram badge | CSS compartilhado aplicado muda o hash dos outros layouts: os ajustes pendentes deles são descartados ao abri-los (toast). "Aplicar junta tudo" é da S9.1d |
+| b | **Aplicar** e **Salvar** de edição direta agem no layout montado; os outros mostram badge. Desde a S9.1d o Salvar junta também as pendências dos outros layouts ([§ Edição entre layouts](#edição-entre-layouts-s91d)) | CSS compartilhado aplicado muda o hash dos outros layouts: as pendências deles que não entraram no Salvar são descartadas ao abri-los (toast) |
 | c | Requisições dos outros layouts vêm do `layers/v1/pending`, com o `confirm` gravado | A marca "alvo a confirmar" fica desatualizada até o layout ser aberto |
-| d | Undo/Redo, watch, deriva e `driftAck` valem só para o layout montado | Deriva em layout desmontado só aparece ao abri-lo; o backup do Reanalisar lê o mock de todos. Seguem só no ativo com o Espalhar ligado; a S9.1d os leva aos demais layouts |
+| d | Deriva e `driftAck` valem só para o layout montado; Undo/Redo (pilha única) e watch (mock de cada layout e arquivos da sonda) cobrem todos desde a S9.1d | Deriva em layout desmontado só aparece ao abri-lo; o backup do Reanalisar lê o mock de todos |
 | e | O botão "Espalhar" entrou na S9.1c; não há botão "Foco" no dock | "Foco" é o segmento do popover que desliga o Espalhar (evita o choque de nome com o FOCO das camadas) |
-| f | Sem aviso de escopo `all` ("também afeta …") | Exige contar usos em layouts desmontados; S9.1d |
+| f | O aviso de escopo `all` ("também afeta …") vem da sonda dos outros layouts (S9.1d) | Contagem sob demanda, em cache, só com 2+ layouts; layout indisponível fica fora da linha |
 | g | Com `layouts` declarado, `mock` e `states` da raiz são ignorados, e as chaves antigas (`<base>`) só voltam se existir `id: "main"` | Sem `main` os pendentes antigos ficam órfãos; ver [layers-json.md](layers-json.md) |
 | h | A escrita da chave ativa renova o `savedAt` das irmãs | Entradas de layouts abandonados vivem enquanto o projeto viver |
 | i | Clicar no layout cujo mock não existe descarrega o projeto e a faixa some | Recarregar a página reabre o primeiro layout (o `layoutMap` foi apagado) |
@@ -577,11 +552,11 @@ A câmera **normal** não se perde: ao ligar, `spreadOn` (ou `swapCam`, assim qu
 | # | Limite | Observação |
 |---|---|---|
 | 1 | Os retratos congelados não acompanham o disco | Só Recarregar, Reanalisar, reconectar ou abrir outro projeto os relê; Trocar de estado não os limpa (muda só o DOM do ativo) |
-| 2 | Sem edição, undo, watch, deriva, "Aplicar junta tudo" nem escopo `all` entre layouts | S9.1d. Um plano LOD só ativa o layout; Aplicar, Salvar, undo e watch seguem só no ativo |
+| 2 | Um plano LOD não é editável: só ativa o layout | Undo, Salvar junta tudo, watch e aviso de escopo entre layouts vieram na S9.1d ([§ Edição entre layouts](#edição-entre-layouts-s91d)); a deriva segue só no ativo |
 | 3 | LOD = varredura rasa (profundidade ≤ 1), sem texto e sem hoist das fontes dos layouts não ativos | As fontes são do documento: subir as de um layout não ativo quebraria o invariante de uma só folha `@font-face`; a geometria de um retrato pode usar a fonte de fallback |
 | 4 | Os retratos ignoram explodir/recolher, `isoId`, solo e foco de camada do ativo; só `flat` vale | Cada página tem o seu `translateZ(depth · spacing)` |
 | 5 | O custo de ligar é proporcional ao número de layouts escolhidos | Uma leitura rasa por layout, em sequência e em segundo plano; medido 373 ms com 3 layouts de ~1.500 nós (§ D do [checklist](RELEASE-CHECKLIST.md)) |
-| 6 | Acima de 1.500 planos o aviso não bloqueia e a órbita degrada | Medido ~10 fps a 3.303 planos (ativo + anterior cheio + LOD); o orçamento de 50 fps vale só abaixo do teto |
+| 6 | Acima de 1.500 planos o aviso não bloqueia e a órbita degrada | Medido ~10 fps a 3.303 planos (ativo + anterior cheio + LOD) na S9.1c e ~44 fps (22,6 ms/quadro) depois da S9.1d, que desenha a cheia como LOD acima do teto; o orçamento de 50 fps vale só abaixo do teto |
 | 7 | Layout indisponível (mock ausente, ilegível, vazio ou sem nós) sai do palco | Os slots são compactados: as páginas seguintes se deslocam uma vez quando uma leitura em voo vira `unavailable` (os pendentes mantêm o slot) |
 | 8 | Sem teto de bytes nas leituras de mock | O loader do ativo também não tem; um mock gigante só custa tempo |
 | 9 | O pivô da câmera é limitado à pegada, no estado e na renderização | O arrasto no plano para na borda e, num gesto novo, o quadro anda de imediato ao voltar (dentro do mesmo gesto o desvio é medido do ponto inicial, então voltar menos que o excesso não move o quadro); `zoomBy` é exato só com `k = 1` |
@@ -592,7 +567,63 @@ A câmera **normal** não se perde: ao ligar, `spreadOn` (ou `swapCam`, assim qu
 | 14 | Em 1–N, qualquer troca de layout junta o layout que sai ao `picked` | O que o usuário deixou para trás continua no palco; para tirá-lo, desmarque no popover |
 | 15 | Um projeto que passa a ter um só layout ao recarregar sai do Espalhar | `leaveSpread` devolve a câmera normal e a sessão deixa de guardar a chave |
 | 16 | Só um projeto conectado (pasta, `.zip`, repositório) restaura o Espalhar ao recarregar a página | O modo fixture (`?layers=`, `?project=`) não restaura câmera nem Espalhar |
-| 17 | A entrada congelada cheia (o ativo anterior) não tem teto e os `LodPlane` não têm culling nem agrupamento por `z` durante o arrasto | Um total abaixo de 1.500 planos com uma entrada cheia (ex.: 700 + 700) não foi medido e pode cair abaixo de 50 fps sem aviso. Acompanhamento na S9.1d: desenhar a cheia congelada como LOD quando o total passar de `PLANES_MAX`, agrupar os `LodPlane` por `z` durante o arrasto e medir um caso de ~1.400 planos |
+| 17 | Fechado em parte na S9.1d: a cheia congelada passou a ser desenhada como LOD acima de `PLANES_MAX` e os `LodPlane` são cortados e agrupados por `z` no arrasto. A entrada cheia não tem teto abaixo de 1.500, e o caso silencioso segue lento | Medido, não resolvido: 700 + 700 (1.407 planos, abaixo do teto, sem aviso, cheia desenhada inteira) orbita a 21,2 ms/quadro (≈ 47 fps), abaixo da meta de 50 fps e mais caro que 800 + 800 (1.607, avisa e rebaixa), a 18,9 ms (≈ 53 fps). Números em § D do [checklist](RELEASE-CHECKLIST.md) |
+
+### Edição entre layouts (S9.1d)
+
+Com 2+ layouts, quatro pontos deixam de ficar presos ao layout montado: o undo, o Salvar, o aviso de escopo e o watch. Continua **um só mock vivo** (o ativo); os demais são lidos sem montar, por uma sonda em cache. Projeto de 1 layout e Espalhar desligado mantêm o DOM, as chaves e o custo de antes: a sonda e o watch extra só existem com 2+ layouts, e nada roda no carregamento.
+
+```
+Ctrl+Z ─▶ pilha única {layoutId, changes}  ── undoStepApplies(passo, ativo, ids)
+            ├ here   ─▶ applyStep                                        (delta inline no DOM do ativo)
+            ├ switch ─▶ stepAcross ─▶ switchLayout (keepUndo) ─▶ barreira de commit ─▶ re-lê o topo ─▶ applyStep
+            └ drop   ─▶ tira o passo, toast
+
+Salvar ─▶ buildSaveSet ─▶ refreshProbe + ensureProbe ─▶ layers/v1/pending dos outros layouts (sem montar)
+            │ pending.hash == sonda.hash? ─ não / indisponível / template dc ─▶ aviso; a pendência fica
+            ▼ sim
+          mergeLayoutChanges (ativo vence; depois a ordem do layers.json) ─▶ modal.set
+            ▼
+          makeDraft / approve: 1 escrita por arquivo|seletor|prop ─▶ setPending por chave dos incluídos ─▶ clearProbe
+
+escopo Todos iguais / prompt ─▶ wantProbe ─▶ layoutProbe[id].uses ─▶ "também afeta Config (3 usos)"
+checkStale ─▶ this.watch (+ mock de cada outro layout + arquivos da sonda) ─▶ banner "(layout Config)"
+```
+
+**Núcleo puro** (`LayersCore`, `test/layers-core.test.js`): `mergeLayoutChanges(byLayout, activeId, order, patchSelFn)` funde por `arquivo|seletor|prop` (o ativo vence; entre os outros vale a ordem do manifesto; só conflito **entre** layouts é reportado, um valor por layout de origem); `countUses` e `useKey(src, tag, folha)` contam usos; `undoStepApplies(step, activeId, layoutIds)` devolve `'here'`, `'switch'` ou `'drop'`; `staleLayouts(paths, stale)` mapeia path para layouts; `spreadDrawPlan(activeCount, entries, max)` decide cheio ou LOD ([§ Espalhar](#espalhar-s91c)).
+
+**Undo.** Cada `change` leva `layoutId` e cada passo é `{layoutId, changes}`. `switchLayout` não zera mais a pilha (`keepUndo`), e `undoHash[layoutId]` descarta os passos de um layout cuja fonte mudou entre visitas. As regras de espera e de descarte estão no item "Edição" do [Estado (resumo)](#estado-resumo).
+
+**Sonda.** `this.layoutProbe` (`id → {hash, uses, files} | {unavailable}`) é preenchido sob demanda por `ensureProbe`/`probeOthers`, por gesto (escopo Todos iguais, prompt de escopo, Salvar), nunca por render nem no carregamento. É uma leitura quieta (`buildMockDom` sem gravar `this.mtimes`), um layout por vez, num host temporário `[data-lod-host]` removido em `finally`, com `scanRoot` completo; só a contagem de usos (`useKey`) e os `files` com mtime ficam. O `hash` é o `pendingHash` que a carga daquele layout calcularia (`hashSpecOf`), e o `live()` (`loadSeq` mais uma semente própria) descarta o resultado de uma sonda superada por troca de layout, Recarregar, Reestruturar ou Zerar.
+
+**Invalidação do cache.**
+
+1. `clearProbe` (junto de `clearSpread` em conectar, zip, repositório, `unloadProject`, Recarregar e Reanalisar, e também em `approve`, `rollback` e numa carga cujo `layers.json` difere do anterior) esvazia tudo e mata a sonda em voo.
+2. `evictProbed`, chamado por `checkStale`, aplica três regras em ordem: `layers.json` stale esvazia tudo (como em 1); depois descarta o layout **nomeado por um path de `watchLayouts` que está stale**, o que inclui uma entrada `unavailable` cujo mock acabou de aparecer; por fim descarta a entrada cujo arquivo tem mtime diferente do da sonda, o que inclui folhas compartilhadas com o layout ativo.
+3. `dismissStale` descarta as entradas dos layouts nomeados no banner ignorado.
+
+`switchLayout` mantém o cache e só remove a entrada do layout que passa a ser ativo.
+
+**Watch.** `probeLayout` faz `getFile()` (sem ler conteúdo) no mock de cada outro layout e o acrescenta a `this.watch`; um mock que ainda não existe entra como `'missing'`, e a criação dele acusa. `this.watchLayouts` (`{path: [layoutId]}`) diz de qual layout é cada path, e os `files` do cache voltam ao `watch` com o mtime da sonda. O banner acrescenta "(layout Config)" quando `staleLayouts` casa, ou "(inclui layout Config)" quando a lista mistura um arquivo do layout ativo (folha compartilhada, `layers.json`).
+
+**Salvar entre layouts.** O conjunto (mudanças fundidas, origem por layout, avisos, ids incluídos) é calculado **uma vez** ao abrir, fica em `modal.set` e é o único que `modalFiles`, `makeDraft`, `discardDraft` e `approve` usam (`planStale` recusa se o projeto foi recarregado depois do plano). Salvar abre mesmo quando só outro layout tem pendência. `approve` escreve cada arquivo uma vez, guarda no histórico a lista fundida (o `rollback` restaura os arquivos de todos os layouts e os estilos inline só do ativo, a partir da lista própria dele antes da fusão) e limpa, por chave (`setPending`), só as pendências dos layouts incluídos cujos arquivos foram gravados: as requisições ficam, os passos de undo dos incluídos saem e o `layoutBadges` é refeito. A pendência de um layout ignorado ou mantido segue no storage.
+
+**Aviso "também afeta".** `alsoAffects(nó)` lê `probe.uses` e acrescenta ao painel (nas três variantes) e ao prompt de escopo `também afeta Config (3 usos) · Replay (1 uso)`; "contando outros layouts…" aparece enquanto a sonda roda, sem bloquear a escolha. Layout indisponível ou com zero usos fica fora da linha.
+
+#### Limites da edição entre layouts
+
+| # | Limite | Observação |
+|---|---|---|
+| a | Gravar um arquivo compartilhado invalida as pendências guardadas dos layouts que não entraram no Salvar | `man.styles` e `dcSource` entram no hash de **todo** layout, então o hash deles muda; as pendências são descartadas ao abrir o layout, com toast (o aviso do Salvar diz isso). Mesma regra da S9.1a, agora anunciada |
+| b | Ver diff e Exportar cobrem só o layout ativo | A prévia pode diferir do que o Salvar grava; o badge de Salvar também conta só o ativo |
+| c | Uma mudança de template dc em outro layout faz o Salvar pular o layout inteiro | O escritor dc está preso ao dc do ativo; o aviso diz "template só grava no layout ativo" |
+| d | Uma entrada cheia rebaixada acima de 1.500 planos perde os planos profundos (profundidade > 1) | `spreadFrozen` não muda, então eles voltam quando o total cai; só o desenho é raso |
+| e | A sonda lê e dá `stat` em cada arquivo em separado | Uma edição no meio da leitura pode guardar o mtime novo com o hash do conteúdo antigo: o aviso some até o Recarregar |
+| f | 700 + 700 planos (1.407, abaixo do teto) orbita a ~47 fps e não avisa | Medido (21,2 ms/quadro), não resolvido: o limite 17 do Espalhar continua com o número, e o orçamento de 50 fps só é guardado no Traval |
+| g | Uma sonda `unavailable` não tem arquivo para comparar | Só é relida quando o path do mock aparece, quando o `layers.json` muda ou no Recarregar |
+| h | Gravar um arquivo que um layout não incluído também usa tira os passos de undo dele na volta | Regra do hash (`undoHash`) |
+| i | O aviso "também afeta" só aparece com Todos iguais e um nó com irmãos no ativo (e no prompt de escopo) | Um nó sem irmãos no ativo, mas usado em outro layout, não mostra nada |
+| j | Uma gravação que falha mantém a mudança do ativo cujo arquivo não foi gravado | Vale também para projeto de 1 layout (antes a mudança era limpa) |
 
 ### Guarda de conflito na gravação
 

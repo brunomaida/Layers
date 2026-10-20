@@ -1861,11 +1861,13 @@ test('SpreadDrag_LodClickWhileDragged_IsIgnoredAndWorksAfterwards', async ({ pag
   const p = await lodPick(page, 'config'); expect(p).not.toBeNull();
   await holdOrbit(page); // `dragged` is set and the planes were regrouped
   const click = () => page.evaluate(({ id }) => { const el = document.querySelector('[data-lod-plane="' + id + '"][data-layout="config"]'), r = el.getBoundingClientRect(); el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: r.left + r.width / 2, clientY: r.top + r.height / 2 })); }, p);
+  const seq0 = await page.evaluate(() => window.__logic.loadSeq);
   await click(); // a click the browser would deliver to a plane after a drag: lodClick's `dragged` guard must drop it
   await flush(page);
-  expect(await activeId(page)).toBe('main');
+  expect(await page.evaluate(() => window.__logic.loadSeq), 'no layout load was started').toBe(seq0);
   await page.mouse.up();
   await flush(page);
-  await click(); // positive control: the same event with no drag activates
+  await click(); // positive control: the same event with no drag starts a load and activates the layout
+  await expect.poll(() => page.evaluate(() => window.__logic.loadSeq)).toBeGreaterThan(seq0);
   await expect.poll(() => activeId(page)).toBe('config');
 });
