@@ -1165,8 +1165,8 @@ const Plane = React.memo(function Plane(p) {
 
 // S9.1c: plano de outro layout no Espalhar (retrato congelado): sem data-plane, sem handlers, sem hit-test; como o board: LOD = borda tracejada, retrato cheio (dim) = borda continua .35, opacidade .5 e fundo por profundidade
 // Task 6: the plane takes clicks (activate its layout on that node) and a hover highlight; `H` is the component's stable handler bag, `hot` the only prop that changes on hover. The cursor comes from the page div (an inline cursor here would make planeCensus count it).
-const LodPlane = React.memo(function LodPlane({ n, z, lid, full, hot, H }) {
-  return React.createElement('div', { 'data-lod-plane': n.id, 'data-layout': lid, ...(hot ? { 'data-lod-hot': '' } : null), style: { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: 'translateZ(' + z + 'px)', contain: 'layout paint',
+const LodPlane = React.memo(function LodPlane({ n, z, lid, full, hot, H, dragging, culled }) {
+  return React.createElement('div', { 'data-lod-plane': n.id, 'data-layout': lid, ...(hot ? { 'data-lod-hot': '' } : null), style: { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: dragging ? undefined : 'translateZ(' + z + 'px)', contain: 'layout paint', display: culled ? 'none' : undefined,
     background: hot ? 'rgba(var(--selRgb),.16)' : n.depth === 0 ? 'rgba(14,17,22,.9)' : 'rgba(var(--bg1Rgb),.3)', border: hot ? '1px solid var(--sel)' : full ? '1px solid rgba(173,181,190,.35)' : '1px dashed rgba(173,181,190,.45)', borderRadius: n.radius, opacity: hot ? .9 : 0.5 * n.opacity, boxSizing: 'border-box', pointerEvents: 'auto' },
     onClick: e => H.lodClick(lid, n.id, e), onDoubleClick: H.lodDbl, onMouseEnter: e => H.lodEnter(lid, n.id, e), onMouseLeave: H.lodLeave });
 });
@@ -2573,14 +2573,14 @@ class Component extends DCLogic {
       copyReqItem: this.menuAct(() => this.copyRequests()), exportReqItem: this.menuAct(() => this.exportRequests()) };
   }
   // S9.1c: pages of the spread in layers.json order (null = render as today: Espalhar off, or fewer than 2 pages). Layouts that came out unavailable leave no slot; pending ones keep theirs.
-  // offs[i] = spreadOffsets; ai = active page; foot = N*pageW + (N-1)*gap; maxD = deepest frozen node (the overview camera's visibleMax over all pages).
+  // offs[i] = spreadOffsets; ai = active page; foot = N*pageW + (N-1)*gap; maxD = deepest DRAWN frozen node (the overview camera's visibleMax over all pages); plan = spreadDrawPlan id -> 'full' | 'lod' (a full entry past PLANES_MAX is drawn as LOD, spreadFrozen untouched).
   spreadView() {
     const s = this.state, sp = s.spread, P = s.project; if (!sp.on || !P || !P.layouts || P.layouts.length < 2) return null;
-    const c = this._sv; if (c && c.P === P && c.lid === P.layoutId && c.sp === sp && c.rev === s.spreadRev && c.w === s.pageW) return c.v;
+    const c = this._sv; if (c && c.P === P && c.lid === P.layoutId && c.sp === sp && c.rev === s.spreadRev && c.w === s.pageW && c.n === s.nodes.length) return c.v;
     const F = this.spreadFrozen, ids = LayersCore.spreadPicked(P.layouts, sp.mode, sp.picked, P.layoutId).filter(id => { const e = F.get(id); return id === P.layoutId || !(e && e.unavailable); });
     let v = null;
-    if (ids.length >= 2) { const offs = LayersCore.spreadOffsets(ids.length, s.pageW, sp.dist); let maxD = 0; ids.forEach(id => { const e = F.get(id); if (id !== P.layoutId && e && e.nodes) e.nodes.forEach(n => { if (n.depth > maxD) maxD = n.depth; }); }); v = { ids, offs, ai: ids.indexOf(P.layoutId), foot: offs[offs.length - 1] + s.pageW, maxD }; }
-    this._sv = { P, lid: P.layoutId, sp, rev: s.spreadRev, w: s.pageW, v }; return v;
+    if (ids.length >= 2) { const offs = LayersCore.spreadOffsets(ids.length, s.pageW, sp.dist); const plan = LayersCore.spreadDrawPlan(s.nodes.length, ids.filter(id => id !== P.layoutId && F.get(id) && F.get(id).nodes).map(id => ({ id, full: F.get(id).full, count: F.get(id).count }))); let maxD = 0; ids.forEach(id => { const e = F.get(id); if (id !== P.layoutId && e && e.nodes) { const cap = e.full && plan[id] !== 'full' ? 1 : Infinity; e.nodes.forEach(n => { if (n.depth > maxD && n.depth <= cap) maxD = n.depth; }); } }); v = { ids, offs, ai: ids.indexOf(P.layoutId), foot: offs[offs.length - 1] + s.pageW, maxD, plan }; }
+    this._sv = { P, lid: P.layoutId, sp, rev: s.spreadRev, w: s.pageW, n: s.nodes.length, v }; return v;
   }
   // camera focus when none is set: the page center, or the center of the whole spread (in active-page coordinates) in the overview
   defFocus() { const s = this.state, sv = this.spreadView(); return { x: s.pageW / 2 + (sv ? sv.offs[sv.offs.length - 1] / 2 - sv.offs[sv.ai] : 0), y: s.pageH / 2, zd: null }; }
@@ -3169,11 +3169,22 @@ class Component extends DCLogic {
         if (id === s.project.layoutId) { kids.push(React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)' } }, [tag(id, name, true, false), React.createElement('div', { key: 'afr', 'data-spread-frame': '', style: { position: 'absolute', left: 0, top: 0, width: s.pageW, height: s.pageH, boxSizing: 'border-box', border: '1px solid rgba(var(--selRgb),.8)', pointerEvents: 'none' } }), ...planes])); return; }
         if (!e || e.unavailable) return;
         const hv = s.lodHover && s.lodHover.startsWith(id + ':') ? s.lodHover : ''; // hover rebuilds only the hovered page's elements; the memo keeps every other plane
-        seen.add(id); const k = spacing + '|' + off + '|' + name + '|' + s.pageW + '|' + s.pageH + '|' + hv, c = lodEls.get(id);
-        if (c && c.e === e && c.k === k) { kids.push(c.el); return; }
+        const lod = sv.plan[id] !== 'full', c = lodEls.get(id), same = !!c && c.e === e, shallow = lod && e.full ? (same && c.shallow) || LayersCore.lodNodes(e.nodes, 1) : null, nodes = shallow || e.nodes; // a demoted full entry draws its depth<=1 slice
+        seen.add(id); const k = spacing + '|' + off + '|' + name + '|' + s.pageW + '|' + s.pageH + '|' + hv + '|' + (lod ? 1 : 0) + '|' + (dragging ? 1 : 0);
+        if (!dragging && same && c.k === k) { kids.push(c.el); return; }
         // LOD z = depth * spacing: frozen pages honour `flat` (spacing 0) but deliberately ignore the active layout's explode/collapse/isoId/solo/layerFocus
-        const el = React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)', pointerEvents: 'none', cursor: 'pointer' } }, [tag(id, name, false, !e.full), ...e.nodes.map(n => React.createElement(LodPlane, { key: n.id, n: n, z: n.depth * spacing, lid: id, full: !!e.full, hot: hv === id + ':' + n.id, H: this.H }))]);
-        lodEls.set(id, { e, k, el }); kids.push(el);
+        let grp = null, flags = null, j = 0;
+        if (dragging) { // S9.1d: cull against the camera (page offset relative to the active page) and share one composited layer per z; the groups depend on nodes + spacing only, the cull on the camera
+          grp = same && c.grp && c.grp.src === nodes && c.grp.sp === spacing ? c.grp : (() => { const by = new Map(nodes.map(n => [n.id, n])); return { src: nodes, sp: spacing, flags: new Uint8Array(nodes.length), groups: LayersCore.groupPlanesByZ(nodes.map(n => ({ id: n.id, z: n.depth * spacing }))).map(g => ({ z: g.z, ns: g.ids.map(i => by.get(i)) })) }; })();
+          flags = grp.flags; let changed = grp !== (same && c.grp); // a steady orbit (same cull result) reuses the element: N cull calls, no allocation
+          grp.groups.forEach(g => g.ns.forEach(n => { const v = cull && cull(n.x + off - offA, n.y, n.w, n.h, n.depth * spacing) ? 1 : 0; if (flags[j] !== v) { flags[j] = v; changed = true; } j++; }));
+          if (!changed && same && c.k === k) { kids.push(c.el); return; }
+          j = 0;
+        }
+        const mk = n => React.createElement(LodPlane, { key: n.id, n: n, z: n.depth * spacing, lid: id, full: !lod, hot: hv === id + ':' + n.id, H: this.H, dragging: dragging, culled: dragging && flags[j++] === 1 });
+        const body = dragging ? grp.groups.map(g => React.createElement('div', { key: 'lg' + g.z, 'data-lod-group': '', style: { position: 'absolute', left: 0, top: 0, width: s.pageW, height: s.pageH, transform: 'translateZ(' + g.z + 'px)', willChange: 'transform', pointerEvents: 'none' } }, g.ns.map(mk))) : nodes.map(mk);
+        const el = React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)', pointerEvents: 'none', cursor: 'pointer' } }, [tag(id, name, false, lod), ...body]);
+        lodEls.set(id, { e, k, el, shallow, grp }); kids.push(el);
       });
       [...lodEls.keys()].forEach(id => { if (!seen.has(id)) lodEls.delete(id); });
     }

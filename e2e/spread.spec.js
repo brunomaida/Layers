@@ -1052,9 +1052,9 @@ test('SpreadLod_OrbitDragOverAPlane_DoesNotActivateAndStillOrbits', async ({ pag
   await page.mouse.down();
   await page.mouse.move(p.x + 5, p.y, { steps: 2 });
   await page.mouse.move(p.x + 10, p.y, { steps: 2 });
-  await page.mouse.up(); // released over the same plane: the browser does dispatch a click on it (past the 3 px threshold)
+  await page.mouse.up(); // released over the plane: past the 3 px threshold the drag regroups the LOD planes (S9.1d), so the browser may retarget the click to a common ancestor (0) instead of the plane (1)
   await flush(page);
-  expect(await page.evaluate(() => window.__lodClicks)).toBe(1);
+  expect(await page.evaluate(() => window.__lodClicks)).toBeLessThanOrEqual(1);
   expect(await activeId(page)).toBe('main');
   expect(await sel(page)).toBe('0');
   expect((await cam(page)).yaw).not.toBe(y0); // the drag orbited
@@ -1709,4 +1709,149 @@ test('SpreadLod_Hover_IgnoredWhileAnActivePlaneIsInFront', async ({ page }) => {
   await page.mouse.move(2, 400);
   await page.mouse.move(p.x, p.y);
   await expect.poll(() => page.evaluate(() => window.__logic.state.lodHover)).toBe('replay:' + p.id);
+});
+
+// S9.1d Task 5: past PLANES_MAX the full frozen entry is drawn as LOD (spreadFrozen untouched), and while dragging the LOD planes are culled and grouped by z.
+// main is frozen full (one extra depth-2 node so the demotion is visible); replay's count is set so active + frozen == total.
+async function demoSetup(page, total) {
+  await spreadReady(page);
+  await switchTo(page, 'config'); await settled(page, 3); await flush(page);
+  await page.evaluate((t) => {
+    const L = window.__logic, F = L.spreadFrozen, m = F.get('main'), r = F.get('replay');
+    F.set('main', { ...m, nodes: [...m.nodes, { ...m.nodes[1], id: m.nodes[1].id + '.0', depth: 2 }], count: m.count + 1 });
+    F.set('replay', { ...r, count: t - L.state.nodes.length - (m.count + 1) });
+    L.spreadBump();
+  }, total);
+  await flush(page);
+}
+const mainPage = (page) => page.evaluate(() => {
+  const p = document.querySelector('[data-spread-page="main"]'), pl = [...p.querySelectorAll('[data-lod-plane]')];
+  return { label: p.querySelector('[data-spread-label]').textContent, planes: pl.length, deep: pl.filter((e) => e.dataset.lodPlane.split('.').length > 2).length, styles: [...new Set(pl.map((e) => getComputedStyle(e).borderTopStyle))], full: window.__logic.spreadFrozen.get('main').full, frozenNodes: window.__logic.spreadFrozen.get('main').nodes.length };
+});
+
+test('SpreadDraw_TotalOverLimit_DrawsFullFrozenAsLod', async ({ page }) => {
+  await demoSetup(page, 1501);
+  const m = await mainPage(page);
+  expect(m.full).toBe(true); // the frozen entry itself is untouched
+  expect(m.frozenNodes).toBe(4);
+  expect(m.label).toBe('Main · LOD');
+  expect(m.styles).toEqual(['dashed']);
+  expect(m.planes).toBe(3); // depth <= 1 only: the deep node is not drawn
+  expect(m.deep).toBe(0);
+  expect((await pagesInfo(page)).map((x) => x.label)).toEqual(['Main · LOD', 'Config', 'Replay · LOD']);
+});
+
+test('SpreadDraw_TotalAtLimit_KeepsFull', async ({ page }) => {
+  await demoSetup(page, 1500);
+  const m = await mainPage(page);
+  expect(m.label).toBe('Main');
+  expect(m.styles).toEqual(['solid']);
+  expect(m.planes).toBe(4);
+  expect(m.deep).toBe(1);
+});
+
+// An empty stage point (neither a plane nor a control): where a press starts an orbit
+const emptyStagePoint = (page) => page.evaluate((src) => {
+  const st = eval(src), r = st.getBoundingClientRect();
+  for (let y = r.top + 40; y < r.bottom - 80; y += 20) for (let x = r.left + 40; x < r.right - 40; x += 20) { const e = document.elementFromPoint(x, y); if (e && st.contains(e) && !e.closest('[data-lod-plane],[data-plane],button,[data-spread-pop],[data-layout-strip]')) return { x, y }; }
+  return null;
+}, STAGE_JS);
+async function holdOrbit(page) {
+  const from = await emptyStagePoint(page); expect(from).not.toBeNull();
+  await page.mouse.move(from.x, from.y); await page.mouse.down();
+  await page.mouse.move(from.x + 8, from.y); await page.mouse.move(from.x + 40, from.y + 20, { steps: 4 });
+  await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))));
+  expect(await page.evaluate(() => window.__logic.state.dragging)).toBe(true);
+  return from;
+}
+const lodGroups = (page) => page.evaluate(() => {
+  const L = window.__logic;
+  return [...document.querySelectorAll('[data-spread-page]')].map((p) => {
+    const groups = [...p.querySelectorAll(':scope > [data-lod-group]')], planes = [...p.querySelectorAll('[data-lod-plane]')];
+    return { id: p.dataset.spreadPage, groups: groups.length, zs: groups.map((g) => parseFloat(g.style.transform.slice('translateZ('.length))), planes: planes.length, direct: planes.filter((e) => e.parentElement === p).length, grouped: planes.filter((e) => e.parentElement.hasAttribute('data-lod-group')).length,
+      ownTransform: planes.filter((e) => e.style.transform !== '').length, wrapperPe: groups.every((g) => g.style.pointerEvents === 'none' && g.style.willChange === 'transform'), planeGroups: p.querySelectorAll('[data-plane-group]').length, depths: new Set((L.spreadFrozen.get(p.dataset.spreadPage) || { nodes: [] }).nodes.map((n) => n.depth)).size };
+  });
+});
+
+test('SpreadDrag_LodPlanes_AreGroupedByZ', async ({ page }) => {
+  await spreadReady(page);
+  await holdOrbit(page);
+  const g = await lodGroups(page);
+  const lod = g.filter((p) => p.id !== 'main');
+  expect(lod.length).toBe(2);
+  for (const p of lod) {
+    expect(p.planes).toBeGreaterThan(0);
+    expect(p.direct).toBe(0);
+    expect(p.grouped).toBe(p.planes);
+    expect(p.ownTransform).toBe(0);
+    expect(p.groups).toBe(p.depths); // one wrapper per distinct z (z = depth * spacing)
+    expect(new Set(p.zs).size).toBe(p.groups);
+    expect(p.wrapperPe).toBe(true);
+    expect(p.planeGroups).toBe(0); // data-plane-group belongs to the active page's leaf grouping
+  }
+  expect(g.find((p) => p.id === 'main').groups).toBe(0); // the active page keeps its own data-plane-group
+  await page.mouse.up();
+  await flush(page);
+  const after = (await lodGroups(page)).filter((p) => p.id !== 'main');
+  for (const p of after) { expect(p.groups).toBe(0); expect(p.direct).toBe(p.planes); expect(p.ownTransform).toBe(p.planes); } // not dragging: one layer per plane as before
+});
+
+test('SpreadDrag_LodClickAndHover_StillWork', async ({ page }) => {
+  await spreadReady(page);
+  await holdOrbit(page);
+  // mid-drag the wrapper never intercepts: a pointer over a LOD plane still reaches the plane
+  const hit = await page.evaluate(() => { const g = document.querySelector('[data-lod-group]'), e = g.firstElementChild; return { pe: getComputedStyle(g).pointerEvents, planePe: getComputedStyle(e).pointerEvents, cursor: getComputedStyle(e).cursor }; });
+  expect(hit).toEqual({ pe: 'none', planePe: 'auto', cursor: 'pointer' });
+  await page.mouse.up();
+  await flush(page);
+  const q = await lodPick(page, 'config'); expect(q).not.toBeNull();
+  await page.mouse.move(2, 400); await page.mouse.move(q.x, q.y);
+  await expect.poll(() => page.evaluate(() => window.__logic.state.lodHover)).toBe('config:' + q.id); // hover after the drag
+  await page.mouse.click(q.x, q.y);
+  await expect.poll(() => activeId(page)).toBe('config'); // click after the drag
+  await loadedNow(page);
+  expect(await sel(page)).toBe(q.id);
+});
+
+test('SpreadDrag_LodPlanes_OutsideTheViewAreCulledOnlyWhileDragging', async ({ page }) => {
+  await spreadReady(page);
+  await holdOrbit(page);
+  await act(page, 'setState', { zoom: 6 }); await flush(page); // zoomed in mid-drag: most of the pages fall outside the stage
+  const during = await page.evaluate(() => { const pl = [...document.querySelectorAll('[data-lod-plane]')]; return { total: pl.length, hidden: pl.filter((e) => e.style.display === 'none').map((e) => e.dataset.layout + ':' + e.dataset.lodPlane) }; });
+  expect(during.hidden.length).toBeGreaterThan(0);
+  expect(during.hidden.length).toBeLessThan(during.total);
+  await page.mouse.up();
+  await flush(page);
+  // no false positive (the page offset is right): every plane hidden mid-drag really sits outside the stage once shown again
+  const inside = await page.evaluate(({ src, hidden }) => {
+    const st = eval(src).getBoundingClientRect(), m = 0.15 * Math.max(st.width, st.height);
+    return hidden.filter((h) => { const [lid, id] = h.split(':'), r = document.querySelector('[data-lod-plane="' + id + '"][data-layout="' + lid + '"]').getBoundingClientRect(); return r.right > st.left - m && r.left < st.right + m && r.bottom > st.top - m && r.top < st.bottom + m; });
+  }, { src: STAGE_JS, hidden: during.hidden });
+  expect(inside).toEqual([]);
+  expect(await page.evaluate(() => [...document.querySelectorAll('[data-lod-plane]')].filter((e) => e.style.display === 'none').length)).toBe(0);
+});
+
+test('Spread_PlaneCensus_IgnoresLodGroups', async ({ page }) => {
+  await spreadReady(page);
+  const n = await page.evaluate(() => window.__logic.state.nodes.length);
+  expect((await planeCensus(page)).total).toBe(n);
+  await holdOrbit(page);
+  expect(await page.evaluate(() => document.querySelectorAll('[data-lod-group]').length)).toBeGreaterThan(0);
+  expect((await planeCensus(page)).total, 'wrappers and LOD planes are not planes').toBe(n);
+  expect(await page.evaluate(() => document.querySelectorAll('[data-plane]').length)).toBe(n);
+  await page.mouse.up();
+});
+
+test('SpreadDrag_SteadyCamera_ReusesTheLodPageElement', async ({ page }) => {
+  await spreadReady(page);
+  await holdOrbit(page);
+  const r = await page.evaluate(async () => {
+    const L = window.__logic, els = () => ['config', 'replay'].map((id) => L._lodEls.get(id).el), el1 = els();
+    L.setState({ hoverId: null }); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // a render with the same camera and the same cull result
+    const same = els().every((e, i) => e === el1[i]);
+    L.setState({ zoom: 6 }); await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r))); // another camera: the cull result changes
+    return { same, moved: els().some((e, i) => e !== el1[i]) };
+  });
+  expect(r).toEqual({ same: true, moved: true });
+  await page.mouse.up();
 });
