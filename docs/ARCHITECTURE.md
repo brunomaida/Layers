@@ -252,7 +252,7 @@ dos demais layouts no storage, confere `pending.hash` com o da sonda (a sonda cu
 antes) e funde por `arquivo|seletor|prop` com `mergeLayoutChanges` (o ativo vence; conflito vira aviso no log).
 Layout indisponível, hash velho ou template dc vira aviso e mantém a pendência. O conjunto fica em
 `modal.set` e é o único que `makeDraft`, `discardDraft` e `approve` usam; `approve` limpa só as pendências
-dos layouts incluídos cujos arquivos foram gravados (as requisições ficam). O aviso "também afeta" lê `probe.uses`, iniciado por gesto
+dos layouts incluídos cujos arquivos foram gravados (as requisições ficam); mudanças do ativo cujo arquivo não foi gravado também ficam. As pendências de um layout não aplicado (ignorado ou mantido) podem ser descartadas ao abrir o layout: a fonte compartilhada (`man.styles`, `dcSource`) entra no hash de todo layout, então gravar um arquivo compartilhado invalida as pendências dos demais (limite anterior à S9.1d). O aviso "também afeta" lê `probe.uses`, iniciado por gesto
 (escopo Todos iguais ou prompt), nunca pelo render. `Ver diff` e `Exportar` seguem só no layout ativo.
 
 ### Reanalisar do 0 e deriva do layout

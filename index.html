@@ -2948,7 +2948,7 @@ class Component extends DCLogic {
       const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); if (!e || !e.changes.length) return;
       const pr = this.layoutProbe.get(id), n = e.changes.length;
       const why = !pr || pr.unavailable ? 'layout indisponível' : pr.hash !== e.hash ? 'fonte mudou' : e.changes.some(isTplChange) ? 'template só grava no layout ativo' : null;
-      if (why) { warnings.push('⚠ ' + n + (n === 1 ? ' pendência de ' : ' pendências de ') + name(id) + (n === 1 ? ' ignorada' : ' ignoradas') + ' (' + why + ')'); return; } // a skipped layout keeps its stored adjustments
+      if (why) { warnings.push('⚠ ' + n + (n === 1 ? ' pendência de ' : ' pendências de ') + name(id) + (n === 1 ? ' não aplicada' : ' não aplicadas') + ' (' + why + '); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'); return; } // a skipped layout keeps its stored adjustments
       byLayout[id] = e.changes; others.push(id);
     });
     if (!others.length) return { changes: s.changes, others, warnings, seq };
@@ -3047,13 +3047,14 @@ class Component extends DCLogic {
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
-    [this.curLayoutId(), ...others].forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout the plan included go
+    if (this.state.changes.length) this.dropUndoFor(this.curLayoutId()); others.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout that contributed go
     const unwritten = new Set(files.filter(f => (f.dc || /\.css$/.test(f.path)) && !entry.files.includes(f)).map(f => f.path)), cleared = others.filter(id => !this.pendingFiles(id).some(p => unwritten.has(p)));
-    others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' mantidas: arquivo não gravado'));
+    const left = this.state.changes.filter(c => unwritten.has(ruleOf(c)[0])); entry.dom = this.state.changes.filter(c => !left.includes(c)); // the active layout's own list (merging may collapse it): rollback restores THESE inline styles
+    others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'));
     const badges = cleared.length ? this.clearOtherPending(cleared) : null;
     this.clearProbe(); // the files changed on disk
     if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
-    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [], ...(badges ? { layoutBadges: badges } : {}) }));
+    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: left, ...(badges ? { layoutBadges: badges } : {}) }));
   }
   async rollback(h) {
     // vale tambem depois de um reload (this.mtimes zerado): compara com o mtime que o approve deixou
@@ -3063,7 +3064,7 @@ class Component extends DCLogic {
       const moved = LayersCore.movedSince(h.written, cur);
       if (moved.length) { this.toast('Reverter recusado: ' + moved.join(', ') + ' mudou fora do LAYERS depois da aprovação. Recarregue (R) e revise.'); return; }
     }
-    h.changes.filter(c => !c.layoutId || c.layoutId === this.curLayoutId()).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: a merged entry also holds other layouts' changes: their ids are not this DOM's
+    (h.dom || h.changes).filter(c => !c.layoutId || c.layoutId === this.curLayoutId()).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: a merged entry also holds other layouts' changes: their ids are not this DOM's
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
     this.clearProbe(); // the files changed on disk
     if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));
@@ -3479,7 +3480,7 @@ class Component extends DCLogic {
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
       isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',
       confirmLabel: (m && m.label) || 'Carregar', confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
-      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan', isDraft: !!m && m.stage === 'draft',
+      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan' && !m.loading, isDraft: !!m && m.stage === 'draft',
       branch: m ? m.branch : '', msg: m ? m.msg : '', setBranch: e => this.setState(st => ({ modal: { ...st.modal, branch: e.target.value } })), setMsg: e => this.setState(st => ({ modal: { ...st.modal, msg: e.target.value } })),
       modalFiles: m ? (m.loading ? [] : this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : this.planChanges())) : [], modalLog: m ? m.log.join('\n') : '',
       closeModal: () => this.setState({ modal: null }), makeDraft: () => this.makeDraft(), discardDraft: () => this.discardDraft(), approve: () => this.approve(),
