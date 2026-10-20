@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes, lastTreeRow } from './tree-helpers.js';
+import { readNodes, lastTreeRow, treeRow } from './tree-helpers.js';
 import { act, open, reloadWith } from './ctx-helpers.js';
 import { listDisk, readDisk } from './folder-helpers.js';
 
@@ -854,4 +854,393 @@ test('Layouts_ResetUi_AfterFailedLoadOfAnotherSource_KeepsPreviousProjectEntries
   await page.evaluate(() => window.__logic.resetUI()); // no plane is mounted after the failed load, so `act` cannot find the instance
   expect(Object.keys(await storedPending(page))).toContain('folder:proj|x');
   expect(await page.evaluate(() => window.__logic.layoutMap['folder:proj'])).toBe('replay');
+});
+
+// S9.1d Task 2: ONE undo stack for the whole project; each step names the layout it was made in.
+async function pressKey(page, combo) {
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.keyboard.press(combo);
+  await page.waitForTimeout(200);
+}
+const stackIds = async (page) => { await act(page); return page.evaluate(() => ({ undo: window.__logic.undoS.map((s) => s.layoutId), redo: window.__logic.redoS.map((s) => s.layoutId) })); };
+const changeCount = (page) => page.evaluate(() => window.__logic.state.changes.length);
+// Inline box-shadow carrying SHADOW, counted on the DOM actually mounted (never on logic.els, which can be stale).
+const shadowCount = (page) => page.evaluate(() => {
+  const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+  return [...host.shadowRoot.querySelectorAll('*')].filter((e) => e.localName !== 'style' && e.style.boxShadow.includes('rgb(1, 2, 3)')).length;
+});
+
+test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page); // step in main
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect((await stackIds(page)).undo).toEqual(['main']); // the layout switch no longer wipes the stack
+  await pressKey(page, 'Control+z');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await shadowCount(page)).toBe(0); // the INLINE style of the mounted main is back to empty
+  expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
+  await expect(page.getByText(/Desfeito em Main/)).toBeVisible();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await pressKey(page, 'Control+Shift+z');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.state.changes[0].to)).toBe(SHADOW);
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await pressKey(page, 'Control+z'); // and Ctrl+Z once more, now via the 'switch' path from the other side
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await shadowCount(page)).toBe(0);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await pressKey(page, 'Control+y');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
+});
+
+// config's `.panel` (node 0.1) lives in layers/config.css; a new box-shadow there is a real file patch.
+async function shadowOnPanel(page) {
+  await act(page, 'select', '0.1');
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type(SHADOW);
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+}
+
+test('Undo_AfterApply_DropsStepsOfIncludedLayouts', async ({ page }) => {
+  await open(page, 'multi-layout'); // connected folder: the draft/approve flow needs a writable dir
+  await act(page);
+  await typeShadow(page); // step in main
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await shadowOnPanel(page); // step in config, on .panel: config.css is a patchable source, so Aplicar rewrites it
+  expect((await stackIds(page)).undo).toEqual(['main', 'config']);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  // Task 4: main's pending was part of the plan too (its hash matches the probe), so its steps go with config's
+  expect(await stackIds(page)).toEqual({ undo: [], redo: [] });
+  await expect.poll(() => storedPending(page)).toEqual({});
+  // approve moved the source hash on purpose: a later round trip must not read that as drift
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await shadowOnPanel(page); // new step in config
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect((await stackIds(page)).undo).toContain('config');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  await pressKey(page, 'Control+z');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect((await stackIds(page)).redo).toEqual(['config']);
+});
+
+// R7: a layout loaded incomplete (missing stylesheet) has no trustworthy hash; the next complete load must drop whatever was stacked meanwhile.
+test('Undo_IncompleteLoad_NextCompleteLoadDropsStepsMadeMeanwhile', async ({ page }) => {
+  await loaded(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await page.route('**/multi-layout/layers/config.css*', (route) => route.fulfill({ status: 404, body: 'gone' }));
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => window.__logic.pendingReady)).toBe(false); // incomplete
+  await shadowOnPanel(page); // step in config while incomplete
+  await act(page, 'decide', false); // without the sheet the scope is asked: answer "only this"
+  await expect.poll(() => page.evaluate(() => window.__logic.state.pending)).toBeNull();
+  expect((await stackIds(page)).undo).toEqual(['config']);
+  await pressKey(page, 'Control+z'); // the step moves to redo and no change is left, so the switch away asks nothing
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect((await stackIds(page)).redo).toEqual(['config']);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await page.unroute('**/multi-layout/layers/config.css*');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await stackIds(page)).toEqual({ undo: [], redo: [] }); // the complete load dropped what was stacked while the hash was untrusted
+});
+
+test('Undo_DriftDroppedPending_DropsOwnSteps', async ({ page }) => {
+  await loaded(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await typeShadow(page); // step in config
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await typeShadow(page); // step in main
+  expect((await stackIds(page)).undo).toEqual(['config', 'main']);
+  // the source of config changes while away: its hash no longer matches the one its steps were made against
+  await page.route('**/multi-layout/layers/config.html*', async (route) => {
+    const res = await route.fetch(); const body = await res.text();
+    await route.fulfill({ response: res, body: body.replace('>panel<', '>edited elsewhere<') });
+  });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await changeCount(page)).toBe(0);
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+});
+
+test('Undo_PanelOpen_RefusesWithoutSwitching', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page); // step in main
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.evaluate(() => window.__logic.setState({ modal: { stage: 'confirm', log: [], title: 'Painel', label: 'Ok', text: 'aberto', onYes: () => {} } }));
+  const seq0 = await page.evaluate(() => window.__logic.loadSeq);
+  await pressKey(page, 'Control+z');
+  await page.waitForTimeout(300);
+  expect(await layoutId(page)).toBe('config');
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  expect(await page.evaluate(() => ({ seq: window.__logic.loadSeq, busy: !!window.__logic.undoBusy }))).toEqual({ seq: seq0, busy: false });
+  await expect(page.getByText(/Desfeito|feche o painel|troca de layout/)).toHaveCount(0);
+});
+
+// R6 (d): the undo needs a layout switch that asks first (unsaved code); Trocar lets the undo land, Fechar cancels it.
+async function editMainThenAskOnUndo(page) {
+  await loaded(page);
+  await typeShadow(page); // step in main
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'setState', { codeBuf: { 'layers/shared.css': '.title{color:red}' } });
+  await pressKey(page, 'Control+z');
+  await expect(page.getByText('Há código não salvo; trocar de layout descarta o código editado.')).toBeVisible();
+}
+
+test('Undo_SwitchAsksFirst_ConfirmAppliesInTargetLayout', async ({ page }) => {
+  await editMainThenAskOnUndo(page);
+  expect(await layoutId(page)).toBe('config'); // nothing moved before the answer
+  await shiftClock(page, 11000); // past the 10 s load cap
+  await page.waitForTimeout(400); // several polls with the confirm still open: it must keep waiting
+  expect(await page.evaluate(() => !!window.__logic.undoBusy)).toBe(true);
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await shadowCount(page)).toBe(0);
+  expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
+  await expect.poll(() => page.evaluate(() => !!window.__logic.undoBusy)).toBe(false);
+});
+
+test('Undo_SwitchAsksFirst_CancelChangesNothing', async ({ page }) => {
+  await editMainThenAskOnUndo(page);
+  await page.getByRole('button', { name: 'Fechar', exact: true }).first().click();
+  await expect(page.getByText('troca de layout cancelada')).toBeVisible();
+  expect(await layoutId(page)).toBe('config');
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  expect(await page.evaluate(() => !!window.__logic.undoBusy)).toBe(false);
+  await act(page, 'setState', { codeBuf: {} });
+  await act(page, 'switchLayout', 'main'); // main still holds its edit
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
+});
+
+// R6 (c): a load in flight owns the DOM; Ctrl+Z pressed right after the switch click must not undo on the outgoing layout.
+test('Undo_DuringLayoutLoad_IsIgnored', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  await page.evaluate(() => { window.__logic.switchLayout('config'); window.__logic.undo(); });
+  await settled(page, 'config');
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  await expect(page.getByText(/Desfeito/)).toHaveCount(0);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
+});
+
+// R6 (b): main's undone edit leaves no pending entry, so only the per-layout source hash can tell the source moved while away.
+test('Undo_SourceChangedWhileAway_DropsStepsEvenWithoutPending', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  await pressKey(page, 'Control+z'); // main back to zero changes; the step now waits in redo
+  expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.route('**/multi-layout/layers/main.html*', async (route) => {
+    const res = await route.fetch(); const body = await res.text();
+    await route.fulfill({ response: res, body: body.replace('empty', 'edited elsewhere') });
+  });
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await stackIds(page)).toEqual({ undo: [], redo: [] });
+  await pressKey(page, 'Control+y');
+  expect(await shadowCount(page)).toBe(0);
+  expect(await changeCount(page)).toBe(0);
+});
+
+// S9.1d Task 3: the probe reads the OTHER layouts quietly (no this.mtimes keys), counts their src uses, caches them and
+// stays out of the way of a switch or a reload. Folder mode (OPFS), so mtimes are real.
+const putDisk = (page, rel, text) => page.evaluate(async ({ rel, text }) => {
+  const parts = rel.split('/'); let d = window.__proj;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
+  const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
+  await w.write(text); await w.close();
+}, { rel, text });
+const REPLAY_SRC = '<!doctype html>\n<html><head><meta charset="utf-8"><link rel="stylesheet" href="replay.css"></head>\n<body><div class="title" id="rpl-title">Replay</div><div class="bar" id="rpl-bar">bar</div><div class="frame" id="rpl-frame" data-src="src/r.ts|.frame|1">frame</div><div class="frame" id="rpl-frame2" data-src="src/r.ts|.frame|1">frame2</div></body></html>\n';
+
+test('Probe_OtherLayout_ReadsQuietAndCaches', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await putDisk(page, 'layers/replay.html', REPLAY_SRC); // the file moved on disk before the probe: the probe reads what is there
+  const r = await page.evaluate(async () => {
+    const l = window.__logic, calls = [], orig = l.readText.bind(l);
+    l.readText = (p, q) => { calls.push([p, !!q]); return orig(p, q); };
+    const keys0 = Object.keys(l.mtimes);
+    await l.ensureProbe();
+    const afterFirst = calls.length; await l.ensureProbe();
+    const out = (id) => { const e = l.layoutProbe.get(id); return e && !e.unavailable ? { uses: e.uses instanceof Map, useMap: [...e.uses], files: e.files, hash: e.hash } : e; };
+    window.__cfgHash = l.layoutProbe.get('config').hash;
+    const wl = l.watchLayouts, w = l.watch;
+    return { keys0, keys1: Object.keys(l.mtimes), afterFirst, afterSecond: calls.length, loud: calls.filter((c) => !c[1]).map((c) => c[0]), ids: [...l.layoutProbe.keys()].sort(), cfg: out('config'), rpl: out('replay'), broken: out('broken'), host: !!document.querySelector('[data-lod-host]'), wlCss: wl['layers/config.css'], wlShared: 'layers/shared.css' in wl, wCss: typeof w['layers/config.css'] };
+  });
+  expect(r.ids).toEqual(['broken', 'config', 'replay']);
+  expect(r.afterFirst).toBeGreaterThan(0);
+  expect(r.afterSecond).toBe(r.afterFirst); // second call reads nothing new
+  expect(r.loud).toEqual([]); // every probe read is quiet
+  expect(r.keys1.sort()).toEqual(r.keys0.sort()); // none of the probed paths became a mtimes key
+  expect(r.broken).toEqual({ unavailable: true });
+  expect(r.cfg.uses).toBe(true);
+  expect(r.cfg.files.map((f) => f.path).sort()).toEqual(['layers/config.css', 'layers/config.html', 'layers/shared.css']);
+  expect(r.cfg.files.every((f) => typeof f.mtime === 'number')).toBe(true);
+  expect(Object.fromEntries(r.rpl.useMap)['src/r.ts|.frame|1|div|1']).toBe(2); // the two frames share src, tag and leaf-ness
+  expect(r.host).toBe(false);
+  expect(r.wlCss).toEqual(['config']); // the probe files join the watch
+  expect(r.wCss).toBe('number');
+  expect(r.wlShared).toBe(false); // the active layout owns shared.css
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => ({ same: window.__logic.pendingHash === window.__cfgHash, cached: window.__logic.layoutProbe.has('config') }))).toEqual({ same: true, cached: false }); // the probe hash is the load hash; the active layout leaves the cache
+  expect(await page.evaluate(() => window.__logic.layoutProbe.has('main'))).toBe(false);
+});
+
+test('Probe_SwitchDuringScan_DiscardsStaleResult', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => { const l = window.__logic, orig = l.readText.bind(l); l.readText = async (p, q) => { if (q) await new Promise((r) => setTimeout(r, 400)); return orig(p, q); }; }); // only the quiet (probe) reads are slow
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  await page.evaluate(() => window.__p);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]') }))).toEqual({ size: 0, host: false });
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await act(page, 'doReload');
+  await settled(page, 'replay');
+  await page.evaluate(() => window.__p);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]') }))).toEqual({ size: 0, host: false });
+  // Reanalisar do 0 mid-scan: the probe dies, nothing of its files reaches the watch
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await act(page, 'doRestructure');
+  await settled(page, 'replay');
+  await page.evaluate(() => window.__p);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]'), css: Object.keys(window.__logic.watchLayouts).filter((k) => /\.css$/.test(k)) }))).toEqual({ size: 0, host: false, css: [] });
+  // Zerar interface mid-scan: the project unloads, the probe dies and the watch is empty
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await page.evaluate(() => window.__logic.resetUI());
+  await page.evaluate(() => window.__p);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]'), wl: Object.keys(window.__logic.watchLayouts) }))).toEqual({ size: 0, host: false, wl: [] });
+});
+
+const appendDisk = (page, rel, text) => page.evaluate(async ({ rel, text }) => {
+  await new Promise((r) => setTimeout(r, 60)); // a strictly newer mtime
+  const parts = rel.split('/'); let d = window.__proj;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p);
+  const h = await d.getFileHandle(parts[parts.length - 1]); const t = await (await h.getFile()).text();
+  const w = await h.createWritable(); await w.write(t + text); await w.close();
+}, { rel, text });
+
+test('Probe_ManifestChangedOnDisk_SwitchEmptiesCache', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => window.__logic.ensureProbe());
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(3);
+  await appendDisk(page, 'layers.json', '\n'); // the manifest text moved: every cached hash was made against the old one
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(0);
+});
+
+test('Probe_SharedFileTouched_CheckStaleEvictsEntries', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const hash0 = await page.evaluate(async () => { await window.__logic.ensureProbe(); return window.__logic.layoutProbe.get('config').hash; });
+  await appendDisk(page, 'layers/shared.css', '\n/* touched */\n'); // shared with the active layout: not in watchLayouts
+  await page.evaluate(() => window.__logic.checkStale());
+  expect(await page.evaluate(() => [...window.__logic.layoutProbe.keys()])).toEqual(['broken']); // only the unavailable one (no file to compare) stays
+  const hash1 = await page.evaluate(async () => { await window.__logic.ensureProbe(); return window.__logic.layoutProbe.get('config').hash; });
+  expect(hash1).not.toBe(hash0);
+  await appendDisk(page, 'layers.json', '\n'); // the manifest itself: all entries go
+  await page.evaluate(() => window.__logic.checkStale());
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(0);
+});
+
+test('Probe_DismissStale_EvictsTheNamedLayoutsEntry', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const r = await page.evaluate(async () => {
+    const l = window.__logic; await l.ensureProbe();
+    l.setState({ stale: ['layers/config.html'] }); l.dismissStale();
+    return [...l.layoutProbe.keys()].sort();
+  });
+  expect(r).toEqual(['broken', 'replay']);
+});
+
+test('Probe_CachedMockChangedThenSwitched_RaisesBannerNamingTheLayout', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => window.__logic.ensureProbe());
+  await appendDisk(page, 'layers/replay.html', '\n<!-- changed -->\n');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__logic.watchLayouts))).toContain('layers/replay.html');
+  await page.evaluate(() => window.__logic.checkStale());
+  expect(await page.evaluate(() => window.__logic.state.stale)).toEqual(['layers/replay.html']);
+  await expect(page.locator('[role=status]', { hasText: 'mudaram no disco' })).toContainText('Replay');
+  expect(await page.evaluate(() => window.__logic.layoutProbe.has('replay'))).toBe(false);
+});
+
+const BASE_FS = 3; // getFile calls of the axai load and its watch stat (measured 2026-10-20); a probe read at load would add to it
+test('Probe_SingleLayoutProject_NeverRuns', async ({ page }) => {
+  await page.addInitScript(() => { // installed before the load: counts every file the app opens on the connected folder
+    window.__fs = 0;
+    const gf = FileSystemFileHandle.prototype.getFile;
+    FileSystemFileHandle.prototype.getFile = function () { window.__fs++; return gf.apply(this, arguments); };
+  });
+  await open(page, 'axai');
+  await act(page);
+  await expect.poll(async () => { const a = await page.evaluate(() => window.__fs); await page.waitForTimeout(400); return a === (await page.evaluate(() => window.__fs)); }).toBe(true); // the load and its watch probe are over
+  const r = await page.evaluate(async () => {
+    const l = window.__logic, before = window.__fs;
+    await l.ensureProbe(); await l.probeOthers(['x']);
+    return { n: window.__fs - before, size: l.layoutProbe.size, wl: Object.keys(l.watchLayouts).length };
+  });
+  expect(r).toEqual({ n: 0, size: 0, wl: 0 });
+  // R10(1): the absolute count at load, against the 1-layout baseline (a stray probe read at load would move it)
+  expect(await page.evaluate(() => window.__fs), 'getFile calls of a 1-layout load').toBe(BASE_FS);
+  // the whole "todos iguais" + Salvar path of a single-layout project reads nothing, probes nothing and says nothing about other layouts
+  await (await treeRow(page, { title: '.sum-stat' })).click();
+  await expect.poll(async () => { const a = await page.evaluate(() => window.__fs); await page.waitForTimeout(400); return a === (await page.evaluate(() => window.__fs)); }).toBe(true);
+  const before = await page.evaluate(() => window.__fs);
+  await page.getByText('Todos iguais (', { exact: false }).first().click();
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type(SHADOW);
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBeGreaterThan(0);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toBeVisible();
+  await act(page);
+  expect(await page.evaluate(() => ({ n: window.__fs, probe: window.__logic.layoutProbe.size, run: !!window.__logic.probeRun, loading: !!window.__logic.state.modal.loading }))).toEqual({ n: before, probe: 0, run: false, loading: false });
+  await expect(page.getByText('também afeta')).toHaveCount(0);
+  await expect(page.getByText('contando outros layouts')).toHaveCount(0);
 });

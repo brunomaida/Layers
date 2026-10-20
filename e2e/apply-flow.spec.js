@@ -2,6 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { connectFixture, selectLayer, readDisk, listDisk, mtimeDisk } from './folder-helpers.js';
+import { act, open } from './ctx-helpers.js';
 
 // S5.6: checklist E end to end on a real connected folder (OPFS copy of plain-css): connect, select,
 // edit, view the diff, draft, approve, and read the file back. `.card` has one use and no
@@ -102,4 +103,334 @@ test('Rollback_FileChangedOutside_RefusesAndKeepsFile', async ({ page }) => {
   await page.getByRole('button', { name: 'Rollback' }).click();
   await expect(page.getByText(/Reverter recusado/)).toBeVisible();
   expect(await readDisk(page, 'style.css')).toBe(outside);
+});
+
+// S9.1d Task 4: Salvar merges the pending changes of EVERY layout (multi-layout fixture, connected folder).
+// main and config both style `.title` (layers/shared.css); config also styles `.panel` (layers/config.css).
+const SHADOW_A = '0 0 0 3px rgb(1, 2, 3)';
+const SHADOW_B = '0 0 0 5px rgb(9, 8, 7)';
+const settled = (page, id) => expect.poll(async () => { await act(page); return page.evaluate((id) => { const l = window.__logic; return !!l.state.project && l.state.project.layoutId === id && l.loadedSeq === l.loadSeq; }, id); }).toBe(true);
+const storedPending = (page) => page.evaluate(() => { const raw = localStorage.getItem('layers/v1/pending'); return raw ? (JSON.parse(raw).byProject || {}) : {}; });
+const count = (text, re) => (text.match(re) || []).length;
+
+async function editNode(page, id, value) {
+  await act(page, 'select', id);
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type(value);
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(300);
+}
+
+// config gets `.title` (shadow `cfgTitle`) and `.panel`; back on main `.title` gets `mainTitle`. Ends on main with 1 change and config pending in storage.
+async function pendingInTwoLayouts(page, mainTitle, cfgTitle) {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await editNode(page, '0.0', cfgTitle);
+  await editNode(page, '0.1', SHADOW_B);
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(2);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await editNode(page, '0.0', mainTitle);
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+}
+
+async function openPlan(page) {
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+}
+
+async function draftAndApprove(page, draft = 'layers/shared.design-draft.css') {
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, draft)).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+}
+
+test('Apply_PendingInTwoLayouts_WritesOnceAndClearsBoth', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A); // same file|selector|prop in both layouts, same value
+  await openPlan(page);
+  await expect(page.getByText('layers/config.css').first()).toBeVisible();
+  await expect(page.getByText(/\[Config, Main\]/)).toBeVisible(); // shared.css carries both origins
+  await expect(page.getByText(/\[Config\]/)).toBeVisible();
+  await draftAndApprove(page);
+  const shared = await readDisk(page, 'layers/shared.css');
+  expect(count(shared, /box-shadow/g), 'one declaration for the shared rule').toBe(1);
+  expect(shared).toMatch(/\.title\{[^}]*box-shadow:\s*0 0 0 3px rgb\(1, 2, 3\)/);
+  expect(await readDisk(page, 'layers/config.css')).toMatch(/\.panel\{[^}]*box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+  expect(await page.evaluate(() => window.__logic.writeLog.filter((w) => w.path === 'layers/shared.css').length), 'shared.css written once').toBe(1);
+  await expect.poll(() => storedPending(page)).toEqual({}); // both layouts' entries are gone
+  expect(await page.evaluate(() => Object.keys(window.__logic.state.layoutBadges))).toEqual([]);
+  expect(await page.evaluate(() => window.__logic.undoS.length + window.__logic.redoS.length)).toBe(0);
+  // history keeps the merged set, and the other layout's undo hash is not read as drift on return
+  expect(await page.evaluate(() => window.__logic.state.history[0].changes.map((c) => c.layoutId).sort())).toEqual(['config', 'main']);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(0);
+  // a step made in the included layout after the apply survives a round trip (its undo hash was reset, not left stale)
+  await editNode(page, '0.1', SHADOW_A);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => window.__logic.undoS.map((x) => x.layoutId))).toEqual(['config']);
+});
+
+test('Apply_OtherLayoutStaleHash_IsSkippedWithWarning', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
+  await page.evaluate(() => window.__logic.ensureProbe()); // the probe cache exists BEFORE the disk change
+  expect(await page.evaluate(() => window.__logic.layoutProbe.has('config'))).toBe(true);
+  await page.waitForTimeout(60);
+  const moved = (await readDisk(page, 'layers/config.css')) + '\n.field{color:teal}\n';
+  await page.evaluate(async (text) => { const d = await window.__proj.getDirectoryHandle('layers'); const w = await (await d.getFileHandle('config.css')).createWritable(); await w.write(text); await w.close(); }, moved);
+  await openPlan(page);
+  await expect(page.getByText('2 pendências de Config não aplicadas (fonte mudou); serão descartadas ao abrir o layout')).toBeVisible();
+  await expect(page.getByText('layers/shared.css').first()).toBeVisible();
+  await expect(page.getByText('layers/config.css')).toHaveCount(0); // not in the plan
+  await draftAndApprove(page);
+  expect(await readDisk(page, 'layers/config.css'), 'the skipped layout wrote nothing').toBe(moved);
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  await expect.poll(async () => Object.keys(await storedPending(page)), 'the applied entry goes and the skipped layout keeps its pending').toEqual(['folder:proj|config']);
+  expect((await storedPending(page))['folder:proj|config'].changes).toHaveLength(2);
+  expect(await page.evaluate(() => window.__logic.state.layoutBadges)).toEqual({ config: 2 });
+  // the wording says "serão descartadas": here they are (shared.css and config.css both moved)
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(0);
+  await expect(page.getByText(/2 ajuste\(s\) salvo\(s\) descartado\(s\): arquivo mudou/)).toBeVisible();
+});
+
+test('Apply_ConflictingValue_ActiveWinsAndWarns', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_B); // same rule and property, different values
+  await openPlan(page);
+  await expect(page.getByText(/conflito.*\.title.*Main.*Config/)).toBeVisible();
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  const draft = await readDisk(page, 'layers/shared.design-draft.css');
+  expect(draft).toContain('rgb(1, 2, 3)');
+  expect(draft).not.toContain('rgb(9, 8, 7)');
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  const shared = await readDisk(page, 'layers/shared.css');
+  expect(count(shared, /box-shadow/g)).toBe(1);
+  expect(shared).toContain('rgb(1, 2, 3)');
+  await expect.poll(() => storedPending(page)).toEqual({});
+});
+
+test('Apply_OnlyOtherLayoutHasPending_SalvarStillOpens', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const sharedBefore = await readDisk(page, 'layers/shared.css');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await editNode(page, '0.1', SHADOW_B); // config.css `.panel`
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(0); // nothing pending here
+  await openPlan(page);
+  await expect(page.getByText(/layers\/config\.css/).first()).toBeVisible();
+  await expect(page.getByText(/\[Config\]/)).toBeVisible();
+  await draftAndApprove(page, 'layers/config.design-draft.css');
+  expect(await readDisk(page, 'layers/config.css')).toMatch(/\.panel\{[^}]*box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+  expect(await readDisk(page, 'layers/shared.css')).toBe(sharedBefore);
+  await expect.poll(() => storedPending(page)).toEqual({});
+});
+
+test('Rollback_MergedApply_RestoresEveryLayoutFileAndLeavesTheMountedDomAlone', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
+  const sharedBefore = await readDisk(page, 'layers/shared.css'), configBefore = await readDisk(page, 'layers/config.css');
+  await openPlan(page);
+  await draftAndApprove(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  // main's own `.title` keeps its inline shadow; config's `.panel` (same id 0.1 as main's `.box`) must NOT be touched on main's DOM
+  await act(page, 'select', '0.1');
+  await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); window.__boxEl = h.shadowRoot.querySelector('#main-a'); window.__boxEl.style.boxShadow = '1px 1px 0 red'; });
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.css')).toBe(sharedBefore);
+  expect(await readDisk(page, 'layers/config.css')).toBe(configBefore);
+  expect(await page.evaluate(() => window.__boxEl.style.boxShadow)).toContain('red');
+});
+
+test('Apply_FileNotWritten_KeepsThatLayoutsPending', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/config.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('config.design-draft.css'); }); // config.css cannot be promoted
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect(page.getByText('pendências de Config não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou')).toBeVisible();
+  await expect.poll(async () => Object.keys(await storedPending(page))).toEqual(['folder:proj|config']);
+  expect((await storedPending(page))['folder:proj|config'].changes).toHaveLength(2);
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.undoS.map((x) => x.layoutId).sort()), 'only the layout whose changes went loses its steps').toEqual(['config', 'config']);
+  // the kept entry does not survive opening the layout: shared.css was rewritten, so its hash no longer matches
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(0);
+  await expect(page.getByText(/2 ajuste\(s\) salvo\(s\) descartado\(s\): arquivo mudou/)).toBeVisible();
+});
+
+test('Apply_ActiveFileNotWritten_KeepsTheActiveChange', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A); // main `.title` -> layers/shared.css
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('shared.design-draft.css'); });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(0);
+  expect(await page.evaluate(() => window.__logic.state.changes.length), 'the change whose file was not written stays').toBe(1);
+});
+
+test('Apply_ActiveFileNotWritten_KeepsItsUndoSteps', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A);
+  expect(await page.evaluate(() => window.__logic.undoS.length)).toBe(1);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('shared.design-draft.css'); });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.undoS.length), 'nothing was written: the step still undoes the kept change').toBe(1);
+});
+
+test('Apply_WrittenButDraftNotRemoved_ClearsTheChange', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  // the file is replaced, only the cleanup of the draft fails: the change is applied all the same
+  await page.evaluate(() => { const l = window.__logic, orig = l.dirOf.bind(l); l.dirOf = async (p) => { const d = await orig(p); return new Proxy(d, { get: (t, k) => k === 'removeEntry' ? async () => { throw new Error('draft locked'); } : typeof t[k] === 'function' ? t[k].bind(t) : t[k] }); }; });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.state.changes.length), 'shared.css was written: the change is applied').toBe(0);
+});
+
+test('Rollback_WrittenButDraftNotRemoved_RestoresTheFileAndTheInlineStyle', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const before = await readDisk(page, 'layers/shared.css');
+  await editNode(page, '0.0', SHADOW_A);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  await page.evaluate(() => { const l = window.__logic, orig = l.dirOf.bind(l); l.dirOf = async (p) => { const d = await orig(p); return new Proxy(d, { get: (t, k) => k === 'removeEntry' ? async () => { throw new Error('draft locked'); } : typeof t[k] === 'function' ? t[k].bind(t) : t[k] }); }; });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect(page.getByText(/rascunho não removido/)).toBeVisible(); // a warning, not a failure of the replaced file
+  expect(await page.evaluate(() => window.__logic.state.history[0].files.map((f) => f.path))).toEqual(['layers/shared.css']);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.css')).toBe(before);
+  expect(await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); return h.shadowRoot.getElementById('main-title').style.boxShadow; })).toBe('');
+});
+
+test('Apply_OneOfTwoCssFilesNotWritten_KeepsOnlyThatChangeAndRestoresItAfterSwitch', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A); // main `.title` -> layers/shared.css
+  await editNode(page, '0.1', SHADOW_B); // main `.box` -> layers/main.css
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(2);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/main.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
+  await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('main.design-draft.css'); });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  expect(count(await readDisk(page, 'layers/main.css'), /box-shadow/g)).toBe(0);
+  expect(await page.evaluate(() => window.__logic.state.changes.map((c) => c.prop))).toEqual(['boxShadow']);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  // the kept change is stored under the hash that already counts the shared.css write: leaving and coming back restores it
+  await expect.poll(async () => Object.values(await storedPending(page)).reduce((n, e) => n + e.changes.length, 0)).toBe(1);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+  await expect(page.getByText(/ajuste\(s\) salvo\(s\) descartado\(s\)/)).toHaveCount(0);
+});
+
+test('Apply_ActiveContributedNothing_KeepsItsRedoStack', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await editNode(page, '0.1', SHADOW_B);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await editNode(page, '0.0', SHADOW_A);
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.keyboard.press('Control+z');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(0);
+  expect(await page.evaluate(() => ({ u: window.__logic.undoS.map((x) => x.layoutId), r: window.__logic.redoS.map((x) => x.layoutId) }))).toEqual({ u: ['config'], r: ['main'] });
+  await openPlan(page);
+  await draftAndApprove(page, 'layers/config.design-draft.css');
+  expect(await page.evaluate(() => ({ u: window.__logic.undoS.map((x) => x.layoutId), r: window.__logic.redoS.map((x) => x.layoutId) }))).toEqual({ u: [], r: ['main'] }); // main contributed nothing: its redo step stays
+});
+
+test('Rollback_TwoActiveChangesSameRule_RestoresBothInlineStyles', async ({ page }) => {
+  // `.title` on a leaf and on a container: two changes (different use groups) that collide on file|selector|prop in the merged plan
+  const html = '<!doctype html>\n<html><head><meta charset="utf-8"><link rel="stylesheet" href="main.css"></head>\n<body><div class="title" id="main-title">Main</div><div class="title" id="main-title2"><span>in</span></div><div class="box" id="main-a">empty</div></body></html>\n';
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(async (html) => { const d = await window.__proj.getDirectoryHandle('layers'); const w = await (await d.getFileHandle('main.html', { create: true })).createWritable(); await w.write(html); await w.close(); }, html);
+  await act(page, 'doReload');
+  await settled(page, 'main');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await editNode(page, '0.0', SHADOW_A); // config `.title`: another layout is included
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await editNode(page, '0.0', SHADOW_A);
+  await editNode(page, '0.1', SHADOW_B);
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(2);
+  await openPlan(page);
+  await draftAndApprove(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => page.evaluate(() => {
+    const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+    return ['main-title', 'main-title2'].map((id) => h.shadowRoot.getElementById(id).style.boxShadow);
+  })).toEqual(['', '']);
+});
+
+test('Apply_PlanWhileLoading_HasNoDraftButtonYet', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
+  await page.evaluate(() => { const l = window.__logic, orig = l.readText.bind(l); l.readText = async (p, q) => { if (q) await new Promise((r) => setTimeout(r, 700)); return orig(p, q); }; });
+  await page.evaluate(() => window.__logic.layoutProbe.clear());
+  await openPlan(page);
+  await expect(page.getByText('contando outros layouts…')).toBeVisible();
+  await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toBeVisible({ timeout: 10_000 });
+});
+
+test('Rollback_LegacyChangeWithoutLayoutId_LeavesTheOtherLayoutAlone', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const sharedBefore = await readDisk(page, 'layers/shared.css');
+  await editNode(page, '0.0', SHADOW_A);
+  await page.evaluate(() => { window.__logic.state.changes.forEach((c) => { delete c.layoutId; }); }); // the shape of a pending change stored before S9.1d
+  await openPlan(page);
+  await draftAndApprove(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); h.shadowRoot.getElementById('cfg-title').style.boxShadow = '1px 1px 0 red'; }); // config's node 0.0 is main's edited id
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.css')).toBe(sharedBefore);
+  expect(await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); return h.shadowRoot.getElementById('cfg-title').style.boxShadow; })).toContain('red');
 });

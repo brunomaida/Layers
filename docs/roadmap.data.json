@@ -2396,8 +2396,8 @@
     "id": "S8",
     "type": "phase",
     "name": "Trilha MCP e plugin",
-    "start": "2026-10-20",
-    "end": "2026-10-27",
+    "start": "2026-10-21",
+    "end": "2026-10-28",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -2417,8 +2417,8 @@
         "id": "S8.1",
         "type": "spec",
         "name": "Spike de servidor MCP stdio sobre o core",
-        "start": "2026-10-20",
-        "end": "2026-10-22",
+        "start": "2026-10-21",
+        "end": "2026-10-23",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2436,8 +2436,8 @@
         "id": "S8.2",
         "type": "spec",
         "name": "Spike Playwright: data-vite-dev-id sobrevive",
-        "start": "2026-10-21",
-        "end": "2026-10-23",
+        "start": "2026-10-22",
+        "end": "2026-10-24",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2455,8 +2455,8 @@
         "id": "S8.3",
         "type": "spec",
         "name": "Snapshot headless (slice 3)",
-        "start": "2026-10-22",
-        "end": "2026-10-24",
+        "start": "2026-10-23",
+        "end": "2026-10-25",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2474,8 +2474,8 @@
         "id": "S8.4",
         "type": "spec",
         "name": "apply_patch e porta Node de writeText",
-        "start": "2026-10-23",
-        "end": "2026-10-25",
+        "start": "2026-10-24",
+        "end": "2026-10-26",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2493,8 +2493,8 @@
         "id": "S8.5",
         "type": "spec",
         "name": "Proveniência SPA via data-vite-dev-id",
-        "start": "2026-10-24",
-        "end": "2026-10-26",
+        "start": "2026-10-25",
+        "end": "2026-10-27",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2512,8 +2512,8 @@
         "id": "S8.6",
         "type": "spec",
         "name": "Re-snapshot sem renovar mtimes com changes pendentes",
-        "start": "2026-10-25",
-        "end": "2026-10-27",
+        "start": "2026-10-26",
+        "end": "2026-10-28",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2534,13 +2534,13 @@
     "type": "phase",
     "name": "Layouts múltiplos",
     "start": "2026-10-17",
-    "end": "2026-10-19",
+    "end": "2026-10-20",
     "status": "wip",
     "statusLabel": "In Progress",
     "tags": [
       "scaffold"
     ],
-    "progress": 72,
+    "progress": 92,
     "docs": [],
     "children": [
       {
@@ -2724,19 +2724,31 @@
         "type": "spec",
         "name": "Edição entre layouts: undo, watch, escopo all e Aplicar junta tudo",
         "start": "2026-10-17",
-        "end": "2026-10-19",
-        "status": "todo",
-        "statusLabel": "Registered",
+        "end": "2026-10-20",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 0,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
             "type": "spec",
             "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
             "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          },
+          {
+            "name": "2026-10-19-s9-1d-edicao-entre-layouts.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-19-s9-1d-edicao-entre-layouts.md)",
+            "title": "2026-10-19-s9-1d-edicao-entre-layouts.md)"
+          },
+          {
+            "name": "feature-261019-93-s9-1d-edicao-entre-layouts.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261019-93-s9-1d-edicao-entre-layouts.md)",
+            "title": "feature-261019-93-s9-1d-edicao-entre-layouts.md)"
           }
         ],
         "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo. Acompanhamento do Espalhar (S9.1c): a entrada cheia congelada não tem teto e os `LodPlane` não têm culling nem agrupamento por `z` no arrasto; um total abaixo de 1.500 com entrada cheia (ex.: 700 + 700) não foi medido e pode cair abaixo de 50 fps sem aviso: desenhar a cheia congelada como LOD quando o total passar de `PLANES_MAX`, agrupar os `LodPlane` por `z` no arrasto e medir um caso de ~1.400 planos",
@@ -2752,7 +2764,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-27",
+    "end": "2026-10-28",
     "statusLabel": "Reference",
     "tags": [
       "bdn",

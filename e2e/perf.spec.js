@@ -40,6 +40,14 @@ const EXPECTED = [
   'spread/heavy/orbit-mean-frame-ms',
   'spread/heavy/drag-off-mean-frame-ms',
   'spread/heavy/drag-on-mean-frame-ms',
+  'spread/1400/orbit-mean-frame-ms',
+  'spread/1400/drag-off-mean-frame-ms',
+  'spread/1400/drag-on-mean-frame-ms',
+  'spread/1400/scene-ms-per-call',
+  'spread/1600/orbit-mean-frame-ms',
+  'spread/1600/drag-off-mean-frame-ms',
+  'spread/1600/drag-on-mean-frame-ms',
+  'spread/1600/scene-ms-per-call',
   'tree/traval/hover-ms',
   'tree/traval/select-ms',
   'tree/1500-tags/hover-ms',
@@ -662,11 +670,12 @@ test('Coverage_Analyze_CostsUnderBudget', async ({ page }) => {
 const SPREAD_ENABLE_BUDGET_MS = 746; // 2x the rounded median (373 ms) measured 2026-10-19
 const SPREAD_HEAVY_ORBIT_FLOOR_MS = 198; // 2x the rounded median (99 ms, ~10 fps at 3,303 planes: the degradation the warning exists for) measured 2026-10-19
 const SPREAD_DRAG_REL = 1.5, SPREAD_DRAG_ABS_MS = 5; // spread-on drag <= REL x spread-off + ABS; measured 2026-10-19: off 20.8 ms, on 19.5 ms
+// files: [file, class prefix, plane count (default 1,500)]
 const bigLayouts = async (page, files) => {
-  for (const [file, cls] of files) {
+  for (const [file, cls, tags = 1500] of files) {
     await page.route(`**/fixtures/multi-layout/layers/${file}.html`, async (route) => {
       const html = await (await route.fetch()).text();
-      await route.fulfill({ body: html.replace(/<body[\s\S]*<\/body>/i, bigBody(cls, 1500)), contentType: 'text/html' });
+      await route.fulfill({ body: html.replace(/<body[\s\S]*<\/body>/i, bigBody(cls, tags)), contentType: 'text/html' });
     });
   }
 };
@@ -803,6 +812,96 @@ test('Drag_SpreadOnVsOff_CostsNoMoreThanRelativeBound', async ({ page }) => {
   expect(b.o.frames).toBeGreaterThanOrEqual(10);
   expect(b.o.meanFrameMs, `drag spread on ${b.o.meanFrameMs.toFixed(1)} ms (scene ${b.sceneMsPerCall.toFixed(2)} ms/call) vs off ${a.o.meanFrameMs.toFixed(1)} ms (scene ${a.sceneMsPerCall.toFixed(2)} ms/call)`).toBeLessThanOrEqual(a.o.meanFrameMs * SPREAD_DRAG_REL + SPREAD_DRAG_ABS_MS);
 });
+
+// S9.1d Task 6: the plane total right at the S9.1c warning limit (1,500). Config active + main frozen FULL (the layout just left) + replay in LOD at
+// fixture size, so the total is 2 x N + the replay slice. 700 + 700 stays under the limit: no warning, main drawn full. 800 + 800 goes over: the warning
+// shows and main is drawn as its depth <= 1 slice (S9.1d Task 5). Drag off/on: same project and view, Espalhar off (config alone) vs on; the overview
+// draws smaller, so on can be cheaper than off; scene-ms-per-call (bookkeeping per scene() call, spread on) is the number.
+// Budgets are 2x the rounded medians of 3 runs measured 2026-10-20 (same rule as S9.1a); scene-ms-per-call is rounded to 0.01 ms.
+const SPREAD_CASES = {
+  1400: { tags: 700, demoted: false, orbitMs: 42, dragOffMs: 36, dragOnMs: 42, sceneMs: 1.34 }, // medians 21.2, 17.6, 20.7 ms, 0.67 ms/call
+  1600: { tags: 800, demoted: true, orbitMs: 38, dragOffMs: 36, dragOnMs: 38, sceneMs: 1.14 }, // medians 18.9, 18.5, 18.8 ms, 0.57 ms/call
+};
+for (const [size, c] of Object.entries(SPREAD_CASES)) {
+  test(`Spread_${size}Planes_${c.demoted ? 'DemotesFullFrozen' : 'KeepsFullFrozen'}_RecordsOrbitAndDrag`, async ({ page }) => {
+    await instrument(page);
+    await bigLayouts(page, [['main', 'mm', c.tags], ['config', 'cc', c.tags]]);
+    await page.goto('/?layers=fixtures/multi-layout/');
+    await waitForScan(page, Math.floor(c.tags * 0.8), 40_000);
+    await act(page);
+    const inLayout = (id) => page.waitForFunction(([want, min]) => {
+      const lg = window.__logic;
+      return lg.loadedSeq === lg.loadSeq && lg.state.project.layoutId === want && lg.state.nodes.length > min;
+    }, [id, c.tags * 0.9], { timeout: 40_000 });
+    // Note: the scene() timing wrapper installed by the first drag() stays on for the later orbitDrag of these sized cases, unlike spread/heavy/orbit,
+    // which runs without it (the wrapper adds two performance.now() calls per scene()).
+    const drag = async () => {
+      await page.evaluate(() => {
+        const lg = window.__logic;
+        lg.setState({ yaw: 0, tilt: 0 }); // same starting view for every run
+        window.__sceneT = { n: 0, ms: 0 };
+        if (!lg.__sceneOrig) { lg.__sceneOrig = lg.scene.bind(lg); lg.scene = () => { const t = performance.now(); const r = lg.__sceneOrig(); window.__sceneT.n++; window.__sceneT.ms += performance.now() - t; return r; }; }
+      });
+      await page.waitForTimeout(600);
+      const o = await orbitDrag(page, 1500);
+      const t = await page.evaluate(() => window.__sceneT);
+      return { o, sceneMsPerCall: t.n ? t.ms / t.n : 0, sceneCalls: t.n };
+    };
+    const extra = (r) => ({ fps: r.o.fps, p95FrameMs: r.o.p95FrameMs, frames: r.o.frames, loafCount: r.o.loafCount, gcsPerFrame: r.o.gcsPerFrame, main: r.o.main, sceneMsPerCall: r.sceneMsPerCall, sceneCalls: r.sceneCalls });
+    // control: Espalhar off, config alone
+    await page.evaluate(() => window.__logic.switchLayout('config'));
+    await inLayout('config');
+    const off = await drag();
+    // Espalhar on from main, then switch to config so main becomes the full frozen entry
+    await page.evaluate(() => window.__logic.switchLayout('main'));
+    await inLayout('main');
+    await page.evaluate(() => window.__logic.spreadOn(true));
+    await spreadSettled(page);
+    await page.evaluate(() => window.__logic.switchLayout('config'));
+    await inLayout('config');
+    await page.waitForFunction(() => { const lg = window.__logic, m = lg.spreadFrozen.get('main'); return m && m.full && lg.spreadFrozen.size === 3; }, null, { timeout: 40_000 });
+    await page.waitForTimeout(800); // let the world, the page set and the camera settle
+    const info = await page.evaluate(() => {
+      const lg = window.__logic, ui = lg.spreadUi(), pg = document.querySelector('[data-spread-page="main"]');
+      return {
+        active: lg.state.nodes.length,
+        fullFrozen: lg.spreadFrozen.get('main').count,
+        lod: lg.spreadFrozen.get('replay').count,
+        total: lg.state.nodes.length + [...lg.spreadFrozen.values()].reduce((a, e) => a + (e.count || 0), 0),
+        planes: document.querySelectorAll('[data-plane]').length,
+        lodPlanes: document.querySelectorAll('[data-lod-plane]').length,
+        mainLabel: pg.querySelector('[data-spread-label]').textContent,
+        mainDrawn: pg.querySelectorAll('[data-lod-plane]').length,
+        warnFlag: !!ui.spWarnBtn,
+      };
+    });
+    // the case must measure what it names
+    if (c.demoted) {
+      expect(info.total, 'the case must be over the 1,500-plane limit').toBeGreaterThan(1500);
+      expect(info.mainLabel, 'main is drawn as LOD').toBe('Main · LOD');
+      expect(info.mainDrawn, 'a demoted main draws far fewer planes than its count').toBeLessThan(info.fullFrozen / 2);
+    } else {
+      expect(info.total, 'the case must stay within the 1,500-plane limit').toBeLessThanOrEqual(1500);
+      expect(info.total, 'the case must be close to the limit').toBeGreaterThan(1300);
+      expect(info.mainLabel, 'main is drawn full').toBe('Main');
+      expect(info.mainDrawn, 'a full frozen main draws all its planes').toBe(info.fullFrozen);
+    }
+    expect(info.warnFlag, `warning state at ${info.total} planes`).toBe(c.demoted);
+    const orbit = await orbitDrag(page, 1500);
+    const on = await drag();
+    rec(`spread/${size}/orbit-mean-frame-ms`, orbit.meanFrameMs, { fps: orbit.fps, p95FrameMs: orbit.p95FrameMs, frames: orbit.frames, loafCount: orbit.loafCount, loafScriptShare: orbit.loafScriptShare, gcsPerFrame: orbit.gcsPerFrame, main: orbit.main, ...info });
+    rec(`spread/${size}/drag-off-mean-frame-ms`, off.o.meanFrameMs, extra(off));
+    rec(`spread/${size}/drag-on-mean-frame-ms`, on.o.meanFrameMs, { ...extra(on), ...info });
+    rec(`spread/${size}/scene-ms-per-call`, on.sceneMsPerCall, { off: off.sceneMsPerCall, sceneCalls: on.sceneCalls });
+    expect(orbit.frames).toBeGreaterThanOrEqual(10);
+    expect(off.o.frames).toBeGreaterThanOrEqual(10);
+    expect(on.o.frames).toBeGreaterThanOrEqual(10);
+    expect(orbit.meanFrameMs, `${size} orbit ${orbit.meanFrameMs.toFixed(1)} ms (${orbit.fps.toFixed(0)} fps), p95 ${orbit.p95FrameMs.toFixed(1)} ms, ${info.total} planes`).toBeLessThan(c.orbitMs);
+    expect(off.o.meanFrameMs, `${size} drag off ${off.o.meanFrameMs.toFixed(1)} ms`).toBeLessThan(c.dragOffMs);
+    expect(on.o.meanFrameMs, `${size} drag on ${on.o.meanFrameMs.toFixed(1)} ms`).toBeLessThan(c.dragOnMs);
+    expect(on.sceneMsPerCall, `${size} scene ${on.sceneMsPerCall.toFixed(2)} ms/call (off ${off.sceneMsPerCall.toFixed(2)})`).toBeLessThan(c.sceneMs);
+  });
+}
 
 test.afterAll(() => {
   const have = new Set(results.map((r) => r.benchId));

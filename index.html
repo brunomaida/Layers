@@ -544,6 +544,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
       </sc-if>
     </div>
+    <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:6px 12px;border-bottom:1px solid var(--line1);font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</div>
+    </sc-if>
     <div style="display:flex;flex-direction:column;gap:6px;padding:8px 12px;background:var(--bg0);border-bottom:1px solid var(--line1)">
       <div style="display:flex;align-items:center;gap:6px">
         <div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid {{ propQBdr }};border-radius:999px;background:var(--bg1)">
@@ -613,6 +616,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
       </sc-if>
       </div>
+      <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
+        <span style="grid-column:1 / -1;font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
+      </sc-if>
       <span style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">Origem</span>
       <div style="display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;overflow:hidden">
         <sc-for list="{{ originChips }}" as="oc" hint-placeholder-count="3">
@@ -677,6 +683,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </sc-if>
       <sc-if value="{{ noSibs }}" hint-placeholder-val="{{ true }}">
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
+      </sc-if>
+      <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
+        <span style="flex:1 0 100%;font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
       </sc-if>
       <span style="width:1px;height:14px;background:var(--line1);margin:0 5px"></span>
         <sc-for list="{{ originChips }}" as="oc" hint-placeholder-count="3">
@@ -1007,7 +1016,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <div style="display:flex;align-items:center;gap:8px;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Arquivos<span style="flex:1;height:1px;background:var(--line1)"></span></div>
         <sc-for list="{{ modalFiles }}" as="f" hint-placeholder-count="2">
           <div style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:6px 8px;background:var(--bg1);border:1px solid var(--line0);border-radius:3px;font:500 calc(11px*var(--fs))/1.4 'JetBrains Mono',monospace">
-            <span style="color:var(--fg0)">{{ f.path }}</span><span style="color:var(--fg2)">{{ f.count }} ajuste(s)</span>
+            <span style="color:var(--fg0)">{{ f.path }}</span><span style="color:var(--fg2)">{{ f.count }} ajuste(s){{ f.origin }}</span>
             <span style="grid-column:1 / -1;color:var(--fg3)">rascunho paralelo: {{ f.draft }} &nbsp;·&nbsp; histórico: {{ f.hist }}</span>
           </div>
         </sc-for>
@@ -1156,8 +1165,8 @@ const Plane = React.memo(function Plane(p) {
 
 // S9.1c: plano de outro layout no Espalhar (retrato congelado): sem data-plane, sem handlers, sem hit-test; como o board: LOD = borda tracejada, retrato cheio (dim) = borda continua .35, opacidade .5 e fundo por profundidade
 // Task 6: the plane takes clicks (activate its layout on that node) and a hover highlight; `H` is the component's stable handler bag, `hot` the only prop that changes on hover. The cursor comes from the page div (an inline cursor here would make planeCensus count it).
-const LodPlane = React.memo(function LodPlane({ n, z, lid, full, hot, H }) {
-  return React.createElement('div', { 'data-lod-plane': n.id, 'data-layout': lid, ...(hot ? { 'data-lod-hot': '' } : null), style: { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: 'translateZ(' + z + 'px)', contain: 'layout paint',
+const LodPlane = React.memo(function LodPlane({ n, z, lid, full, hot, H, dragging, culled }) {
+  return React.createElement('div', { 'data-lod-plane': n.id, 'data-layout': lid, ...(hot ? { 'data-lod-hot': '' } : null), style: { position: 'absolute', left: n.x, top: n.y, width: n.w, height: n.h, transform: dragging ? undefined : 'translateZ(' + z + 'px)', contain: 'layout paint', display: culled ? 'none' : undefined,
     background: hot ? 'rgba(var(--selRgb),.16)' : n.depth === 0 ? 'rgba(14,17,22,.9)' : 'rgba(var(--bg1Rgb),.3)', border: hot ? '1px solid var(--sel)' : full ? '1px solid rgba(173,181,190,.35)' : '1px dashed rgba(173,181,190,.45)', borderRadius: n.radius, opacity: hot ? .9 : 0.5 * n.opacity, boxSizing: 'border-box', pointerEvents: 'auto' },
     onClick: e => H.lodClick(lid, n.id, e), onDoubleClick: H.lodDbl, onMouseEnter: e => H.lodEnter(lid, n.id, e), onMouseLeave: H.lodLeave });
 });
@@ -1341,6 +1350,7 @@ class Component extends DCLogic {
   // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
   projectId = CONF.session.lastProjectId || null;
   normalCam = null; normalCamOwner = null; pendingSpread = null; // S9.1c Task 6: the saved normal camera while the overview camera is live, the layout it belongs to (active when it was saved); the saved session entry waiting for its project's load
+  layoutProbe = new Map(); probeSeq = 0; probeRun = null; watchLayouts = {}; // S9.1d: quiet probe of the other layouts (id -> {hash, uses, files} | {unavailable}); watchLayouts = {path: [layoutId]} for the files only other layouts own
   spreadFrozen = new Map(); spreadSeq = 0; spreadKey = undefined; // S9.1c: frozen snapshots of the other layouts (outside state; state.spreadRev says when they changed)
   // S2.22b: estado do mock escolhido por projeto (chave = pendingKey), guardado na sessao para o reload voltar ao mesmo estado
   stateMap = CONF.session.states && typeof CONF.session.states === 'object' ? { ...CONF.session.states } : {};
@@ -1381,6 +1391,7 @@ class Component extends DCLogic {
   // Hash por parte: approve/rollback so trocam as partes que reescreveram; uma fonte mudada fora do
   // LAYERS depois da carga nao entra, porque os ids posicionais seguem descrevendo o DOM que foi lido.
   partHash(text) { return text === null ? null : LayersCore.sourceHash([text]); }
+  hashSpecOf(man, mb) { const phCss = {}; mb.css.forEach(c => { phCss[c.file] = this.partHash(c.text); }); return { man, mockPath: mb.mockPath, cssFiles: mb.css.map(c => c.file), dcFile: mb.dcText !== null ? mb.dcFile : null, ph: { html: this.partHash(mb.html), css: phCss, dc: this.partHash(mb.dcText) } }; } // shared by loadProject and the probe: the probe hash must equal the load hash
   srcHash(hs) { const parts = [JSON.stringify(hs.man), hs.mockPath, hs.ph.html]; hs.cssFiles.forEach(f => { parts.push(f, hs.ph.css[f]); }); parts.push(hs.dcFile, hs.ph.dc); return LayersCore.sourceHash(parts); }
   // Desce mockRoot pelo caminho do id: no de tamanho zero fica fora de this.els, o caminho segue valido.
   elAtPath(id) { let el = this.mockRoot; if (!el) return null; const p = String(id).split('.'); for (let k = 1; k < p.length && el; k++) el = el.children[+p[k]]; return el || null; }
@@ -1422,7 +1433,7 @@ class Component extends DCLogic {
         else if (p in ph.css) ph.css[p] = this.partHash(await this.readText(p));
       }
       if (seq !== this.loadSeq) return;
-      this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec);
+      this.hashSpec = { ...hs, ph }; this.pendingHash = this.srcHash(this.hashSpec); this.undoHash[this.curLayoutId()] = this.pendingHash; // S9.1d: our own write moved the source; it is not drift
       this.pendingSeen = this.state.changes; this.pendingReqSeen = this.state.requests; this.pendingReady = true; this.pendingDirty = true; this.persistSoon();
     } catch (e) { if (seq !== this.loadSeq) return; this.toast('Não foi possível reler as fontes depois de gravar: ajustes desta sessão não serão salvos (requisições continuam salvas).', 'warn'); this.pendingReqOnly = true; this.pendingDirty = true; this.persistSoon(); } // pendingReady fica falso: ajustes e hash antigos permanecem e a proxima carga os descarta; so as requisicoes seguem gravando
   }
@@ -1521,7 +1532,7 @@ class Component extends DCLogic {
     this.dirViaClick = !!viaClick;
     this.zip = null; this.repo = null;
     const id = 'folder:' + dir.name; const switched = this.projectId !== id; this.projectId = id; this.markTab(); // S3.5: outro projeto nao herda o ramo do anterior (restore e retry de permissao mantem o id)
-    this.clearSpread(); // a re-opened project of the same name must not reuse the previous run's frozen layouts
+    this.clearSpread(); this.clearProbe(); // a re-opened project of the same name must not reuse the previous run's frozen layouts
     this.setState({ dir, dirName: dir.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     idbPut(id, dir); this.touchHist({ id, kind: 'folder', name: dir.name, path: dir.name });
   }
@@ -1530,6 +1541,7 @@ class Component extends DCLogic {
  this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
+    const keepUndo = this.keepUndo; this.keepUndo = false; // S9.1d: only switchLayout keeps the shared undo stack; read first so the flag never leaks into a later load
     const pv = this.pendingView; this.pendingView = null; // consumido ja aqui: uma carga superada nunca o vaza para a seguinte (S9.1a)
     this.writeConfig(); this.pendingReady = false; this.pendingReqOnly = false; const baseKey = this.pendingKeyNow(); this.pendingKey = null; // drena a rajada na chave antiga antes de recalcular; pendingKey so volta com o layout resolvido (S9.1a)
     const sv0 = this.state.spread.on ? this.spreadView() : null, fw = sv0 && this.state.focus ? { x: this.state.focus.x + sv0.offs[sv0.ai], y: this.state.focus.y, zd: this.state.focus.zd } : null; // overview focus in WORLD x (it lives in active-page coordinates): re-based on the new active page after the load
@@ -1562,7 +1574,7 @@ class Component extends DCLogic {
       this.toast('layers.json criado automaticamente.' + (r.capped ? ' Varredura truncada por um teto de tamanho/quantidade — revise o resultado.' : ''), 'ok');
     }
     let man; try { man = JSON.parse(raw); } catch (e) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'layers.json inválido.', body: 'O arquivo existe na pasta mas não é um JSON válido: ' + e.message }); return; }
-    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; const newProject = this.spreadKey !== baseKey; if (newProject) { this.spreadKey = baseKey; this.clearSpread(); this.normalCam = null; this.normalCamOwner = null; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null }); } /* another project: the frozen layouts (and any read still in flight) are not its own */ const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); if (this.layoutMap[baseKey || '-'] !== undefined && this.layoutMap[baseKey || '-'] !== curLayout.id) delete this.layoutMap[baseKey || '-']; /* stale id (layout removed): drop it so the session view stamp matches the next reload */ this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); 
+    const vp = man.viewport || {}; const W = Math.max(200, +vp.width || 1280), H = Math.max(200, +vp.height || 760); if (seq !== this.loadSeq) return; this.baseKey = baseKey; const newProject = this.spreadKey !== baseKey; if (newProject) { this.spreadKey = baseKey; this.clearSpread(); this.clearProbe(); this.normalCam = null; this.normalCamOwner = null; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null }); } /* another project: the frozen layouts (and any read still in flight) are not its own */ const layouts = LayersCore.projectLayouts(man), curLayout = LayersCore.pickLayout(layouts, this.layoutMap[baseKey || '-']); if (this.layoutMap[baseKey || '-'] !== undefined && this.layoutMap[baseKey || '-'] !== curLayout.id) delete this.layoutMap[baseKey || '-']; /* stale id (layout removed): drop it so the session view stamp matches the next reload */ this.pendingKey = LayersCore.layoutPendingKey(baseKey, curLayout.id); const states = curLayout.states, curState = LayersCore.pickState(states, this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]); 
     const mb = await this.buildMockDom(man, curLayout, { active: true, state: curState, isStale: () => seq !== this.loadSeq });
     if (mb.missing) { const mockPath = mb.mockPath; if (seq !== this.loadSeq) return; if (curState) delete this.stateMap[LayersCore.stateMapKey(baseKey, curLayout.id)]; delete this.layoutMap[baseKey || '-']; this.unloadProject({ title: 'Mock não encontrado.', body: (autoNote ? autoNote + '\n\n' : '') + 'layers.json aponta para "' + mockPath + '", que não existe na pasta. Corrija ' + (curState ? 'o "mock" do estado "' + curState.name + '" em "states" (recarregar abre o primeiro estado)' : 'o campo "mock"') + ' ou gere o arquivo.' + (layouts.length > 1 ? ' Layout "' + curLayout.name + '": recarregar abre o primeiro layout.' : '') }); return; }
     if (mb.empty) { if (seq !== this.loadSeq) return; this.unloadProject({ title: 'O mock está vazio.', body: (autoNote ? autoNote + '\n\n' : '') + 'O <body> de ' + mb.mockPath + ' não tem elementos. Se o app monta o DOM por JavaScript, rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' }); return; }
@@ -1590,8 +1602,7 @@ class Component extends DCLogic {
     if (newProject && this.state.spread.on) this.leaveSpread(); // a toggle made against the outgoing project's UI during this load: discarded, its normalCam must not leak into the new project
     const keepCam = !newProject && this.state.spread.on, ps = this.takeSpreadSession(layouts, curLayout.id); // S9.1c Task 6: Espalhar on keeps the overview camera across a layout switch; ps = the saved Espalhar to restore after this project's first load
     const incomplete = warn.some(w => /^(css não encontrado|dcSource não lido)/.test(w));
-    const phCss = {}; css.forEach(c => { phCss[c.file] = this.partHash(c.text); });
-    const hs = { man, mockPath, cssFiles: css.map(c => c.file), dcFile: dcText !== null ? dcFile : null, ph: { html: this.partHash(html), css: phCss, dc: this.partHash(dcText) } };
+    const hs = this.hashSpecOf(man, mb);
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
     // S9.1a: badge and R<n> floor of the OTHER layouts, read once per load (never in writeConfig: it runs on every camera burst)
@@ -1612,13 +1623,18 @@ class Component extends DCLogic {
     this.pendingHash = hash; this.pendingSeen = restored; this.pendingReqSeen = reqs; this.pendingDirty = dropped > 0 || reqs.length > 0; this.pendingReady = !incomplete && !!this.pendingKey; this.pendingReqOnly = incomplete && !!this.pendingKey;
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
+    this.watchLayouts = {}; this.layoutProbe.delete(curLayout.id); // S9.1d: the layout that becomes active leaves the probe cache; the other layouts' watch is rebuilt by probeLayout
+    if (!newProject && this.loaded && this.loaded.manifest !== raw) this.clearProbe(); // S9.1d: the manifest moved on disk, every cached probe hash was made against the old one
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
-    this.resetUndo();
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
+    if (!keepUndo || newProject) this.resetUndo(); else this.lastEdit = null;
+    // S9.1d: a layout's steps survive only while its source is the one they were made against (the pending entry cannot tell: undone edits leave none)
+    if (keepUndo && !newProject && (incomplete || (this.undoHash[curLayout.id] !== undefined && this.undoHash[curLayout.id] !== hash))) this.dropUndoFor(curLayout.id);
+    this.undoHash[curLayout.id] = incomplete ? null : hash; // null: no trustworthy hash, so the next complete load drops what was stacked meanwhile
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId, true); else if (vw && this.state.selId !== '0') this.select(this.state.selId, true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
-    this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man)); // sem await: nao atrasa a carga
+    this.probeLayout(seq, rootEl, mockPath, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])], LayersCore.watchGlobs(man), man, curLayout.id); // sem await: nao atrasa a carga
     if (!newProject && !ps && this.state.spread.on && layouts.length > 1) this.loadSpread(seq, { man, activeId: curLayout.id, pageW: W, pageH: H }).catch(e => console.warn('loadSpread', e)); // S9.1c: the other layouts, frozen in LOD; the final setState above may not have flushed, so the context travels as arguments
   }
   // Saved `session › spread`, validated against the loaded project: {spread, cam} or null (nothing saved, another project, < 2 layouts, garbage). Every field is checked: unknown ids drop, numbers must be finite and are clamped.
@@ -1637,10 +1653,11 @@ class Component extends DCLogic {
   }
   // Reads and builds mock+css of `layout`; never touches a host element (mount is mountMockDom's job). Only opts.active hoists fonts and records mtimes.
   // Caller contract: active:true needs opts.isStale; a non-active caller does its own seq check after the await, then mountMockDom on a temporary host, scanRoot, and removes that host.
+  mockPathOf(man, layout, state) { const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; return joinPath(base, state ? state.mock : layout.mock || 'layers/mock.html'); }
   async buildMockDom(man, layout, opts = {}) {
     const rd = p => this.readText(p, !opts.active);
     const base = man.base ? String(man.base).replace(/^\/+|\/+$/g, '') + '/' : ''; const P = p => joinPath(base, p);
-    const mockPath = P(opts.state ? opts.state.mock : layout.mock || 'layers/mock.html'); const mockDir = mockPath.replace(/[^/]*$/, '');
+    const mockPath = this.mockPathOf(man, layout, opts.state); const mockDir = mockPath.replace(/[^/]*$/, '');
     let html; try { html = await rd(mockPath); } catch (e) { return { missing: true, mockPath }; }
     const doc = new DOMParser().parseFromString(html, 'text/html'); const cssFiles = []; const warn = [];
     // <link rel=stylesheet> relativos → lidos da pasta; externos são descartados (só fontes do Google passam, no documento)
@@ -1693,7 +1710,7 @@ class Component extends DCLogic {
     await walk(this.state.dir, '', 0);
     return { files: files.sort(), capped, deepCut };
   }
-  async probeLayout(seq, rootEl, mockPath, known, globs) {
+  async probeLayout(seq, rootEl, mockPath, known, globs, man, activeId) {
     const d = this.state.dir; if (!d) return; const mockMt = (this.mtimes || {})[mockPath];
     try {
       if (d.queryPermission && await d.queryPermission({ mode: 'read' }) !== 'granted') return;
@@ -1704,7 +1721,12 @@ class Component extends DCLogic {
       const dropped = extra.length ? Math.max(0, nAll - Math.max(50, nCited)) : 0;
       const watchNote = [dropped ? 'watch: ' + dropped + ' arquivos além do teto de 50 ignorados' : '', capped ? 'watch: varredura parou em 5000 entradas; o restante não foi lido' : '', deepCut ? 'watch: pastas além de 8 níveis ignoradas' : ''].filter(Boolean).join(' · ');
       const mt = {}; for (const f of LayersCore.citedSources(srcs, known, 50, extra)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
+      // S9.1d: the mock of every OTHER layout is watched with a stat (no read); never part of `mt`, which feeds the drift check against the active mock
+      const om = {}, ol = {}, all = man ? LayersCore.projectLayouts(man) : [];
+      // a mock that does not exist yet is watched as 'missing' (like checkStale), so its creation raises the banner
+      if (all.length > 1) for (const l of all) { if (l.id === activeId) continue; const op = this.mockPathOf(man, l, LayersCore.pickState(l.states, this.stateMap[LayersCore.stateMapKey(this.baseKey, l.id)])); if (known.includes(op)) continue; (ol[op] = ol[op] || []).push(l.id); try { om[op] = (await (await this.fileHandle(op, false)).getFile()).lastModified; } catch (e) { if (e && e.name === 'NotFoundError') om[op] = 'missing'; else delete ol[op]; } }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
+      Object.assign(this.watch, om); Object.assign(this.watchLayouts, ol); this.layoutProbe.forEach((e, id) => { if (e.files) this.watchProbed(id, e.files); }); // a cached probe entry brings its own files back after a switch
       if (watchNote) { const cur = this.state.toast; this.toast(watchNote + (cur && cur.msg ? ' · ' + cur.msg : '')); }
       this.structural = ['layers.json', mockPath, ...(this.maskedCss || []), ...Object.keys(mt)]; Object.assign(this.watch, mt);
       const drift = LayersCore.layoutDrift(mockMt, mt, this.driftAck); this.setState({ drift: drift.length ? drift : null });
@@ -1717,7 +1739,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.clearSpread(); this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.normalCam }); this.normalCam = null; this.normalCamOwner = null; this.pendingSpread = null; this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.clearSpread(); this.clearProbe(); this.watchLayouts = {}; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.normalCam }); this.normalCam = null; this.normalCamOwner = null; this.pendingSpread = null; this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Varre a pasta conectada e devolve o texto dos arquivos dos `kinds` pedidos ('html'|'css'|'script'); `exclude` = nomes de pasta extras a pular; `base` = subpasta onde a varredura comeca (caminhos seguem relativos a raiz).
   async collectProjectFiles(dir, kinds, exclude, base) {
     const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX;
@@ -1933,7 +1955,7 @@ class Component extends DCLogic {
     const root = LayersCore.zipRoot(z.files);
     this.zip = { files: z.files, root }; this.repo = null;
     const id = 'zip:' + file.name; const switched = this.projectId !== id; this.projectId = id; this.markTab();
-    this.clearSpread();
+    this.clearSpread(); this.clearProbe();
     this.setState({ dir: null, dirName: file.name, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     this.touchHist({ id, kind: 'zip', name: file.name, path: file.name });
     if (z.skipped.length) this.toast(z.skipped.length + ' entrada(s) do .zip recusada(s) por caminho inseguro: ' + z.skipped[0], 'warn');
@@ -1959,7 +1981,7 @@ class Component extends DCLogic {
     } catch (e) { this.toast('Sem resposta do GitHub: ' + e.message); return; }
     this.repo = { owner: r.owner, repo: r.repo, ref }; this.zip = null;
     const switched = this.projectId !== 'repo:' + name; this.projectId = 'repo:' + name; this.markTab();
-    this.clearSpread();
+    this.clearSpread(); this.clearProbe();
     this.setState({ dir: null, dirName: name + '@' + ref, cssRules: {}, fileText: {}, cbOpen: null, ...(switched ? { explodeFrom: null, collapseAt: null } : {}) }, () => this.loadProject());
     this.touchHist({ id: 'repo:' + name, kind: 'repo', name, path: 'https://github.com/' + name, label: ref });
   }
@@ -2100,11 +2122,18 @@ class Component extends DCLogic {
         catch (e) { if (e && e.name === 'NotFoundError') current[p] = 'missing'; }
       }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
-      const list = LayersCore.staleFiles(this.watch, current); this.staleCur = current; this.staleSeen = { ...this.watch };
+      const list = LayersCore.staleFiles(this.watch, current); this.evictProbed(list, current); this.staleCur = current; this.staleSeen = { ...this.watch };
       this.setState({ stale: list.length ? list : null });
     } finally { this.staleBusy = false; }
   }
+  // S9.1d: a cached probe entry made against a file that has moved since (shared css, own css, mock) is outdated; a moved layers.json outdates all of them.
+  evictProbed(list, current) {
+    if (list.includes('layers.json')) { this.clearProbe(); return; }
+    LayersCore.staleLayouts(this.watchLayouts, list).forEach(id => this.layoutProbe.delete(id)); // also an `unavailable` entry whose mock has just appeared
+    this.layoutProbe.forEach((e, id) => { if (e.files && e.files.some(f => typeof f.mtime === 'number' && f.path in current && current[f.path] !== f.mtime)) this.layoutProbe.delete(id); });
+  }
   dismissStale() {
+    LayersCore.staleLayouts(this.watchLayouts, this.state.stale).forEach(id => this.layoutProbe.delete(id)); // an ignored change leaves that layout's cached probe outdated: it is read again on the next ensureProbe
     this.watch = LayersCore.dismissWatch(this.watch, this.staleCur || {}, this.staleSeen || {}); this.ackDrift(); this.setState({ stale: null, drift: null });
   }
   // S2.21b: a deriva reconhecida (x ou Reanalisar) nao volta na sessao enquanto a fonte nao for editada de novo.
@@ -2131,10 +2160,10 @@ class Component extends DCLogic {
     const s = this.state; if (!s.project || (s.project.layouts || []).length < 2 || s.project.layoutId === id || !s.project.layouts.some(l => l.id === id)) return;
     if (s.modal || s.pending || s.diff || (s.coverage && s.coverage.open)) { this.toast('feche o painel aberto antes de trocar de layout'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
-    const go = () => { const c = this.state, lk = LayersCore.stateMapKey(this.baseKey, s.project.layoutId), prev = this.viewCache[lk], nc = c.spread.on && this.normalCam ? (this.normalCamOwner === s.project.layoutId ? this.normalCam : prev || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }) : c; /* Espalhar on: the live camera is the overview one; the view cache gets the NORMAL camera only for the layout it belongs to, any other layout keeps the camera it had */ this.viewCache[lk] = { selId: c.selId, isoId: c.isoId, yaw: nc.yaw, tilt: nc.tilt, zoom: nc.zoom, panX: nc.panX, panY: nc.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; const cached = this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null; if (c.spread.on && !this.normalCam) { this.normalCam = this.camOf(c); this.normalCamOwner = s.project.layoutId; this.setState({ zoom: 1, panX: 0, panY: 0, focus: null }); } /* 1-N that drew one page until now: the switch makes it two (the layout left joins the pick), so the overview camera takes over here (the active layout is still the old one, swapCam() would see one page) */ this.pendingView = { projectId: this.projectId, layoutId: id, view: selId === undefined ? cached : { ...(cached || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, flat: false }), selId, isoId: null, explodeFrom: null, collapseAt: null } }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; let sp = c.spread; if (sp.on && sp.mode === 'pick' && !sp.picked.includes(s.project.layoutId)) { sp = { ...sp, picked: [...sp.picked, s.project.layoutId] }; this.setState({ spread: sp }); } /* 1-N, any switch (chip, LOD, keyboard): the layout left behind stays on the stage (else picked = [target] collapses it to one page) */ if (c.spread.on) this.freezeLeaving(s.project.layoutId, id, sp); this.setState({ stale: null, drift: null, lodHover: null }); this.loadProject(); };
+    const go = () => { const c = this.state, lk = LayersCore.stateMapKey(this.baseKey, s.project.layoutId), prev = this.viewCache[lk], nc = c.spread.on && this.normalCam ? (this.normalCamOwner === s.project.layoutId ? this.normalCam : prev || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }) : c; /* Espalhar on: the live camera is the overview one; the view cache gets the NORMAL camera only for the layout it belongs to, any other layout keeps the camera it had */ this.viewCache[lk] = { selId: c.selId, isoId: c.isoId, yaw: nc.yaw, tilt: nc.tilt, zoom: nc.zoom, panX: nc.panX, panY: nc.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; const cached = this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null; if (c.spread.on && !this.normalCam) { this.normalCam = this.camOf(c); this.normalCamOwner = s.project.layoutId; this.setState({ zoom: 1, panX: 0, panY: 0, focus: null }); } /* 1-N that drew one page until now: the switch makes it two (the layout left joins the pick), so the overview camera takes over here (the active layout is still the old one, swapCam() would see one page) */ this.pendingView = { projectId: this.projectId, layoutId: id, view: selId === undefined ? cached : { ...(cached || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, flat: false }), selId, isoId: null, explodeFrom: null, collapseAt: null } }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; let sp = c.spread; if (sp.on && sp.mode === 'pick' && !sp.picked.includes(s.project.layoutId)) { sp = { ...sp, picked: [...sp.picked, s.project.layoutId] }; this.setState({ spread: sp }); } /* 1-N, any switch (chip, LOD, keyboard): the layout left behind stays on the stage (else picked = [target] collapses it to one page) */ if (c.spread.on) this.freezeLeaving(s.project.layoutId, id, sp); this.setState({ stale: null, drift: null, lodHover: null }); this.keepUndo = true; this.loadProject(); };
     // storable pending stays under the old layout's key; only what the drain cannot persist (incomplete load, over the cap, storage full) is lost
     const lost = (s.changes || []).length > 0 && (!this.pendingReady || s.changes.length > LayersCore.PENDING_CAP || this.pendingQuotaWarned);
-    if (LayersCore.hasUnsaved(lost ? s.changes : [], s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
+    if (LayersCore.hasUnsaved(lost ? s.changes : [], s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); if (lost) this.dropUndoFor(s.project.layoutId); go(); } } }); return; }
     go();
   }
   // S9.1c: Espalhar. spreadFrozen: id -> {nodes,pageW,pageH,full,count} | {unavailable:true}; every change bumps state.spreadRev so the render re-reads it.
@@ -2229,6 +2258,57 @@ class Component extends DCLogic {
       return nodes.length ? { nodes, pageW: W, pageH: H, full: false, count: nodes.length } : { unavailable: true };
     } catch (e) { return { unavailable: true }; } finally { tmp.remove(); }
   }
+  // S9.1d: quiet probe of the OTHER layouts. layoutProbe: id -> {hash, uses: Map(useKey -> count), files: [{path, mtime}]} | {unavailable:true}. Reads are quiet (never this.mtimes) and nothing of the DOM is kept, only the use counts.
+  clearProbe() { this.probeSeq++; this.probeRun = null; this.layoutProbe.clear(); } // the seq bump also kills a probe still in flight
+  ensureProbe() {
+    const P = this.state.project; if (!P || !P.layouts || P.layouts.length < 2 || this.loadedSeq !== this.loadSeq) return Promise.resolve();
+    const r = this.probeRun; if (r && r.seq === this.probeSeq && r.load === this.loadSeq) return r.p;
+    const run = { seq: this.probeSeq, load: this.loadSeq, p: null }; this.probeRun = run;
+    run.p = this.probeOthers(P.layouts.filter(l => l.id !== P.layoutId).map(l => l.id)).catch(e => console.warn('probeOthers', e)).finally(() => { if (this.probeRun === run) this.probeRun = null; });
+    return run.p;
+  }
+  // One layout at a time, like loadSpread. Dies when a load, a clear or another probe generation starts; a dead run writes nothing.
+  async probeOthers(ids) {
+    const P = this.state.project, man = P && P.man; if (!man || !P.layouts || P.layouts.length < 2) return;
+    const layouts = LayersCore.projectLayouts(man), seq = this.loadSeq, mine = this.probeSeq, activeId = P.layoutId, W = this.state.pageW, H = this.state.pageH;
+    const live = () => this.loadedSeq === this.loadSeq && seq === this.loadSeq && mine === this.probeSeq;
+    if (!live()) return;
+    for (const id of ids) {
+      if (id === activeId || this.layoutProbe.has(id)) continue;
+      const layout = layouts.find(l => l.id === id); if (!layout) continue;
+      const entry = await this.probeOne(man, layout, W, H, live);
+      if (!entry || !live()) return;
+      this.layoutProbe.set(id, entry); if (entry.files) this.watchProbed(id, entry.files);
+    }
+  }
+  // Read+build, mount on a temporary offscreen host, full scan for the use counts only, drop the host (no await in between). null = superseded.
+  async probeOne(man, layout, W, H, live) {
+    let mb; try { mb = await this.buildMockDom(man, layout, { active: false, state: LayersCore.pickState(layout.states, this.stateMap[LayersCore.stateMapKey(this.baseKey, layout.id)]) }); } catch (e) { return live() ? { unavailable: true } : null; }
+    if (!live()) return null;
+    if (mb.missing || mb.empty || mb.stale || !mb.rootEl) return { unavailable: true };
+    const tmp = document.createElement('div'); tmp.setAttribute('data-lod-host', ''); tmp.style.cssText = 'position:fixed;left:-20000px;top:0;width:' + W + 'px;height:' + H + 'px;transform:translate(0,0);contain:layout;pointer-events:none'; document.body.appendChild(tmp);
+    const uses = new Map();
+    try {
+      const { rootEl } = this.mountMockDom(tmp, mb);
+      mb.built.hostAttrs.attrs.forEach(a => { if (!tmp.hasAttribute(a.name)) tmp.setAttribute(a.name, a.value); }); // not applyHostAttrs: it writes this.hostApplied (the stage's)
+      const nodes = this.scanRoot(tmp, rootEl).nodes;
+      for (let i = 0; i < nodes.length; i++) { const n = nodes[i]; if (!n.src) continue; const k = LayersCore.useKey(n.src, n.tag, !(n.kids > 0)); uses.set(k, (uses.get(k) || 0) + 1); }
+    } catch (e) { return { unavailable: true }; } finally { tmp.remove(); }
+    const paths = [mb.mockPath, ...mb.css.map(c => c.file), ...(mb.dcText !== null ? [mb.dcFile] : [])], files = [];
+    for (const path of paths) { let mtime = null; if (this.state.dir) { try { mtime = (await (await this.fileHandle(path, false)).getFile()).lastModified; } catch (e) {} } files.push({ path, mtime }); }
+    if (!live()) return null;
+    return { hash: this.srcHash(this.hashSpecOf(man, mb)), uses, files };
+  }
+  // Files only other layouts own join the watch with the mtime the probe saw (a file that moved since then raises the banner); the active layout's own files are left alone.
+  watchProbed(id, files) {
+    if (!this.watch) return;
+    files.forEach(f => {
+      if (typeof f.mtime !== 'number') return;
+      const own = this.watchLayouts[f.path];
+      if (!own && f.path in this.watch) return; // the active layout's file
+      this.watch[f.path] = f.mtime; if (!own) this.watchLayouts[f.path] = [id]; else if (!own.includes(id)) own.push(id);
+    });
+  }
   // S2.21: Reanalisar do 0 = backup do layout carregado + recarga como projeto novo (sem selecao, camera nem ajustes salvos).
   restructureProject() {
     const s = this.state; if (!s.dir) return;
@@ -2255,7 +2335,7 @@ class Component extends DCLogic {
     this.bakNote = 'layout anterior salvo em ' + saved.dir + '/' + (saved.files.length ? ' (+ ' + saved.files.join(', ') + ')' : '') + (saved.warns.length ? ' · mock não lido, fora do backup: ' + saved.warns.join(', ') : ''); this.ackDrift();
     delete this.viewCache[LayersCore.stateMapKey(this.baseKey, this.state.project.layoutId)]; // S9.1a: the active layout restarts on the default view; layoutMap keeps it mounted
     this.dropPending(); if (this.pendingKey) this.rewritePending(); // dropPending so limpa com pendingReady; carga incompleta o deixa falso
-    this.pendingSel = null; this.clearSpread(); this.setState({ stale: null, drift: null, explodeFrom: null, collapseAt: null }); this.loadProject();
+    this.pendingSel = null; this.clearSpread(); this.clearProbe(); this.setState({ stale: null, drift: null, explodeFrom: null, collapseAt: null }); this.loadProject();
   }
   async backupLayout() {
     const L = this.loaded; if (!L) throw new Error('nenhum layout carregado');
@@ -2282,7 +2362,7 @@ class Component extends DCLogic {
       throw e;
     }
   }
-  doReload() { const s = this.state; this.clearSpread(); this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
+  doReload() { const s = this.state; this.clearSpread(); this.clearProbe(); this.pendingSel = { id: this.projectId, selId: s.selId, isoId: s.isoId }; this.setState({ stale: null }); this.loadProject(); }
   componentWillUnmount() { this.writeConfig(); window.removeEventListener('pagehide', this.onHide); window.removeEventListener('keydown', this.onKey); document.removeEventListener('pointerdown', this.onDocDown, true); clearTimeout(this.menuT); this.ro && this.ro.disconnect(); this.treeRO && this.treeRO.disconnect(); this.mo && this.mo.disconnect(); clearInterval(this.boot); clearTimeout(this.scanT); clearTimeout(this.staleT); window.removeEventListener('focus', this.onFocus); document.removeEventListener('visibilitychange', this.onFocus); }
   scanSoon() { clearTimeout(this.scanT); this.scanT = setTimeout(() => this.scan(), 90); }
   startRightResize(e) {
@@ -2493,14 +2573,14 @@ class Component extends DCLogic {
       copyReqItem: this.menuAct(() => this.copyRequests()), exportReqItem: this.menuAct(() => this.exportRequests()) };
   }
   // S9.1c: pages of the spread in layers.json order (null = render as today: Espalhar off, or fewer than 2 pages). Layouts that came out unavailable leave no slot; pending ones keep theirs.
-  // offs[i] = spreadOffsets; ai = active page; foot = N*pageW + (N-1)*gap; maxD = deepest frozen node (the overview camera's visibleMax over all pages).
+  // offs[i] = spreadOffsets; ai = active page; foot = N*pageW + (N-1)*gap; maxD = deepest DRAWN frozen node (the overview camera's visibleMax over all pages); plan = spreadDrawPlan id -> 'full' | 'lod' (a full entry past PLANES_MAX is drawn as LOD, spreadFrozen untouched).
   spreadView() {
     const s = this.state, sp = s.spread, P = s.project; if (!sp.on || !P || !P.layouts || P.layouts.length < 2) return null;
-    const c = this._sv; if (c && c.P === P && c.lid === P.layoutId && c.sp === sp && c.rev === s.spreadRev && c.w === s.pageW) return c.v;
+    const c = this._sv; if (c && c.P === P && c.lid === P.layoutId && c.sp === sp && c.rev === s.spreadRev && c.w === s.pageW && c.n === s.nodes.length) return c.v;
     const F = this.spreadFrozen, ids = LayersCore.spreadPicked(P.layouts, sp.mode, sp.picked, P.layoutId).filter(id => { const e = F.get(id); return id === P.layoutId || !(e && e.unavailable); });
     let v = null;
-    if (ids.length >= 2) { const offs = LayersCore.spreadOffsets(ids.length, s.pageW, sp.dist); let maxD = 0; ids.forEach(id => { const e = F.get(id); if (id !== P.layoutId && e && e.nodes) e.nodes.forEach(n => { if (n.depth > maxD) maxD = n.depth; }); }); v = { ids, offs, ai: ids.indexOf(P.layoutId), foot: offs[offs.length - 1] + s.pageW, maxD }; }
-    this._sv = { P, lid: P.layoutId, sp, rev: s.spreadRev, w: s.pageW, v }; return v;
+    if (ids.length >= 2) { const offs = LayersCore.spreadOffsets(ids.length, s.pageW, sp.dist); const plan = LayersCore.spreadDrawPlan(s.nodes.length, ids.filter(id => id !== P.layoutId && F.get(id) && F.get(id).nodes).map(id => ({ id, full: F.get(id).full, count: F.get(id).count }))); let maxD = 0; ids.forEach(id => { const e = F.get(id); if (id !== P.layoutId && e && e.nodes) { const cap = e.full && plan[id] !== 'full' ? 1 : Infinity; e.nodes.forEach(n => { if (n.depth > maxD && n.depth <= cap) maxD = n.depth; }); } }); v = { ids, offs, ai: ids.indexOf(P.layoutId), foot: offs[offs.length - 1] + s.pageW, maxD, plan }; }
+    this._sv = { P, lid: P.layoutId, sp, rev: s.spreadRev, w: s.pageW, n: s.nodes.length, v }; return v;
   }
   // camera focus when none is set: the page center, or the center of the whole spread (in active-page coordinates) in the overview
   defFocus() { const s = this.state, sv = this.spreadView(); return { x: s.pageW / 2 + (sv ? sv.offs[sv.offs.length - 1] / 2 - sv.offs[sv.ai] : 0), y: s.pageH / 2, zd: null }; }
@@ -2522,7 +2602,7 @@ class Component extends DCLogic {
     this._cam = { k: k, nodes: s.nodes, v: v }; return v;
   }
   stepActive(d) { this.setState(s => ({ active: clamp(s.active + d, 0, this.visibleMax()) })); }
-  select(id) { const n = this.state.byId[id]; if (!n) return; const tc = { ...this.state.treeClosed }; const parts = id.split('.'); for (let i = 1; i < parts.length; i++) delete tc[parts.slice(0, i).join('.')]; const [f0, s0] = ruleOf(n); const eo = { ...this.state.elOpen, [f0]: true, [f0 + '|' + s0]: true }; this.setState({ selId: id, active: n.depth, buf: {}, units: {}, treeClosed: tc, elOpen: eo }, () => this.revealInTree(id)); this.loadRule(n); this.loadFile(f0); }
+  select(id, quiet) { const n = this.state.byId[id]; if (!n) return; const tc = { ...this.state.treeClosed }; const parts = id.split('.'); for (let i = 1; i < parts.length; i++) delete tc[parts.slice(0, i).join('.')]; const [f0, s0] = ruleOf(n); const eo = { ...this.state.elOpen, [f0]: true, [f0 + '|' + s0]: true }; this.setState({ selId: id, active: n.depth, buf: {}, units: {}, treeClosed: tc, elOpen: eo }, () => this.revealInTree(id)); this.loadRule(n); this.loadFile(f0); if (!quiet && this.multiLayout() && this.state.scope === 'all' && this.sharedIds(id).length > 1) this.wantProbe(); } // quiet: the restore after a load never probes
   async loadFile(file) { if (!this.state.dir || !file || this.state.fileText[file] !== undefined) return; let t = null; try { t = await this.readText(file); } catch (e) { t = false; } this.setState(st => ({ fileText: { ...st.fileText, [file]: t } })); }
   // texto do código que define a regra: arquivo real (bloco css ou trecho ts) ou síntese a partir dos estilos do mock
   codeFor(rule) {
@@ -2559,7 +2639,7 @@ class Component extends DCLogic {
       let c = rule.one ? null : changes.find(x => x.prop === prop && x.src === rule.src && x.scope === 'all');
       const one = rule.one === true;
       if (!c) c = one ? changes.find(x => x.prop === prop && x.ids.length === 1 && x.ids[0] === rule.ids[0]) : c;
-      if (!c) { c = { key: rule.ids[0] + '|' + prop, id: rule.ids[0], ids: [], name: rule.name, src: rule.src, prop, from: first.style[prop] || getComputedStyle(first)[prop], fromInline: {}, scope: one ? 'one' : 'all', decided: true, scopedSel: one ? this.scopedSelector(rule.ids[0]) : null }; changes.push(c); }
+      if (!c) { c = { key: rule.ids[0] + '|' + prop, id: rule.ids[0], layoutId: this.curLayoutId(), ids: [], name: rule.name, src: rule.src, prop, from: first.style[prop] || getComputedStyle(first)[prop], fromInline: {}, scope: one ? 'one' : 'all', decided: true, scopedSel: one ? this.scopedSelector(rule.ids[0]) : null }; changes.push(c); }
       c.to = val; rule.ids.forEach(i => { const e2 = this.els[i]; if (!e2) return; if (!(i in c.fromInline)) c.fromInline[i] = e2.style[prop]; if (!c.ids.includes(i)) c.ids.push(i); e2.style[prop] = val; });
     });
     if (touched) this.pushUndo(); this.setState(st => { const b = { ...st.codeBuf }; delete b[rule.key]; return { changes, codeBuf: b }; }); this.scanSoon();
@@ -2674,19 +2754,20 @@ class Component extends DCLogic {
     }
     return null;
   }
-  patchSel(c) { const R = ruleOf(c)[1]; if (c.scope === 'all') return R; return this.sharedIds(c.id).length > 1 && c.scopedSel ? c.scopedSel : R; }
+  patchSel(c) { if (c.sel !== undefined) return c.sel; const R = ruleOf(c)[1]; if (c.scope === 'all') return R; return this.sharedIds(c.id).length > 1 && c.scopedSel ? c.scopedSel : R; }
   cloneChanges() { return this.state.changes.map(c => ({ ...c, ids: [...c.ids], fromInline: { ...c.fromInline } })); }
   applyEdit(prop, val) {
     const s = this.state; const id = s.selId; const el = this.els[id]; const n = s.byId[id]; if (!el || !n) return;
     val = String(val).trim(); if (val === '' || (window.CSS && CSS.supports && !CSS.supports(kebab(prop), val))) return;
     const changes = this.cloneChanges(); let c = changes.find(x => x.prop === prop && x.ids.includes(id));
-    if (!c) { c = { key: id + '|' + prop, id, ids: [id], name: n.name, src: n.src, prop, from: el.style[prop] || getComputedStyle(el)[prop], fromInline: { [id]: el.style[prop] }, scope: 'one', decided: false, scopedSel: this.scopedSelector(id) }; changes.push(c); }
+    if (!c) { c = { key: id + '|' + prop, id, layoutId: this.curLayoutId(), ids: [id], name: n.name, src: n.src, prop, from: el.style[prop] || getComputedStyle(el)[prop], fromInline: { [id]: el.style[prop] }, scope: 'one', decided: false, scopedSel: this.scopedSelector(id) }; changes.push(c); }
     const same = c.to === val;
     c.to = val; c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[prop] = val; });
     let pending = s.pending;
     if (!c.decided) { const sibs = this.sharedIds(id); if (sibs.length > 1) { if (s.scope === 'all') { this.extend(c, sibs, {}); c.decided = true; } else if (s.scope === 'one') c.decided = true; else pending = { key: c.key, count: sibs.length, name: n.name, selector: ruleOf(n)[1] }; } else c.decided = true; }
     if (!same) { const bk = id + '|' + prop; if (!this.inBurst(bk)) this.pushUndo(); this.lastEdit = { key: bk, t: Date.now() }; }
     this.setState({ changes, pending, buf: {} }); this.scanSoon();
+    if ((pending && !s.pending) || (c.scope === 'all' && c.ids.length > 1 && this.multiLayout())) this.wantProbe(); // the edit is the gesture: a shared write is never silent
   }
   extend(c, ids, orig) { ids.forEach(i => { if (c.ids.includes(i)) return; const e2 = this.els[i]; if (!e2) return; c.fromInline[i] = i in orig ? orig[i] : e2.style[c.prop]; e2.style[c.prop] = c.to; c.ids.push(i); }); c.scope = 'all'; }
   decide(all) {
@@ -2697,22 +2778,54 @@ class Component extends DCLogic {
   revert(c) { this.pushUndo(); c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }); this.setState(s => ({ changes: s.changes.filter(x => x.key !== c.key) })); this.scanSoon(); }
   // Same property of the same element within 600 ms (slider drag, held arrow key) is one undo step.
   inBurst(key) { const l = this.lastEdit; return !!l && l.key === key && Date.now() - l.t < 600 && (this.undoS || []).length > 0; }
-  pushUndo() { this.undoS = LayersCore.pushSnapshot(this.undoS, this.cloneChanges(), UNDO_CAP); this.redoS = []; this.lastEdit = null; }
-  resetUndo() { this.undoS = []; this.redoS = []; this.lastEdit = null; }
+  curLayoutId() { const P = this.state.project; return P && P.layoutId || null; }
+  // S9.1d: one stack for the whole project; every element is {layoutId, changes} (the changes of THAT layout).
+  pushUndo() { this.undoS = LayersCore.pushSnapshot(this.undoS, { layoutId: this.curLayoutId(), changes: this.cloneChanges() }, UNDO_CAP); this.redoS = []; this.lastEdit = null; }
+  resetUndo() { this.undoS = []; this.redoS = []; this.lastEdit = null; this.undoHash = Object.create(null); }
+  dropUndoFor(layoutId) { const keep = st => st.layoutId !== layoutId; this.undoS = (this.undoS || []).filter(keep); this.redoS = (this.redoS || []).filter(keep); this.lastEdit = null; }
   undo() { this.stepHistory(true); }
   redo() { this.stepHistory(false); }
   stepHistory(back) {
-    const s = this.state; if (s.pending || s.modal || s.diff || (s.coverage && s.coverage.open)) return;
+    const s = this.state; if (this.undoBusy || this.loadedSeq !== this.loadSeq || s.pending || s.modal || s.diff || (s.coverage && s.coverage.open)) return; // a load in flight owns the DOM
     const from = (back ? this.undoS : this.redoS) || [];
     if (!from.length) { this.toast(back ? 'Nada para desfazer' : 'Nada para refazer', 'ok'); return; }
     this.lastEdit = null;
-    const target = from[from.length - 1]; const cur = this.cloneChanges(); const rest = from.slice(0, -1);
-    if (back) { this.undoS = rest; this.redoS = LayersCore.pushSnapshot(this.redoS, cur, UNDO_CAP); } else { this.redoS = rest; this.undoS = LayersCore.pushSnapshot(this.undoS, cur, UNDO_CAP); }
+    const step = from[from.length - 1], P = s.project;
+    const where = LayersCore.undoStepApplies(step, P && P.layoutId, P ? P.layouts.map(l => l.id) : []);
+    if (where === 'drop') { if (back) this.undoS = from.slice(0, -1); else this.redoS = from.slice(0, -1); this.toast('passo de outro layout indisponível', 'warn'); return; }
+    if (where === 'here') { this.applyStep(back, step, null); return; }
+    this.stepAcross(back, step).catch(e => console.warn('undo', e));
+  }
+  // The step belongs to another live layout: switch to it, wait for the load AND its commit, then apply it exactly like a local step.
+  async stepAcross(back, step) {
+    this.undoBusy = true;
+    try {
+      const id = step.layoutId, seq0 = this.loadSeq; let t1 = 0; const lay = this.state.project.layouts.find(l => l.id === id);
+      const reached = () => { const P = this.state.project; return this.loadedSeq === this.loadSeq && !!P && P.layoutId === id; };
+      const abort = msg => this.toast(msg, 'warn');
+      this.switchLayout(id);
+      while (!reached()) {
+        if (this.loadSeq === seq0) { if (!this.state.modal) { abort('troca de layout cancelada'); return; } } // refused by a guard, or the confirm was dismissed; the open confirm waits without a cap
+        else if (!this.state.project) { abort('troca de layout cancelada'); return; } // the load failed and unloaded the project
+        else if (!t1) t1 = Date.now();
+        else if (Date.now() - t1 > 10000) { abort('a troca demorou; o desfazer não foi aplicado'); return; }
+        await new Promise(r => setTimeout(r, 50));
+      }
+      await new Promise(r => this.setState({}, r)); // commit barrier: scan() (the load's own callback) has run, so this.els is the new layout's
+      const s = this.state, st = (back ? this.undoS : this.redoS) || [];
+      if (!reached() || st[st.length - 1] !== step || s.pending || s.modal || s.diff || (s.coverage && s.coverage.open)) { abort('desfazer interrompido: o histórico mudou durante a troca de layout'); return; }
+      this.applyStep(back, step, lay ? lay.name : id);
+    } finally { this.undoBusy = false; }
+  }
+  applyStep(back, step, layoutName) {
+    const from = (back ? this.undoS : this.redoS) || [];
+    const target = step.changes, cur = this.cloneChanges(), rest = from.slice(0, -1), snap = { layoutId: step.layoutId, changes: cur };
+    if (back) { this.undoS = rest; this.redoS = LayersCore.pushSnapshot(this.redoS, snap, UNDO_CAP); } else { this.redoS = rest; this.undoS = LayersCore.pushSnapshot(this.undoS, snap, UNDO_CAP); }
     const delta = LayersCore.inlineDelta(cur, target);
     delta.forEach(d => { const e2 = this.els[d.id]; if (e2) e2.style[d.prop] = d.value; });
     const props = [...new Set(delta.map(d => d.prop))];
     this.setState({ changes: target, buf: {} }); this.scanSoon();
-    this.toast((back ? 'Desfeito: ' : 'Refeito: ') + (props.length === 1 ? props[0] : props.length + ' propriedades'), 'ok');
+    this.toast((back ? 'Desfeito' : 'Refeito') + (layoutName ? ' em ' + layoutName : '') + ': ' + (props.length === 1 ? props[0] : props.length + ' propriedades'), 'ok');
   }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
@@ -2806,7 +2919,83 @@ class Component extends DCLogic {
   log(line) { this.setState(s => ({ modal: s.modal ? { ...s.modal, log: [...s.modal.log, line] } : null })); }
   filesOf(changes) {
     const map = {}; changes.forEach(c => { const file = ruleOf(c)[0]; (map[file] = map[file] || []).push(c); });
-    return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, dc: !!this.dc && path === this.dc.file && list.some(isTplChange), draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
+    return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, origin: this.originTag(list), dc: !!this.dc && path === this.dc.file && list.some(isTplChange), draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
+  }
+  // S9.1d: " [Config, Main]" for a plan merged across layouts (its changes carry `layouts`), empty for a plain one
+  originTag(list) { const ids = [...new Set(list.flatMap(c => c.layouts || []))]; if (!ids.length) return ''; const L = (this.state.project && this.state.project.layouts) || []; return ' [' + ids.map(id => (L.find(l => l.id === id) || { name: id }).name).join(', ') + ']'; }
+  // S9.1d: the changes of the plan in front of the user: the set stored when Salvar opened (merged across layouts), else the active layout's
+  planChanges() { const m = this.state.modal; return m && m.set ? m.set.changes : this.state.changes; }
+  // S9.1d: layouts other than the active one with stored adjustments (storage only, nothing is mounted)
+  pendingLayouts() {
+    const P = this.state.project; if (!P || !this.multiLayout() || this.baseKey === null || this.baseKey === undefined) return [];
+    return P.layouts.filter(l => { if (l.id === P.layoutId) return false; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, l.id)); return !!e && e.changes.length > 0; }).map(l => l.id);
+  }
+  // A cached probe is only as fresh as its files, and Salvar writes on its word: files that moved since it was read evict it first.
+  async refreshProbe() {
+    if (!this.state.dir || !this.layoutProbe.size) return;
+    const paths = new Set(), cur = {}; this.layoutProbe.forEach(e => (e.files || []).forEach(f => paths.add(f.path)));
+    for (const p of paths) { try { cur[p] = (await (await this.fileHandle(p, false)).getFile()).lastModified; } catch (e) { cur[p] = 'missing'; } }
+    this.layoutProbe.forEach((e, id) => { if (e.files && e.files.some(f => typeof f.mtime === 'number' && f.path in cur && cur[f.path] !== f.mtime)) this.layoutProbe.delete(id); });
+  }
+  // S9.1d: the plan of Salvar, computed ONCE when it opens: the active layout's changes plus the stored ones of every other layout whose source hash still matches the probe, merged by file|selector|prop (the active layout wins). null = the project changed meanwhile.
+  async buildSaveSet(otherIds) {
+    const s = this.state, P = s.project, activeId = P.layoutId, seq = this.loadSeq;
+    await this.refreshProbe(); await this.ensureProbe();
+    if (seq === this.loadSeq && otherIds.some(id => !this.layoutProbe.has(id))) await this.ensureProbe(); // a run already in flight may have passed an entry refreshProbe just evicted
+    if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return null;
+    const name = id => (P.layouts.find(l => l.id === id) || { name: id }).name, byLayout = { [activeId]: s.changes }, others = [], warnings = [];
+    otherIds.forEach(id => {
+      const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); if (!e || !e.changes.length) return;
+      const pr = this.layoutProbe.get(id), n = e.changes.length;
+      const why = !pr || pr.unavailable ? 'layout indisponível' : pr.hash !== e.hash ? 'fonte mudou' : e.changes.some(isTplChange) ? 'template só grava no layout ativo' : null;
+      if (why) { warnings.push('⚠ ' + n + (n === 1 ? ' pendência de ' : ' pendências de ') + name(id) + (n === 1 ? ' não aplicada' : ' não aplicadas') + ' (' + why + '); ' + (why === 'fonte mudou' ? 'serão descartadas ao abrir o layout' : 'podem ser descartadas ao abrir o layout se a fonte compartilhada mudou')); return; } // a skipped layout keeps its stored adjustments
+      byLayout[id] = e.changes; others.push(id);
+    });
+    if (!others.length) return { changes: s.changes, others, warnings, seq };
+    const selOf = (c, id) => id === activeId ? this.patchSel(c) : c.scope === 'all' ? ruleOf(c)[1] : (c.scopedSel || ruleOf(c)[1]); // the mounted layout's patchSel reads ITS nodes: other layouts use what the change recorded
+    const res = LayersCore.mergeLayoutChanges(byLayout, activeId, P.layouts.map(l => l.id), selOf);
+    res.conflicts.forEach(x => warnings.push('⚠ conflito em ' + x.file + ' ' + x.sel + ' { ' + kebab(x.prop) + ' }: vale ' + name(x.winner.layoutId) + ' (' + x.winner.to + '); ignorado ' + x.losers.map(l => name(l.layoutId) + ' (' + l.to + ')').join(', ')));
+    return { changes: res.changes.map(c => ({ ...c, sel: selOf(c, c.layoutId) })), others, warnings, seq };
+  }
+  openSave() {
+    const s = this.state, others = this.pendingLayouts(); if (!s.changes.length && !others.length) return;
+    const msg = n => 'design: ' + n + ' ajuste(s) de layout via editor de camadas', where = s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.';
+    if (!others.length) { this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: msg(s.changes.length), set: { changes: s.changes, others, warnings: [], seq: this.loadSeq }, log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + where] } }); return; }
+    const tok = {}; this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: msg(s.changes.length), loading: true, tok, log: ['contando outros layouts…'] } });
+    this.buildSaveSet(others).then(set => {
+      const cur = this.state.modal; if (!cur || cur.tok !== tok) return; // closed meanwhile
+      if (!set || !set.changes.length) { this.setState({ modal: null }); if (set) this.toast(set.warnings.join(' · '), 'warn'); return; }
+      this.setState(st => ({ modal: { ...st.modal, loading: false, msg: msg(set.changes.length), set, log: ['Plano: ' + this.filesOf(set.changes).length + ' arquivo(s) afetado(s). ' + where, ...set.warnings] } }));
+    }).catch(e => { console.warn('buildSaveSet', e); if (this.state.modal && this.state.modal.tok === tok) this.setState({ modal: null }); });
+  }
+  // A plan that spans layouts was built against one load: another load since then, or one still being built, must not write.
+  planStale() { const m = this.state.modal; if (m && m.loading) return true; if (!m || !m.set || !m.set.others.length || m.set.seq === this.loadSeq) return false; this.log('✗ o projeto foi recarregado depois do plano — feche e abra Salvar de novo'); return true; }
+  // Files the stored changes of a layout point at
+  pendingFiles(id) { const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); return e ? e.changes.map(c => ruleOf(c)[0]) : []; }
+  // The included layouts' stored changes go (their requests are user text and stay); returns the new badge map.
+  clearOtherPending(ids) {
+    const badges = Object.assign(Object.create(null), this.state.layoutBadges); let ok = true; // null prototype like loadProject's map: layout ids are user text
+    ids.forEach(id => {
+      const key = LayersCore.layoutPendingKey(this.baseKey, id), e = LayersCore.getPending(LS_STORE, key);
+      ok = LayersCore.setPending(LS_STORE, key, e && e.requests.length ? { hash: e.hash, changes: [], requests: e.requests } : null, Date.now()) && ok;
+      if (e && e.requests.length) badges[id] = e.requests.length; else delete badges[id];
+      delete this.undoHash[id]; // the files it was made against just changed on purpose
+    });
+    if (!ok) this.toast('Não foi possível salvar os ajustes e requisições pendentes: armazenamento cheio.', 'warn');
+    return badges;
+  }
+  // "também afeta" needs the use counts of the other layouts: started by a user gesture (scope "all", the ask prompt), never by render.
+  wantProbe() {
+    const P = this.state.project, r = this.probeRun; if (!this.multiLayout() || (r && r.seq === this.probeSeq && r.load === this.loadSeq) || P.layouts.every(l => l.id === P.layoutId || this.layoutProbe.has(l.id))) return;
+    const p = this.ensureProbe(); this.setState({}); p.then(() => this.setState({}));
+  }
+  // Counts come from the probe cache (R1), never from live nodes of another layout; unavailable layouts say nothing.
+  alsoAffects(n) {
+    const P = this.state.project; if (!n || !n.src || !this.multiLayout()) return '';
+    const key = LayersCore.useKey(n.src, n.tag, !(n.kids > 0)), parts = []; let waiting = false;
+    P.layouts.forEach(l => { if (l.id === P.layoutId) return; const e = this.layoutProbe.get(l.id); if (!e) { waiting = true; return; } const c = e.unavailable ? 0 : e.uses.get(key) || 0; if (c > 0) parts.push(l.name + ' (' + c + (c === 1 ? ' uso)' : ' usos)')); });
+    if (waiting) return this.probeRun ? 'contando outros layouts…' : ''; // a layout with no entry yet must not be left out of a line that looks complete
+    return parts.length ? 'também afeta ' + parts.join(' · ') : '';
   }
   patched(text, list) { list.forEach(c => { text = LayersCore.patchCssAt(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
   // Template dc: o texto do load (this.dc.text) e a referencia do que o projeto viu; o atual e o que se grava.
@@ -2832,8 +3021,8 @@ class Component extends DCLogic {
     return true;
   }
   async makeDraft() {
-    if (this.readOnlyBlock() || this.utilityBlock()) return;
-    const files = this.filesOf(this.state.changes); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } })); this.draftedPaths = new Set();
+    if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
+    const files = this.filesOf(this.planChanges()); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } })); this.draftedPaths = new Set();
     for (const f of files) {
       if (f.dc) { await this.draftDc(f); continue; }
       if (!/\.css$/.test(f.path)) { const code = this.notCssCode(f.path); this.log('⚠ ' + f.path + ': ' + code + ': ' + dcWhy({ code }) + ' (ajuste registrado)'); continue; }
@@ -2843,24 +3032,29 @@ class Component extends DCLogic {
     this.log('Rascunho paralelo pronto. Revise e aprove para substituir o arquivo original (o atual vai para .design-history/).');
   }
   async discardDraft() {
-    const files = this.filesOf(this.state.changes);
+    const files = this.filesOf(this.planChanges());
     if (this.state.dir) for (const f of files) { try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('· rascunho removido: ' + f.draft); } catch (e) {} }
     this.setState(s => ({ modal: { ...s.modal, stage: 'plan' } })); this.log('Rascunho descartado.');
   }
   async approve() {
-    if (this.readOnlyBlock() || this.utilityBlock()) return;
-    const files = this.filesOf(this.state.changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes: this.state.changes, files: [], written: {} };
+    if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
+    const changes = this.planChanges(), others = (this.state.modal.set || {}).others || []; const files = this.filesOf(changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes, layoutId: this.curLayoutId(), files: [], written: {} };
     for (const f of files) {
       if (f.dc && !(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho — nada foi gravado neste arquivo'); continue; }
       if (!f.dc && !/\.css$/.test(f.path)) continue;
       if (!this.state.dir) { this.log('· ' + f.path + ' → ' + f.hist + ' (histórico) · rascunho promovido (simulado)'); entry.files.push(f); continue; }
-      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); entry.written[f.path] = this.mtimes[f.path]; if (f.dc) this.dc.text = draft; const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); entry.files.push(f); }
+      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); entry.written[f.path] = this.mtimes[f.path]; entry.files.push(f); if (f.dc) this.dc.text = draft; this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); /* the file is replaced: rollback must see it even when the draft cleanup fails */ try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); } catch (e) { this.log('⚠ ' + f.draft + ': rascunho não removido (' + e.message + ')'); } }
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
-    this.resetUndo();
+    const unwritten = new Set(files.filter(f => (f.dc || /\.css$/.test(f.path)) && !Object.hasOwn(entry.written, f.path)).map(f => f.path)), cleared = others.filter(id => !this.pendingFiles(id).some(p => unwritten.has(p)));
+    const left = this.state.changes.filter(c => unwritten.has(ruleOf(c)[0])); entry.dom = this.state.changes.filter(c => !left.includes(c)); // the active layout's own list (merging may collapse it): rollback restores THESE inline styles
+    if (entry.dom.length) this.dropUndoFor(this.curLayoutId()); cleared.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout whose changes went (written) go
+    others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'));
+    const badges = cleared.length ? this.clearOtherPending(cleared) : null;
+    this.clearProbe(); // the files changed on disk
     if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
-    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [] }));
+    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: left, ...(badges ? { layoutBadges: badges } : {}) }));
   }
   async rollback(h) {
     // vale tambem depois de um reload (this.mtimes zerado): compara com o mtime que o approve deixou
@@ -2870,8 +3064,9 @@ class Component extends DCLogic {
       const moved = LayersCore.movedSince(h.written, cur);
       if (moved.length) { this.toast('Reverter recusado: ' + moved.join(', ') + ' mudou fora do LAYERS depois da aprovação. Recarregue (R) e revise.'); return; }
     }
-    h.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }));
+    (!h.layoutId || h.layoutId === this.curLayoutId() ? (h.dom || h.changes) : []).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: the entry belongs to the layout it was approved in: another mounted layout's ids are not this DOM's
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
+    this.clearProbe(); // the files changed on disk
     if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));
     this.setState(s => ({ history: s.history.filter(x => x !== h) })); this.scanSoon();
   }
@@ -2974,11 +3169,22 @@ class Component extends DCLogic {
         if (id === s.project.layoutId) { kids.push(React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)' } }, [tag(id, name, true, false), React.createElement('div', { key: 'afr', 'data-spread-frame': '', style: { position: 'absolute', left: 0, top: 0, width: s.pageW, height: s.pageH, boxSizing: 'border-box', border: '1px solid rgba(var(--selRgb),.8)', pointerEvents: 'none' } }), ...planes])); return; }
         if (!e || e.unavailable) return;
         const hv = s.lodHover && s.lodHover.startsWith(id + ':') ? s.lodHover : ''; // hover rebuilds only the hovered page's elements; the memo keeps every other plane
-        seen.add(id); const k = spacing + '|' + off + '|' + name + '|' + s.pageW + '|' + s.pageH + '|' + hv, c = lodEls.get(id);
-        if (c && c.e === e && c.k === k) { kids.push(c.el); return; }
+        const lod = sv.plan[id] !== 'full', c = lodEls.get(id), same = !!c && c.e === e, shallow = lod && e.full ? (same && c.shallow) || LayersCore.lodNodes(e.nodes, 1) : null, nodes = shallow || e.nodes; // a demoted full entry draws its depth<=1 slice
+        seen.add(id); const k = spacing + '|' + off + '|' + name + '|' + s.pageW + '|' + s.pageH + '|' + hv + '|' + (lod ? 1 : 0) + '|' + (dragging ? 1 : 0);
+        if (!dragging && same && c.k === k) { kids.push(c.el); return; }
         // LOD z = depth * spacing: frozen pages honour `flat` (spacing 0) but deliberately ignore the active layout's explode/collapse/isoId/solo/layerFocus
-        const el = React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)', pointerEvents: 'none', cursor: 'pointer' } }, [tag(id, name, false, !e.full), ...e.nodes.map(n => React.createElement(LodPlane, { key: n.id, n: n, z: n.depth * spacing, lid: id, full: !!e.full, hot: hv === id + ':' + n.id, H: this.H }))]);
-        lodEls.set(id, { e, k, el }); kids.push(el);
+        let grp = null, flags = null, j = 0;
+        if (dragging) { // S9.1d: cull against the camera (page offset relative to the active page) and share one composited layer per z; the groups depend on nodes + spacing only, the cull on the camera
+          grp = same && c.grp && c.grp.src === nodes && c.grp.sp === spacing ? c.grp : (() => { const by = new Map(nodes.map(n => [n.id, n])); return { src: nodes, sp: spacing, flags: new Uint8Array(nodes.length), groups: LayersCore.groupPlanesByZ(nodes.map(n => ({ id: n.id, z: n.depth * spacing }))).map(g => ({ z: g.z, ns: g.ids.map(i => by.get(i)) })) }; })();
+          flags = grp.flags; let changed = grp !== (same && c.grp); // a steady orbit (same cull result) reuses the element: N cull calls, no allocation
+          grp.groups.forEach(g => g.ns.forEach(n => { const v = cull && cull(n.x + off - offA, n.y, n.w, n.h, n.depth * spacing) ? 1 : 0; if (flags[j] !== v) { flags[j] = v; changed = true; } j++; }));
+          if (!changed && same && c.k === k) { kids.push(c.el); return; }
+          j = 0;
+        }
+        const mk = n => React.createElement(LodPlane, { key: n.id, n: n, z: n.depth * spacing, lid: id, full: !lod, hot: hv === id + ':' + n.id, H: this.H, dragging: dragging, culled: dragging && flags[j++] === 1 });
+        const body = dragging ? grp.groups.map(g => React.createElement('div', { key: 'lg' + g.z, 'data-lod-group': '', style: { position: 'absolute', left: 0, top: 0, width: s.pageW, height: s.pageH, transform: 'translateZ(' + g.z + 'px)', willChange: 'transform', pointerEvents: 'none' } }, g.ns.map(mk))) : nodes.map(mk);
+        const el = React.createElement('div', { key: id, 'data-spread-page': id, style: { ...pageSt, transform: 'translateX(' + off + 'px)', pointerEvents: 'none', cursor: 'pointer' } }, [tag(id, name, false, lod), ...body]);
+        lodEls.set(id, { e, k, el, shallow, grp }); kids.push(el);
       });
       [...lodEls.keys()].forEach(id => { if (!seen.has(id)) lodEls.delete(id); });
     }
@@ -3122,7 +3328,8 @@ class Component extends DCLogic {
       nb('L−', 'layerDown', () => this.stepActive(-1)), nb('0', 'resetView', () => this.resetView()), nb('L+', 'layerUp', () => this.stepActive(1)),
     ];
     const m = s.modal; const sibs = this.sharedIds(s.selId); const hasSibs = sibs.length > 1;
-    const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }) }; });
+    const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }, () => { if (v === 'all') this.wantProbe(); }) }; });
+    const alsoLine = hasSibs && s.scope === 'all' ? this.alsoAffects(s.byId[s.selId]) : '', alsoPrompt = s.pending ? this.alsoAffects(s.byId[s.selId]) : '';
     const changes = s.changes.map(c => { const [file, , line] = ruleOf(c); const n = this.sharedIds(c.id).length; const warn = c.scope === 'one' && n > 1; const psel = this.patchSel(c);
       return { ...c, cssProp: kebab(c.prop), file, selector: psel, line: line || '?', manual: LayersCore.isManualSource(file) ? 'patch manual · ' : '', countLabel: c.ids.length > 1 ? '×' + c.ids.length + ' ' : '', warn: warn ? '⚠' : '', warnTitle: warn ? 'Regra compartilhada por ' + n + ' elementos — o patch fica restrito a este via ' + psel + '. Confira o seletor gerado.' : '', select: () => this.select(c.id), revert: () => this.revert(c) }; });
     const history = s.history.map(h => ({ label: h.branch + ' · ' + h.changes.length + ' ajuste(s) · ' + h.ts, rollback: () => this.rollback(h) }));
@@ -3243,11 +3450,11 @@ class Component extends DCLogic {
       allLayers: () => this.setState({ solo: false }), allBg: !s.solo ? 'rgba(var(--accRgb),.15)' : 'transparent', allBdr: !s.solo ? 'transparent' : 'var(--line1)', allColor: !s.solo ? 'var(--acc)' : 'var(--fg2)',
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
       tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
-      hasSibs, noSibs: !hasSibs, scopeOpts,
+      hasSibs, noSibs: !hasSibs, scopeOpts, alsoShow: !!alsoLine, alsoText: alsoLine,
       propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '', ...this.reqVals(),
       ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,
       openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
-      promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' : '',
+      promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' + (alsoPrompt ? ' ' + alsoPrompt.charAt(0).toUpperCase() + alsoPrompt.slice(1) + '.' : '') : '',
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
       toggleFlat: () => this.setState(st => ({ flat: !st.flat })), persp: s.persp, setPersp: e => this.setState({ persp: +e.target.value }), setSpacing: e => this.setState({ spacing: +e.target.value }), resetView: () => this.resetView(),
       interact: s.interact, toggleInteract: flip('interact'), interactBg: s.interact ? 'rgba(var(--accRgb),.15)' : 'transparent', interactBdr: s.interact ? 'transparent' : 'var(--line1)', interactColor: s.interact ? 'var(--acc)' : 'var(--fg2)',
@@ -3264,7 +3471,7 @@ class Component extends DCLogic {
         return { ctxOpen: true, ctxRef: this.ctxRef, ctxX: c.fx + 'px', ctxY: c.fy + 'px', ctxTitle: cn.name, ctxMeta: 'L' + cn.depth + (cFile ? ' · ' + cFile + (cLine ? ' › L' + cLine : '') : ''), ctxRows: rows }; })(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco: ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') + ' — gere um novo snapshot (node tools/layers-snapshot-cli.mjs)' : '',
+      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco' + (() => { const ids = LayersCore.staleLayouts(this.watchLayouts, s.stale), mixed = s.stale.some(p => !this.watchLayouts[p]); return ids.length ? (mixed ? ' (inclui layout ' : ' (layout ') + ids.map(id => (s.project.layouts.find(l => l.id === id) || { name: id }).name).join(', ') + ')' : ''; })() + ': ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') + ' — gere um novo snapshot (node tools/layers-snapshot-cli.mjs)' : '',
       staleLayout: s.stale ? LayersCore.staleKind(s.stale, this.structural) === 'layout' : !!s.drift, staleReload: s.stale ? LayersCore.staleKind(s.stale, this.structural) !== 'layout' : false,
       restructureItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.restructureProject(); }), coverageItem: this.menuAct(() => this.analyzeCoverage()), ...this.covVals(), ...this.spreadUi(), spToggle: this.spToggle, spCloseKey: this.spCloseKey, dismissStale: () => this.dismissStale(),
       ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuH.hist; const curId = s.dirName ? 'folder:' + s.dirName : null;
@@ -3279,14 +3486,14 @@ class Component extends DCLogic {
           histAdding: !!s.histAdding, histRepoQ: s.histRepoQ || '', histRepoBdr: 'rgba(var(--selRgb),.6)', histRepoStart: () => this.setState({ histAdding: true }), histRepoCancel: () => this.setState({ histAdding: false, histRepoQ: '' }),
           histRepoInput: e => this.setState({ histRepoQ: e.target.value }), histRepoKey: e => { e.stopPropagation(); if (e.key === 'Enter') this.addRepo(); if (e.key === 'Escape') this.setState({ histAdding: false, histRepoQ: '' }); }, histRepoAdd: () => this.addRepo() }; })(),
       cancelAll: () => { if (s.changes.length) this.pushUndo(); s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
-      openSave: () => { this.menuGo({ type: 'close' }); if (!s.changes.length) return; this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
+      openSave: () => { this.menuGo({ type: 'close' }); this.openSave(); },
       modalOpen: !!m, modalTitle: m && m.stage === 'confirm' ? m.title : m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos',
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
       isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',
       confirmLabel: (m && m.label) || 'Carregar', confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
-      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan', isDraft: !!m && m.stage === 'draft',
+      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan' && !m.loading, isDraft: !!m && m.stage === 'draft',
       branch: m ? m.branch : '', msg: m ? m.msg : '', setBranch: e => this.setState(st => ({ modal: { ...st.modal, branch: e.target.value } })), setMsg: e => this.setState(st => ({ modal: { ...st.modal, msg: e.target.value } })),
-      modalFiles: m ? this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : s.changes) : [], modalLog: m ? m.log.join('\n') : '',
+      modalFiles: m ? (m.loading ? [] : this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : this.planChanges())) : [], modalLog: m ? m.log.join('\n') : '',
       closeModal: () => this.setState({ modal: null }), makeDraft: () => this.makeDraft(), discardDraft: () => this.discardDraft(), approve: () => this.approve(),
       onWheel: e => { const r = stageRect(); this.zoomBy(e.deltaY > 0 ? 0.9 : 1.1, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2); },
       onDown: e => { if (e.button === 2) { this.rdown = { x: e.clientX, y: e.clientY }; return; } if (e.button === 1) e.preventDefault(); const mode = e.button === 1 || e.shiftKey ? 'pan' : (e.ctrlKey || e.metaKey) ? 'plane' : 'orbit'; this.down = { x: e.clientX, y: e.clientY, yaw: s.yaw, tilt: s.tilt, panX: s.panX, panY: s.panY, focus: s.focus, mode }; this.dragged = false; },

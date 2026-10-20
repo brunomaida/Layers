@@ -70,6 +70,19 @@ export function loadWorkloads() {
     fit: { foot: 8 * 1280 + 7 * 384, pageH: 760, zm: 360, yaw: -32, tilt: 0, persp: 1600, stageW: 1280, stageH: 760 },
     nodes: Array.from({ length: 1500 }, (_, i) => ({ id: String(i), depth: i % 6 })),
   };
+  // S9.1d: spreadDrawPlan over 1,500 frozen entries (5 planes each: total 8,200 with the active 700, far over the cap, so `fits` is false, the demotion
+  // branch runs and the `full` flags are never read) and mergeLayoutChanges
+  // over 3 layouts x 60 changes (20 shared keys: file|selector|prop collide across layouts, 10 of them with different values).
+  spread.plan = { active: 700, entries: Array.from({ length: 1500 }, (_, i) => ({ id: 'l' + i, full: i % 3 === 0, count: 5 })) };
+  const mergeChange = (l, i) => {
+    const shared = i < 20, k = shared ? i : 100 * l + i;
+    return { src: 'layers/shared.css|' + (k % 4), sel: '.c' + k, prop: k % 2 ? 'color' : 'margin', to: shared && i < 10 ? 'v' + l : 'v0', layoutId: ['main', 'config', 'replay'][l] };
+  };
+  spread.merge = {
+    byLayout: Object.fromEntries(['main', 'config', 'replay'].map((id, l) => [id, Array.from({ length: 60 }, (_, i) => mergeChange(l, i))])),
+    order: ['main', 'config', 'replay'],
+    sel: (c) => c.sel,
+  };
 
   return { css, travalSheets, dcText, manifestFiles, zip, coverage, spread };
 }
