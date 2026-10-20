@@ -615,7 +615,7 @@ checkStale ─▶ this.watch (+ mock de cada outro layout + arquivos da sonda) �
 | # | Limite | Observação |
 |---|---|---|
 | a | Gravar um arquivo compartilhado invalida as pendências guardadas dos layouts que não entraram no Salvar | `man.styles` e `dcSource` entram no hash de **todo** layout, então o hash deles muda; as pendências são descartadas ao abrir o layout, com toast (o aviso do Salvar diz isso). Mesma regra da S9.1a, agora anunciada |
-| b | Fechado na S9.1e: Ver diff e Exportar usam o conjunto fundido (`buildSaveSet`) quando outro layout tem pendência, e o badge de Salvar soma o ativo com `layoutPend` | O badge é uma dica do que está guardado (conta o que o Salvar funde e o que ele pula por fonte desatualizada), então o plano pode listar menos ajustes; com 1 layout o caminho é o de antes |
+| b | Fechado na S9.1e: Ver diff e Exportar usam o conjunto fundido (`buildSaveSet`) quando outro layout tem pendência, e o badge de Salvar soma o ativo com `layoutPend` | O badge é uma dica do que está guardado (conta o que o Salvar funde e o que ele pula: fonte mudou, layout indisponível, template dc), então o plano pode listar menos ajustes; com 1 layout o caminho é o de antes |
 | c | Uma mudança de template dc em outro layout faz o Salvar pular o layout inteiro | O escritor dc está preso ao dc do ativo; o aviso diz "template só grava no layout ativo" |
 | d | Uma entrada cheia rebaixada acima de 1.500 planos perde os planos profundos (profundidade > 1) | `spreadFrozen` não muda, então eles voltam quando o total cai; só o desenho é raso |
 | e | A sonda lê e dá `stat` em cada arquivo em separado | Uma edição no meio da leitura pode guardar o mtime novo com o hash do conteúdo antigo: o aviso some até o Recarregar |

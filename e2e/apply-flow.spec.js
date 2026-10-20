@@ -132,11 +132,11 @@ test('Apply_CloseAndReopenMidDraft_LeavesNoOrphanAndApprovePromotesTheRightConte
   await page.evaluate(() => {
     const l = window.__logic, orig = l.writeText.bind(l);
     window.__origWrite = orig; window.__writes = 0;
-    l.writeText = async (...a) => { await new Promise((r) => setTimeout(r, 1500)); try { return await orig(...a); } finally { window.__writes++; } };
+    l.writeText = async (...a) => { window.__inWrite = true; await new Promise((r) => setTimeout(r, 1500)); try { return await orig(...a); } finally { window.__writes++; } };
   });
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => page.evaluate(() => !!window.__logic.state.modal && !!window.__logic.state.modal.drafting)).toBe(true);
+  await expect.poll(() => page.evaluate(() => !!window.__inWrite)).toBe(true); // the slow write has started
   await page.getByRole('button', { name: 'Fechar' }).first().click(); // closed while the write is in flight
   await openPlan(page);
   const run = await page.evaluate(() => window.__logic.draftRun);
@@ -164,6 +164,74 @@ test('Apply_DraftLoopThrows_StillClearsDrafting', async ({ page }) => {
   await page.evaluate(() => window.__logic.makeDraft().catch(() => {})); // the throw escapes the loop's own try/catch
   expect(await page.evaluate(() => window.__logic.state.modal.drafting), 'finally cleared the flag').toBe(false);
   expect(await page.evaluate(() => window.__logic.draftBusy), 'and the in-flight marker').toBeFalsy();
+});
+
+// S9.1e Task 3 fix wave: the draft file and its mtime guard.
+const BOOM_DRAFT = () => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (p, ...a) => { if (/design-draft/.test(p)) { window.__inWrite = true; await new Promise((r) => setTimeout(r, 800)); await l.fileHandle(p, true); throw new Error('boom'); } return orig(p, ...a); }; }; // creates the empty draft like writeText does, then fails
+
+test('Apply_DiscardThenDraftAgain_WritesTheNewDraft', async ({ page }) => {
+  await editCard(page);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(DECL);
+  await page.getByRole('button', { name: /Descartar rascunho/ }).click();
+  await expect.poll(() => listDisk(page)).not.toContain('style.design-draft.css');
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'style.design-draft.css'), 'the second draft carries the patch, not an empty file').toMatch(DECL);
+});
+
+test('Apply_ApplyTwiceOnTheSameFileWithoutReload_SecondValueLands', async ({ page }) => {
+  await editCard(page);
+  await approveAll(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type('0 0 0 5px rgb(9, 8, 7)');
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(300);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(/box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect.poll(() => readDisk(page, 'style.css')).toMatch(/box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+  expect(await readDisk(page, 'style.css')).not.toBe('');
+});
+
+test('Apply_EmptyDraft_IsRefusedAndNothingIsWritten', async ({ page }) => {
+  await editCard(page);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(DECL);
+  await page.evaluate(async () => { const w = await (await window.__proj.getFileHandle('style.design-draft.css')).createWritable(); await w.write(''); await w.close(); }); // a draft emptied outside
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect(page.getByText(/style\.css: rascunho vazio/)).toBeVisible();
+  expect(await readDisk(page, 'style.css'), 'the original CSS is never overwritten with nothing').toBe(ORIGINAL);
+});
+
+test('Apply_FailedDraftWrite_LeavesNoEmptyDraft', async ({ page }) => {
+  await editCard(page);
+  await act(page);
+  await openPlan(page);
+  await page.evaluate(BOOM_DRAFT);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect(page.getByText(/✗ style\.css: boom/)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  expect(await listDisk(page), 'no 0-byte draft left behind').not.toContain('style.design-draft.css');
+});
+
+test('Apply_SupersededRunFailing_LogsNothingIntoTheNewModalAndLeavesNoDraft', async ({ page }) => {
+  await editCard(page);
+  await act(page);
+  await openPlan(page);
+  await page.evaluate(BOOM_DRAFT);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => page.evaluate(() => !!window.__inWrite)).toBe(true);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await openPlan(page);
+  await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  expect(await page.evaluate(() => window.__logic.state.modal.log.join('\n')), 'the dead run says nothing in the new modal').not.toMatch(/boom|rascunho gravado/);
+  expect(await listDisk(page)).not.toContain('style.design-draft.css');
 });
 
 test('Rollback_AfterApply_RestoresOriginalFile', async ({ page }) => {
@@ -326,6 +394,31 @@ test('Salvar_OtherLayoutStaleHash_DiffSkipsItAndWarnsLikeSalvar', async ({ page 
   await openDiffUi(page);
   await expect(page.getByText('2 pendências de Config não aplicadas (fonte mudou); serão descartadas ao abrir o layout')).toBeVisible();
   expect(await page.evaluate(() => window.__logic.state.diff.map((d) => d.path))).toEqual(['layers/shared.css']);
+});
+
+test('Salvar_OnlyOtherLayoutAndItIsStale_DiffAndExportToastAndWriteNothing', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await editNode(page, '0.1', SHADOW_B);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await page.evaluate(() => window.__logic.ensureProbe());
+  await page.waitForTimeout(60);
+  const moved = (await readDisk(page, 'layers/config.css')) + '\n.field{color:teal}\n';
+  await page.evaluate(async (text) => { const d = await window.__proj.getDirectoryHandle('layers'); const w = await (await d.getFileHandle('config.css')).createWritable(); await w.write(text); await w.close(); }, moved);
+  const warn = '1 pendência de Config não aplicada (fonte mudou); serão descartadas ao abrir o layout';
+  await openDiffUi(page);
+  await expect(page.getByText(warn)).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.state.diff), 'no empty diff modal').toBeNull();
+  await act(page, 'setState', { toast: null });
+  await exportDir(page);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Exportar versões completas…').click();
+  await expect(page.getByText(warn)).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.state.modal), 'no export modal').toBeNull();
+  expect(await readExport(page, 'layers-changes.json'), 'nothing was exported').toBeNull();
 });
 
 test('Salvar_SingleLayoutProject_BadgeDiffAndExportTakeTheOldPath', async ({ page }) => {
