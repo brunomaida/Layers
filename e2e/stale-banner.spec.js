@@ -74,3 +74,39 @@ test('Watch_OtherLayoutMockChanged_BannerNamesLayout', async ({ page }) => {
   await expect(banner).toContainText('Config');
   await expect(banner).toContainText('layers/config.html');
 });
+
+const touch = (page, rel, text) => page.evaluate(async ({ rel, text }) => {
+  await new Promise((r) => setTimeout(r, 60));
+  const parts = rel.split('/'); let d = window.__proj;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
+  const h = await d.getFileHandle(parts[parts.length - 1], { create: true });
+  const t = await (await h.getFile()).text();
+  const w = await h.createWritable(); await w.write(t + text); await w.close();
+}, { rel, text });
+
+test('Watch_ActiveAndOtherLayoutFilesChanged_BannerSaysIncludes', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__logic.watchLayouts))).toContain('layers/config.html');
+  await touch(page, 'layers/shared.css', '\n/* changed */\n');
+  await touch(page, 'layers/config.html', '\n<!-- changed -->\n');
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  const banner = page.locator('[role=status]', { hasText: 'mudaram no disco' });
+  await expect(banner).toBeVisible({ timeout: 5000 });
+  await expect(banner).toContainText('inclui layout Config');
+  await page.evaluate(() => window.__logic.dismissStale());
+  await touch(page, 'layers/config.html', '\n<!-- again -->\n'); // only the other layout's file now
+  await page.evaluate(() => window.__logic.checkStale());
+  await expect(banner).toContainText('(layout Config)');
+});
+
+test('Watch_UnavailableLayoutMockCreatedLater_BannerNamesLayout', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__logic.watchLayouts))).toContain('layers/missing.html'); // `broken` points at a file that does not exist yet
+  await touch(page, 'layers/missing.html', '<!doctype html><html><body><div id="b">now here</div></body></html>');
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  const banner = page.locator('[role=status]', { hasText: 'mudaram no disco' });
+  await expect(banner).toBeVisible({ timeout: 5000 });
+  await expect(banner).toContainText('Broken');
+});

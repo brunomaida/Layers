@@ -1615,6 +1615,7 @@ class Component extends DCLogic {
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.watchLayouts = {}; this.layoutProbe.delete(curLayout.id); // S9.1d: the layout that becomes active leaves the probe cache; the other layouts' watch is rebuilt by probeLayout
+    if (!newProject && this.loaded && this.loaded.manifest !== raw) this.clearProbe(); // S9.1d: the manifest moved on disk, every cached probe hash was made against the old one
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
     if (!keepUndo || newProject) this.resetUndo(); else this.lastEdit = null;
     // S9.1d: a layout's steps survive only while its source is the one they were made against (the pending entry cannot tell: undone edits leave none)
@@ -1713,7 +1714,8 @@ class Component extends DCLogic {
       const mt = {}; for (const f of LayersCore.citedSources(srcs, known, 50, extra)) { try { mt[f] = (await (await this.fileHandle(f, false)).getFile()).lastModified; } catch (e) {} }
       // S9.1d: the mock of every OTHER layout is watched with a stat (no read); never part of `mt`, which feeds the drift check against the active mock
       const om = {}, ol = {}, all = man ? LayersCore.projectLayouts(man) : [];
-      if (all.length > 1) for (const l of all) { if (l.id === activeId) continue; const op = this.mockPathOf(man, l, LayersCore.pickState(l.states, this.stateMap[LayersCore.stateMapKey(this.baseKey, l.id)])); if (known.includes(op)) continue; try { om[op] = (await (await this.fileHandle(op, false)).getFile()).lastModified; (ol[op] = ol[op] || []).push(l.id); } catch (e) {} }
+      // a mock that does not exist yet is watched as 'missing' (like checkStale), so its creation raises the banner
+      if (all.length > 1) for (const l of all) { if (l.id === activeId) continue; const op = this.mockPathOf(man, l, LayersCore.pickState(l.states, this.stateMap[LayersCore.stateMapKey(this.baseKey, l.id)])); if (known.includes(op)) continue; (ol[op] = ol[op] || []).push(l.id); try { om[op] = (await (await this.fileHandle(op, false)).getFile()).lastModified; } catch (e) { if (e && e.name === 'NotFoundError') om[op] = 'missing'; else delete ol[op]; } }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
       Object.assign(this.watch, om); Object.assign(this.watchLayouts, ol); this.layoutProbe.forEach((e, id) => { if (e.files) this.watchProbed(id, e.files); }); // a cached probe entry brings its own files back after a switch
       if (watchNote) { const cur = this.state.toast; this.toast(watchNote + (cur && cur.msg ? ' · ' + cur.msg : '')); }
@@ -2111,9 +2113,15 @@ class Component extends DCLogic {
         catch (e) { if (e && e.name === 'NotFoundError') current[p] = 'missing'; }
       }
       if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return;
-      const list = LayersCore.staleFiles(this.watch, current); this.staleCur = current; this.staleSeen = { ...this.watch };
+      const list = LayersCore.staleFiles(this.watch, current); this.evictProbed(list, current); this.staleCur = current; this.staleSeen = { ...this.watch };
       this.setState({ stale: list.length ? list : null });
     } finally { this.staleBusy = false; }
+  }
+  // S9.1d: a cached probe entry made against a file that has moved since (shared css, own css, mock) is outdated; a moved layers.json outdates all of them.
+  evictProbed(list, current) {
+    if (list.includes('layers.json')) { this.clearProbe(); return; }
+    LayersCore.staleLayouts(this.watchLayouts, list).forEach(id => this.layoutProbe.delete(id)); // also an `unavailable` entry whose mock has just appeared
+    this.layoutProbe.forEach((e, id) => { if (e.files && e.files.some(f => typeof f.mtime === 'number' && f.path in current && current[f.path] !== f.mtime)) this.layoutProbe.delete(id); });
   }
   dismissStale() {
     LayersCore.staleLayouts(this.watchLayouts, this.state.stale).forEach(id => this.layoutProbe.delete(id)); // an ignored change leaves that layout's cached probe outdated: it is read again on the next ensureProbe
@@ -3361,7 +3369,7 @@ class Component extends DCLogic {
         return { ctxOpen: true, ctxRef: this.ctxRef, ctxX: c.fx + 'px', ctxY: c.fy + 'px', ctxTitle: cn.name, ctxMeta: 'L' + cn.depth + (cFile ? ' · ' + cFile + (cLine ? ' › L' + cLine : '') : ''), ctxRows: rows }; })(),
       selectParent: () => this.select(sel.parent || '0'), isolateSel: () => s.isoId ? this.setState({ isoId: null }, () => this.resetView()) : this.isolate(s.selId),
       dirLabel: s.dirName ? s.dirName : 'Conectar pasta', toastOpen: !!s.toast, toastMsg: s.toast ? s.toast.msg : '', toastBdr: s.toast && s.toast.kind === 'ok' ? 'var(--ok)' : 'var(--warn)', closeToast: () => this.setState({ toast: null }),
-      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco' + (() => { const ids = LayersCore.staleLayouts(this.watchLayouts, s.stale); return ids.length ? ' (layout ' + ids.map(id => (s.project.layouts.find(l => l.id === id) || { name: id }).name).join(', ') + ')' : ''; })() + ': ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') + ' — gere um novo snapshot (node tools/layers-snapshot-cli.mjs)' : '',
+      connectDir: this.menuAct(() => this.pickDir()), openZip: this.menuAct(() => this.pickZip()), exportCfg: this.menuAct(() => this.exportCfg()), importCfg: this.menuAct(() => this.importCfg()), histReset: this.menuAct(() => this.resetUI()), hasDir: !!s.dir, reloadItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.reloadProject(); }), staleTop: (36 + s.topBarH + 12) + 'px', ...(() => { const vw = typeof window !== 'undefined' ? window.innerWidth : 1280; const colPx = s.colOpen ? Math.max(290, Math.min(384, 0.45 * vw)) * s.colScale : 30; const b = LayersCore.staleBannerBox(vw, colPx, s.rightOpen ? s.rightPx : 30); return { staleLeft: (b.left + b.width / 2) + 'px', staleWidth: b.width + 'px' }; })(), staleOpen: !!((s.stale || s.drift) && s.dir && s.project), staleMsg: s.stale ? 'Arquivos mudaram no disco' + (() => { const ids = LayersCore.staleLayouts(this.watchLayouts, s.stale), mixed = s.stale.some(p => !this.watchLayouts[p]); return ids.length ? (mixed ? ' (inclui layout ' : ' (layout ') + ids.map(id => (s.project.layouts.find(l => l.id === id) || { name: id }).name).join(', ') + ')' : ''; })() + ': ' + s.stale[0] + (s.stale.length > 1 ? ' +' + (s.stale.length - 1) : '') : s.drift ? 'Mock mais antigo que a fonte: ' + s.drift[0] + (s.drift.length > 1 ? ' +' + (s.drift.length - 1) : '') + ' — gere um novo snapshot (node tools/layers-snapshot-cli.mjs)' : '',
       staleLayout: s.stale ? LayersCore.staleKind(s.stale, this.structural) === 'layout' : !!s.drift, staleReload: s.stale ? LayersCore.staleKind(s.stale, this.structural) !== 'layout' : false,
       restructureItem: this.menuAct(() => { this.setState({ cbOpen: null }); this.restructureProject(); }), coverageItem: this.menuAct(() => this.analyzeCoverage()), ...this.covVals(), ...this.spreadUi(), spToggle: this.spToggle, spCloseKey: this.spCloseKey, dismissStale: () => this.dismissStale(),
       ...(() => { const hist = s.hist || []; const open = s.menu === 'hist'; const he = this.menuH.hist; const curId = s.dirName ? 'folder:' + s.dirName : null;

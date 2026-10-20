@@ -1136,16 +1136,91 @@ test('Probe_SwitchDuringScan_DiscardsStaleResult', async ({ page }) => {
   await settled(page, 'replay');
   await page.evaluate(() => window.__p);
   expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]') }))).toEqual({ size: 0, host: false });
+  // Reanalisar do 0 mid-scan: the probe dies, nothing of its files reaches the watch
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await act(page, 'doRestructure');
+  await settled(page, 'replay');
+  await page.evaluate(() => window.__p);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]'), css: Object.keys(window.__logic.watchLayouts).filter((k) => /\.css$/.test(k)) }))).toEqual({ size: 0, host: false, css: [] });
+  // Zerar interface mid-scan: the project unloads, the probe dies and the watch is empty
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await page.evaluate(() => window.__logic.resetUI());
+  await page.evaluate(() => window.__p);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]'), wl: Object.keys(window.__logic.watchLayouts) }))).toEqual({ size: 0, host: false, wl: [] });
+});
+
+const appendDisk = (page, rel, text) => page.evaluate(async ({ rel, text }) => {
+  await new Promise((r) => setTimeout(r, 60)); // a strictly newer mtime
+  const parts = rel.split('/'); let d = window.__proj;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p);
+  const h = await d.getFileHandle(parts[parts.length - 1]); const t = await (await h.getFile()).text();
+  const w = await h.createWritable(); await w.write(t + text); await w.close();
+}, { rel, text });
+
+test('Probe_ManifestChangedOnDisk_SwitchEmptiesCache', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => window.__logic.ensureProbe());
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(3);
+  await appendDisk(page, 'layers.json', '\n'); // the manifest text moved: every cached hash was made against the old one
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(0);
+});
+
+test('Probe_SharedFileTouched_CheckStaleEvictsEntries', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const hash0 = await page.evaluate(async () => { await window.__logic.ensureProbe(); return window.__logic.layoutProbe.get('config').hash; });
+  await appendDisk(page, 'layers/shared.css', '\n/* touched */\n'); // shared with the active layout: not in watchLayouts
+  await page.evaluate(() => window.__logic.checkStale());
+  expect(await page.evaluate(() => [...window.__logic.layoutProbe.keys()])).toEqual(['broken']); // only the unavailable one (no file to compare) stays
+  const hash1 = await page.evaluate(async () => { await window.__logic.ensureProbe(); return window.__logic.layoutProbe.get('config').hash; });
+  expect(hash1).not.toBe(hash0);
+  await appendDisk(page, 'layers.json', '\n'); // the manifest itself: all entries go
+  await page.evaluate(() => window.__logic.checkStale());
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(0);
+});
+
+test('Probe_DismissStale_EvictsTheNamedLayoutsEntry', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const r = await page.evaluate(async () => {
+    const l = window.__logic; await l.ensureProbe();
+    l.setState({ stale: ['layers/config.html'] }); l.dismissStale();
+    return [...l.layoutProbe.keys()].sort();
+  });
+  expect(r).toEqual(['broken', 'replay']);
+});
+
+test('Probe_CachedMockChangedThenSwitched_RaisesBannerNamingTheLayout', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => window.__logic.ensureProbe());
+  await appendDisk(page, 'layers/replay.html', '\n<!-- changed -->\n');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__logic.watchLayouts))).toContain('layers/replay.html');
+  await page.evaluate(() => window.__logic.checkStale());
+  expect(await page.evaluate(() => window.__logic.state.stale)).toEqual(['layers/replay.html']);
+  await expect(page.locator('[role=status]', { hasText: 'mudaram no disco' })).toContainText('Replay');
+  expect(await page.evaluate(() => window.__logic.layoutProbe.has('replay'))).toBe(false);
 });
 
 test('Probe_SingleLayoutProject_NeverRuns', async ({ page }) => {
+  await page.addInitScript(() => { // installed before the load: counts every file the app opens on the connected folder
+    window.__fs = 0;
+    const gf = FileSystemFileHandle.prototype.getFile;
+    FileSystemFileHandle.prototype.getFile = function () { window.__fs++; return gf.apply(this, arguments); };
+  });
   await open(page, 'axai');
   await act(page);
+  await expect.poll(async () => { const a = await page.evaluate(() => window.__fs); await page.waitForTimeout(400); return a === (await page.evaluate(() => window.__fs)); }).toBe(true); // the load and its watch probe are over
   const r = await page.evaluate(async () => {
-    const l = window.__logic; let n = 0; const rt = l.readText.bind(l), fh = l.fileHandle.bind(l);
-    l.readText = (...a) => { n++; return rt(...a); }; l.fileHandle = (...a) => { n++; return fh(...a); };
+    const l = window.__logic, before = window.__fs;
     await l.ensureProbe(); await l.probeOthers(['x']);
-    return { n, size: l.layoutProbe.size, wl: Object.keys(l.watchLayouts).length };
+    return { n: window.__fs - before, size: l.layoutProbe.size, wl: Object.keys(l.watchLayouts).length };
   });
   expect(r).toEqual({ n: 0, size: 0, wl: 0 });
 });
