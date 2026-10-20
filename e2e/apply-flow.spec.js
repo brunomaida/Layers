@@ -79,6 +79,34 @@ test('Apply_CardShadowOnConnectedFolder_RewritesOnlyTheRuleWithBakAndHistory', a
   expect(await readDisk(page, 'layers.json'), 'manifest untouched').toBe(fixture('layers.json'));
 });
 
+test('Apply_AprovarWhileDrafting_IsNotAvailable', async ({ page }) => {
+  await editCard(page);
+  await act(page); // exposes window.__logic
+  await page.evaluate(() => {
+    const l = window.__logic, orig = l.writeText.bind(l);
+    window.__writes = 0; window.__origWrite = orig;
+    l.writeText = async (...a) => { try { await new Promise((r) => setTimeout(r, 1200)); return await orig(...a); } finally { window.__writes++; } };
+  });
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  // the draft write is still in flight: neither button renders, and the handlers refuse too
+  await expect.poll(() => page.evaluate(() => window.__logic.state.modal && window.__logic.state.modal.stage)).toBe('draft');
+  expect(await page.evaluate(() => window.__writes), 'the draft write is still pending').toBe(0);
+  await expect(page.getByRole('button', { name: /Aprovar, substituir e commitar/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Descartar rascunho/ })).toHaveCount(0);
+  await page.evaluate(() => window.__logic.approve());
+  expect(await page.evaluate(() => window.__logic.state.history.length), 'approve refused while drafting').toBe(0);
+  expect(await readDisk(page, 'style.css'), 'the original stays untouched').toBe(ORIGINAL);
+  // once the draft is ready the buttons come back and approving works
+  await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(DECL);
+  await expect(page.getByRole('button', { name: /Aprovar, substituir e commitar/ })).toBeVisible();
+  await page.evaluate(() => { window.__logic.writeText = window.__origWrite; }); // approving needs no slowdown
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect.poll(() => readDisk(page, 'style.css')).toMatch(DECL);
+});
+
 test('Rollback_AfterApply_RestoresOriginalFile', async ({ page }) => {
   await editCard(page);
   await approveAll(page);

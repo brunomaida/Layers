@@ -123,6 +123,56 @@ test('Coverage_CloseWhileRunning_DiscardsTheResult', async ({ page }) => {
   await expect(page.getByText('Veredito', { exact: true })).toHaveCount(0);
 });
 
+test('Coverage_DoubleClick_RunsOneScan', async ({ page }) => {
+  await connect(page);
+  await slowReads(page);
+  await page.evaluate(() => window.__logic.analyzeCoverage()); // a lone run sets the baseline of reads per scan
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  const once = await page.evaluate(() => window.__reads);
+  expect(once).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => { const l = window.__logic; window.__reads = 0; l.analyzeCoverage(); l.analyzeCoverage(); });
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  await page.waitForTimeout(1200); // a second scan would still be reading here
+  expect(await page.evaluate(() => window.__reads), 'a double click reads the files once').toBe(once);
+});
+
+test('Coverage_LoadingErrorOverlay_ClearsWhenLoadFinishes', async ({ page }) => {
+  await connect(page);
+  await page.evaluate(async () => {
+    const l = window.__logic, orig = l.readText.bind(l);
+    l.readText = async (...a) => { await new Promise((r) => setTimeout(r, 600)); return orig(...a); };
+    l.loadProject(); // the load is in flight: loadedSeq !== loadSeq
+    await new Promise((r) => setTimeout(r, 50));
+    l.analyzeCoverage();
+  });
+  await expect(page.getByText('projeto ainda carregando')).toBeVisible();
+  await page.waitForFunction(() => window.__logic.loadedSeq === window.__logic.loadSeq);
+  await expect(page.getByText('projeto ainda carregando')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__logic.state.coverage)).toBeNull();
+});
+
+test('Coverage_OverlayOpen_BlocksCameraAndShortcutKeys', async ({ page }) => {
+  await connect(page);
+  await openCoverage(page);
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  const cam = () => page.evaluate(() => { const s = window.__logic.state; return { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, active: s.active, shortcuts: s.shortcuts }; });
+  const before = await cam();
+  for (const k of ['?', 'ArrowLeft', '+', 'q', 'f', '0', 'PageUp']) await page.keyboard.press(k);
+  await page.waitForTimeout(300);
+  expect(await cam()).toEqual(before);
+  expect(before.shortcuts).toBe(false);
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Veredito', { exact: true })).toHaveCount(0);
+  await page.keyboard.press('?'); // nothing open: the toggle works again
+  expect(await page.evaluate(() => window.__logic.state.shortcuts)).toBe(true);
+  await page.keyboard.press('+');
+  await page.waitForTimeout(300);
+  expect((await cam()).zoom, 'the Atalhos panel blocks the camera keys too').toBe(before.zoom);
+  await page.keyboard.press('?'); // and its own key closes it
+  expect(await page.evaluate(() => window.__logic.state.shortcuts)).toBe(false);
+});
+
 test('Coverage_OpenOverlay_BlocksReloadShortcut', async ({ page }) => {
   await connect(page);
   await openCoverage(page);
