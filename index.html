@@ -2102,7 +2102,7 @@ class Component extends DCLogic {
       if (!typing && (e.ctrlKey || e.metaKey) && !e.altKey) { const k = String(e.key).toLowerCase(); if (k === 'z' || k === 'y') { e.preventDefault(); if (k === 'y' || e.shiftKey) this.redo(); else this.undo(); return; } }
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
       const id = LayersCore.keyAction(e.key), s = this.state; // an open overlay owns the keyboard: only Escape, Atalhos' own toggle and the reload guard (it toasts) get through
-      if (id && id !== 'escape' && id !== 'reload' && (s.modal || s.diff || s.pending || (s.coverage && s.coverage.open) || s.shortcuts) && !(id === 'shortcuts' && s.shortcuts)) return;
+      if (id && id !== 'escape' && id !== 'reload' && (s.modal || s.diff || (s.coverage && s.coverage.open) || s.shortcuts) && !(id === 'shortcuts' && s.shortcuts)) return;
       const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { if (this.state.ctx && id !== 'escape') this.closeCtx(); e.preventDefault(); fn(e); }
     };
     window.addEventListener('keydown', this.onKey);
@@ -3027,18 +3027,24 @@ class Component extends DCLogic {
   }
   async makeDraft() {
     if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
-    const files = this.filesOf(this.planChanges()), run = this.draftRun = (this.draftRun || 0) + 1; this.setState(s => ({ modal: { ...s.modal, stage: 'draft', drafting: run } })); this.draftedPaths = new Set(); // drafting: planStale() and the template hide Aprovar/Descartar until every file is written
+    if (this.draftBusy) { this.log('· o rascunho anterior ainda está sendo gravado — tente de novo em instantes'); return; } // a closed modal does not stop a write already in flight
+    const files = this.filesOf(this.planChanges()), run = this.draftRun = (this.draftRun || 0) + 1, wrote = []; this.draftBusy = run; this.draftedPaths = new Set(); // drafting: planStale() and the template hide Aprovar/Descartar until every file is written
     try {
+      await new Promise(r => this.setState(s => ({ modal: { ...s.modal, stage: 'draft', drafting: run } }), r)); // flushed: gone() below reads this.state
+      const gone = () => { const m = this.state.modal; return this.draftRun !== run || !m || m.drafting !== run; }; // the modal was closed or replaced meanwhile
       for (const f of files) {
-        if (f.dc) { await this.draftDc(f); continue; }
+        if (gone()) break;
+        if (f.dc) { await this.draftDc(f); if (this.draftedPaths.has(f.path)) wrote.push(f.draft); continue; }
         if (!/\.css$/.test(f.path)) { const code = this.notCssCode(f.path); this.log('⚠ ' + f.path + ': ' + code + ': ' + dcWhy({ code }) + ' (ajuste registrado)'); continue; }
         if (!this.state.dir) { this.log('· ' + f.draft + ' (simulado — conecte a pasta para gravar)'); f.list.forEach(c => this.log('    ' + this.patchSel(c) + ' { ' + kebab(c.prop) + ': ' + c.to + ' }')); continue; }
-        try { await this.writeText(f.draft, this.patched(await this.readText(f.path), f.list)); this.log('✓ rascunho gravado: ' + f.draft); } catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
+        try { await this.writeText(f.draft, this.patched(await this.readText(f.path), f.list)); wrote.push(f.draft); if (gone()) break; this.log('✓ rascunho gravado: ' + f.draft); } catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
       }
+      if (gone()) { for (const d of wrote) { try { const dir = await this.dirOf(d); await dir.removeEntry(d.split('/').pop()); delete this.mtimes[d]; } catch (e) {} } return; } // a superseded run leaves no draft behind
       this.log('Rascunho paralelo pronto. Revise e aprove para substituir o arquivo original (o atual vai para .design-history/).');
-    } finally { this.setState(s => ({ modal: s.modal && s.modal.drafting === run ? { ...s.modal, drafting: false } : s.modal })); } // only this run's own flag: a closed or reopened modal is left alone
+    } finally { if (this.draftBusy === run) this.draftBusy = 0; this.setState(s => ({ modal: s.modal && s.modal.drafting === run ? { ...s.modal, drafting: false } : s.modal })); } // only this run's own flag: a closed or reopened modal is left alone
   }
   async discardDraft() {
+    if (this.planStale()) return;
     const files = this.filesOf(this.planChanges());
     if (this.state.dir) for (const f of files) { try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('· rascunho removido: ' + f.draft); } catch (e) {} }
     this.setState(s => ({ modal: { ...s.modal, stage: 'plan' } })); this.log('Rascunho descartado.');

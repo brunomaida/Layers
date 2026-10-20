@@ -107,6 +107,65 @@ test('Apply_AprovarWhileDrafting_IsNotAvailable', async ({ page }) => {
   await expect.poll(() => readDisk(page, 'style.css')).toMatch(DECL);
 });
 
+// S9.1e Task 3 (Part A): two files in the plan, the second write is slow: Aprovar waits for BOTH drafts.
+test('Apply_TwoFilePlanSlowSecondWrite_AprovarAppearsOnlyAfterBothDrafts', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
+  await page.evaluate(() => {
+    const l = window.__logic, orig = l.writeText.bind(l);
+    window.__slowDone = false;
+    l.writeText = async (p, ...a) => { if (!/config\.design-draft/.test(p)) return orig(p, ...a); await new Promise((r) => setTimeout(r, 1500)); try { return await orig(p, ...a); } finally { window.__slowDone = true; } };
+  });
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // the first file is drafted
+  expect(await page.evaluate(() => window.__slowDone), 'the second write is still pending').toBe(false);
+  await expect(page.getByRole('button', { name: /Aprovar, substituir e commitar/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Aprovar, substituir e commitar/ })).toBeVisible({ timeout: 10_000 });
+  expect(await page.evaluate(() => window.__slowDone), 'Aprovar only after the last draft').toBe(true);
+  expect(await readDisk(page, 'layers/config.design-draft.css')).toMatch(/box-shadow/);
+});
+
+// A draft run whose modal was closed (and reopened) mid-write must not leave a draft file behind, nor run beside the next one.
+test('Apply_CloseAndReopenMidDraft_LeavesNoOrphanAndApprovePromotesTheRightContent', async ({ page }) => {
+  await editCard(page);
+  await act(page);
+  await page.evaluate(() => {
+    const l = window.__logic, orig = l.writeText.bind(l);
+    window.__origWrite = orig; window.__writes = 0;
+    l.writeText = async (...a) => { await new Promise((r) => setTimeout(r, 1500)); try { return await orig(...a); } finally { window.__writes++; } };
+  });
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => page.evaluate(() => !!window.__logic.state.modal && !!window.__logic.state.modal.drafting)).toBe(true);
+  await page.getByRole('button', { name: 'Fechar' }).first().click(); // closed while the write is in flight
+  await openPlan(page);
+  const run = await page.evaluate(() => window.__logic.draftRun);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click(); // refused: the previous run is still writing
+  expect(await page.evaluate(() => window.__logic.draftRun), 'no second run beside the first').toBe(run);
+  expect(await page.evaluate(() => window.__logic.state.modal.stage)).toBe('plan');
+  await expect.poll(() => page.evaluate(() => window.__writes)).toBe(1); // the superseded write landed
+  await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  await expect.poll(() => listDisk(page), 'the superseded run removed what it wrote').not.toContain('style.design-draft.css');
+  await page.evaluate(() => { window.__logic.writeText = window.__origWrite; });
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(DECL);
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect.poll(() => readDisk(page, 'style.css')).toMatch(DECL);
+  await page.waitForTimeout(300);
+  expect(await listDisk(page), 'no draft left after approve').toEqual(['.design-history', 'index.html', 'layers.json', 'style.css', 'style.css.bak']);
+});
+
+test('Apply_DraftLoopThrows_StillClearsDrafting', async ({ page }) => {
+  await editCard(page);
+  await act(page);
+  await openPlan(page);
+  await page.evaluate(() => { const l = window.__logic, orig = l.log.bind(l); l.log = (line) => { if (/^Rascunho paralelo pronto/.test(line)) throw new Error('boom'); return orig(line); }; });
+  await page.evaluate(() => window.__logic.makeDraft().catch(() => {})); // the throw escapes the loop's own try/catch
+  expect(await page.evaluate(() => window.__logic.state.modal.drafting), 'finally cleared the flag').toBe(false);
+  expect(await page.evaluate(() => window.__logic.draftBusy), 'and the in-flight marker').toBeFalsy();
+});
+
 test('Rollback_AfterApply_RestoresOriginalFile', async ({ page }) => {
   await editCard(page);
   await approveAll(page);
