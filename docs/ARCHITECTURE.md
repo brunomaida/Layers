@@ -224,6 +224,8 @@ Com o `watch` de quando `checkStale` leu (`staleSeen`), o "×" só aceita paths 
 desde então. Reverter uma aprovação (`rollback`) compara o mtime atual com o que o `approve` deixou
 (`entry.written`) e recusa se o arquivo mudou fora do LAYERS, mesmo depois de um reload; `retryCreateLayersJson`
 lê o `loadSeq` na entrada e desiste se uma carga mais nova começou.
+
+S9.1d Task 3: com 2+ layouts, `probeLayout` também faz `getFile()` (sem ler) no mock de cada OUTRO layout e o acrescenta a `this.watch`; `this.watchLayouts` (`{path: [layoutId]}`, fora do state) diz de qual layout é cada path, e o banner acrescenta "(layout Config)" quando `LayersCore.staleLayouts` casa. `this.layoutProbe` (`id → {hash, uses, files} | {unavailable}`) é preenchido sob demanda por `ensureProbe`/`probeOthers`: leitura quieta (não grava `this.mtimes`), um layout por vez, host temporário `[data-lod-host]`, só a contagem de usos (`LayersCore.useKey`) fica. O `hash` é o `pendingHash` que a carga daquele layout calcularia (`hashSpecOf`), e os `files` do cache voltam ao `watch` com o mtime da sonda. `clearProbe` (junto de `clearSpread` em conectar/zip/repo/unload/Recarregar/Reanalisar, e em `approve`/`rollback`) invalida o cache e mata a sonda em voo; `switchLayout` o mantém e só remove a entrada do layout que fica ativo. Projeto de 1 layout: nada disso roda.
 Uma carga superada (`seq !== loadSeq`) não descarrega nem marca `loadedSeq` por cima da carga mais nova.
 
 ### Reanalisar do 0 e deriva do layout

@@ -958,13 +958,15 @@ test('Undo_IncompleteLoad_NextCompleteLoadDropsStepsMadeMeanwhile', async ({ pag
   await act(page, 'decide', false); // without the sheet the scope is asked: answer "only this"
   await expect.poll(() => page.evaluate(() => window.__logic.state.pending)).toBeNull();
   expect((await stackIds(page)).undo).toEqual(['config']);
-  await page.evaluate(() => { window.__logic.pendingReady = true; }); // let the switch away skip the unsaved-changes confirm (its Trocar would drop the steps itself)
+  await pressKey(page, 'Control+z'); // the step moves to redo and no change is left, so the switch away asks nothing
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect((await stackIds(page)).redo).toEqual(['config']);
   await act(page, 'switchLayout', 'main');
   await settled(page, 'main');
   await page.unroute('**/multi-layout/layers/config.css*');
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
-  expect((await stackIds(page)).undo).not.toContain('config');
+  expect(await stackIds(page)).toEqual({ undo: [], redo: [] }); // the complete load dropped what was stacked while the hash was untrusted
 });
 
 test('Undo_DriftDroppedPending_DropsOwnSteps', async ({ page }) => {
@@ -1016,7 +1018,7 @@ async function editMainThenAskOnUndo(page) {
 test('Undo_SwitchAsksFirst_ConfirmAppliesInTargetLayout', async ({ page }) => {
   await editMainThenAskOnUndo(page);
   expect(await layoutId(page)).toBe('config'); // nothing moved before the answer
-  await page.evaluate(() => { const o = Date.now; Date.now = () => o.call(Date) + 11000; }); // past the 10 s load cap
+  await shiftClock(page, 11000); // past the 10 s load cap
   await page.waitForTimeout(400); // several polls with the confirm still open: it must keep waiting
   expect(await page.evaluate(() => !!window.__logic.undoBusy)).toBe(true);
   await page.getByRole('button', { name: 'Trocar', exact: true }).click();
@@ -1073,4 +1075,77 @@ test('Undo_SourceChangedWhileAway_DropsStepsEvenWithoutPending', async ({ page }
   await pressKey(page, 'Control+y');
   expect(await shadowCount(page)).toBe(0);
   expect(await changeCount(page)).toBe(0);
+});
+
+// S9.1d Task 3: the probe reads the OTHER layouts quietly (no this.mtimes keys), counts their src uses, caches them and
+// stays out of the way of a switch or a reload. Folder mode (OPFS), so mtimes are real.
+const putDisk = (page, rel, text) => page.evaluate(async ({ rel, text }) => {
+  const parts = rel.split('/'); let d = window.__proj;
+  for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
+  const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
+  await w.write(text); await w.close();
+}, { rel, text });
+const REPLAY_SRC = '<!doctype html>\n<html><head><meta charset="utf-8"><link rel="stylesheet" href="replay.css"></head>\n<body><div class="title" id="rpl-title">Replay</div><div class="bar" id="rpl-bar">bar</div><div class="frame" id="rpl-frame" data-src="src/r.ts|.frame|1">frame</div><div class="frame" id="rpl-frame2" data-src="src/r.ts|.frame|1">frame2</div></body></html>\n';
+
+test('Probe_OtherLayout_ReadsQuietAndCaches', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await putDisk(page, 'layers/replay.html', REPLAY_SRC); // the file moved on disk before the probe: the probe reads what is there
+  const r = await page.evaluate(async () => {
+    const l = window.__logic, calls = [], orig = l.readText.bind(l);
+    l.readText = (p, q) => { calls.push([p, !!q]); return orig(p, q); };
+    const keys0 = Object.keys(l.mtimes);
+    await l.ensureProbe();
+    const afterFirst = calls.length; await l.ensureProbe();
+    const out = (id) => { const e = l.layoutProbe.get(id); return e && !e.unavailable ? { uses: e.uses instanceof Map, useMap: [...e.uses], files: e.files, hash: e.hash } : e; };
+    window.__cfgHash = l.layoutProbe.get('config').hash;
+    const wl = l.watchLayouts, w = l.watch;
+    return { keys0, keys1: Object.keys(l.mtimes), afterFirst, afterSecond: calls.length, loud: calls.filter((c) => !c[1]).map((c) => c[0]), ids: [...l.layoutProbe.keys()].sort(), cfg: out('config'), rpl: out('replay'), broken: out('broken'), host: !!document.querySelector('[data-lod-host]'), wlCss: wl['layers/config.css'], wlShared: 'layers/shared.css' in wl, wCss: typeof w['layers/config.css'] };
+  });
+  expect(r.ids).toEqual(['broken', 'config', 'replay']);
+  expect(r.afterFirst).toBeGreaterThan(0);
+  expect(r.afterSecond).toBe(r.afterFirst); // second call reads nothing new
+  expect(r.loud).toEqual([]); // every probe read is quiet
+  expect(r.keys1.sort()).toEqual(r.keys0.sort()); // none of the probed paths became a mtimes key
+  expect(r.broken).toEqual({ unavailable: true });
+  expect(r.cfg.uses).toBe(true);
+  expect(r.cfg.files.map((f) => f.path).sort()).toEqual(['layers/config.css', 'layers/config.html', 'layers/shared.css']);
+  expect(r.cfg.files.every((f) => typeof f.mtime === 'number')).toBe(true);
+  expect(Object.fromEntries(r.rpl.useMap)['src/r.ts|.frame|1|div|1']).toBe(2); // the two frames share src, tag and leaf-ness
+  expect(r.host).toBe(false);
+  expect(r.wlCss).toEqual(['config']); // the probe files join the watch
+  expect(r.wCss).toBe('number');
+  expect(r.wlShared).toBe(false); // the active layout owns shared.css
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => ({ same: window.__logic.pendingHash === window.__cfgHash, cached: window.__logic.layoutProbe.has('config') }))).toEqual({ same: true, cached: false }); // the probe hash is the load hash; the active layout leaves the cache
+  expect(await page.evaluate(() => window.__logic.layoutProbe.has('main'))).toBe(false);
+});
+
+test('Probe_SwitchDuringScan_DiscardsStaleResult', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await page.evaluate(() => { const l = window.__logic, orig = l.readText.bind(l); l.readText = async (p, q) => { if (q) await new Promise((r) => setTimeout(r, 400)); return orig(p, q); }; }); // only the quiet (probe) reads are slow
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await act(page, 'switchLayout', 'replay');
+  await settled(page, 'replay');
+  await page.evaluate(() => window.__p);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]') }))).toEqual({ size: 0, host: false });
+  await page.evaluate(() => { window.__p = window.__logic.ensureProbe(); });
+  await act(page, 'doReload');
+  await settled(page, 'replay');
+  await page.evaluate(() => window.__p);
+  expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, host: !!document.querySelector('[data-lod-host]') }))).toEqual({ size: 0, host: false });
+});
+
+test('Probe_SingleLayoutProject_NeverRuns', async ({ page }) => {
+  await open(page, 'axai');
+  await act(page);
+  const r = await page.evaluate(async () => {
+    const l = window.__logic; let n = 0; const rt = l.readText.bind(l), fh = l.fileHandle.bind(l);
+    l.readText = (...a) => { n++; return rt(...a); }; l.fileHandle = (...a) => { n++; return fh(...a); };
+    await l.ensureProbe(); await l.probeOthers(['x']);
+    return { n, size: l.layoutProbe.size, wl: Object.keys(l.watchLayouts).length };
+  });
+  expect(r).toEqual({ n: 0, size: 0, wl: 0 });
 });

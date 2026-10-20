@@ -2,6 +2,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
+import { act } from './ctx-helpers.js';
+import { connectFixture } from './folder-helpers.js';
 
 // S2.17 item 5: the "arquivos mudaram no disco" banner must not cover the left column nor the
 // right panel at 1024px. The project is copied into the origin-private file system and handed to the
@@ -52,4 +54,23 @@ test('StaleBanner_At1024_DoesNotCoverColumnOrRightPanel', async ({ page }) => {
   const colRight = 384; // left column at its widest for a 1024px window
   expect(box.x, 'banner starts after the left column').toBeGreaterThanOrEqual(colRight);
   expect(box.x + box.width, 'banner ends before the right panel').toBeLessThanOrEqual(right.x);
+});
+
+// S9.1d Task 3: the mock of every OTHER layout is watched too (a stat per layout, no read); the banner names the layout.
+test('Watch_OtherLayoutMockChanged_BannerNamesLayout', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await expect.poll(() => page.evaluate(() => JSON.stringify(window.__logic.watchLayouts))).toContain('layers/config.html');
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(0); // Foco: no probe at load
+  await new Promise((r) => setTimeout(r, 50));
+  await page.evaluate(async () => {
+    const h = await (await window.__proj.getDirectoryHandle('layers')).getFileHandle('config.html');
+    const text = await (await h.getFile()).text();
+    const w = await h.createWritable(); await w.write(text + '\n<!-- changed outside LAYERS -->\n'); await w.close();
+  });
+  await page.evaluate(() => window.dispatchEvent(new Event('focus')));
+  const banner = page.locator('[role=status]', { hasText: 'mudaram no disco' });
+  await expect(banner).toBeVisible({ timeout: 5000 });
+  await expect(banner).toContainText('Config');
+  await expect(banner).toContainText('layers/config.html');
 });
