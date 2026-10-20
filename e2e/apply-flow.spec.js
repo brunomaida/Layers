@@ -318,6 +318,25 @@ test('Apply_WrittenButDraftNotRemoved_ClearsTheChange', async ({ page }) => {
   expect(await page.evaluate(() => window.__logic.state.changes.length), 'shared.css was written: the change is applied').toBe(0);
 });
 
+test('Rollback_WrittenButDraftNotRemoved_RestoresTheFileAndTheInlineStyle', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const before = await readDisk(page, 'layers/shared.css');
+  await editNode(page, '0.0', SHADOW_A);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await page.evaluate(() => { const l = window.__logic, orig = l.dirOf.bind(l); l.dirOf = async (p) => { const d = await orig(p); return new Proxy(d, { get: (t, k) => k === 'removeEntry' ? async () => { throw new Error('draft locked'); } : typeof t[k] === 'function' ? t[k].bind(t) : t[k] }); }; });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  await expect(page.getByText(/rascunho não removido/)).toBeVisible(); // a warning, not a failure of the replaced file
+  expect(await page.evaluate(() => window.__logic.state.history[0].files.map((f) => f.path))).toEqual(['layers/shared.css']);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.css')).toBe(before);
+  expect(await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); return h.shadowRoot.getElementById('main-title').style.boxShadow; })).toBe('');
+});
+
 test('Apply_OneOfTwoCssFilesNotWritten_KeepsOnlyThatChangeAndRestoresItAfterSwitch', async ({ page }) => {
   await open(page, 'multi-layout');
   await act(page);
