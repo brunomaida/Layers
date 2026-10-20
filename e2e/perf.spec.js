@@ -833,6 +833,8 @@ for (const [size, c] of Object.entries(SPREAD_CASES)) {
       const lg = window.__logic;
       return lg.loadedSeq === lg.loadSeq && lg.state.project.layoutId === want && lg.state.nodes.length > min;
     }, [id, c.tags * 0.9], { timeout: 40_000 });
+    // Note: the scene() timing wrapper installed by the first drag() stays on for the later orbitDrag of these sized cases, unlike spread/heavy/orbit,
+    // which runs without it (the wrapper adds two performance.now() calls per scene()).
     const drag = async () => {
       await page.evaluate(() => {
         const lg = window.__logic;
@@ -877,7 +879,7 @@ for (const [size, c] of Object.entries(SPREAD_CASES)) {
     if (c.demoted) {
       expect(info.total, 'the case must be over the 1,500-plane limit').toBeGreaterThan(1500);
       expect(info.mainLabel, 'main is drawn as LOD').toBe('Main · LOD');
-      expect(info.mainDrawn, 'a demoted main draws far fewer planes than its count').toBeLessThan(info.fullFrozen);
+      expect(info.mainDrawn, 'a demoted main draws far fewer planes than its count').toBeLessThan(info.fullFrozen / 2);
     } else {
       expect(info.total, 'the case must stay within the 1,500-plane limit').toBeLessThanOrEqual(1500);
       expect(info.total, 'the case must be close to the limit').toBeGreaterThan(1300);
