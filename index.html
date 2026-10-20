@@ -544,6 +544,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
       </sc-if>
     </div>
+    <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
+      <div style="padding:5px 12px;border-bottom:1px solid var(--line1);font:500 calc(10px*var(--fs))/1.35 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</div>
+    </sc-if>
     <div style="display:flex;flex-direction:column;gap:6px;padding:8px 12px;background:var(--bg0);border-bottom:1px solid var(--line1)">
       <div style="display:flex;align-items:center;gap:6px">
         <div style="flex:1;min-width:0;display:flex;align-items:center;gap:5px;height:24px;padding:0 8px;border:1px solid {{ propQBdr }};border-radius:999px;background:var(--bg1)">
@@ -613,6 +616,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
       </sc-if>
       </div>
+      <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
+        <span style="grid-column:1 / -1;font:500 calc(10px*var(--fs))/1.35 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
+      </sc-if>
       <span style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">Origem</span>
       <div style="display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;overflow:hidden">
         <sc-for list="{{ originChips }}" as="oc" hint-placeholder-count="3">
@@ -677,6 +683,9 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </sc-if>
       <sc-if value="{{ noSibs }}" hint-placeholder-val="{{ true }}">
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
+      </sc-if>
+      <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
+        <span style="flex:1 0 100%;font:500 calc(10px*var(--fs))/1.35 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
       </sc-if>
       <span style="width:1px;height:14px;background:var(--line1);margin:0 5px"></span>
         <sc-for list="{{ originChips }}" as="oc" hint-placeholder-count="3">
@@ -1007,7 +1016,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <div style="display:flex;align-items:center;gap:8px;font:700 calc(11px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.12em;text-transform:uppercase;color:var(--fg2)">Arquivos<span style="flex:1;height:1px;background:var(--line1)"></span></div>
         <sc-for list="{{ modalFiles }}" as="f" hint-placeholder-count="2">
           <div style="display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:6px 8px;background:var(--bg1);border:1px solid var(--line0);border-radius:3px;font:500 calc(11px*var(--fs))/1.4 'JetBrains Mono',monospace">
-            <span style="color:var(--fg0)">{{ f.path }}</span><span style="color:var(--fg2)">{{ f.count }} ajuste(s)</span>
+            <span style="color:var(--fg0)">{{ f.path }}</span><span style="color:var(--fg2)">{{ f.count }} ajuste(s){{ f.origin }}</span>
             <span style="grid-column:1 / -1;color:var(--fg3)">rascunho paralelo: {{ f.draft }} &nbsp;·&nbsp; histórico: {{ f.hist }}</span>
           </div>
         </sc-for>
@@ -1621,7 +1630,7 @@ class Component extends DCLogic {
     // S9.1d: a layout's steps survive only while its source is the one they were made against (the pending entry cannot tell: undone edits leave none)
     if (keepUndo && !newProject && (incomplete || (this.undoHash[curLayout.id] !== undefined && this.undoHash[curLayout.id] !== hash))) this.dropUndoFor(curLayout.id);
     this.undoHash[curLayout.id] = incomplete ? null : hash; // null: no trustworthy hash, so the next complete load drops what was stacked meanwhile
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId, true); else if (vw && this.state.selId !== '0') this.select(this.state.selId, true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -2593,7 +2602,7 @@ class Component extends DCLogic {
     this._cam = { k: k, nodes: s.nodes, v: v }; return v;
   }
   stepActive(d) { this.setState(s => ({ active: clamp(s.active + d, 0, this.visibleMax()) })); }
-  select(id) { const n = this.state.byId[id]; if (!n) return; const tc = { ...this.state.treeClosed }; const parts = id.split('.'); for (let i = 1; i < parts.length; i++) delete tc[parts.slice(0, i).join('.')]; const [f0, s0] = ruleOf(n); const eo = { ...this.state.elOpen, [f0]: true, [f0 + '|' + s0]: true }; this.setState({ selId: id, active: n.depth, buf: {}, units: {}, treeClosed: tc, elOpen: eo }, () => this.revealInTree(id)); this.loadRule(n); this.loadFile(f0); }
+  select(id, quiet) { const n = this.state.byId[id]; if (!n) return; const tc = { ...this.state.treeClosed }; const parts = id.split('.'); for (let i = 1; i < parts.length; i++) delete tc[parts.slice(0, i).join('.')]; const [f0, s0] = ruleOf(n); const eo = { ...this.state.elOpen, [f0]: true, [f0 + '|' + s0]: true }; this.setState({ selId: id, active: n.depth, buf: {}, units: {}, treeClosed: tc, elOpen: eo }, () => this.revealInTree(id)); this.loadRule(n); this.loadFile(f0); if (!quiet && this.state.scope === 'all' && this.sharedIds(id).length > 1) this.wantProbe(); } // quiet: the restore after a load never probes
   async loadFile(file) { if (!this.state.dir || !file || this.state.fileText[file] !== undefined) return; let t = null; try { t = await this.readText(file); } catch (e) { t = false; } this.setState(st => ({ fileText: { ...st.fileText, [file]: t } })); }
   // texto do código que define a regra: arquivo real (bloco css ou trecho ts) ou síntese a partir dos estilos do mock
   codeFor(rule) {
@@ -2745,7 +2754,7 @@ class Component extends DCLogic {
     }
     return null;
   }
-  patchSel(c) { const R = ruleOf(c)[1]; if (c.scope === 'all') return R; return this.sharedIds(c.id).length > 1 && c.scopedSel ? c.scopedSel : R; }
+  patchSel(c) { if (c.sel !== undefined) return c.sel; const R = ruleOf(c)[1]; if (c.scope === 'all') return R; return this.sharedIds(c.id).length > 1 && c.scopedSel ? c.scopedSel : R; }
   cloneChanges() { return this.state.changes.map(c => ({ ...c, ids: [...c.ids], fromInline: { ...c.fromInline } })); }
   applyEdit(prop, val) {
     const s = this.state; const id = s.selId; const el = this.els[id]; const n = s.byId[id]; if (!el || !n) return;
@@ -2758,6 +2767,7 @@ class Component extends DCLogic {
     if (!c.decided) { const sibs = this.sharedIds(id); if (sibs.length > 1) { if (s.scope === 'all') { this.extend(c, sibs, {}); c.decided = true; } else if (s.scope === 'one') c.decided = true; else pending = { key: c.key, count: sibs.length, name: n.name, selector: ruleOf(n)[1] }; } else c.decided = true; }
     if (!same) { const bk = id + '|' + prop; if (!this.inBurst(bk)) this.pushUndo(); this.lastEdit = { key: bk, t: Date.now() }; }
     this.setState({ changes, pending, buf: {} }); this.scanSoon();
+    if (pending && !s.pending) this.wantProbe();
   }
   extend(c, ids, orig) { ids.forEach(i => { if (c.ids.includes(i)) return; const e2 = this.els[i]; if (!e2) return; c.fromInline[i] = i in orig ? orig[i] : e2.style[c.prop]; e2.style[c.prop] = c.to; c.ids.push(i); }); c.scope = 'all'; }
   decide(all) {
@@ -2909,7 +2919,83 @@ class Component extends DCLogic {
   log(line) { this.setState(s => ({ modal: s.modal ? { ...s.modal, log: [...s.modal.log, line] } : null })); }
   filesOf(changes) {
     const map = {}; changes.forEach(c => { const file = ruleOf(c)[0]; (map[file] = map[file] || []).push(c); });
-    return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, dc: !!this.dc && path === this.dc.file && list.some(isTplChange), draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
+    return Object.entries(map).map(([path, list]) => ({ path, list, count: list.length, origin: this.originTag(list), dc: !!this.dc && path === this.dc.file && list.some(isTplChange), draft: path.replace(/(\.\w+)$/, '.design-draft$1'), hist: '.design-history/' + path.split('/').pop() + '.' + stamp() }));
+  }
+  // S9.1d: " [Config, Main]" for a plan merged across layouts (its changes carry `layouts`), empty for a plain one
+  originTag(list) { const ids = [...new Set(list.flatMap(c => c.layouts || []))]; if (!ids.length) return ''; const L = (this.state.project && this.state.project.layouts) || []; return ' [' + ids.map(id => (L.find(l => l.id === id) || { name: id }).name).join(', ') + ']'; }
+  // S9.1d: the changes of the plan in front of the user: the set stored when Salvar opened (merged across layouts), else the active layout's
+  planChanges() { const m = this.state.modal; return m && m.set ? m.set.changes : this.state.changes; }
+  // S9.1d: layouts other than the active one with stored adjustments (storage only, nothing is mounted)
+  pendingLayouts() {
+    const P = this.state.project; if (!P || !this.multiLayout() || this.baseKey === null || this.baseKey === undefined) return [];
+    return P.layouts.filter(l => { if (l.id === P.layoutId) return false; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, l.id)); return !!e && e.changes.length > 0; }).map(l => l.id);
+  }
+  // A cached probe is only as fresh as its files, and Salvar writes on its word: files that moved since it was read evict it first.
+  async refreshProbe() {
+    if (!this.state.dir || !this.layoutProbe.size) return;
+    const paths = new Set(), cur = {}; this.layoutProbe.forEach(e => (e.files || []).forEach(f => paths.add(f.path)));
+    for (const p of paths) { try { cur[p] = (await (await this.fileHandle(p, false)).getFile()).lastModified; } catch (e) { cur[p] = 'missing'; } }
+    this.layoutProbe.forEach((e, id) => { if (e.files && e.files.some(f => typeof f.mtime === 'number' && f.path in cur && cur[f.path] !== f.mtime)) this.layoutProbe.delete(id); });
+  }
+  // S9.1d: the plan of Salvar, computed ONCE when it opens: the active layout's changes plus the stored ones of every other layout whose source hash still matches the probe, merged by file|selector|prop (the active layout wins). null = the project changed meanwhile.
+  async buildSaveSet(otherIds) {
+    const s = this.state, P = s.project, activeId = P.layoutId, seq = this.loadSeq;
+    await this.refreshProbe(); await this.ensureProbe();
+    if (seq === this.loadSeq && otherIds.some(id => !this.layoutProbe.has(id))) await this.ensureProbe(); // a run already in flight may have passed an entry refreshProbe just evicted
+    if (seq !== this.loadSeq || this.loadedSeq !== this.loadSeq) return null;
+    const name = id => (P.layouts.find(l => l.id === id) || { name: id }).name, byLayout = { [activeId]: s.changes }, others = [], warnings = [];
+    otherIds.forEach(id => {
+      const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); if (!e || !e.changes.length) return;
+      const pr = this.layoutProbe.get(id), n = e.changes.length;
+      const why = !pr || pr.unavailable ? 'layout indisponível' : pr.hash !== e.hash ? 'fonte mudou' : e.changes.some(isTplChange) ? 'template só grava no layout ativo' : null;
+      if (why) { warnings.push('⚠ ' + n + (n === 1 ? ' pendência de ' : ' pendências de ') + name(id) + (n === 1 ? ' ignorada' : ' ignoradas') + ' (' + why + ')'); return; } // a skipped layout keeps its stored adjustments
+      byLayout[id] = e.changes; others.push(id);
+    });
+    if (!others.length) return { changes: s.changes, others, warnings, seq };
+    const selOf = (c, id) => id === activeId ? this.patchSel(c) : c.scope === 'all' ? ruleOf(c)[1] : (c.scopedSel || ruleOf(c)[1]); // the mounted layout's patchSel reads ITS nodes: other layouts use what the change recorded
+    const res = LayersCore.mergeLayoutChanges(byLayout, activeId, P.layouts.map(l => l.id), selOf);
+    res.conflicts.forEach(x => warnings.push('⚠ conflito em ' + x.file + ' ' + x.sel + ' { ' + kebab(x.prop) + ' }: vale ' + name(x.winner.layoutId) + ' (' + x.winner.to + '); ignorado ' + x.losers.map(l => name(l.layoutId) + ' (' + l.to + ')').join(', ')));
+    return { changes: res.changes.map(c => ({ ...c, sel: selOf(c, c.layoutId) })), others, warnings, seq };
+  }
+  openSave() {
+    const s = this.state, others = this.pendingLayouts(); if (!s.changes.length && !others.length) return;
+    const msg = n => 'design: ' + n + ' ajuste(s) de layout via editor de camadas', where = s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.';
+    if (!others.length) { this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: msg(s.changes.length), set: { changes: s.changes, others, warnings: [], seq: this.loadSeq }, log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + where] } }); return; }
+    const tok = {}; this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: msg(s.changes.length), loading: true, tok, log: ['contando outros layouts…'] } });
+    this.buildSaveSet(others).then(set => {
+      const cur = this.state.modal; if (!cur || cur.tok !== tok) return; // closed meanwhile
+      if (!set || !set.changes.length) { this.setState({ modal: null }); if (set) this.toast(set.warnings.join(' · '), 'warn'); return; }
+      this.setState(st => ({ modal: { ...st.modal, loading: false, msg: msg(set.changes.length), set, log: ['Plano: ' + this.filesOf(set.changes).length + ' arquivo(s) afetado(s). ' + where, ...set.warnings] } }));
+    }).catch(e => { console.warn('buildSaveSet', e); if (this.state.modal && this.state.modal.tok === tok) this.setState({ modal: null }); });
+  }
+  // A plan that spans layouts was built against one load: another load since then, or one still being built, must not write.
+  planStale() { const m = this.state.modal; if (m && m.loading) return true; if (!m || !m.set || !m.set.others.length || m.set.seq === this.loadSeq) return false; this.log('✗ o projeto foi recarregado depois do plano — feche e abra Salvar de novo'); return true; }
+  // Files the stored changes of a layout point at
+  pendingFiles(id) { const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); return e ? e.changes.map(c => ruleOf(c)[0]) : []; }
+  // The included layouts' stored changes go (their requests are user text and stay); returns the new badge map.
+  clearOtherPending(ids) {
+    const badges = Object.assign(Object.create(null), this.state.layoutBadges); let ok = true; // null prototype like loadProject's map: layout ids are user text
+    ids.forEach(id => {
+      const key = LayersCore.layoutPendingKey(this.baseKey, id), e = LayersCore.getPending(LS_STORE, key);
+      ok = LayersCore.setPending(LS_STORE, key, e && e.requests.length ? { hash: e.hash, changes: [], requests: e.requests } : null, Date.now()) && ok;
+      if (e && e.requests.length) badges[id] = e.requests.length; else delete badges[id];
+      delete this.undoHash[id]; // the files it was made against just changed on purpose
+    });
+    if (!ok) this.toast('Não foi possível salvar os ajustes e requisições pendentes: armazenamento cheio.', 'warn');
+    return badges;
+  }
+  // "também afeta" needs the use counts of the other layouts: started by a user gesture (scope "all", the ask prompt), never by render.
+  wantProbe() {
+    const P = this.state.project; if (!this.multiLayout() || this.probeRun || P.layouts.every(l => l.id === P.layoutId || this.layoutProbe.has(l.id))) return;
+    const p = this.ensureProbe(); this.setState({}); p.then(() => this.setState({}));
+  }
+  // Counts come from the probe cache (R1), never from live nodes of another layout; unavailable layouts say nothing.
+  alsoAffects(n) {
+    const P = this.state.project; if (!n || !n.src || !this.multiLayout()) return '';
+    const key = LayersCore.useKey(n.src, n.tag, !(n.kids > 0)), parts = []; let waiting = false;
+    P.layouts.forEach(l => { if (l.id === P.layoutId) return; const e = this.layoutProbe.get(l.id); if (!e) { waiting = true; return; } const c = e.unavailable ? 0 : e.uses.get(key) || 0; if (c > 0) parts.push(l.name + ' (' + c + (c === 1 ? ' uso)' : ' usos)')); });
+    if (waiting && this.probeRun) return 'contando outros layouts…';
+    return parts.length ? 'também afeta ' + parts.join(' · ') : '';
   }
   patched(text, list) { list.forEach(c => { text = LayersCore.patchCssAt(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
   // Template dc: o texto do load (this.dc.text) e a referencia do que o projeto viu; o atual e o que se grava.
@@ -2935,8 +3021,8 @@ class Component extends DCLogic {
     return true;
   }
   async makeDraft() {
-    if (this.readOnlyBlock() || this.utilityBlock()) return;
-    const files = this.filesOf(this.state.changes); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } })); this.draftedPaths = new Set();
+    if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
+    const files = this.filesOf(this.planChanges()); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } })); this.draftedPaths = new Set();
     for (const f of files) {
       if (f.dc) { await this.draftDc(f); continue; }
       if (!/\.css$/.test(f.path)) { const code = this.notCssCode(f.path); this.log('⚠ ' + f.path + ': ' + code + ': ' + dcWhy({ code }) + ' (ajuste registrado)'); continue; }
@@ -2946,13 +3032,13 @@ class Component extends DCLogic {
     this.log('Rascunho paralelo pronto. Revise e aprove para substituir o arquivo original (o atual vai para .design-history/).');
   }
   async discardDraft() {
-    const files = this.filesOf(this.state.changes);
+    const files = this.filesOf(this.planChanges());
     if (this.state.dir) for (const f of files) { try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('· rascunho removido: ' + f.draft); } catch (e) {} }
     this.setState(s => ({ modal: { ...s.modal, stage: 'plan' } })); this.log('Rascunho descartado.');
   }
   async approve() {
-    if (this.readOnlyBlock() || this.utilityBlock()) return;
-    const files = this.filesOf(this.state.changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes: this.state.changes, files: [], written: {} };
+    if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
+    const changes = this.planChanges(), others = (this.state.modal.set || {}).others || []; const files = this.filesOf(changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes, files: [], written: {} };
     for (const f of files) {
       if (f.dc && !(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho — nada foi gravado neste arquivo'); continue; }
       if (!f.dc && !/\.css$/.test(f.path)) continue;
@@ -2961,10 +3047,13 @@ class Component extends DCLogic {
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
-    this.dropUndoFor(this.curLayoutId()); // S9.1d: the applied layout's steps go; Task 4 extends this to every included layout
+    [this.curLayoutId(), ...others].forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout the plan included go
+    const unwritten = new Set(files.filter(f => (f.dc || /\.css$/.test(f.path)) && !entry.files.includes(f)).map(f => f.path)), cleared = others.filter(id => !this.pendingFiles(id).some(p => unwritten.has(p)));
+    others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' mantidas: arquivo não gravado'));
+    const badges = cleared.length ? this.clearOtherPending(cleared) : null;
     this.clearProbe(); // the files changed on disk
     if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
-    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [] }));
+    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [], ...(badges ? { layoutBadges: badges } : {}) }));
   }
   async rollback(h) {
     // vale tambem depois de um reload (this.mtimes zerado): compara com o mtime que o approve deixou
@@ -2974,7 +3063,7 @@ class Component extends DCLogic {
       const moved = LayersCore.movedSince(h.written, cur);
       if (moved.length) { this.toast('Reverter recusado: ' + moved.join(', ') + ' mudou fora do LAYERS depois da aprovação. Recarregue (R) e revise.'); return; }
     }
-    h.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }));
+    h.changes.filter(c => !c.layoutId || c.layoutId === this.curLayoutId()).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: a merged entry also holds other layouts' changes: their ids are not this DOM's
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
     this.clearProbe(); // the files changed on disk
     if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));
@@ -3227,7 +3316,8 @@ class Component extends DCLogic {
       nb('L−', 'layerDown', () => this.stepActive(-1)), nb('0', 'resetView', () => this.resetView()), nb('L+', 'layerUp', () => this.stepActive(1)),
     ];
     const m = s.modal; const sibs = this.sharedIds(s.selId); const hasSibs = sibs.length > 1;
-    const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }) }; });
+    const scopeOpts = [['ask', 'Perguntar', 'Pergunta a cada nova propriedade editada'], ['one', 'Só este', 'Aplica apenas ao elemento selecionado (patch com seletor :nth-child)'], ['all', 'Todos iguais (' + sibs.length + ')', 'Aplica a todos os elementos que compartilham a regra ' + selSelector]].map(([v, label, title]) => { const on = s.scope === v; return { label, title, bg: on ? 'rgba(var(--accRgb),.15)' : 'transparent', bdr: on ? 'transparent' : 'var(--line1)', color: on ? 'var(--acc)' : 'var(--fg2)', pick: () => this.setState({ scope: v }, () => { if (v === 'all') this.wantProbe(); }) }; });
+    const alsoLine = hasSibs && s.scope === 'all' ? this.alsoAffects(s.byId[s.selId]) : '', alsoPrompt = s.pending ? this.alsoAffects(s.byId[s.selId]) : '';
     const changes = s.changes.map(c => { const [file, , line] = ruleOf(c); const n = this.sharedIds(c.id).length; const warn = c.scope === 'one' && n > 1; const psel = this.patchSel(c);
       return { ...c, cssProp: kebab(c.prop), file, selector: psel, line: line || '?', manual: LayersCore.isManualSource(file) ? 'patch manual · ' : '', countLabel: c.ids.length > 1 ? '×' + c.ids.length + ' ' : '', warn: warn ? '⚠' : '', warnTitle: warn ? 'Regra compartilhada por ' + n + ' elementos — o patch fica restrito a este via ' + psel + '. Confira o seletor gerado.' : '', select: () => this.select(c.id), revert: () => this.revert(c) }; });
     const history = s.history.map(h => ({ label: h.branch + ' · ' + h.changes.length + ' ajuste(s) · ' + h.ts, rollback: () => this.rollback(h) }));
@@ -3348,11 +3438,11 @@ class Component extends DCLogic {
       allLayers: () => this.setState({ solo: false }), allBg: !s.solo ? 'rgba(var(--accRgb),.15)' : 'transparent', allBdr: !s.solo ? 'transparent' : 'var(--line1)', allColor: !s.solo ? 'var(--acc)' : 'var(--fg2)',
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
       tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
-      hasSibs, noSibs: !hasSibs, scopeOpts,
+      hasSibs, noSibs: !hasSibs, scopeOpts, alsoShow: !!alsoLine, alsoText: alsoLine,
       propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '', ...this.reqVals(),
       ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,
       openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
-      promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' : '',
+      promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' + (alsoPrompt ? ' ' + alsoPrompt.charAt(0).toUpperCase() + alsoPrompt.slice(1) + '.' : '') : '',
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
       toggleFlat: () => this.setState(st => ({ flat: !st.flat })), persp: s.persp, setPersp: e => this.setState({ persp: +e.target.value }), setSpacing: e => this.setState({ spacing: +e.target.value }), resetView: () => this.resetView(),
       interact: s.interact, toggleInteract: flip('interact'), interactBg: s.interact ? 'rgba(var(--accRgb),.15)' : 'transparent', interactBdr: s.interact ? 'transparent' : 'var(--line1)', interactColor: s.interact ? 'var(--acc)' : 'var(--fg2)',
@@ -3384,14 +3474,14 @@ class Component extends DCLogic {
           histAdding: !!s.histAdding, histRepoQ: s.histRepoQ || '', histRepoBdr: 'rgba(var(--selRgb),.6)', histRepoStart: () => this.setState({ histAdding: true }), histRepoCancel: () => this.setState({ histAdding: false, histRepoQ: '' }),
           histRepoInput: e => this.setState({ histRepoQ: e.target.value }), histRepoKey: e => { e.stopPropagation(); if (e.key === 'Enter') this.addRepo(); if (e.key === 'Escape') this.setState({ histAdding: false, histRepoQ: '' }); }, histRepoAdd: () => this.addRepo() }; })(),
       cancelAll: () => { if (s.changes.length) this.pushUndo(); s.changes.forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); this.setState({ changes: [], buf: {}, pending: null }); this.scanSoon(); },
-      openSave: () => { this.menuGo({ type: 'close' }); if (!s.changes.length) return; this.setState({ modal: { stage: 'plan', branch: 'design/' + stamp(), msg: 'design: ' + s.changes.length + ' ajuste(s) de layout via editor de camadas', log: ['Plano: ' + this.filesOf(s.changes).length + ' arquivo(s) afetado(s). ' + (s.dir ? 'Pasta conectada: ' + s.dirName : 'Sem pasta conectada — modo simulado.')] } }); },
+      openSave: () => { this.menuGo({ type: 'close' }); this.openSave(); },
       modalOpen: !!m, modalTitle: m && m.stage === 'confirm' ? m.title : m && m.stage === 'export' ? 'Exportar versões completas' : 'Aplicar nos arquivos',
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
       isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',
       confirmLabel: (m && m.label) || 'Carregar', confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
       stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan', isDraft: !!m && m.stage === 'draft',
       branch: m ? m.branch : '', msg: m ? m.msg : '', setBranch: e => this.setState(st => ({ modal: { ...st.modal, branch: e.target.value } })), setMsg: e => this.setState(st => ({ modal: { ...st.modal, msg: e.target.value } })),
-      modalFiles: m ? this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : s.changes) : [], modalLog: m ? m.log.join('\n') : '',
+      modalFiles: m ? (m.loading ? [] : this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : this.planChanges())) : [], modalLog: m ? m.log.join('\n') : '',
       closeModal: () => this.setState({ modal: null }), makeDraft: () => this.makeDraft(), discardDraft: () => this.discardDraft(), approve: () => this.approve(),
       onWheel: e => { const r = stageRect(); this.zoomBy(e.deltaY > 0 ? 0.9 : 1.1, e.clientX - r.left - r.width / 2, e.clientY - r.top - r.height / 2); },
       onDown: e => { if (e.button === 2) { this.rdown = { x: e.clientX, y: e.clientY }; return; } if (e.button === 1) e.preventDefault(); const mode = e.button === 1 || e.shiftKey ? 'pan' : (e.ctrlKey || e.metaKey) ? 'plane' : 'orbit'; this.down = { x: e.clientX, y: e.clientY, yaw: s.yaw, tilt: s.tilt, panX: s.panX, panY: s.panY, focus: s.focus, mode }; this.dragged = false; },

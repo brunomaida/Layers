@@ -1,5 +1,5 @@
 import { test, expect } from '@playwright/test';
-import { readNodes, lastTreeRow } from './tree-helpers.js';
+import { readNodes, lastTreeRow, treeRow } from './tree-helpers.js';
 import { act, open, reloadWith } from './ctx-helpers.js';
 import { listDisk, readDisk } from './folder-helpers.js';
 
@@ -927,8 +927,9 @@ test('Undo_AfterApply_DropsStepsOfIncludedLayouts', async ({ page }) => {
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
-  // Task 2 scope: the applied (active) layout's steps go; the other layout's stay
-  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  // Task 4: main's pending was part of the plan too (its hash matches the probe), so its steps go with config's
+  expect(await stackIds(page)).toEqual({ undo: [], redo: [] });
+  await expect.poll(() => storedPending(page)).toEqual({});
   // approve moved the source hash on purpose: a later round trip must not read that as drift
   await page.getByRole('button', { name: 'Fechar' }).first().click();
   await shadowOnPanel(page); // new step in config
@@ -1208,6 +1209,7 @@ test('Probe_CachedMockChangedThenSwitched_RaisesBannerNamingTheLayout', async ({
   expect(await page.evaluate(() => window.__logic.layoutProbe.has('replay'))).toBe(false);
 });
 
+const BASE_FS = 3; // getFile calls of the axai load and its watch stat (measured 2026-10-20); a probe read at load would add to it
 test('Probe_SingleLayoutProject_NeverRuns', async ({ page }) => {
   await page.addInitScript(() => { // installed before the load: counts every file the app opens on the connected folder
     window.__fs = 0;
@@ -1223,4 +1225,22 @@ test('Probe_SingleLayoutProject_NeverRuns', async ({ page }) => {
     return { n: window.__fs - before, size: l.layoutProbe.size, wl: Object.keys(l.watchLayouts).length };
   });
   expect(r).toEqual({ n: 0, size: 0, wl: 0 });
+  // R10(1): the absolute count at load, against the 1-layout baseline (a stray probe read at load would move it)
+  expect(await page.evaluate(() => window.__fs), 'getFile calls of a 1-layout load').toBe(BASE_FS);
+  // the whole "todos iguais" + Salvar path of a single-layout project reads nothing, probes nothing and says nothing about other layouts
+  await (await treeRow(page, { title: '.sum-stat' })).click();
+  await expect.poll(async () => { const a = await page.evaluate(() => window.__fs); await page.waitForTimeout(400); return a === (await page.evaluate(() => window.__fs)); }).toBe(true);
+  const before = await page.evaluate(() => window.__fs);
+  await page.getByText('Todos iguais (', { exact: false }).first().click();
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type(SHADOW);
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBeGreaterThan(0);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toBeVisible();
+  await act(page);
+  expect(await page.evaluate(() => ({ n: window.__fs, probe: window.__logic.layoutProbe.size, run: !!window.__logic.probeRun, loading: !!window.__logic.state.modal.loading }))).toEqual({ n: before, probe: 0, run: false, loading: false });
+  await expect(page.getByText('também afeta')).toHaveCount(0);
+  await expect(page.getByText('contando outros layouts')).toHaveCount(0);
 });

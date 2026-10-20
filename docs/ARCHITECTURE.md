@@ -247,6 +247,14 @@ Projeto de 1 layout: nada disso roda.
 Limite: a sonda lê e dá `stat` em cada arquivo em separado, então uma edição no meio dela pode guardar o
 mtime novo com o hash do conteúdo antigo (o aviso some até o Recarregar).
 
+Salvar entre layouts (multi-layout com pendências em outro layout): ao abrir, `buildSaveSet` lê as pendências
+dos demais layouts no storage, confere `pending.hash` com o da sonda (a sonda cujo arquivo mudou é descartada
+antes) e funde por `arquivo|seletor|prop` com `mergeLayoutChanges` (o ativo vence; conflito vira aviso no log).
+Layout indisponível, hash velho ou template dc vira aviso e mantém a pendência. O conjunto fica em
+`modal.set` e é o único que `makeDraft`, `discardDraft` e `approve` usam; `approve` limpa só as pendências
+dos layouts incluídos cujos arquivos foram gravados (as requisições ficam). O aviso "também afeta" lê `probe.uses`, iniciado por gesto
+(escopo Todos iguais ou prompt), nunca pelo render. `Ver diff` e `Exportar` seguem só no layout ativo.
+
 ### Reanalisar do 0 e deriva do layout
 
 O mock é a fonte das camadas, e um mock autoral ou de snapshot não se regenera sozinho: o app alvo
