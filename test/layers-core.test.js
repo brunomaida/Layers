@@ -4160,7 +4160,7 @@ describe('MergeLayoutChanges', () => {
   });
 
   it('MergeLayoutChanges_AtivoForaDoManifesto_AindaVenceTodos', () => {
-    const by = { main: [ch('a.css', '.x', 'color', 'red')], ghost: [ch('a.css', '.x', 'color', 'blue')], about: [ch('a.css', '.x', 'color', 'green')] };
+    const by = { ghost: [ch('a.css', '.x', 'color', 'blue')], zzz: [ch('a.css', '.x', 'color', 'green')], main: [ch('a.css', '.x', 'color', 'red')] };
     const out = core.mergeLayoutChanges(by, 'ghost', order, sel);
     expect(out.changes[0].to).toBe('blue');
     expect(out.changes[0].layoutId).toBe('ghost');
@@ -4198,6 +4198,25 @@ describe('MergeLayoutChanges', () => {
     expect(out.conflicts).toHaveLength(1);
     expect(out.conflicts[0].winner).toEqual({ layoutId: 'main', to: 'blue' });
     expect(out.conflicts[0].losers).toEqual([{ layoutId: 'cfg', to: 'green' }]);
+  });
+
+  it('MergeLayoutChanges_ValorSubstituidoNoMesmoLayout_NaoCompara', () => {
+    const by = { cfg: [ch('a.css', '.x', 'color', 'green'), ch('a.css', '.x', 'color', 'blue')], main: [ch('a.css', '.x', 'color', 'blue')] };
+    expect(core.mergeLayoutChanges(by, 'main', order, sel).conflicts).toEqual([]);
+  });
+
+  it('MergeLayoutChanges_DoisValoresNoMesmoLayout_UmPerdedorComValorFinal', () => {
+    const by = { cfg: [ch('a.css', '.x', 'color', 'red'), ch('a.css', '.x', 'color', 'green')], main: [ch('a.css', '.x', 'color', 'blue')] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.conflicts).toHaveLength(1);
+    expect(out.conflicts[0].losers).toEqual([{ layoutId: 'cfg', to: 'green' }]);
+  });
+
+  it('MergeLayoutChanges_LayoutIdProprio_UsadoEmLayoutsEPerdedores', () => {
+    const by = { main: [ch('a.css', '.x', 'color', 'red')], cfg: [ch('a.css', '.x', 'color', 'blue', { layoutId: 'orig' })] };
+    const out = core.mergeLayoutChanges(by, 'main', order, sel);
+    expect(out.changes[0].layouts).toEqual(['orig', 'main']);
+    expect(out.conflicts[0].losers).toEqual([{ layoutId: 'orig', to: 'blue' }]);
   });
 
   it('MergeLayoutChanges_PatchSelFn_DefineSelKeyEConflito', () => {
