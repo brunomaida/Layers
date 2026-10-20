@@ -3010,7 +3010,7 @@ class Component extends DCLogic {
   // Template dc: o texto do load (this.dc.text) e a referencia do que o projeto viu; o atual e o que se grava.
   patchedDc(text, list) { return LayersCore.patchDc(this.dc.text, text, list.filter(isTplChange).map(c => ({ tplId: +ruleOf(c)[1].slice(4), prop: kebab(c.prop), to: c.to, c }))); }
   notCssCode(path) { const p = this.state.project; return p && p.snapMock && path === p.mockPath ? 'SNAPSHOT_STYLE' : 'SOURCE_NOT_CSS'; }
-  async draftDc(f, say = l => this.log(l)) { // say: the calling run's logger (silent once that run was superseded)
+  async draftDc(f, say = l => this.log(l), dir = this.state.dir) { // say: the calling run's logger (silent once that run was superseded)
     try {
       const r = this.patchedDc(await this.readText(f.path), f.list);
       f.list.forEach(c => { if (c.ids.length > 1 || this.sharedIds(c.id).length > 1) say('⚠ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — TPL_FANOUT: ' + dcWhy({ code: 'TPL_FANOUT' })); });
@@ -3019,7 +3019,7 @@ class Component extends DCLogic {
       if (!r.applied) { say('· ' + f.path + ': nenhuma edição gravável — sem rascunho'); return; }
       await this.writeText(f.draft, r.text); this.draftedPaths.add(f.path);
       say('✓ rascunho gravado: ' + f.draft + ' (' + r.applied + ' de ' + f.list.filter(isTplChange).length + ' edição(ões))');
-    } catch (e) { say('✗ ' + f.path + ': ' + e.message); await this.dropDraft(f.draft); }
+    } catch (e) { say('✗ ' + f.path + ': ' + e.message); await this.dropDraft(f.draft, true, dir); }
   }
   // Uma guarda so, no caminho de escrita: gravar patch numa classe utilitaria mudaria todo o
   // projeto de uma vez. Recusa com o nome da folha, em vez de gravar e surpreender depois.
@@ -3032,23 +3032,30 @@ class Component extends DCLogic {
   async makeDraft() {
     if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
     if (this.draftBusy) { this.log('· o rascunho anterior ainda está sendo gravado — tente de novo em instantes'); return; } // a closed modal does not stop a write already in flight
-    const files = this.filesOf(this.planChanges()), run = this.draftRun = (this.draftRun || 0) + 1, wrote = []; this.draftBusy = run; this.draftedPaths = new Set(); // drafting: planStale() and the template hide Aprovar/Descartar until every file is written
+    const files = this.filesOf(this.planChanges()), run = this.draftRun = (this.draftRun || 0) + 1, wrote = [], dir0 = this.state.dir; this.draftBusy = run; this.draftedPaths = new Set(); // drafting: planStale() and the template hide Aprovar/Descartar until every file is written
     try {
       await new Promise(r => this.setState(s => ({ modal: { ...s.modal, stage: 'draft', drafting: run } }), r)); // flushed: gone() below reads this.state
       const gone = () => { const m = this.state.modal; return this.draftRun !== run || !m || m.drafting !== run; }, say = l => { if (!gone()) this.log(l); }; // the modal was closed or replaced meanwhile: a dead run logs nothing into the next one
       for (const f of files) {
         if (gone()) break;
-        if (f.dc) { wrote.push(f.draft); await this.draftDc(f, say); continue; }
+        if (f.dc) { await this.draftDc(f, say, dir0); if (this.draftedPaths.has(f.path)) wrote.push(f.draft); continue; }
         if (!/\.css$/.test(f.path)) { const code = this.notCssCode(f.path); say('⚠ ' + f.path + ': ' + code + ': ' + dcWhy({ code }) + ' (ajuste registrado)'); continue; }
         if (!this.state.dir) { say('· ' + f.draft + ' (simulado — conecte a pasta para gravar)'); f.list.forEach(c => say('    ' + this.patchSel(c) + ' { ' + kebab(c.prop) + ': ' + c.to + ' }')); continue; }
-        try { const text = this.patched(await this.readText(f.path), f.list); wrote.push(f.draft); await this.writeText(f.draft, text); if (gone()) break; say('✓ rascunho gravado: ' + f.draft); } catch (e) { say('✗ ' + f.path + ': ' + e.message); await this.dropDraft(f.draft); } // wrote first: even a write that fails after creating the file is cleaned up
+        try { await this.writeText(f.draft, this.patched(await this.readText(f.path), f.list)); wrote.push(f.draft); if (gone()) break; say('✓ rascunho gravado: ' + f.draft); } catch (e) { say('✗ ' + f.path + ': ' + e.message); await this.dropDraft(f.draft, true, dir0); } // only an EMPTY leftover goes: a write that failed after creating the file; a non-empty draft may be a hand edit the guard protected
       }
-      if (gone()) { for (const d of wrote) await this.dropDraft(d); return; } // a superseded run leaves no draft behind
+      if (gone()) { for (const d of wrote) await this.dropDraft(d, false, dir0); return; } // a superseded run leaves no draft behind
       this.log('Rascunho paralelo pronto. Revise e aprove para substituir o arquivo original (o atual vai para .design-history/).');
     } finally { if (this.draftBusy === run) this.draftBusy = 0; this.setState(s => ({ modal: s.modal && s.modal.drafting === run ? { ...s.modal, drafting: false } : s.modal })); } // only this run's own flag: a closed or reopened modal is left alone
   }
-  // Removes a draft file and forgets its mtime: writeText's external-change guard would refuse the next draft written under the same name
-  async dropDraft(path) { try { const dir = await this.dirOf(path); await dir.removeEntry(path.split('/').pop()); delete this.mtimes[path]; return true; } catch (e) { return false; } }
+  // Removes a draft file and forgets its mtime (writeText's external-change guard would refuse the next draft under the same name). onlyEmpty: failure cleanup, a non-empty file may be a hand edit the guard protected. Never creates folders; does nothing once the connected folder changed.
+  async dropDraft(path, onlyEmpty = false, dir = this.state.dir) {
+    try {
+      const ok = LayersCore.safePath(path); if (!ok || !dir || dir !== this.state.dir) return false;
+      const parts = ok.split('/'), name = parts.pop(); let d = dir; for (const part of parts) d = await d.getDirectoryHandle(part);
+      if (onlyEmpty && (await (await d.getFileHandle(name)).getFile()).size !== 0) return false;
+      delete this.mtimes[path]; await d.removeEntry(name); return true;
+    } catch (e) { return false; }
+  }
   async discardDraft() {
     if (this.planStale()) return;
     const files = this.filesOf(this.planChanges());
@@ -3062,7 +3069,7 @@ class Component extends DCLogic {
       if (f.dc && !(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho — nada foi gravado neste arquivo'); continue; }
       if (!f.dc && !/\.css$/.test(f.path)) continue;
       if (!this.state.dir) { this.log('· ' + f.path + ' → ' + f.hist + ' (histórico) · rascunho promovido (simulado)'); entry.files.push(f); continue; }
-      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } if (!f.dc && draft === '' && orig !== '') { this.log('✗ ' + f.path + ': rascunho vazio — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); entry.written[f.path] = this.mtimes[f.path]; entry.files.push(f); if (f.dc) this.dc.text = draft; this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); /* the file is replaced: rollback must see it even when the draft cleanup fails */ try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); delete this.mtimes[f.draft]; } catch (e) { this.log('⚠ ' + f.draft + ': rascunho não removido (' + e.message + ')'); } }
+      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } if (!f.dc && draft === '' && orig !== '') { this.log('✗ ' + f.path + ': rascunho vazio — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); entry.written[f.path] = this.mtimes[f.path]; entry.files.push(f); if (f.dc) this.dc.text = draft; this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); /* the file is replaced: rollback must see it even when the draft cleanup fails */ try { const dir = await this.dirOf(f.draft); delete this.mtimes[f.draft]; await dir.removeEntry(f.draft.split('/').pop()); } catch (e) { this.log('⚠ ' + f.draft + ': rascunho não removido (' + e.message + ')'); } }
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');

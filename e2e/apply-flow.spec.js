@@ -167,7 +167,7 @@ test('Apply_DraftLoopThrows_StillClearsDrafting', async ({ page }) => {
 });
 
 // S9.1e Task 3 fix wave: the draft file and its mtime guard.
-const BOOM_DRAFT = () => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (p, ...a) => { if (/design-draft/.test(p)) { window.__inWrite = true; await new Promise((r) => setTimeout(r, 800)); await l.fileHandle(p, true); throw new Error('boom'); } return orig(p, ...a); }; }; // creates the empty draft like writeText does, then fails
+const BOOM_DRAFT = () => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (p, ...a) => { if (/design-draft/.test(p)) { window.__inWrite = true; await new Promise((r) => setTimeout(r, 800)); await l.fileHandle(p, true); window.__thrown = true; throw new Error('boom'); } return orig(p, ...a); }; }; // creates the empty draft like writeText does, then fails
 
 test('Apply_DiscardThenDraftAgain_WritesTheNewDraft', async ({ page }) => {
   await editCard(page);
@@ -220,6 +220,37 @@ test('Apply_FailedDraftWrite_LeavesNoEmptyDraft', async ({ page }) => {
   expect(await listDisk(page), 'no 0-byte draft left behind').not.toContain('style.design-draft.css');
 });
 
+const HAND = '/* hand edit */\n.keep-me { color: teal }\n';
+async function handEditedDraft(page) {
+  await editCard(page);
+  await act(page);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'style.design-draft.css')).toMatch(DECL);
+  await page.evaluate(async (text) => { const w = await (await window.__proj.getFileHandle('style.design-draft.css')).createWritable(); await w.write(text); await w.close(); }, HAND);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await openPlan(page);
+}
+
+test('Apply_HandEditedDraft_SurvivesReopenAndGerar', async ({ page }) => {
+  await handEditedDraft(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click(); // the guard refuses to overwrite the edit
+  await expect(page.getByText(/style\.css: .*mudou fora do LAYERS/)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  expect(await readDisk(page, 'style.design-draft.css'), 'the hand edit is not deleted').toBe(HAND);
+});
+
+test('Apply_SupersededRunWithPreExistingDraft_KeepsIt', async ({ page }) => {
+  await handEditedDraft(page);
+  await page.evaluate(() => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (...a) => { window.__inWrite = true; await new Promise((r) => setTimeout(r, 800)); return orig(...a); }; });
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => page.evaluate(() => !!window.__inWrite)).toBe(true);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await openPlan(page);
+  await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  expect(await readDisk(page, 'style.design-draft.css'), 'a draft the dead run never wrote stays').toBe(HAND);
+});
+
 test('Apply_SupersededRunFailing_LogsNothingIntoTheNewModalAndLeavesNoDraft', async ({ page }) => {
   await editCard(page);
   await act(page);
@@ -228,8 +259,10 @@ test('Apply_SupersededRunFailing_LogsNothingIntoTheNewModalAndLeavesNoDraft', as
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
   await expect.poll(() => page.evaluate(() => !!window.__inWrite)).toBe(true);
   await page.getByRole('button', { name: 'Fechar' }).first().click();
+  expect(await page.evaluate(() => !!window.__thrown), 'the write had not failed yet: the run is superseded when it throws').toBe(false);
   await openPlan(page);
   await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  expect(await page.evaluate(() => !!window.__thrown)).toBe(true);
   expect(await page.evaluate(() => window.__logic.state.modal.log.join('\n')), 'the dead run says nothing in the new modal').not.toMatch(/boom|rascunho gravado/);
   expect(await listDisk(page)).not.toContain('style.design-draft.css');
 });
