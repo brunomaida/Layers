@@ -545,7 +545,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </sc-if>
     </div>
     <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
-      <div style="padding:5px 12px;border-bottom:1px solid var(--line1);font:500 calc(10px*var(--fs))/1.35 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</div>
+      <div style="padding:6px 12px;border-bottom:1px solid var(--line1);font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</div>
     </sc-if>
     <div style="display:flex;flex-direction:column;gap:6px;padding:8px 12px;background:var(--bg0);border-bottom:1px solid var(--line1)">
       <div style="display:flex;align-items:center;gap:6px">
@@ -617,7 +617,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
       </sc-if>
       </div>
       <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
-        <span style="grid-column:1 / -1;font:500 calc(10px*var(--fs))/1.35 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
+        <span style="grid-column:1 / -1;font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
       </sc-if>
       <span style="font:600 calc(9px*var(--fs))/1 'JetBrains Mono',monospace;letter-spacing:.1em;text-transform:uppercase;color:var(--fg3);white-space:nowrap">Origem</span>
       <div style="display:flex;align-items:center;gap:5px;min-width:0;white-space:nowrap;overflow:hidden">
@@ -685,7 +685,7 @@ input:focus{outline:1px solid var(--acc);outline-offset:-1px}
         <span style="font:500 calc(11px*var(--fs))/1 'Inter',sans-serif;color:var(--fg3);min-width:0;overflow:hidden;text-overflow:ellipsis">elemento único — sem irmãos na regra</span>
       </sc-if>
       <sc-if value="{{ alsoShow }}" hint-placeholder-val="{{ false }}">
-        <span style="flex:1 0 100%;font:500 calc(10px*var(--fs))/1.35 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
+        <span style="flex:1 0 100%;font:500 calc(10px*var(--fs))/1 'JetBrains Mono',monospace;color:var(--fg3);white-space:normal">{{ alsoText }}</span>
       </sc-if>
       <span style="width:1px;height:14px;background:var(--line1);margin:0 5px"></span>
         <sc-for list="{{ originChips }}" as="oc" hint-placeholder-count="3">
@@ -2602,7 +2602,7 @@ class Component extends DCLogic {
     this._cam = { k: k, nodes: s.nodes, v: v }; return v;
   }
   stepActive(d) { this.setState(s => ({ active: clamp(s.active + d, 0, this.visibleMax()) })); }
-  select(id, quiet) { const n = this.state.byId[id]; if (!n) return; const tc = { ...this.state.treeClosed }; const parts = id.split('.'); for (let i = 1; i < parts.length; i++) delete tc[parts.slice(0, i).join('.')]; const [f0, s0] = ruleOf(n); const eo = { ...this.state.elOpen, [f0]: true, [f0 + '|' + s0]: true }; this.setState({ selId: id, active: n.depth, buf: {}, units: {}, treeClosed: tc, elOpen: eo }, () => this.revealInTree(id)); this.loadRule(n); this.loadFile(f0); if (!quiet && this.state.scope === 'all' && this.sharedIds(id).length > 1) this.wantProbe(); } // quiet: the restore after a load never probes
+  select(id, quiet) { const n = this.state.byId[id]; if (!n) return; const tc = { ...this.state.treeClosed }; const parts = id.split('.'); for (let i = 1; i < parts.length; i++) delete tc[parts.slice(0, i).join('.')]; const [f0, s0] = ruleOf(n); const eo = { ...this.state.elOpen, [f0]: true, [f0 + '|' + s0]: true }; this.setState({ selId: id, active: n.depth, buf: {}, units: {}, treeClosed: tc, elOpen: eo }, () => this.revealInTree(id)); this.loadRule(n); this.loadFile(f0); if (!quiet && this.multiLayout() && this.state.scope === 'all' && this.sharedIds(id).length > 1) this.wantProbe(); } // quiet: the restore after a load never probes
   async loadFile(file) { if (!this.state.dir || !file || this.state.fileText[file] !== undefined) return; let t = null; try { t = await this.readText(file); } catch (e) { t = false; } this.setState(st => ({ fileText: { ...st.fileText, [file]: t } })); }
   // texto do código que define a regra: arquivo real (bloco css ou trecho ts) ou síntese a partir dos estilos do mock
   codeFor(rule) {
@@ -2767,7 +2767,7 @@ class Component extends DCLogic {
     if (!c.decided) { const sibs = this.sharedIds(id); if (sibs.length > 1) { if (s.scope === 'all') { this.extend(c, sibs, {}); c.decided = true; } else if (s.scope === 'one') c.decided = true; else pending = { key: c.key, count: sibs.length, name: n.name, selector: ruleOf(n)[1] }; } else c.decided = true; }
     if (!same) { const bk = id + '|' + prop; if (!this.inBurst(bk)) this.pushUndo(); this.lastEdit = { key: bk, t: Date.now() }; }
     this.setState({ changes, pending, buf: {} }); this.scanSoon();
-    if (pending && !s.pending) this.wantProbe();
+    if ((pending && !s.pending) || (s.scope === 'all' && this.multiLayout() && this.sharedIds(id).length > 1)) this.wantProbe(); // the edit is the gesture: a shared write is never silent
   }
   extend(c, ids, orig) { ids.forEach(i => { if (c.ids.includes(i)) return; const e2 = this.els[i]; if (!e2) return; c.fromInline[i] = i in orig ? orig[i] : e2.style[c.prop]; e2.style[c.prop] = c.to; c.ids.push(i); }); c.scope = 'all'; }
   decide(all) {
@@ -2994,7 +2994,7 @@ class Component extends DCLogic {
     const P = this.state.project; if (!n || !n.src || !this.multiLayout()) return '';
     const key = LayersCore.useKey(n.src, n.tag, !(n.kids > 0)), parts = []; let waiting = false;
     P.layouts.forEach(l => { if (l.id === P.layoutId) return; const e = this.layoutProbe.get(l.id); if (!e) { waiting = true; return; } const c = e.unavailable ? 0 : e.uses.get(key) || 0; if (c > 0) parts.push(l.name + ' (' + c + (c === 1 ? ' uso)' : ' usos)')); });
-    if (waiting && this.probeRun) return 'contando outros layouts…';
+    if (waiting) return this.probeRun ? 'contando outros layouts…' : ''; // a layout with no entry yet must not be left out of a line that looks complete
     return parts.length ? 'também afeta ' + parts.join(' · ') : '';
   }
   patched(text, list) { list.forEach(c => { text = LayersCore.patchCssAt(text, this.patchSel(c), kebab(c.prop), c.to); }); return text; }
@@ -3038,7 +3038,7 @@ class Component extends DCLogic {
   }
   async approve() {
     if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
-    const changes = this.planChanges(), others = (this.state.modal.set || {}).others || []; const files = this.filesOf(changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes, files: [], written: {} };
+    const changes = this.planChanges(), others = (this.state.modal.set || {}).others || []; const files = this.filesOf(changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes, layoutId: this.curLayoutId(), files: [], written: {} };
     for (const f of files) {
       if (f.dc && !(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho — nada foi gravado neste arquivo'); continue; }
       if (!f.dc && !/\.css$/.test(f.path)) continue;
@@ -3049,7 +3049,7 @@ class Component extends DCLogic {
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
     const unwritten = new Set(files.filter(f => (f.dc || /\.css$/.test(f.path)) && !Object.hasOwn(entry.written, f.path)).map(f => f.path)), cleared = others.filter(id => !this.pendingFiles(id).some(p => unwritten.has(p)));
     const left = this.state.changes.filter(c => unwritten.has(ruleOf(c)[0])); entry.dom = this.state.changes.filter(c => !left.includes(c)); // the active layout's own list (merging may collapse it): rollback restores THESE inline styles
-    if (entry.dom.length) this.dropUndoFor(this.curLayoutId()); others.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout that contributed go
+    if (entry.dom.length) this.dropUndoFor(this.curLayoutId()); cleared.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout whose changes went (written) go
     others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'));
     const badges = cleared.length ? this.clearOtherPending(cleared) : null;
     this.clearProbe(); // the files changed on disk
@@ -3064,7 +3064,7 @@ class Component extends DCLogic {
       const moved = LayersCore.movedSince(h.written, cur);
       if (moved.length) { this.toast('Reverter recusado: ' + moved.join(', ') + ' mudou fora do LAYERS depois da aprovação. Recarregue (R) e revise.'); return; }
     }
-    (h.dom || h.changes).filter(c => !c.layoutId || c.layoutId === this.curLayoutId()).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: a merged entry also holds other layouts' changes: their ids are not this DOM's
+    (!h.layoutId || h.layoutId === this.curLayoutId() ? (h.dom || h.changes) : []).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: the entry belongs to the layout it was approved in: another mounted layout's ids are not this DOM's
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
     this.clearProbe(); // the files changed on disk
     if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));

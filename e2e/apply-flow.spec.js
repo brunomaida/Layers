@@ -266,6 +266,7 @@ test('Apply_FileNotWritten_KeepsThatLayoutsPending', async ({ page }) => {
   await expect.poll(async () => Object.keys(await storedPending(page))).toEqual(['folder:proj|config']);
   expect((await storedPending(page))['folder:proj|config'].changes).toHaveLength(2);
   expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.undoS.map((x) => x.layoutId).sort()), 'only the layout whose changes went loses its steps').toEqual(['config', 'config']);
   // the kept entry does not survive opening the layout: shared.css was rewritten, so its hash no longer matches
   await page.getByRole('button', { name: 'Fechar' }).first().click();
   await act(page, 'switchLayout', 'config');
@@ -415,4 +416,21 @@ test('Apply_PlanWhileLoading_HasNoDraftButtonYet', async ({ page }) => {
   await expect(page.getByText('contando outros layouts…')).toBeVisible();
   await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toBeVisible({ timeout: 10_000 });
+});
+
+test('Rollback_LegacyChangeWithoutLayoutId_LeavesTheOtherLayoutAlone', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  const sharedBefore = await readDisk(page, 'layers/shared.css');
+  await editNode(page, '0.0', SHADOW_A);
+  await page.evaluate(() => { window.__logic.state.changes.forEach((c) => { delete c.layoutId; }); }); // the shape of a pending change stored before S9.1d
+  await openPlan(page);
+  await draftAndApprove(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); h.shadowRoot.getElementById('cfg-title').style.boxShadow = '1px 1px 0 red'; }); // config's node 0.0 is main's edited id
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.css')).toBe(sharedBefore);
+  expect(await page.evaluate(() => { const h = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount); return h.shadowRoot.getElementById('cfg-title').style.boxShadow; })).toContain('red');
 });

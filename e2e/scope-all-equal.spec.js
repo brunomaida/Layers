@@ -127,3 +127,38 @@ test('Scope_AllRestoredOnReload_DoesNotProbeAtLoad', async ({ page }) => {
   await page.waitForTimeout(1500);
   expect(await page.evaluate(() => ({ size: window.__logic.layoutProbe.size, run: !!window.__logic.probeRun }))).toEqual({ size: 0, run: false });
 });
+
+// R16: the line is complete or absent, never partial (a layout missing from the probe cache must not be left out silently).
+const alsoLines = (page) => page.evaluate(() => [...document.querySelectorAll('*')].filter((e) => e.children.length === 0 && /^(também afeta|contando)/.test(e.textContent.trim())).map((e) => e.textContent.trim()));
+const settledOn = (page, id) => expect.poll(async () => { await act(page); return page.evaluate((id) => { const l = window.__logic; return !!l.state.project && l.state.project.layoutId === id && l.loadedSeq === l.loadSeq; }, id); }).toBe(true);
+
+test('Scope_AllAfterSwitchOrClear_NeverShowsAPartialLine', async ({ page }) => {
+  await reshaped(page);
+  await allChip(page).click();
+  await expect(page.getByText('também afeta Config (3 usos) · Replay (1 uso)').first()).toBeVisible();
+  await act(page, 'switchLayout', 'config');
+  await settledOn(page, 'config');
+  await act(page, 'setState', { selId: '0.0' }); // a selection that comes back without a gesture
+  await page.waitForTimeout(800);
+  const lines = (await alsoLines(page)).join(' | ');
+  if (lines.includes('também afeta')) { expect(lines).toContain('Main (2 usos)'); expect(lines).toContain('Replay (1 uso)'); }
+  await act(page, 'switchLayout', 'main');
+  await settledOn(page, 'main');
+  await act(page, 'clearProbe'); // what Aplicar / Reverter do
+  await act(page, 'setState', { selId: '0.0' });
+  await page.waitForTimeout(800);
+  const after = (await alsoLines(page)).join(' | ');
+  if (after.includes('também afeta')) { expect(after).toContain('Config (3 usos)'); expect(after).toContain('Replay (1 uso)'); }
+});
+
+test('Scope_AllEdit_StartsTheProbeSoTheSharedWriteIsNotSilent', async ({ page }) => {
+  await reshaped(page);
+  await act(page, 'setState', { scope: 'all', selId: '0.0' }); // no chip click, no select(): only the edit is the gesture
+  expect(await page.evaluate(() => window.__logic.layoutProbe.size)).toBe(0);
+  const field = page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
+  await field.click({ clickCount: 3 });
+  await page.keyboard.type('0 0 0 3px rgb(1, 2, 3)');
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.__logic.layoutProbe.size)).toBe(3);
+  await expect(page.getByText('também afeta Config (3 usos) · Replay (1 uso)').first()).toBeVisible();
+});

@@ -12,7 +12,7 @@ adr: none
 - Limite conhecido: 700 + 700 planos (1.407) orbita a ~47 fps, sem aviso (medido, não resolvido).
 
 ### Tests
-- Vitest: 687 testes (43 novos). Playwright: `layouts` 65, `undo-redo` 8, `apply-flow` 17, `scope-all-equal` 6, `stale-banner` 4, `spread` 114, `perf` 43.
+- Vitest: 687 testes (43 novos). Playwright: `layouts` 65, `undo-redo` 8, `apply-flow` 18, `scope-all-equal` 8, `stale-banner` 4, `spread` 117, `perf` 43.
 
 ### Perf
-- measured — 2026-10-20, Chromium: órbita do pior caso do Espalhar (3.303 planos) 101 → 23 ms/quadro (9,9 → 43 fps); na borda do aviso, 700 + 700 planos 21,2 ms (47 fps) e 800 + 800 18,9 ms (53 fps); em Node, `spreadDrawPlan` com 1.500 entradas 54,5 µs e `mergeLayoutChanges` 64,9 µs. Espalhar desligado e projeto de 1 layout: nada muda.
+- measured — 2026-10-20, Chromium: órbita do pior caso do Espalhar (3.303 planos) 99 → ~22,6 ms/quadro (≈10 → ≈44 fps); na borda do aviso, 700 + 700 planos 21,2 ms (47 fps) e 800 + 800 18,9 ms (53 fps); em Node, `spreadDrawPlan` com 1.500 entradas 54,5 µs e `mergeLayoutChanges` 64,9 µs. Espalhar desligado e projeto de 1 layout: nada muda.

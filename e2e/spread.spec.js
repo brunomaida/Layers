@@ -1871,3 +1871,38 @@ test('SpreadDrag_LodClickWhileDragged_IsIgnoredAndWorksAfterwards', async ({ pag
   await expect.poll(() => page.evaluate(() => window.__logic.loadSeq)).toBeGreaterThan(seq0);
   await expect.poll(() => activeId(page)).toBe('config');
 });
+
+// R16: a demoted full entry is drawn at depth <= 1, so its deeper planes must not widen the overview camera (maxD), and a plan flip while dragging must leave the LOD groups and the census consistent.
+const maxDOf = (page) => page.evaluate(() => window.__logic.spreadView().maxD);
+
+test('SpreadDraw_DemotedFull_DoesNotRaiseMaxD', async ({ page }) => {
+  await demoSetup(page, 1600);
+  expect((await mainPage(page)).label).toBe('Main · LOD'); // main is the only entry with a depth-2 node and it is demoted
+  expect(await maxDOf(page)).toBeLessThanOrEqual(1);
+});
+
+test('SpreadDraw_FullAtTheLimit_RaisesMaxDWithItsDeepestPlane', async ({ page }) => {
+  await demoSetup(page, 1500);
+  expect((await mainPage(page)).label).toBe('Main');
+  expect(await maxDOf(page)).toBe(2); // control of the test above: the same node counts while the entry is drawn full
+});
+
+test('SpreadDrag_PlanFlipMidDrag_KeepsLodGroupsAndCensusConsistent', async ({ page }) => {
+  const errors = [];
+  page.on('pageerror', (e) => errors.push(e.message));
+  page.on('console', (m) => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push(m.text()); }); // the fixture's Broken layout 404s on purpose
+  await demoSetup(page, 1500);
+  const n = await page.evaluate(() => window.__logic.state.nodes.length);
+  await holdOrbit(page);
+  const flip = (delta) => page.evaluate(async (d) => { const L = window.__logic, r = L.spreadFrozen.get('replay'); L.spreadFrozen.set('replay', { ...r, count: r.count + d }); L.spreadBump(); await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))); }, delta);
+  await flip(1); // total 1501: main flips from full to LOD while the mouse is still down
+  expect((await mainPage(page)).label).toBe('Main · LOD');
+  expect(await page.evaluate(() => document.querySelectorAll('[data-lod-group]').length)).toBeGreaterThan(0);
+  expect((await planeCensus(page)).total).toBe(n);
+  await flip(-1); // and back to 1500
+  expect((await mainPage(page)).label).toBe('Main');
+  expect(await page.evaluate(() => document.querySelectorAll('[data-lod-group]').length)).toBeGreaterThan(0);
+  expect((await planeCensus(page)).total).toBe(n);
+  await page.mouse.up();
+  expect(errors).toEqual([]);
+});

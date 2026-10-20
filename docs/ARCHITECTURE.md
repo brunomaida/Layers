@@ -624,6 +624,7 @@ checkStale ─▶ this.watch (+ mock de cada outro layout + arquivos da sonda) �
 | h | Gravar um arquivo que um layout não incluído também usa tira os passos de undo dele na volta | Regra do hash (`undoHash`) |
 | i | O aviso "também afeta" só aparece com Todos iguais e um nó com irmãos no ativo (e no prompt de escopo) | Um nó sem irmãos no ativo, mas usado em outro layout, não mostra nada |
 | j | Uma gravação que falha mantém a mudança do ativo cujo arquivo não foi gravado | Vale também para projeto de 1 layout (antes a mudança era limpa) |
+| k | Os retratos LOD dos outros layouts não são atualizados depois de Aplicar ou Reverter | Só Recarregar ou religar o Espalhar os relê. É só visual: a gravação, a sonda e as pendências já estão em dia. |
 
 ### Guarda de conflito na gravação
 
