@@ -1530,6 +1530,7 @@ class Component extends DCLogic {
  this.setState({ dir: null, dirName: '', cbOpen: null, cssRules: {}, fileText: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, propQ: '', yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, measure: false, bmOpen: false, bmHover: null, interact: false }); this.toast('Interface zerada — nenhum projeto carregado.', 'ok'); }
   // ---- LOADER (contrato em docs/layers-json.md): layers.json na raiz → mock HTML + folhas de estilo → shadow root do host offscreen ----
   async loadProject() {
+    const keepUndo = this.keepUndo; this.keepUndo = false; // S9.1d: only switchLayout keeps the shared undo stack; read first so the flag never leaks into a later load
     const pv = this.pendingView; this.pendingView = null; // consumido ja aqui: uma carga superada nunca o vaza para a seguinte (S9.1a)
     this.writeConfig(); this.pendingReady = false; this.pendingReqOnly = false; const baseKey = this.pendingKeyNow(); this.pendingKey = null; // drena a rajada na chave antiga antes de recalcular; pendingKey so volta com o layout resolvido (S9.1a)
     const sv0 = this.state.spread.on ? this.spreadView() : null, fw = sv0 && this.state.focus ? { x: this.state.focus.x + sv0.offs[sv0.ai], y: this.state.focus.y, zd: this.state.focus.zd } : null; // overview focus in WORLD x (it lives in active-page coordinates): re-based on the new active page after the load
@@ -1613,7 +1614,8 @@ class Component extends DCLogic {
     this.dc = dc && dc.trust ? dc : null;
     this.watch = LayersCore.pickWatched(this.mtimes || {}, ['layers.json', mockPath, ...css.map(c => c.file), ...(dcText !== null ? [dcFile] : [])]); this.loadedSeq = seq;
     this.loaded = { manifest: raw, mock: html, mockPath, mt: { 'layers.json': (this.mtimes || {})['layers.json'], [mockPath]: (this.mtimes || {})[mockPath] } }; this.maskedCss = built.maskedCss; this.structural = ['layers.json', mockPath, ...this.maskedCss]; // S2.21: texto lido, base do backup do layout
-    this.resetUndo();
+    if (!keepUndo || newProject) this.resetUndo(); else this.lastEdit = null;
+    if (dropped > 0 || incomplete) this.dropUndoFor(curLayout.id); // S9.1d: the saved pending of this layout did not come back, so its steps have nothing to act on
     this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId); else if (vw && this.state.selId !== '0') this.select(this.state.selId); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
@@ -2131,7 +2133,7 @@ class Component extends DCLogic {
     const s = this.state; if (!s.project || (s.project.layouts || []).length < 2 || s.project.layoutId === id || !s.project.layouts.some(l => l.id === id)) return;
     if (s.modal || s.pending || s.diff || (s.coverage && s.coverage.open)) { this.toast('feche o painel aberto antes de trocar de layout'); return; }
     if (this.loadedSeq !== this.loadSeq) return;
-    const go = () => { const c = this.state, lk = LayersCore.stateMapKey(this.baseKey, s.project.layoutId), prev = this.viewCache[lk], nc = c.spread.on && this.normalCam ? (this.normalCamOwner === s.project.layoutId ? this.normalCam : prev || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }) : c; /* Espalhar on: the live camera is the overview one; the view cache gets the NORMAL camera only for the layout it belongs to, any other layout keeps the camera it had */ this.viewCache[lk] = { selId: c.selId, isoId: c.isoId, yaw: nc.yaw, tilt: nc.tilt, zoom: nc.zoom, panX: nc.panX, panY: nc.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; const cached = this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null; if (c.spread.on && !this.normalCam) { this.normalCam = this.camOf(c); this.normalCamOwner = s.project.layoutId; this.setState({ zoom: 1, panX: 0, panY: 0, focus: null }); } /* 1-N that drew one page until now: the switch makes it two (the layout left joins the pick), so the overview camera takes over here (the active layout is still the old one, swapCam() would see one page) */ this.pendingView = { projectId: this.projectId, layoutId: id, view: selId === undefined ? cached : { ...(cached || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, flat: false }), selId, isoId: null, explodeFrom: null, collapseAt: null } }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; let sp = c.spread; if (sp.on && sp.mode === 'pick' && !sp.picked.includes(s.project.layoutId)) { sp = { ...sp, picked: [...sp.picked, s.project.layoutId] }; this.setState({ spread: sp }); } /* 1-N, any switch (chip, LOD, keyboard): the layout left behind stays on the stage (else picked = [target] collapses it to one page) */ if (c.spread.on) this.freezeLeaving(s.project.layoutId, id, sp); this.setState({ stale: null, drift: null, lodHover: null }); this.loadProject(); };
+    const go = () => { const c = this.state, lk = LayersCore.stateMapKey(this.baseKey, s.project.layoutId), prev = this.viewCache[lk], nc = c.spread.on && this.normalCam ? (this.normalCamOwner === s.project.layoutId ? this.normalCam : prev || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }) : c; /* Espalhar on: the live camera is the overview one; the view cache gets the NORMAL camera only for the layout it belongs to, any other layout keeps the camera it had */ this.viewCache[lk] = { selId: c.selId, isoId: c.isoId, yaw: nc.yaw, tilt: nc.tilt, zoom: nc.zoom, panX: nc.panX, panY: nc.panY, flat: c.flat, explodeFrom: c.explodeFrom, collapseAt: c.collapseAt }; const cached = this.viewCache[LayersCore.stateMapKey(this.baseKey, id)] || null; if (c.spread.on && !this.normalCam) { this.normalCam = this.camOf(c); this.normalCamOwner = s.project.layoutId; this.setState({ zoom: 1, panX: 0, panY: 0, focus: null }); } /* 1-N that drew one page until now: the switch makes it two (the layout left joins the pick), so the overview camera takes over here (the active layout is still the old one, swapCam() would see one page) */ this.pendingView = { projectId: this.projectId, layoutId: id, view: selId === undefined ? cached : { ...(cached || { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, flat: false }), selId, isoId: null, explodeFrom: null, collapseAt: null } }; this.layoutMap[this.baseKey || '-'] = id; this.pendingSel = null; let sp = c.spread; if (sp.on && sp.mode === 'pick' && !sp.picked.includes(s.project.layoutId)) { sp = { ...sp, picked: [...sp.picked, s.project.layoutId] }; this.setState({ spread: sp }); } /* 1-N, any switch (chip, LOD, keyboard): the layout left behind stays on the stage (else picked = [target] collapses it to one page) */ if (c.spread.on) this.freezeLeaving(s.project.layoutId, id, sp); this.setState({ stale: null, drift: null, lodHover: null }); this.keepUndo = true; this.loadProject(); };
     // storable pending stays under the old layout's key; only what the drain cannot persist (incomplete load, over the cap, storage full) is lost
     const lost = (s.changes || []).length > 0 && (!this.pendingReady || s.changes.length > LayersCore.PENDING_CAP || this.pendingQuotaWarned);
     if (LayersCore.hasUnsaved(lost ? s.changes : [], s.codeBuf)) { this.setState({ modal: { stage: 'confirm', log: [], title: 'Trocar de layout?', label: 'Trocar', text: lost ? 'Há ajustes que não podem ser salvos neste projeto; trocar de layout os perde' + (Object.keys(s.codeBuf || {}).length ? ' junto com o código editado.' : '.') : 'Há código não salvo; trocar de layout descarta o código editado.', onYes: () => { this.setState({ codeBuf: {} }); go(); } } }); return; }
@@ -2559,7 +2561,7 @@ class Component extends DCLogic {
       let c = rule.one ? null : changes.find(x => x.prop === prop && x.src === rule.src && x.scope === 'all');
       const one = rule.one === true;
       if (!c) c = one ? changes.find(x => x.prop === prop && x.ids.length === 1 && x.ids[0] === rule.ids[0]) : c;
-      if (!c) { c = { key: rule.ids[0] + '|' + prop, id: rule.ids[0], ids: [], name: rule.name, src: rule.src, prop, from: first.style[prop] || getComputedStyle(first)[prop], fromInline: {}, scope: one ? 'one' : 'all', decided: true, scopedSel: one ? this.scopedSelector(rule.ids[0]) : null }; changes.push(c); }
+      if (!c) { c = { key: rule.ids[0] + '|' + prop, id: rule.ids[0], layoutId: this.curLayoutId(), ids: [], name: rule.name, src: rule.src, prop, from: first.style[prop] || getComputedStyle(first)[prop], fromInline: {}, scope: one ? 'one' : 'all', decided: true, scopedSel: one ? this.scopedSelector(rule.ids[0]) : null }; changes.push(c); }
       c.to = val; rule.ids.forEach(i => { const e2 = this.els[i]; if (!e2) return; if (!(i in c.fromInline)) c.fromInline[i] = e2.style[prop]; if (!c.ids.includes(i)) c.ids.push(i); e2.style[prop] = val; });
     });
     if (touched) this.pushUndo(); this.setState(st => { const b = { ...st.codeBuf }; delete b[rule.key]; return { changes, codeBuf: b }; }); this.scanSoon();
@@ -2680,7 +2682,7 @@ class Component extends DCLogic {
     const s = this.state; const id = s.selId; const el = this.els[id]; const n = s.byId[id]; if (!el || !n) return;
     val = String(val).trim(); if (val === '' || (window.CSS && CSS.supports && !CSS.supports(kebab(prop), val))) return;
     const changes = this.cloneChanges(); let c = changes.find(x => x.prop === prop && x.ids.includes(id));
-    if (!c) { c = { key: id + '|' + prop, id, ids: [id], name: n.name, src: n.src, prop, from: el.style[prop] || getComputedStyle(el)[prop], fromInline: { [id]: el.style[prop] }, scope: 'one', decided: false, scopedSel: this.scopedSelector(id) }; changes.push(c); }
+    if (!c) { c = { key: id + '|' + prop, id, layoutId: this.curLayoutId(), ids: [id], name: n.name, src: n.src, prop, from: el.style[prop] || getComputedStyle(el)[prop], fromInline: { [id]: el.style[prop] }, scope: 'one', decided: false, scopedSel: this.scopedSelector(id) }; changes.push(c); }
     const same = c.to === val;
     c.to = val; c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[prop] = val; });
     let pending = s.pending;
@@ -2697,22 +2699,50 @@ class Component extends DCLogic {
   revert(c) { this.pushUndo(); c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; }); this.setState(s => ({ changes: s.changes.filter(x => x.key !== c.key) })); this.scanSoon(); }
   // Same property of the same element within 600 ms (slider drag, held arrow key) is one undo step.
   inBurst(key) { const l = this.lastEdit; return !!l && l.key === key && Date.now() - l.t < 600 && (this.undoS || []).length > 0; }
-  pushUndo() { this.undoS = LayersCore.pushSnapshot(this.undoS, this.cloneChanges(), UNDO_CAP); this.redoS = []; this.lastEdit = null; }
+  curLayoutId() { const P = this.state.project; return P && P.layoutId || null; }
+  // S9.1d: one stack for the whole project; every element is {layoutId, changes} (the changes of THAT layout).
+  pushUndo() { this.undoS = LayersCore.pushSnapshot(this.undoS, { layoutId: this.curLayoutId(), changes: this.cloneChanges() }, UNDO_CAP); this.redoS = []; this.lastEdit = null; }
   resetUndo() { this.undoS = []; this.redoS = []; this.lastEdit = null; }
+  dropUndoFor(layoutId) { const keep = st => st.layoutId !== layoutId; this.undoS = (this.undoS || []).filter(keep); this.redoS = (this.redoS || []).filter(keep); this.lastEdit = null; }
   undo() { this.stepHistory(true); }
   redo() { this.stepHistory(false); }
   stepHistory(back) {
-    const s = this.state; if (s.pending || s.modal || s.diff || (s.coverage && s.coverage.open)) return;
+    const s = this.state; if (this.undoBusy || s.pending || s.modal || s.diff || (s.coverage && s.coverage.open)) return;
     const from = (back ? this.undoS : this.redoS) || [];
     if (!from.length) { this.toast(back ? 'Nada para desfazer' : 'Nada para refazer', 'ok'); return; }
     this.lastEdit = null;
-    const target = from[from.length - 1]; const cur = this.cloneChanges(); const rest = from.slice(0, -1);
-    if (back) { this.undoS = rest; this.redoS = LayersCore.pushSnapshot(this.redoS, cur, UNDO_CAP); } else { this.redoS = rest; this.undoS = LayersCore.pushSnapshot(this.undoS, cur, UNDO_CAP); }
+    const step = from[from.length - 1], P = s.project;
+    const where = LayersCore.undoStepApplies(step, P && P.layoutId, P ? P.layouts.map(l => l.id) : []);
+    if (where === 'drop') { if (back) this.undoS = from.slice(0, -1); else this.redoS = from.slice(0, -1); this.toast('passo de outro layout indisponível', 'warn'); return; }
+    if (where === 'here') { this.applyStep(back, step, null); return; }
+    this.stepAcross(back, step).catch(e => console.warn('undo', e));
+  }
+  // The step belongs to another live layout: switch to it, wait for the load, then apply it exactly like a local step.
+  async stepAcross(back, step) {
+    this.undoBusy = true;
+    try {
+      const id = step.layoutId, seq0 = this.loadSeq, t0 = Date.now(); const lay = this.state.project.layouts.find(l => l.id === id);
+      this.switchLayout(id);
+      const reached = () => { const P = this.state.project; return this.loadedSeq === this.loadSeq && !!P && P.layoutId === id; };
+      while (!reached()) {
+        const started = this.loadSeq !== seq0 || !!this.state.modal; // switchLayout refused (guard) or the confirm was dismissed: nothing to wait for
+        if (!started || (this.loadSeq !== seq0 && !this.state.project) || Date.now() - t0 > 10000) { this.toast('troca de layout cancelada', 'warn'); return; }
+        await new Promise(r => setTimeout(r, 50));
+      }
+      const s = this.state, st = (back ? this.undoS : this.redoS) || [];
+      if (st[st.length - 1] !== step || s.pending || s.modal || s.diff || (s.coverage && s.coverage.open)) { this.toast('desfazer interrompido: o histórico mudou durante a troca de layout', 'warn'); return; }
+      this.applyStep(back, step, lay ? lay.name : id);
+    } finally { this.undoBusy = false; }
+  }
+  applyStep(back, step, layoutName) {
+    const from = (back ? this.undoS : this.redoS) || [];
+    const target = step.changes, cur = this.cloneChanges(), rest = from.slice(0, -1), snap = { layoutId: step.layoutId, changes: cur };
+    if (back) { this.undoS = rest; this.redoS = LayersCore.pushSnapshot(this.redoS, snap, UNDO_CAP); } else { this.redoS = rest; this.undoS = LayersCore.pushSnapshot(this.undoS, snap, UNDO_CAP); }
     const delta = LayersCore.inlineDelta(cur, target);
     delta.forEach(d => { const e2 = this.els[d.id]; if (e2) e2.style[d.prop] = d.value; });
     const props = [...new Set(delta.map(d => d.prop))];
     this.setState({ changes: target, buf: {} }); this.scanSoon();
-    this.toast((back ? 'Desfeito: ' : 'Refeito: ') + (props.length === 1 ? props[0] : props.length + ' propriedades'), 'ok');
+    this.toast((back ? 'Desfeito' : 'Refeito') + (layoutName ? ' em ' + layoutName : '') + ': ' + (props.length === 1 ? props[0] : props.length + ' propriedades'), 'ok');
   }
 
   // modo fixture (dev/teste): pasta servida por HTTP em vez de handle local — prop `fixture` ou ?layers=<base>
@@ -2858,7 +2888,7 @@ class Component extends DCLogic {
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
-    this.resetUndo();
+    this.dropUndoFor(this.curLayoutId()); this.lastEdit = null; // S9.1d: the applied layout's steps go; Task 4 extends this to every included layout
     if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
     this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: [] }));
   }

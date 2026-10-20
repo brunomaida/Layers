@@ -855,3 +855,95 @@ test('Layouts_ResetUi_AfterFailedLoadOfAnotherSource_KeepsPreviousProjectEntries
   expect(Object.keys(await storedPending(page))).toContain('folder:proj|x');
   expect(await page.evaluate(() => window.__logic.layoutMap['folder:proj'])).toBe('replay');
 });
+
+// S9.1d Task 2: ONE undo stack for the whole project; each step names the layout it was made in.
+async function pressKey(page, combo) {
+  await page.evaluate(() => document.activeElement && document.activeElement.blur());
+  await page.keyboard.press(combo);
+  await page.waitForTimeout(200);
+}
+const stackIds = async (page) => { await act(page); return page.evaluate(() => ({ undo: window.__logic.undoS.map((s) => s.layoutId), redo: window.__logic.redoS.map((s) => s.layoutId) })); };
+const changeCount = (page) => page.evaluate(() => window.__logic.state.changes.length);
+
+test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page); // step in main
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect((await stackIds(page)).undo).toEqual(['main']); // the layout switch no longer wipes the stack
+  await pressKey(page, 'Control+z');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
+  await expect(page.getByText(/Desfeito em Main/)).toBeVisible();
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await pressKey(page, 'Control+Shift+z');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.state.changes[0].to)).toBe(SHADOW);
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await pressKey(page, 'Control+z'); // and Ctrl+Z once more, now via the 'switch' path from the other side
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await pressKey(page, 'Control+y');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+});
+
+test('Undo_AfterApply_DropsStepsOfIncludedLayouts', async ({ page }) => {
+  await open(page, 'multi-layout'); // connected folder: the draft/approve flow needs a writable dir
+  await act(page);
+  await typeShadow(page); // step in main
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await typeShadow(page); // step in config
+  expect((await stackIds(page)).undo).toEqual(['main', 'config']);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  // Task 2 scope: the applied (active) layout's steps go; the other layout's stay
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+});
+
+test('Undo_DriftDroppedPending_DropsOwnSteps', async ({ page }) => {
+  await loaded(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await typeShadow(page); // step in config
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await typeShadow(page); // step in main
+  expect((await stackIds(page)).undo).toEqual(['config', 'main']);
+  // the source of config "changed" while away: its stored hash no longer matches
+  await expect.poll(async () => (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('layers/v1/pending') || '{"byProject":{}}').byProject))).some((k) => k.endsWith('|config'))).toBe(true);
+  await page.evaluate(() => {
+    const k = 'layers/v1/pending'; const all = JSON.parse(localStorage.getItem(k));
+    Object.keys(all.byProject).filter((n) => n.endsWith('|config')).forEach((n) => { all.byProject[n].hash = 'drifted'; });
+    localStorage.setItem(k, JSON.stringify(all));
+  });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await changeCount(page)).toBe(0);
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+});
+
+test('Undo_PanelOpen_RefusesWithoutSwitching', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page); // step in main
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.evaluate(() => window.__logic.setState({ modal: { stage: 'confirm', log: [], title: 'Painel', label: 'Ok', text: 'aberto', onYes: () => {} } }));
+  await pressKey(page, 'Control+z');
+  await page.waitForTimeout(300);
+  expect(await layoutId(page)).toBe('config');
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  await expect(page.getByText(/Desfeito/)).toHaveCount(0);
+});

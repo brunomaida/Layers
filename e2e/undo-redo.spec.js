@@ -120,3 +120,18 @@ test('Undo_FocusOnRange_StillUndoes', async ({ page }) => {
   await page.waitForTimeout(200);
   expect(await page.evaluate(opacities)).toEqual(base);
 });
+
+// S9.1d Task 2: a snapshot is {layoutId, changes}; a single-layout project stamps its implicit layout id.
+test('Undo_SingleLayout_StampsLayoutIdOnStepAndChange', async ({ page }) => {
+  await open(page, 'Só este');
+  await typeShadow(page, SHADOW);
+  const got = await page.evaluate(() => {
+    const el = document.querySelector('[data-plane]');
+    let f = el[Object.keys(el).find((k) => k.startsWith('__reactFiber'))];
+    while (f && !(f.stateNode && f.stateNode.logic && f.stateNode.logic.explodeHere)) f = f.return;
+    const l = f.stateNode.logic;
+    return { id: l.state.project.layoutId, step: l.undoS.map((s) => s.layoutId), change: l.state.changes.map((c) => c.layoutId) };
+  });
+  expect(got.step).toEqual([got.id]);
+  expect(got.change).toEqual([got.id]);
+});
