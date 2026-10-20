@@ -140,15 +140,17 @@ test('Scope_AllAfterSwitchOrClear_NeverShowsAPartialLine', async ({ page }) => {
   await settledOn(page, 'config');
   await act(page, 'setState', { selId: '0.0' }); // a selection that comes back without a gesture
   await page.waitForTimeout(800);
-  const lines = (await alsoLines(page)).join(' | ');
-  if (lines.includes('também afeta')) { expect(lines).toContain('Main (2 usos)'); expect(lines).toContain('Replay (1 uso)'); }
+  expect((await alsoLines(page)).join(' | '), 'the probe cache lacks Main: nothing is better than a partial line').toBe('');
   await act(page, 'switchLayout', 'main');
   await settledOn(page, 'main');
-  await act(page, 'clearProbe'); // what Aplicar / Reverter do
   await act(page, 'setState', { selId: '0.0' });
-  await page.waitForTimeout(800);
-  const after = (await alsoLines(page)).join(' | ');
-  if (after.includes('também afeta')) { expect(after).toContain('Config (3 usos)'); expect(after).toContain('Replay (1 uso)'); }
+  await page.evaluate(() => window.__logic.ensureProbe()); // refill the cache, then lose ONE entry, what a Reverter-driven clear leaves half-done
+  await act(page, 'setState', {});
+  await expect(page.getByText('também afeta Config (3 usos) · Replay (1 uso)').first()).toBeVisible();
+  await page.evaluate(() => { window.__logic.layoutProbe.delete('config'); window.__logic.setState({}); });
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.__logic.probeRun)).toBeNull();
+  expect((await alsoLines(page)).join(' | ')).toBe('');
 });
 
 test('Scope_AllEdit_StartsTheProbeSoTheSharedWriteIsNotSilent', async ({ page }) => {

@@ -1896,12 +1896,19 @@ test('SpreadDrag_PlanFlipMidDrag_KeepsLodGroupsAndCensusConsistent', async ({ pa
   await holdOrbit(page);
   const flip = (delta) => page.evaluate(async (d) => { const L = window.__logic, r = L.spreadFrozen.get('replay'); L.spreadFrozen.set('replay', { ...r, count: r.count + d }); L.spreadBump(); await new Promise((res) => requestAnimationFrame(() => requestAnimationFrame(res))); }, delta);
   await flip(1); // total 1501: main flips from full to LOD while the mouse is still down
-  expect((await mainPage(page)).label).toBe('Main · LOD');
+  const mainGroups = () => page.evaluate(() => document.querySelectorAll('[data-spread-page="main"] > [data-lod-group]').length);
+  let m = await mainPage(page);
+  expect({ label: m.label, planes: m.planes }).toEqual({ label: 'Main · LOD', planes: 3 }); // depth <= 1 only
+  const demotedGroups = await mainGroups();
+  expect(demotedGroups, 'the demoted page is culled and grouped').toBeGreaterThan(0);
   expect(await page.evaluate(() => document.querySelectorAll('[data-lod-group]').length)).toBeGreaterThan(0);
   expect((await planeCensus(page)).total).toBe(n);
   await flip(-1); // and back to 1500
-  expect((await mainPage(page)).label).toBe('Main');
-  expect(await page.evaluate(() => document.querySelectorAll('[data-lod-group]').length)).toBeGreaterThan(0);
+  m = await mainPage(page);
+  expect({ label: m.label, planes: m.planes }).toEqual({ label: 'Main', planes: 4 });
+  const fullGroups = await mainGroups();
+  expect(fullGroups, 'the extra depth-2 plane adds its own z group').toBe(demotedGroups + 1);
+  expect(await page.evaluate(() => document.querySelectorAll('[data-lod-group]').length)).toBeGreaterThan(0); // the other frozen pages still are LOD
   expect((await planeCensus(page)).total).toBe(n);
   await page.mouse.up();
   expect(errors).toEqual([]);

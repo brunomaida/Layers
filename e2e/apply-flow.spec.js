@@ -143,7 +143,7 @@ async function openPlan(page) {
 
 async function draftAndApprove(page, draft = 'layers/shared.design-draft.css') {
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, draft)).not.toBeNull();
+  await expect.poll(() => readDisk(page, draft)).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
 }
@@ -208,7 +208,7 @@ test('Apply_ConflictingValue_ActiveWinsAndWarns', async ({ page }) => {
   await openPlan(page);
   await expect(page.getByText(/conflito.*\.title.*Main.*Config/)).toBeVisible();
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   const draft = await readDisk(page, 'layers/shared.design-draft.css');
   expect(draft).toContain('rgb(1, 2, 3)');
   expect(draft).not.toContain('rgb(9, 8, 7)');
@@ -258,7 +258,7 @@ test('Apply_FileNotWritten_KeepsThatLayoutsPending', async ({ page }) => {
   await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/config.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/config.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('config.design-draft.css'); }); // config.css cannot be promoted
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
@@ -281,7 +281,7 @@ test('Apply_ActiveFileNotWritten_KeepsTheActiveChange', async ({ page }) => {
   await editNode(page, '0.0', SHADOW_A); // main `.title` -> layers/shared.css
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('shared.design-draft.css'); });
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
@@ -296,7 +296,7 @@ test('Apply_ActiveFileNotWritten_KeepsItsUndoSteps', async ({ page }) => {
   expect(await page.evaluate(() => window.__logic.undoS.length)).toBe(1);
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('shared.design-draft.css'); });
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
@@ -310,7 +310,7 @@ test('Apply_WrittenButDraftNotRemoved_ClearsTheChange', async ({ page }) => {
   await editNode(page, '0.0', SHADOW_A);
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   // the file is replaced, only the cleanup of the draft fails: the change is applied all the same
   await page.evaluate(() => { const l = window.__logic, orig = l.dirOf.bind(l); l.dirOf = async (p) => { const d = await orig(p); return new Proxy(d, { get: (t, k) => k === 'removeEntry' ? async () => { throw new Error('draft locked'); } : typeof t[k] === 'function' ? t[k].bind(t) : t[k] }); }; });
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
@@ -326,7 +326,7 @@ test('Rollback_WrittenButDraftNotRemoved_RestoresTheFileAndTheInlineStyle', asyn
   await editNode(page, '0.0', SHADOW_A);
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   await page.evaluate(() => { const l = window.__logic, orig = l.dirOf.bind(l); l.dirOf = async (p) => { const d = await orig(p); return new Proxy(d, { get: (t, k) => k === 'removeEntry' ? async () => { throw new Error('draft locked'); } : typeof t[k] === 'function' ? t[k].bind(t) : t[k] }); }; });
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
@@ -346,7 +346,7 @@ test('Apply_OneOfTwoCssFilesNotWritten_KeepsOnlyThatChangeAndRestoresItAfterSwit
   expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(2);
   await openPlan(page);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
-  await expect.poll(() => readDisk(page, 'layers/main.design-draft.css')).not.toBeNull();
+  await expect.poll(() => readDisk(page, 'layers/main.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file before the .tmp move
   await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('main.design-draft.css'); });
   await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
