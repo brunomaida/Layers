@@ -905,13 +905,22 @@ test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
   expect(await shadowCount(page)).toBe(1);
 });
 
+// config's `.panel` (node 0.1) lives in layers/config.css; a new box-shadow there is a real file patch.
+async function shadowOnPanel(page) {
+  await act(page, 'select', '0.1');
+  await field(page).click({ clickCount: 3 });
+  await page.keyboard.type(SHADOW);
+  await page.keyboard.press('Tab');
+  await expect.poll(() => page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+}
+
 test('Undo_AfterApply_DropsStepsOfIncludedLayouts', async ({ page }) => {
   await open(page, 'multi-layout'); // connected folder: the draft/approve flow needs a writable dir
   await act(page);
   await typeShadow(page); // step in main
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
-  await typeShadow(page); // step in config
+  await shadowOnPanel(page); // step in config, on .panel: config.css is a patchable source, so Aplicar rewrites it
   expect((await stackIds(page)).undo).toEqual(['main', 'config']);
   await page.getByText('Ações', { exact: false }).first().click();
   await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
@@ -920,6 +929,42 @@ test('Undo_AfterApply_DropsStepsOfIncludedLayouts', async ({ page }) => {
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
   // Task 2 scope: the applied (active) layout's steps go; the other layout's stay
   expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  // approve moved the source hash on purpose: a later round trip must not read that as drift
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await shadowOnPanel(page); // new step in config
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect((await stackIds(page)).undo).toContain('config');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  await pressKey(page, 'Control+z');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect((await stackIds(page)).redo).toEqual(['config']);
+});
+
+// R7: a layout loaded incomplete (missing stylesheet) has no trustworthy hash; the next complete load must drop whatever was stacked meanwhile.
+test('Undo_IncompleteLoad_NextCompleteLoadDropsStepsMadeMeanwhile', async ({ page }) => {
+  await loaded(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await page.route('**/multi-layout/layers/config.css*', (route) => route.fulfill({ status: 404, body: 'gone' }));
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect(await page.evaluate(() => window.__logic.pendingReady)).toBe(false); // incomplete
+  await shadowOnPanel(page); // step in config while incomplete
+  await act(page, 'decide', false); // without the sheet the scope is asked: answer "only this"
+  await expect.poll(() => page.evaluate(() => window.__logic.state.pending)).toBeNull();
+  expect((await stackIds(page)).undo).toEqual(['config']);
+  await page.evaluate(() => { window.__logic.pendingReady = true; }); // let the switch away skip the unsaved-changes confirm (its Trocar would drop the steps itself)
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await page.unroute('**/multi-layout/layers/config.css*');
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  expect((await stackIds(page)).undo).not.toContain('config');
 });
 
 test('Undo_DriftDroppedPending_DropsOwnSteps', async ({ page }) => {
@@ -971,7 +1016,9 @@ async function editMainThenAskOnUndo(page) {
 test('Undo_SwitchAsksFirst_ConfirmAppliesInTargetLayout', async ({ page }) => {
   await editMainThenAskOnUndo(page);
   expect(await layoutId(page)).toBe('config'); // nothing moved before the answer
-  await page.waitForTimeout(600); // no cap while the modal is open
+  await page.evaluate(() => { const o = Date.now; Date.now = () => o.call(Date) + 11000; }); // past the 10 s load cap
+  await page.waitForTimeout(400); // several polls with the confirm still open: it must keep waiting
+  expect(await page.evaluate(() => !!window.__logic.undoBusy)).toBe(true);
   await page.getByRole('button', { name: 'Trocar', exact: true }).click();
   await settled(page, 'main');
   await expect.poll(() => changeCount(page)).toBe(0);
