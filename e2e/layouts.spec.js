@@ -864,6 +864,11 @@ async function pressKey(page, combo) {
 }
 const stackIds = async (page) => { await act(page); return page.evaluate(() => ({ undo: window.__logic.undoS.map((s) => s.layoutId), redo: window.__logic.redoS.map((s) => s.layoutId) })); };
 const changeCount = (page) => page.evaluate(() => window.__logic.state.changes.length);
+// Inline box-shadow carrying SHADOW, counted on the DOM actually mounted (never on logic.els, which can be stale).
+const shadowCount = (page) => page.evaluate(() => {
+  const host = [...document.querySelectorAll('*')].find((e) => e.shadowRoot && e.shadowRoot.childElementCount);
+  return [...host.shadowRoot.querySelectorAll('*')].filter((e) => e.localName !== 'style' && e.style.boxShadow.includes('rgb(1, 2, 3)')).length;
+});
 
 test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
   await loaded(page);
@@ -875,6 +880,7 @@ test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
   await pressKey(page, 'Control+z');
   await settled(page, 'main');
   await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await shadowCount(page)).toBe(0); // the INLINE style of the mounted main is back to empty
   expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
   await expect(page.getByText(/Desfeito em Main/)).toBeVisible();
   await act(page, 'switchLayout', 'config');
@@ -882,6 +888,7 @@ test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
   await pressKey(page, 'Control+Shift+z');
   await settled(page, 'main');
   await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
   expect(await page.evaluate(() => window.__logic.state.changes[0].to)).toBe(SHADOW);
   expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
   await act(page, 'switchLayout', 'config');
@@ -889,11 +896,13 @@ test('Undo_EditInOtherLayout_SwitchesBackAndRestores', async ({ page }) => {
   await pressKey(page, 'Control+z'); // and Ctrl+Z once more, now via the 'switch' path from the other side
   await settled(page, 'main');
   await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await shadowCount(page)).toBe(0);
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
   await pressKey(page, 'Control+y');
   await settled(page, 'main');
   await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
 });
 
 test('Undo_AfterApply_DropsStepsOfIncludedLayouts', async ({ page }) => {
@@ -922,12 +931,10 @@ test('Undo_DriftDroppedPending_DropsOwnSteps', async ({ page }) => {
   await settled(page, 'main');
   await typeShadow(page); // step in main
   expect((await stackIds(page)).undo).toEqual(['config', 'main']);
-  // the source of config "changed" while away: its stored hash no longer matches
-  await expect.poll(async () => (await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('layers/v1/pending') || '{"byProject":{}}').byProject))).some((k) => k.endsWith('|config'))).toBe(true);
-  await page.evaluate(() => {
-    const k = 'layers/v1/pending'; const all = JSON.parse(localStorage.getItem(k));
-    Object.keys(all.byProject).filter((n) => n.endsWith('|config')).forEach((n) => { all.byProject[n].hash = 'drifted'; });
-    localStorage.setItem(k, JSON.stringify(all));
+  // the source of config changes while away: its hash no longer matches the one its steps were made against
+  await page.route('**/multi-layout/layers/config.html*', async (route) => {
+    const res = await route.fetch(); const body = await res.text();
+    await route.fulfill({ response: res, body: body.replace('>panel<', '>edited elsewhere<') });
   });
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
@@ -941,9 +948,82 @@ test('Undo_PanelOpen_RefusesWithoutSwitching', async ({ page }) => {
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
   await page.evaluate(() => window.__logic.setState({ modal: { stage: 'confirm', log: [], title: 'Painel', label: 'Ok', text: 'aberto', onYes: () => {} } }));
+  const seq0 = await page.evaluate(() => window.__logic.loadSeq);
   await pressKey(page, 'Control+z');
   await page.waitForTimeout(300);
   expect(await layoutId(page)).toBe('config');
   expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  expect(await page.evaluate(() => ({ seq: window.__logic.loadSeq, busy: !!window.__logic.undoBusy }))).toEqual({ seq: seq0, busy: false });
+  await expect(page.getByText(/Desfeito|feche o painel|troca de layout/)).toHaveCount(0);
+});
+
+// R6 (d): the undo needs a layout switch that asks first (unsaved code); Trocar lets the undo land, Fechar cancels it.
+async function editMainThenAskOnUndo(page) {
+  await loaded(page);
+  await typeShadow(page); // step in main
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'setState', { codeBuf: { 'layers/shared.css': '.title{color:red}' } });
+  await pressKey(page, 'Control+z');
+  await expect(page.getByText('Há código não salvo; trocar de layout descarta o código editado.')).toBeVisible();
+}
+
+test('Undo_SwitchAsksFirst_ConfirmAppliesInTargetLayout', async ({ page }) => {
+  await editMainThenAskOnUndo(page);
+  expect(await layoutId(page)).toBe('config'); // nothing moved before the answer
+  await page.waitForTimeout(600); // no cap while the modal is open
+  await page.getByRole('button', { name: 'Trocar', exact: true }).click();
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(0);
+  expect(await shadowCount(page)).toBe(0);
+  expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
+  await expect.poll(() => page.evaluate(() => !!window.__logic.undoBusy)).toBe(false);
+});
+
+test('Undo_SwitchAsksFirst_CancelChangesNothing', async ({ page }) => {
+  await editMainThenAskOnUndo(page);
+  await page.getByRole('button', { name: 'Fechar', exact: true }).first().click();
+  await expect(page.getByText('troca de layout cancelada')).toBeVisible();
+  expect(await layoutId(page)).toBe('config');
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
+  expect(await page.evaluate(() => !!window.__logic.undoBusy)).toBe(false);
+  await act(page, 'setState', { codeBuf: {} });
+  await act(page, 'switchLayout', 'main'); // main still holds its edit
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
+});
+
+// R6 (c): a load in flight owns the DOM; Ctrl+Z pressed right after the switch click must not undo on the outgoing layout.
+test('Undo_DuringLayoutLoad_IsIgnored', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  await page.evaluate(() => { window.__logic.switchLayout('config'); window.__logic.undo(); });
+  await settled(page, 'config');
+  expect(await stackIds(page)).toEqual({ undo: ['main'], redo: [] });
   await expect(page.getByText(/Desfeito/)).toHaveCount(0);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  await expect.poll(() => changeCount(page)).toBe(1);
+  expect(await shadowCount(page)).toBe(1);
+});
+
+// R6 (b): main's undone edit leaves no pending entry, so only the per-layout source hash can tell the source moved while away.
+test('Undo_SourceChangedWhileAway_DropsStepsEvenWithoutPending', async ({ page }) => {
+  await loaded(page);
+  await typeShadow(page);
+  await pressKey(page, 'Control+z'); // main back to zero changes; the step now waits in redo
+  expect(await stackIds(page)).toEqual({ undo: [], redo: ['main'] });
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await page.route('**/multi-layout/layers/main.html*', async (route) => {
+    const res = await route.fetch(); const body = await res.text();
+    await route.fulfill({ response: res, body: body.replace('empty', 'edited elsewhere') });
+  });
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await stackIds(page)).toEqual({ undo: [], redo: [] });
+  await pressKey(page, 'Control+y');
+  expect(await shadowCount(page)).toBe(0);
+  expect(await changeCount(page)).toBe(0);
 });

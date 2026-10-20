@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { readNodes, treeRow } from './tree-helpers.js';
+import { act } from './ctx-helpers.js';
 
 // S2.13: Ctrl+Z / Ctrl+Shift+Z / Ctrl+Y over property edits. Driven through the real UI on the axai
 // fixture, where `.sum-stat` is used by 6 nodes (same setup as scope-all-equal.spec.js).
@@ -125,11 +126,9 @@ test('Undo_FocusOnRange_StillUndoes', async ({ page }) => {
 test('Undo_SingleLayout_StampsLayoutIdOnStepAndChange', async ({ page }) => {
   await open(page, 'Só este');
   await typeShadow(page, SHADOW);
+  await act(page);
   const got = await page.evaluate(() => {
-    const el = document.querySelector('[data-plane]');
-    let f = el[Object.keys(el).find((k) => k.startsWith('__reactFiber'))];
-    while (f && !(f.stateNode && f.stateNode.logic && f.stateNode.logic.explodeHere)) f = f.return;
-    const l = f.stateNode.logic;
+    const l = window.__logic;
     return { id: l.state.project.layoutId, step: l.undoS.map((s) => s.layoutId), change: l.state.changes.map((c) => c.layoutId) };
   });
   expect(got.step).toEqual([got.id]);
