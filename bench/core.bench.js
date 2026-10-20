@@ -67,4 +67,7 @@ describe('spread', () => {
   // S9.1c: the per-render pure parts of Espalhar: the overview camera fit (bisection over 8 projected corners) and the LOD slice of a 1,500-node scan
   bench('overview-fit-8-pages', () => { core.overviewFit(w.spread.fit); }, opts);
   bench('lod-nodes-1500', () => { core.lodNodes(w.spread.nodes, 1); }, opts);
+  // S9.1d: draw mode per frozen layout (1,500 entries, total over the cap) and the union of pending edits of 3 layouts (60 changes each)
+  bench('draw-plan-1500', () => { core.spreadDrawPlan(w.spread.plan.active, w.spread.plan.entries); }, opts);
+  bench('merge-changes', () => { core.mergeLayoutChanges(w.spread.merge.byLayout, 'config', w.spread.merge.order, w.spread.merge.sel); }, opts);
 });
