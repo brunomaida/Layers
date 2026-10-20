@@ -186,7 +186,7 @@ test('Apply_OtherLayoutStaleHash_IsSkippedWithWarning', async ({ page }) => {
   const moved = (await readDisk(page, 'layers/config.css')) + '\n.field{color:teal}\n';
   await page.evaluate(async (text) => { const d = await window.__proj.getDirectoryHandle('layers'); const w = await (await d.getFileHandle('config.css')).createWritable(); await w.write(text); await w.close(); }, moved);
   await openPlan(page);
-  await expect(page.getByText('2 pendências de Config não aplicadas (fonte mudou); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou')).toBeVisible();
+  await expect(page.getByText('2 pendências de Config não aplicadas (fonte mudou); serão descartadas ao abrir o layout')).toBeVisible();
   await expect(page.getByText('layers/shared.css').first()).toBeVisible();
   await expect(page.getByText('layers/config.css')).toHaveCount(0); // not in the plan
   await draftAndApprove(page);
@@ -195,7 +195,7 @@ test('Apply_OtherLayoutStaleHash_IsSkippedWithWarning', async ({ page }) => {
   await expect.poll(async () => Object.keys(await storedPending(page)), 'the applied entry goes and the skipped layout keeps its pending').toEqual(['folder:proj|config']);
   expect((await storedPending(page))['folder:proj|config'].changes).toHaveLength(2);
   expect(await page.evaluate(() => window.__logic.state.layoutBadges)).toEqual({ config: 2 });
-  // the wording says "podem ser descartadas": here they are (shared.css and config.css both moved)
+  // the wording says "serão descartadas": here they are (shared.css and config.css both moved)
   await page.getByRole('button', { name: 'Fechar' }).first().click();
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
@@ -286,6 +286,62 @@ test('Apply_ActiveFileNotWritten_KeepsTheActiveChange', async ({ page }) => {
   await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
   expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(0);
   expect(await page.evaluate(() => window.__logic.state.changes.length), 'the change whose file was not written stays').toBe(1);
+});
+
+test('Apply_ActiveFileNotWritten_KeepsItsUndoSteps', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A);
+  expect(await page.evaluate(() => window.__logic.undoS.length)).toBe(1);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('shared.design-draft.css'); });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.undoS.length), 'nothing was written: the step still undoes the kept change').toBe(1);
+});
+
+test('Apply_WrittenButDraftNotRemoved_ClearsTheChange', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).not.toBeNull();
+  // the file is replaced, only the cleanup of the draft fails: the change is applied all the same
+  await page.evaluate(() => { const l = window.__logic, orig = l.dirOf.bind(l); l.dirOf = async (p) => { const d = await orig(p); return new Proxy(d, { get: (t, k) => k === 'removeEntry' ? async () => { throw new Error('draft locked'); } : typeof t[k] === 'function' ? t[k].bind(t) : t[k] }); }; });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  expect(await page.evaluate(() => window.__logic.state.changes.length), 'shared.css was written: the change is applied').toBe(0);
+});
+
+test('Apply_OneOfTwoCssFilesNotWritten_KeepsOnlyThatChangeAndRestoresItAfterSwitch', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await editNode(page, '0.0', SHADOW_A); // main `.title` -> layers/shared.css
+  await editNode(page, '0.1', SHADOW_B); // main `.box` -> layers/main.css
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(2);
+  await openPlan(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/main.design-draft.css')).not.toBeNull();
+  await page.evaluate(async () => { await (await window.__proj.getDirectoryHandle('layers')).removeEntry('main.design-draft.css'); });
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(count(await readDisk(page, 'layers/shared.css'), /box-shadow/g)).toBe(1);
+  expect(count(await readDisk(page, 'layers/main.css'), /box-shadow/g)).toBe(0);
+  expect(await page.evaluate(() => window.__logic.state.changes.map((c) => c.prop))).toEqual(['boxShadow']);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  // the kept change is stored under the hash that already counts the shared.css write: leaving and coming back restores it
+  await expect.poll(async () => Object.values(await storedPending(page)).reduce((n, e) => n + e.changes.length, 0)).toBe(1);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(1);
+  await expect(page.getByText(/ajuste\(s\) salvo\(s\) descartado\(s\)/)).toHaveCount(0);
 });
 
 test('Apply_ActiveContributedNothing_KeepsItsRedoStack', async ({ page }) => {

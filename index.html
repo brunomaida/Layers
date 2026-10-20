@@ -2948,7 +2948,7 @@ class Component extends DCLogic {
       const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); if (!e || !e.changes.length) return;
       const pr = this.layoutProbe.get(id), n = e.changes.length;
       const why = !pr || pr.unavailable ? 'layout indisponível' : pr.hash !== e.hash ? 'fonte mudou' : e.changes.some(isTplChange) ? 'template só grava no layout ativo' : null;
-      if (why) { warnings.push('⚠ ' + n + (n === 1 ? ' pendência de ' : ' pendências de ') + name(id) + (n === 1 ? ' não aplicada' : ' não aplicadas') + ' (' + why + '); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'); return; } // a skipped layout keeps its stored adjustments
+      if (why) { warnings.push('⚠ ' + n + (n === 1 ? ' pendência de ' : ' pendências de ') + name(id) + (n === 1 ? ' não aplicada' : ' não aplicadas') + ' (' + why + '); ' + (why === 'fonte mudou' ? 'serão descartadas ao abrir o layout' : 'podem ser descartadas ao abrir o layout se a fonte compartilhada mudou')); return; } // a skipped layout keeps its stored adjustments
       byLayout[id] = e.changes; others.push(id);
     });
     if (!others.length) return { changes: s.changes, others, warnings, seq };
@@ -3047,9 +3047,9 @@ class Component extends DCLogic {
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
-    if (this.state.changes.length) this.dropUndoFor(this.curLayoutId()); others.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout that contributed go
-    const unwritten = new Set(files.filter(f => (f.dc || /\.css$/.test(f.path)) && !entry.files.includes(f)).map(f => f.path)), cleared = others.filter(id => !this.pendingFiles(id).some(p => unwritten.has(p)));
+    const unwritten = new Set(files.filter(f => (f.dc || /\.css$/.test(f.path)) && this.state.dir && !Object.hasOwn(entry.written, f.path)).map(f => f.path)), cleared = others.filter(id => !this.pendingFiles(id).some(p => unwritten.has(p)));
     const left = this.state.changes.filter(c => unwritten.has(ruleOf(c)[0])); entry.dom = this.state.changes.filter(c => !left.includes(c)); // the active layout's own list (merging may collapse it): rollback restores THESE inline styles
+    if (entry.dom.length) this.dropUndoFor(this.curLayoutId()); others.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout that contributed go
     others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'));
     const badges = cleared.length ? this.clearOtherPending(cleared) : null;
     this.clearProbe(); // the files changed on disk
