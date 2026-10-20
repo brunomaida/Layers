@@ -249,6 +249,8 @@ test('Apply_PendingInTwoLayouts_WritesOnceAndClearsBoth', async ({ page }) => {
   expect(await page.evaluate(() => window.__logic.writeLog.filter((w) => w.path === 'layers/shared.css').length), 'shared.css written once').toBe(1);
   await expect.poll(() => storedPending(page)).toEqual({}); // both layouts' entries are gone
   expect(await page.evaluate(() => Object.keys(window.__logic.state.layoutBadges))).toEqual([]);
+  expect(await page.evaluate(() => Object.keys(window.__logic.state.layoutPend))).toEqual([]);
+  await expect(page.getByRole('button', { name: /^Salvar$/ })).toBeVisible(); // nothing left to count
   expect(await page.evaluate(() => window.__logic.undoS.length + window.__logic.redoS.length)).toBe(0);
   // history keeps the merged set, and the other layout's undo hash is not read as drift on return
   expect(await page.evaluate(() => window.__logic.state.history[0].changes.map((c) => c.layoutId).sort())).toEqual(['config', 'main']);
@@ -263,6 +265,83 @@ test('Apply_PendingInTwoLayouts_WritesOnceAndClearsBoth', async ({ page }) => {
   await act(page, 'switchLayout', 'config');
   await settled(page, 'config');
   expect(await page.evaluate(() => window.__logic.undoS.map((x) => x.layoutId))).toEqual(['config']);
+});
+
+// S9.1e Task 3: the badge, Ver diff and Exportar speak for EVERY layout with stored adjustments, not only the mounted one.
+const exportDir = (page) => page.evaluate(async () => { window.__exp = await (await navigator.storage.getDirectory()).getDirectoryHandle('export', { create: true }); window.showDirectoryPicker = async () => window.__exp; });
+const readExport = (page, rel) => page.evaluate(async (rel) => {
+  try { let d = window.__exp; const parts = rel.split('/'); for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p); return await (await (await d.getFileHandle(parts[parts.length - 1])).getFile()).text(); } catch (e) { return null; }
+}, rel);
+const openDiffUi = async (page) => { await page.getByText('Ações', { exact: false }).first().click(); await page.getByText('Ver diff', { exact: false }).first().click(); };
+
+test('Salvar_OtherLayoutPending_BadgeDiffAndExportCountEveryLayout', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A); // main: 1 change; config: 2 stored (.title merges with main's, .panel is config only)
+  const sharedBefore = await readDisk(page, 'layers/shared.css'), configBefore = await readDisk(page, 'layers/config.css');
+  await expect(page.getByRole('button', { name: 'Salvar (3)' })).toBeVisible(); // 1 active + 2 stored elsewhere
+  await openDiffUi(page);
+  await expect(page.getByText('2 arquivo(s) · 2 ajuste(s)')).toBeVisible(); // the merged set: shared .title (both layouts) + config .panel
+  expect(await page.evaluate(() => window.__logic.state.diff.map((d) => d.path).sort())).toEqual(['layers/config.css', 'layers/shared.css']);
+  expect(await page.evaluate(() => JSON.stringify(window.__logic.state.diff.find((d) => d.path === 'layers/config.css').lines))).toMatch(/box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+  await act(page, 'setState', { diff: null });
+  await exportDir(page);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Exportar versões completas…').click();
+  await expect(page.getByText('✓ layers-changes.json (manifesto)')).toBeVisible();
+  expect(await readExport(page, 'layers/shared.css')).toMatch(/\.title\{[^}]*box-shadow:\s*0 0 0 3px rgb\(1, 2, 3\)/);
+  expect(await readExport(page, 'layers/config.css')).toMatch(/\.panel\{[^}]*box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+  expect(JSON.parse(await readExport(page, 'layers-changes.json'))).toHaveLength(2);
+  expect(await readDisk(page, 'layers/shared.css'), 'the project folder is only read').toBe(sharedBefore);
+  expect(await readDisk(page, 'layers/config.css')).toBe(configBefore);
+  expect((await storedPending(page))['folder:proj|config'].changes, 'diff and export keep the stored adjustments').toHaveLength(2);
+});
+
+test('Salvar_OnlyOtherLayoutHasPending_DiffAndExportStillWork', async ({ page }) => {
+  await open(page, 'multi-layout');
+  await act(page);
+  await act(page, 'switchLayout', 'config');
+  await settled(page, 'config');
+  await editNode(page, '0.1', SHADOW_B);
+  await act(page, 'switchLayout', 'main');
+  await settled(page, 'main');
+  expect(await page.evaluate(() => window.__logic.state.changes.length)).toBe(0);
+  await expect(page.getByRole('button', { name: 'Salvar (1)' })).toBeVisible();
+  await openDiffUi(page);
+  await expect(page.getByText('1 arquivo(s) · 1 ajuste(s)')).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.state.diff.map((d) => d.path))).toEqual(['layers/config.css']);
+  await act(page, 'setState', { diff: null });
+  await exportDir(page);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Exportar versões completas…').click();
+  await expect(page.getByText('✓ layers-changes.json (manifesto)')).toBeVisible();
+  expect(await readExport(page, 'layers/config.css')).toMatch(/\.panel\{[^}]*box-shadow:\s*0 0 0 5px rgb\(9, 8, 7\)/);
+});
+
+test('Salvar_OtherLayoutStaleHash_DiffSkipsItAndWarnsLikeSalvar', async ({ page }) => {
+  await pendingInTwoLayouts(page, SHADOW_A, SHADOW_A);
+  await page.evaluate(() => window.__logic.ensureProbe());
+  await page.waitForTimeout(60);
+  const moved = (await readDisk(page, 'layers/config.css')) + '\n.field{color:teal}\n';
+  await page.evaluate(async (text) => { const d = await window.__proj.getDirectoryHandle('layers'); const w = await (await d.getFileHandle('config.css')).createWritable(); await w.write(text); await w.close(); }, moved);
+  await expect(page.getByRole('button', { name: 'Salvar (3)' })).toBeVisible(); // the badge is a hint of what is stored, the skipped layout still counts
+  await openDiffUi(page);
+  await expect(page.getByText('2 pendências de Config não aplicadas (fonte mudou); serão descartadas ao abrir o layout')).toBeVisible();
+  expect(await page.evaluate(() => window.__logic.state.diff.map((d) => d.path))).toEqual(['layers/shared.css']);
+});
+
+test('Salvar_SingleLayoutProject_BadgeDiffAndExportTakeTheOldPath', async ({ page }) => {
+  await editCard(page);
+  await act(page);
+  expect(await page.evaluate(() => Object.keys(window.__logic.state.layoutPend || {}))).toEqual([]);
+  await page.evaluate(() => { const l = window.__logic, o = l.buildSaveSet.bind(l); window.__bss = 0; l.buildSaveSet = (...a) => { window.__bss++; return o(...a); }; });
+  await expect(page.getByRole('button', { name: 'Salvar (1)' })).toBeVisible();
+  await openDiffUi(page);
+  await expect(page.getByText('1 arquivo(s) · 1 ajuste(s)')).toBeVisible();
+  await act(page, 'setState', { diff: null });
+  await exportDir(page);
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Exportar versões completas…').click();
+  await expect(page.getByText('✓ layers-changes.json (manifesto)')).toBeVisible();
+  expect(await page.evaluate(() => window.__bss), 'no merged set for one layout').toBe(0);
 });
 
 test('Apply_OtherLayoutStaleHash_IsSkippedWithWarning', async ({ page }) => {
@@ -282,6 +361,7 @@ test('Apply_OtherLayoutStaleHash_IsSkippedWithWarning', async ({ page }) => {
   await expect.poll(async () => Object.keys(await storedPending(page)), 'the applied entry goes and the skipped layout keeps its pending').toEqual(['folder:proj|config']);
   expect((await storedPending(page))['folder:proj|config'].changes).toHaveLength(2);
   expect(await page.evaluate(() => window.__logic.state.layoutBadges)).toEqual({ config: 2 });
+  expect(await page.evaluate(() => ({ ...window.__logic.state.layoutPend }))).toEqual({ config: 2 }); // the skipped layout keeps counting
   // the wording says "serão descartadas": here they are (shared.css and config.css both moved)
   await page.getByRole('button', { name: 'Fechar' }).first().click();
   await act(page, 'switchLayout', 'config');

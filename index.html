@@ -1345,7 +1345,7 @@ class Component extends DCLogic {
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, coverage: null, spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadRev: 0, spreadMenu: false, lodHover: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], reqSel: null, mdOpen: false,
-    layoutBadges: Object.create(null), toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
+    layoutBadges: Object.create(null), layoutPend: Object.create(null), toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
   // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
@@ -1607,8 +1607,8 @@ class Component extends DCLogic {
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
     // S9.1a: badge and R<n> floor of the OTHER layouts, read once per load (never in writeConfig: it runs on every camera burst)
-    const layoutBadges = Object.create(null), otherRequests = Object.create(null); let reqFloor = 0;
-    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; if (e.requests.length) otherRequests[l.id] = e.requests; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
+    const layoutBadges = Object.create(null), layoutPend = Object.create(null), otherRequests = Object.create(null); let reqFloor = 0; // layoutPend: id -> stored CHANGES only (S9.1e: the Salvar badge)
+    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; if (e.changes.length) layoutPend[l.id] = e.changes.length; if (e.requests.length) otherRequests[l.id] = e.requests; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
     this.reqFloor = reqFloor; this.otherRequests = otherRequests;
     // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
     const plan0 = LayersCore.restorePlan(saved, hash);
@@ -1631,7 +1631,7 @@ class Component extends DCLogic {
     // S9.1d: a layout's steps survive only while its source is the one they were made against (the pending entry cannot tell: undone edits leave none)
     if (keepUndo && !newProject && (incomplete || (this.undoHash[curLayout.id] !== undefined && this.undoHash[curLayout.id] !== hash))) this.dropUndoFor(curLayout.id);
     this.undoHash[curLayout.id] = incomplete ? null : hash; // null: no trustworthy hash, so the next complete load drops what was stacked meanwhile
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId, true); else if (vw && this.state.selId !== '0') this.select(this.state.selId, true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, layoutPend, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId, true); else if (vw && this.state.selId !== '0') this.select(this.state.selId, true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
     this.setState(s => ({ coverage: s.coverage && s.coverage.status === 'error' && s.coverage.error === COV_LOADING ? null : s.coverage })); // the "still loading" notice ends with the load; a real result or error stays
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
@@ -1741,7 +1741,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.clearSpread(); this.clearProbe(); this.watchLayouts = {}; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.normalCam }); this.normalCam = null; this.normalCamOwner = null; this.pendingSpread = null; this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.clearSpread(); this.clearProbe(); this.watchLayouts = {}; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.normalCam }); this.normalCam = null; this.normalCamOwner = null; this.pendingSpread = null; this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), layoutPend: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Varre a pasta conectada e devolve o texto dos arquivos dos `kinds` pedidos ('html'|'css'|'script'); `exclude` = nomes de pasta extras a pular; `base` = subpasta onde a varredura comeca (caminhos seguem relativos a raiz).
   async collectProjectFiles(dir, kinds, exclude, base) {
     const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX;
@@ -2204,6 +2204,8 @@ class Component extends DCLogic {
     const spread = { ...this.state.spread, mode: mode === 'pick' ? 'pick' : 'all', picked: Array.isArray(picked) ? picked.slice() : [] }; this.setState({ spread }); this.swapCam();
     if (spread.on && this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(e => console.warn('loadSpread', e));
   }
+  // S9.1e: Aplicar/Reverter rewrote files the frozen layouts were read from: re-read them when the Espalhar is on (off: nothing to touch)
+  refreshSpread() { const spread = this.state.spread; if (!spread.on) return; this.clearSpread(); if (this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(e => console.warn('loadSpread', e)); }
   setSpreadDist(n) { const dist = Math.min(100, Math.max(0, Math.round(+n))); if (Number.isFinite(dist)) this.setState({ spread: { ...this.state.spread, dist } }); }
   // Espalhar popover (S9.1c Task 5): UI state is state.spreadMenu; the selection logic stays in spreadOn/setSpreadPick/setSpreadDist.
   spToggle = () => this.setState(st => ({ spreadMenu: !st.spreadMenu }));
@@ -2930,6 +2932,8 @@ class Component extends DCLogic {
   originTag(list) { const ids = [...new Set(list.flatMap(c => c.layouts || []))]; if (!ids.length) return ''; const L = (this.state.project && this.state.project.layouts) || []; return ' [' + ids.map(id => (L.find(l => l.id === id) || { name: id }).name).join(', ') + ']'; }
   // S9.1d: the changes of the plan in front of the user: the set stored when Salvar opened (merged across layouts), else the active layout's
   planChanges() { const m = this.state.modal; return m && m.set ? m.set.changes : this.state.changes; }
+  // S9.1e: Salvar's badge = the active layout's changes + the stored changes of every other layout (layoutPend, read at load/approve). A hint of what is stored: Salvar merges equal edits and skips stale layouts, so its plan can count fewer
+  badgeText() { let n = this.state.changes.length; const p = this.state.layoutPend; for (const k in p) n += p[k]; return n ? '(' + n + ')' : ''; }
   // S9.1d: layouts other than the active one with stored adjustments (storage only, nothing is mounted)
   pendingLayouts() {
     const P = this.state.project; if (!P || !this.multiLayout() || this.baseKey === null || this.baseKey === undefined) return [];
@@ -3064,10 +3068,10 @@ class Component extends DCLogic {
     const left = this.state.changes.filter(c => unwritten.has(ruleOf(c)[0])); entry.dom = this.state.changes.filter(c => !left.includes(c)); // the active layout's own list (merging may collapse it): rollback restores THESE inline styles
     if (entry.dom.length) this.dropUndoFor(this.curLayoutId()); cleared.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout whose changes went (written) go
     others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'));
-    const badges = cleared.length ? this.clearOtherPending(cleared) : null;
-    this.clearProbe(); // the files changed on disk
+    const badges = cleared.length ? this.clearOtherPending(cleared) : null, pend = cleared.length ? Object.assign(Object.create(null), this.state.layoutPend) : null; if (pend) cleared.forEach(id => { delete pend[id]; }); // the stored changes of a cleared layout are gone (its requests stay in the badge)
+    this.clearProbe(); this.refreshSpread(); // the files changed on disk
     if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
-    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: left, ...(badges ? { layoutBadges: badges } : {}) }));
+    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: left, ...(badges ? { layoutBadges: badges, layoutPend: pend } : {}) }));
   }
   async rollback(h) {
     // vale tambem depois de um reload (this.mtimes zerado): compara com o mtime que o approve deixou
@@ -3079,12 +3083,15 @@ class Component extends DCLogic {
     }
     (!h.layoutId || h.layoutId === this.curLayoutId() ? (h.dom || h.changes) : []).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: the entry belongs to the layout it was approved in: another mounted layout's ids are not this DOM's
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
-    this.clearProbe(); // the files changed on disk
+    this.clearProbe(); this.refreshSpread(); // the files changed on disk
     if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));
     this.setState(s => ({ history: s.history.filter(x => x !== h) })); this.scanSoon();
   }
   async openDiff() {
-    const files = this.filesOf(this.state.changes); const out = [];
+    const others = this.pendingLayouts(), set = others.length ? await this.buildSaveSet(others) : null; // S9.1e: with stored adjustments elsewhere the diff covers the merged set, else the active layout's own changes
+    if (others.length && !set) return; // the project changed meanwhile
+    if (set && set.warnings.length) this.toast(set.warnings.join(' · '), 'warn');
+    const changes = set ? set.changes : this.state.changes, files = this.filesOf(changes); const out = [];
     for (const f of files) {
       const isCss = /\.css$/.test(f.path); let orig = null;
       if (this.state.dir && (isCss || f.dc)) { try { orig = await this.readText(f.path); } catch (e) {} }
@@ -3094,17 +3101,20 @@ class Component extends DCLogic {
           lines.push({ no: ln ? 'L' + ln : '', text: this.patchSel(c) + ' {', ...g }); lines.push({ no: '−', text: '  ' + kebab(c.prop) + ': ' + c.from + ';', color: 'var(--err)', bg: 'rgba(var(--errRgb),.08)' }); lines.push({ no: '+', text: '  ' + kebab(c.prop) + ': ' + c.to + ';', color: 'var(--ok)', bg: 'rgba(var(--okRgb),.08)' }); lines.push({ no: '', text: '}', ...g }); });
         out.push({ path: f.path, note: isCss || f.dc ? '(simulado — conecte a pasta para o diff real)' : '(fonte TS — só registro, patch manual)', lines }); }
     }
-    this.setState({ diff: out });
+    this.setState({ diff: out, diffN: set ? changes.length : null });
   }
   async exportFull() {
     if (this.readOnlyBlock() || this.utilityBlock()) return;
-    if (!this.state.changes.length) return;
+    const others = this.pendingLayouts(); // S9.1e: stored adjustments of the other layouts are exported too
+    if (!this.state.changes.length && !others.length) return;
     if (!window.showDirectoryPicker) { this.toast('A exportação usa a File System Access API — abra no Chrome ou Edge.'); return; }
     if (!this.state.dir) { this.toast('Conecte primeiro a pasta do projeto para ler os arquivos originais.'); return; }
     let target; try { target = await window.showDirectoryPicker({ mode: 'readwrite', id: 'layers-export' }); } catch (e) { return; }
-    const files = this.filesOf(this.state.changes); const log = [];
+    const set = others.length ? await this.buildSaveSet(others) : null; // after the picker: its user gesture must not wait for the probe
+    if (others.length && !set) return; // the project changed meanwhile
+    const changes = set ? set.changes : this.state.changes, files = this.filesOf(changes); const log = set ? [...set.warnings] : [];
     for (const f of files) { if (f.dc) { try { const r = this.patchedDc(await this.readText(f.path), f.list); if (!r.applied) { log.push('⚠ ' + f.path + ': nenhuma edição gravável'); continue; } await writeInto(target, f.path, r.text); log.push('✓ ' + f.path + ' (' + r.applied + '/' + f.list.length + ')'); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } continue; } if (!/\.css$/.test(f.path)) { log.push('⚠ ' + f.path + ': fonte TS — não exportado'); continue; } try { await writeInto(target, f.path, this.patched(await this.readText(f.path), f.list)); log.push('✓ ' + f.path); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } }
-    const manifest = this.state.changes.map(c => ({ file: ruleOf(c)[0], selector: this.patchSel(c), line: ruleOf(c)[2], property: kebab(c.prop), from: c.from, to: c.to, elements: c.ids.length, scope: c.scope }));
+    const manifest = changes.map(c => ({ file: ruleOf(c)[0], selector: this.patchSel(c), line: ruleOf(c)[2], property: kebab(c.prop), from: c.from, to: c.to, elements: c.ids.length, scope: c.scope }));
     try { await writeInto(target, 'layers-changes.json', JSON.stringify(manifest, null, 2)); log.push('✓ layers-changes.json (manifesto)'); } catch (e) { log.push('✗ manifesto: ' + e.message); }
     // F:70 — what this session wrote: path, when, size before/after, SHA-256 before/after (format v2)
     if ((this.writeLog || []).length) { try { await writeInto(target, 'layers-export.log', LayersCore.writeLogText(this.writeLog)); log.push('✓ layers-export.log (' + this.writeLog.length + ' gravação(ões))'); } catch (e) { log.push('✗ layers-export.log: ' + e.message); } }
@@ -3464,9 +3474,9 @@ class Component extends DCLogic {
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
       tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
       hasSibs, noSibs: !hasSibs, scopeOpts, alsoShow: !!alsoLine, alsoText: alsoLine,
-      propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '', ...this.reqVals(),
+      propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: this.badgeText(), ...this.reqVals(),
       ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,
-      openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
+      openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + (s.diffN != null ? s.diffN : s.changes.length) + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
       promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' + (alsoPrompt ? ' ' + alsoPrompt.charAt(0).toUpperCase() + alsoPrompt.slice(1) + '.' : '') : '',
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
       toggleFlat: () => this.setState(st => ({ flat: !st.flat })), persp: s.persp, setPersp: e => this.setState({ persp: +e.target.value }), setSpacing: e => this.setState({ spacing: +e.target.value }), resetView: () => this.resetView(),
