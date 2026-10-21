@@ -2535,12 +2535,12 @@
     "name": "Layouts múltiplos",
     "start": "2026-10-17",
     "end": "2026-10-20",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "scaffold"
     ],
-    "progress": 87,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -2549,12 +2549,12 @@
         "name": "Layouts newlogic",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
@@ -2763,12 +2763,12 @@
         "name": "Varredura final da S9.1 e pendências",
         "start": "2026-10-17",
         "end": "2026-10-20",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
@@ -2781,6 +2781,12 @@
             "type": "spec",
             "path": "/[](superpowers/plans/2026-10-20-s9-1e-varredura-final-da-s9.md)",
             "title": "2026-10-20-s9-1e-varredura-final-da-s9.md)"
+          },
+          {
+            "name": "feature-261020-95-s9-1e-varredura-final.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261020-95-s9-1e-varredura-final.md)",
+            "title": "feature-261020-95-s9-1e-varredura-final.md)"
           }
         ],
         "reason": "Bugs funcionais (Aprovar durante o rascunho, Cobertura), badge/diff/exportar e retratos LOD entre layouts, lacunas de teste e caminhos, decisões fechadas e varredura manual",
