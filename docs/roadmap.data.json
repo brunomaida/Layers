@@ -1575,7 +1575,7 @@
             "title": "feature-261014-0-s4-5-viewport-culling.md)"
           }
         ],
-        "reason": "checklist D",
+        "reason": "checklist D; entregue: planos com projeção fora do palco ficam ocultos durante o arrasto (`viewCuller`; selecionado e hover nunca cortam), orbit do Traval a 42,5 fps",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -1680,7 +1680,7 @@
       {
         "id": "S4.9",
         "type": "spec",
-        "name": "Agrupamento de folhas para reduzir camadas compostas no orbit",
+        "name": "Agrupamento de planos por z no arrasto para reduzir camadas compostas no orbit",
         "start": "2026-10-17",
         "end": "2026-10-19",
         "status": "done",
@@ -1703,7 +1703,7 @@
             "title": "feature-261017-0-s4-9-leaf-grouping.md)"
           }
         ],
-        "reason": "origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test; entregue: planos agrupados por z no arrasto, camadas compostas 429 para 31 e orbit do Traval 23,8 para 17,7 ms/frame (56,5 fps, orçamento fechado)",
+        "reason": "origem S4.8: Layerize ~11,5 ms/frame no trace; custo linear por plano visível (metade dos planos ocultos: −6,5 ms/frame); mudança estrutural do DOM e do hit-test; entregue: planos agrupados por z no arrasto, camadas compostas 429 para 31 e orbit do Traval 23,8 para 17,7 ms/frame (56,5 fps, orçamento fechado); regressão conhecida e aceita no fechamento da S4: orbit com zoom 17,2 → 19,7 ms (+2,5 ms, fora de 2σ), causa não isolada (RELEASE-CHECKLIST § D)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -2076,7 +2076,7 @@
     "type": "phase",
     "name": "Release e governança",
     "start": "2026-10-13",
-    "end": "2026-10-19",
+    "end": "2026-10-23",
     "status": "done",
     "statusLabel": "Completed",
     "tags": [
@@ -2413,6 +2413,38 @@
           }
         ],
         "reason": "Reescrita de histórico de 2026-10-17; planos mandavam o trailer e o CLAUDE.md proíbe",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S7.10",
+        "type": "spec",
+        "name": "Fechar as fases do tracker e as dívidas docs da S4",
+        "start": "2026-10-21",
+        "end": "2026-10-23",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "docs-261021-0-s7-10-fechar-fases-tracker.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/docs-261021-0-s7-10-fechar-fases-tracker.md)",
+            "title": "docs-261021-0-s7-10-fechar-fases-tracker.md)"
+          },
+          {
+            "name": "2026-10-21-s7-10-fechar-fases-tracker.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-21-s7-10-fechar-fases-tracker.md",
+            "title": "Implementation Report — s7-10-fechar-fases-tracker"
+          }
+        ],
+        "reason": "Linhas de fase S2, S4, S5, S6 e S7 ainda `in-progress` com todas as leaves `done`; revisão da fase S4 (PR #99) apontou TOPOLOGY sem `bench/` e `e2e/`, títulos e razões de S4.5 e S4.9 desatualizados e a regressão do orbit com zoom sem registro",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,

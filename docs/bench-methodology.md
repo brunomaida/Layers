@@ -23,7 +23,7 @@ created: 2026-10-13
 ## How to Run
 - Micro (core): `npm run bench` writes `bench/results/<ts>-layers-core.bench.json`.
 - Ingest and render: `python ~/.claude/hooks/bench-history-cli.py ingest --repo .` then `render`.
-- UI (Playwright, tag `latency`): see `e2e/perf.spec.js` once S4.4 lands.
+- UI (Playwright, tag `latency`): `npx playwright test e2e/perf.spec.js` (S4.4).
 
 ## Noise Floor
 Observed on the reference machine (i7-12700, Node 24): parseSheet/scopeAst on small sheets vary about 20-35 % run to run; large sheets about 5-20 %. Hence the 10 µs floor (`noiseFloorNs: 10000`), the 2 sigma rule and the 25 % `regressionPct` for `micro` below; the per-invocation StdDev includes GC pauses, so smaller thresholds would only alarm on noise. Record the first stable baseline before gating.
