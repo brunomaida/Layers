@@ -310,6 +310,72 @@ test('VirtualTree_TabPelasLinhas_FocoNaoEscapaNemTravaAJanela', async ({ page })
   expect(st.padTop, 'window follows the scroll position after blur').toBeGreaterThan(500);
 });
 
+// S4.11: a textarea of an open rule block holds the focus while the container scrolls. Returns the key of that block.
+async function focusCodeAt(page, T) {
+  await scrollTo(page, T);
+  await openCode(page, await topRowId(page));
+  const k = (await codeKeys(page))[0];
+  await box(page).locator(`[data-code-key="${k}"] textarea`).click();
+  return k;
+}
+
+// id of the row that shows the selection badge
+const selectedId = (page) => page.evaluate(() => {
+  const r = [...document.querySelectorAll('[data-node-id]')].find((e) => e.innerText.includes('●'));
+  return r ? r.dataset.nodeId : null;
+});
+
+test('VirtualTree_CliqueEmLinhaAposRolarComTextareaFocada_SelecionaONoClicado', async ({ page }) => {
+  await open(page);
+  const T = 4 + 22 * 180;
+  await focusCodeAt(page, T);
+  const ch = await box(page).evaluate((el) => el.clientHeight);
+  await scrollTo(page, T + 2 * ch);
+  await expectCovered(page, 'textarea focused, scrolled two screens down');
+  // a row in the middle of the view; the press blurs the textarea, the release must still land on the same row
+  const target = await box(page).evaluate((el) => {
+    const bt = el.getBoundingClientRect(), mid = bt.top + bt.height / 2;
+    return [...el.querySelectorAll('[data-node-id]')].find((r) => { const b = r.getBoundingClientRect(); return b.top >= mid && b.bottom <= mid + 30; }).dataset.nodeId;
+  });
+  expect(await selectedId(page), 'the target is not selected yet').not.toBe(target);
+  const bb = await page.locator(`[data-node-id="${target}"] span`).nth(1).boundingBox();
+  await page.mouse.move(bb.x + 4, bb.y + bb.height / 2);
+  await page.mouse.down();
+  await page.mouse.up();
+  await frames2(page);
+  await frames2(page);
+  expect(await selectedId(page), 'the pressed row was selected').toBe(target);
+});
+
+test('VirtualTree_RolarParaCimaComTextareaFocada_VistaCoberta', async ({ page }) => {
+  await open(page);
+  const T = 4 + 22 * 180;
+  await focusCodeAt(page, T);
+  const ch = await box(page).evaluate((el) => el.clientHeight);
+  await scrollTo(page, T + ch);
+  await expectCovered(page, 'textarea focused, scrolled one screen down');
+  for (let to = T + ch - 60; to >= T - 600; to -= 60) { // crosses the start the window had when the focus began
+    await scrollTo(page, to);
+    await expectCovered(page, `textarea focused, scrolled back up to ${to}`);
+  }
+});
+
+test('VirtualTree_TextareaFocadaRolandoAteOFim_MontadasNaoCrescem', async ({ page }) => {
+  await open(page);
+  const T = 4 + 22 * 180;
+  await focusCodeAt(page, T);
+  const ch = await box(page).evaluate((el) => el.clientHeight);
+  const bound = Math.ceil(ch / 22) + 4 * OVERSCAN; // view + overscan both sides + the rows after the focused one + step lag
+  let most = 0;
+  for (let to = T; to < T + 6000; to += ch / 2) {
+    await scrollTo(page, to);
+    most = Math.max(most, (await treeWindowState(page)).mounted);
+  }
+  await scrollTo(page, 'end');
+  most = Math.max(most, (await treeWindowState(page)).mounted);
+  expect(most, 'mounted rows stay bounded while the focus stays in the textarea').toBeLessThanOrEqual(bound);
+});
+
 test('VirtualTree_SelecionarRaiz_NaoMoveScrollTop', async ({ page }) => {
   await open(page);
   await scrollTo(page, 0);
