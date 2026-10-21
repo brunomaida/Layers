@@ -20,7 +20,7 @@ artefatos de topo.
 | `vendor/react.production.min.js` | Global `window.React` | Não | `scripts/vendor-assets.py` |
 | `vendor/react-dom.production.min.js` | Global `window.ReactDOM` | Não | `scripts/vendor-assets.py` |
 | `vendor/csstree.js` | Global `csstree` (parser CSS); dependência declarada no cabeçalho de `lib/layers-core.js` | Não | `scripts/vendor-assets.py` (pinned by hash) |
-| `lib/layers-core.js` | `globalThis.LayersCore`: lógica pura do loader (caminhos, AST CSS, zip, config, manifesto, template dc), sem DOM/React | Sim | Mão |
+| `lib/layers-core.js` | `globalThis.LayersCore`: lógica pura do loader (caminhos, AST CSS, zip, config, manifesto, template dc) e helpers puros de render chamados pelo `index.html` (culling, agrupamento por z, janela e slots da árvore), sem DOM/React | Sim | Mão |
 | `fonts/fonts.css` | 48 blocos `@font-face` com `unicode-range` | Não | `scripts/vendor-assets.py` |
 | `fonts/*.woff2` | 15 faces variáveis subsetadas | Não | `scripts/vendor-assets.py` |
 | `scripts/vendor-assets.py` | Regenera `fonts/` e `vendor/`; valida SRI do React | Sim | Mão |
@@ -29,6 +29,9 @@ artefatos de topo.
 | `tools/layers-suggest.js` | Spike: sugere `interactions` a partir do mock (colado no console) | Sim | Mão |
 | `tools/layers-derive.js` | Spike: deriva manifesto de uma pasta (`node`; só `fs`/`path`) | Sim | Mão |
 | `test/layers-core.test.js`, `test/setup.js` | Vitest sobre `lib/layers-core.js`; `setup.js` instala a global `csstree` (pacote `css-tree`) | Sim | Mão |
+| `bench/` (`run.mjs`, `core.bench.js`, `workloads.js`, `alloc.mjs`, `to-bench-json.js`), `vitest.bench.config.js` | Microbenchmarks do core (`npm run bench`); lêem `lib/layers-core.js`, nada no app aponta para eles | Sim | Mão |
+| `bench/results/*.json` | Resultados de benchmark e de `e2e/perf.spec.js` (ignorados pelo git, exceto os já versionados) | Não | Gerado por `npm run bench` e `npx playwright test e2e/perf.spec.js` |
+| `e2e/*.spec.js`, `e2e/*-helpers.js`, `playwright.config.js` | Playwright: E2E funcional, perf de UI e gates de pixel; sobem o dev server `:5180` e leem `fixtures/**` | Sim | Mão |
 | `fixtures/` | Projetos-alvo do loader, lidos por HTTP (`#layers=<pasta>/`) e pelos testes | Sim | Vendor/Mão |
 | `vite.config.js` | Plugin dev que serve `fixtures/` sem o wrapper de HMR | Sim | Mão |
 | `package.json` | Dev server (Vite) e runners de teste. Não há build de produção | Sim | Mão |
@@ -78,6 +81,8 @@ artefatos de topo.
      test/*.test.js ──importa──▶ test/setup.js ──▶ css-tree (npm) + lib/layers-core.js
                    └─ le ─────▶ fixtures/**
      vite.config.js ── serve fixtures/ ao dev server (#layers=<pasta>/)
+     bench/*.bench.js ──importa──▶ lib/layers-core.js     (npm run bench)
+     e2e/*.spec.js ──abre──▶ dev server :5180 + fixtures/**  (playwright.config.js)
      tools/layers-derive.js    (node: fs, path)   · layers-snapshot.js / layers-suggest.js
                                                     (colados no console do navegador)
 ```
