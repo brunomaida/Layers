@@ -49,6 +49,42 @@ export async function connectEntries(page, entries) {
   await readNodes(page);
 }
 
+// Same entry point for a .zip source: entries = [[relPath, text], ...] are stored (method 0, as in the zips openZip reads
+// without inflating) in an archive built in the page, and the app opens it through Projetos > Abrir arquivo .zip with a stubbed
+// showOpenFilePicker, so openZip, zipRoot, `this.zip` and the zip branches of the loader and the coverage scan run unchanged.
+// `root` wraps everything in one top-level folder ('repo-main/'), like a downloaded GitHub zip: zipRoot() finds it by the layers.json inside.
+export async function connectZip(page, entries, root = '') {
+  await page.addInitScript(() => {
+    window.showOpenFilePicker = async () => [{ getFile: async () => window.__zipFile }];
+  });
+  await page.goto('/');
+  await page.evaluate(async ({ files, root }) => {
+    const enc = new TextEncoder();
+    const parts = [], central = [];
+    let at = 0;
+    const u16 = (v) => { const b = new Uint8Array(2); new DataView(b.buffer).setUint16(0, v, true); return b; };
+    const u32 = (v) => { const b = new Uint8Array(4); new DataView(b.buffer).setUint32(0, v, true); return b; };
+    const push = (list, ...bs) => bs.forEach((b) => list.push(b));
+    for (const [rel, text] of files) {
+      const name = enc.encode(root + rel), data = enc.encode(text);
+      // openZip never checks the crc, so it stays 0
+      const loc = [u32(0x04034b50), u16(20), u16(0), u16(0), u16(0), u16(0), u32(0), u32(data.length), u32(data.length), u16(name.length), u16(0), name];
+      push(central, u32(0x02014b50), u16(20), u16(20), u16(0), u16(0), u16(0), u16(0), u32(0), u32(data.length), u32(data.length), u16(name.length), u16(0), u16(0), u16(0), u16(0), u32(0), u32(at), name);
+      push(parts, ...loc, data);
+      at += loc.reduce((n, b) => n + b.length, 0) + data.length;
+    }
+    const cenSize = central.reduce((n, b) => n + b.length, 0);
+    push(parts, ...central, u32(0x06054b50), u16(0), u16(0), u16(files.length), u16(files.length), u32(cenSize), u32(at), u16(0));
+    window.__zipFile = new File(parts, 'proj.zip', { type: 'application/zip' });
+  }, { files: entries, root });
+  const trigger = page.getByText('Nenhum projeto').first();
+  const item = page.getByText(/Abrir arquivo \.zip/i).first();
+  await trigger.click();
+  if (!(await item.isVisible())) await trigger.click();
+  await item.click();
+  await readNodes(page);
+}
+
 // Window-safe: treeRow scrolls the tree until the row is mounted (S4.10 windows the tree).
 export async function selectLayer(page, titlePrefix) {
   await (await treeRow(page, { title: titlePrefix })).click();

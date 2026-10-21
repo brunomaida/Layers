@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act, open } from './ctx-helpers.js';
+import { connectZip } from './folder-helpers.js';
 
 // S9.1b Task 6: coverage analysis end to end (Projetos > Analisar cobertura) over fixtures/coverage-multi and friends.
 // Real menu, real folder walk (OPFS handle behind a stubbed showDirectoryPicker); the model is read from state.coverage.
@@ -263,4 +264,72 @@ test('Coverage_MoreThan200ScriptFiles_StopsAtTheCapAndFlagsPartial', async ({ pa
   expect(c.model.regions.filter((r) => r.key.startsWith('s/f') && r.kind === 'diálogo')).toHaveLength(200);
   await expect(page.getByText('cobertura parcial', { exact: true })).toBeVisible();
   await expect(page.getByText('Varredura parcial: arquivos ou tamanho acima dos tetos', { exact: false })).toBeVisible();
+});
+
+// S9.1e Task 4: the zip branch of the scan (collectZipFiles) and the byte cap of the script total, until now without a test.
+// connectZip opens a real stored archive through the zip menu entry; connectFiles does the same for a folder.
+const WARN_PARTIAL = 'Varredura parcial: arquivos ou tamanho acima dos tetos';
+const ZIP_MANIFEST = '{"name":"x","mock":"index.html"}';
+// 33 scripts of 262000 bytes (under the 256 KiB per-file cap, 8 646 000 in total) cross the 8 MiB script budget at the 33rd file: 32 fit.
+const BYTE_CAP_SCRIPTS = Array.from({ length: 33 }, (_, i) => ['s/f' + i + '.js', ('var a = "<dialog>"; // ' + i + ' ').padEnd(262000, 'x')]);
+const dialogsOf = (c) => c.model.regions.filter((r) => r.key.startsWith('s/f') && r.kind === 'diálogo').length;
+
+test('Coverage_Zip_BaseMissing_ReportsAnHonestError', async ({ page }) => {
+  await connectZip(page, [['layers.json', '{"name":"x","base":"app","mock":"index.html"}'], ['app/index.html', PAGE]], 'repo-main/');
+  await act(page);
+  // the loader needs the base to mount the mock, so the manifest is pointed at a folder the archive lacks only after the load
+  await page.evaluate(() => { const l = window.__logic, p = l.state.project; l.setState({ project: { ...p, man: { ...p.man, base: 'gone' } } }); });
+  const c = await analyze(page);
+  expect(c.status).toBe('error');
+  expect(c.error).toBe('base "gone" não encontrada na pasta');
+  await expect(page.getByText('Não foi possível analisar.')).toBeVisible();
+});
+
+test.describe('Coverage_Zip_OversizedFile_FlagsPartial', () => {
+  const big = (n, fill) => fill.repeat(Math.ceil(n / fill.length));
+  const cases = [
+    ['Html3MB', 'big.html', '<!doctype html><html><body>' + big(3 * 1024 * 1024 + 16, '<p>x</p>') + '</body></html>'],
+    ['Script256KB', 's/big.js', 'var a = 1; // ' + big(256 * 1024 + 16, 'x')]
+  ];
+  for (const [name, path, text] of cases) {
+    test(name, async ({ page }) => {
+      await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], [path, text]]);
+      await act(page);
+      const c = await analyze(page);
+      expect(c.status).toBe('done');
+      expect(c.capped).toBe(true);
+      expect(c.model.regions.map((r) => r.key)).not.toContain(path);
+      await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
+    });
+  }
+});
+
+test('Coverage_Zip_ScriptCaps_MoreThan200FilesFlagsPartial', async ({ page }) => {
+  const scripts = Array.from({ length: 201 }, (_, i) => ['s/f' + i + '.js', 'var a = "<dialog>"; // ' + i]);
+  await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], ...scripts]);
+  await act(page);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  expect(c.capped).toBe(true);
+  expect(dialogsOf(c)).toBe(200);
+  await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
+});
+
+test('Coverage_Zip_ScriptCaps_EightMiBOfScriptsFlagsPartial', async ({ page }) => {
+  await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], ...BYTE_CAP_SCRIPTS]);
+  await act(page);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  expect(c.capped).toBe(true);
+  expect(dialogsOf(c)).toBe(32); // the 33rd would pass 8 MiB: skipped alone
+  await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
+});
+
+test('Coverage_Folder_ScriptBytesCap_EightMiBOfScriptsFlagsPartial', async ({ page }) => {
+  await connectFiles(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], ...BYTE_CAP_SCRIPTS]);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  expect(c.capped).toBe(true);
+  expect(dialogsOf(c)).toBe(32);
+  await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
 });
