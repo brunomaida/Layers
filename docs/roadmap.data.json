@@ -2396,8 +2396,8 @@
     "id": "S8",
     "type": "phase",
     "name": "Trilha MCP e plugin",
-    "start": "2026-10-21",
-    "end": "2026-10-28",
+    "start": "2026-10-22",
+    "end": "2026-10-29",
     "status": "todo",
     "statusLabel": "Registered",
     "tags": [
@@ -2417,8 +2417,8 @@
         "id": "S8.1",
         "type": "spec",
         "name": "Spike de servidor MCP stdio sobre o core",
-        "start": "2026-10-21",
-        "end": "2026-10-23",
+        "start": "2026-10-22",
+        "end": "2026-10-24",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2436,8 +2436,8 @@
         "id": "S8.2",
         "type": "spec",
         "name": "Spike Playwright: data-vite-dev-id sobrevive",
-        "start": "2026-10-22",
-        "end": "2026-10-24",
+        "start": "2026-10-23",
+        "end": "2026-10-25",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2455,8 +2455,8 @@
         "id": "S8.3",
         "type": "spec",
         "name": "Snapshot headless (slice 3)",
-        "start": "2026-10-23",
-        "end": "2026-10-25",
+        "start": "2026-10-24",
+        "end": "2026-10-26",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2474,8 +2474,8 @@
         "id": "S8.4",
         "type": "spec",
         "name": "apply_patch e porta Node de writeText",
-        "start": "2026-10-24",
-        "end": "2026-10-26",
+        "start": "2026-10-25",
+        "end": "2026-10-27",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2493,8 +2493,8 @@
         "id": "S8.5",
         "type": "spec",
         "name": "Proveniência SPA via data-vite-dev-id",
-        "start": "2026-10-25",
-        "end": "2026-10-27",
+        "start": "2026-10-26",
+        "end": "2026-10-28",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2512,8 +2512,8 @@
         "id": "S8.6",
         "type": "spec",
         "name": "Re-snapshot sem renovar mtimes com changes pendentes",
-        "start": "2026-10-26",
-        "end": "2026-10-28",
+        "start": "2026-10-27",
+        "end": "2026-10-29",
         "status": "todo",
         "statusLabel": "Registered",
         "tags": [
@@ -2802,7 +2802,7 @@
     "type": "phase",
     "name": "Project & Cross-cutting Docs",
     "start": "2026-09-12",
-    "end": "2026-10-28",
+    "end": "2026-10-29",
     "statusLabel": "Reference",
     "tags": [
       "bdn",
@@ -2811,6 +2811,12 @@
     ],
     "progress": 0,
     "docs": [
+      {
+        "name": "2026-10-19-atlas-embed-mode.md",
+        "type": "spec",
+        "path": "/docs/text-specs/2026-10-19-atlas-embed-mode.md",
+        "title": "Text spec — Atlas embed mode (Layers dentro do Atlas)"
+      },
       {
         "name": "layers-specs.md",
         "type": "spec",
@@ -2840,6 +2846,12 @@
         "type": "report",
         "path": "/changelog.d/docs-261013-23-roadmap-claude-md-perf-plan.md",
         "title": "Added"
+      },
+      {
+        "name": "docs-261021-0-atlas-embed-text-spec.md",
+        "type": "report",
+        "path": "/changelog.d/docs-261021-0-atlas-embed-text-spec.md",
+        "title": "Changed"
       }
     ],
     "children": []
