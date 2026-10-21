@@ -2436,6 +2436,12 @@
             "type": "report",
             "path": "/[](../changelog.d/docs-261021-0-s7-10-fechar-fases-tracker.md)",
             "title": "docs-261021-0-s7-10-fechar-fases-tracker.md)"
+          },
+          {
+            "name": "2026-10-21-s7-10-fechar-fases-tracker.md",
+            "type": "report",
+            "path": "/docs/superpowers/reports/2026-10-21-s7-10-fechar-fases-tracker.md",
+            "title": "Implementation Report — s7-10-fechar-fases-tracker"
           }
         ],
         "reason": "Linhas de fase S2, S4, S5, S6 e S7 ainda `in-progress` com todas as leaves `done`; revisão da fase S4 (PR #99) apontou TOPOLOGY sem `bench/` e `e2e/`, títulos e razões de S4.5 e S4.9 desatualizados e a regressão do orbit com zoom sem registro",
