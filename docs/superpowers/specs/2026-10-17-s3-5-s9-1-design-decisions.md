@@ -55,7 +55,7 @@ Onde o que foi entregue na S9.1a (layouts, faixa LAYOUTS, modo Foco) difere dos 
 | Item do board | Como ficou no código | Motivo |
 |---|---|---|
 | Botão "Espalhar" e o glifo `⊞` | Ausentes; só o modo Foco | Espalhar (vários layouts montados, LOD, câmera de visão geral) é a S9.1c; evita também o choque de nome com o FOCO das camadas |
-| Chip ativo com a borda `sel` e `selRgb` .16 (V3) | O chip ativo usa a variante **não solo** do rail de Camadas (preenchido com `accRgb` .15 e "●") | Reuso do estilo dos chips existentes (visual congelado). **Decisão visual do usuário pendente**: se a variante do board for a pretendida, troca-se só os tokens do chip em `renderVals` |
+| Chip ativo com a borda `sel` e `selRgb` .16 (V3) | O chip ativo usa a variante **não solo** do rail de Camadas (preenchido com `accRgb` .15 e "●") | Reuso do estilo dos chips existentes (visual congelado). **Decisão fechada (S9.1e)**: o chip ativo segue assim (visual congelado); trocar para a variante do board seria só os tokens do chip em `renderVals`, se um dia for pedido |
 | Faixa LAYOUTS como linha da barra inferior | Pílula própria acima da barra de Camadas, com `gap` de 4 px | O 3 px do board é a 0,75 de escala; 4 px reais igualam o `gap` interno da barra. Cada linha encolhe ao conteúdo, e a barra de um projeto de um layout só mantém largura e posição |
 | Tabela do board: "Aplicar junta tudo" | **Aplicar** e **Salvar** agem só no layout montado; os outros mostram badge de pendentes | Só um layout está montado (Foco); "Aplicar junta tudo" fica na S9.1c |
 | Aviso do escopo `all` ("também afeta <layout> (N usos)") | Adiado | Exige contar usos em layouts desmontados; S9.1c |
@@ -72,10 +72,10 @@ Onde o que foi entregue na S9.1b (Analisar cobertura) difere do board `S91Cobert
 | Regra de decisão cobre mono ≥ 85 % e ganho ≥ 15 p.p. | Dois casos são preenchimentos do código: **mono < 85 % e ganho < 15 p.p.** vira "Monovisual (layouts não ajudam)" e **0 regiões** vira "Indeterminado" | O board não cobre esses dois casos; a decisão fica registrada aqui |
 | Regiões vêm só do HTML estático | `.ts/.js/.tsx/.jsx` entram por regex de marcadores literais (`role="tab"`, `<dialog`, `aria-modal`, rota `#/nome`) com selo "confiança baixa", contando só em `cob_reg` | Decisão do usuário (2026-10-18); router por AST e docs de UI como dica ficam fora |
 | Painel oculto e painel visível como regiões | Só o que nasce oculto (`hidden`, `display:none` inline ou em regra CSS de topo `#id`/`.cls`) vira região de painel; as regiões visíveis por padrão não viram região própria | Contam nos elementos da tela que as contém, então não somam em `cob_reg` |
-| Aviso de varredura parcial do board | O texto virou "Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora." (linha do board editada) | O texto antigo nomeava a causa errada quando o teto de scripts (200 arquivos, 8 MB) estourava; mudar uma string é reversível |
+| Aviso de varredura parcial do board | O texto virou "Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora." (linha do board editada) | O texto antigo nomeava a causa errada quando o teto de scripts (200 arquivos, 8 MB) estourava; mudar uma string é reversível. **Confirmado como está (S9.1e)** |
 | Subtítulo da regra 0 com o nome do projeto | Mostra só "0 regiões" | O board mostra só a contagem |
 | Spec, decisão 8: `suggestLayouts(files, man)` | A assinatura real é `suggestLayouts(model, man, files)`; `files` segue na assinatura e não é lido | O modelo já traz as regiões e as telas candidatas |
-| Regra 4 ("dividir") | Só dispara com o melhor monovisual ≥ 85 % e um layout acima de 1.500 planos | A redação do board é ambígua; o código segue a spec (regras 2 e 4 só sob mono ≥ 85 %) e, com cobertura menor, vale a regra 3 |
+| Regra 4 ("dividir") | Só dispara com o melhor monovisual ≥ 85 % e um layout acima de 1.500 planos | A redação do board é ambígua; o código segue a spec (regras 2 e 4 só sob mono ≥ 85 %) e, com cobertura menor, vale a regra 3. **Decisão fechada (S9.1e)** |
 
 ## Divergências do código (S9.1c)
 

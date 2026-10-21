@@ -462,7 +462,7 @@ O trecho `layouts` (`JSON.stringify({ layouts })` de `layoutsSnippet`, com Copia
 | 11 | Duplo clique em Analisar cobertura dispara duas varreduras | `covRun` descarta a primeira, mas o custo é dobrado |
 | 12 | `?` abre Atalhos por baixo da Cobertura | Mesma paridade do modal de Diff; as teclas de câmera também não são bloqueadas |
 | 13 | O erro `projeto ainda carregando` sobrevive à carga | O overlay fica até o usuário fechá-lo |
-| 14 | A regra 4 só dispara com melhor monovisual ≥ 85 % | Um monovisual abaixo disso com layout acima de 1.500 planos cai na regra 3, sem a marca "dividir" |
+| 14 | A regra 4 só dispara com melhor monovisual ≥ 85 % | Um monovisual abaixo disso com layout acima de 1.500 planos cai na regra 3, sem a marca "dividir". **Decisão fechada (S9.1e)**: fica assim; o board é que é ambíguo |
 | 15 | `coverageModel` continua quadrático quando muitas páginas distintas compartilham tokens de chrome | 3.000 páginas com nav/rodapé comuns e sub-regiões ocultas levam ~1,8 s (1.000 páginas ~0,2 s); sob demanda e síncrono |
 | 16 | Mock com `/` inicial ou `..` acima da raiz faz `joinPath` (index.html) e `resolvePosix` (lib/layers-core.js) divergirem | Fechado (S9.1e Task 4): mesmo colapso para `/` e `..`: `joinPath` chama `normalizePath` (core) e `coverageModel.fullPath` cai nele quando `resolvePosix` devolve `null`; uma `\` dentro do caminho do mock ainda diverge (`fullPath` a mantém, o `safePath` do loader a converte) |
 
