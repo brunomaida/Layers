@@ -20,8 +20,8 @@ export async function connectFixture(page, name) {
   await connectEntries(page, fixtureFiles(name));
 }
 
-// Same folder harness for files built in the test: entries = [[relPath, text], ...].
-export async function connectEntries(page, entries) {
+// Same folder harness for files built in the test: entries = [[relPath, text], ...]. settle:false skips the wait for a mounted tree.
+export async function connectEntries(page, entries, { settle = true } = {}) {
   await page.addInitScript(() => {
     window.showDirectoryPicker = async () => window.__proj;
   });
@@ -46,7 +46,7 @@ export async function connectEntries(page, entries) {
   await trigger.click();
   if (!(await item.isVisible())) await trigger.click();
   await item.click();
-  await readNodes(page);
+  if (settle) await readNodes(page); // a folder with nothing to mount never produces a tree
 }
 
 // Same entry point for a .zip source: entries = [[relPath, text], ...] are stored (method 0, as in the zips openZip reads

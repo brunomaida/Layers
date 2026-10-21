@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act } from './ctx-helpers.js';
+import { connectEntries } from './folder-helpers.js';
 
 // S9.1b Task 5: Projetos ▾ › Analisar cobertura opens the coverage overlay (board S91CoberturaModal).
 // The folder is built in OPFS and handed to the app through a stubbed showDirectoryPicker (same harness as autocreate.spec.js).
@@ -9,30 +10,7 @@ const OTHER = '<!doctype html><html><body><section id="cfg"><ul class="opts"><li
 const FILES = [['layers.json', '{"name":"Demo","mock":"index.html"}'], ['index.html', MAIN], ['other.html', OTHER]];
 
 async function connect(page, files = FILES) {
-  await page.addInitScript(() => {
-    window.showDirectoryPicker = async () => window.__proj;
-  });
-  await page.goto('/');
-  await page.evaluate(async (entries) => {
-    const root = await navigator.storage.getDirectory();
-    try { await root.removeEntry('proj', { recursive: true }); } catch (e) { /* first run */ }
-    const dir = await root.getDirectoryHandle('proj', { create: true });
-    for (const [rel, text] of entries) {
-      const parts = rel.split('/');
-      let d = dir;
-      for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
-      const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
-      await w.write(text);
-      await w.close();
-    }
-    window.__proj = dir;
-  }, files);
-  const trigger = page.getByText('Nenhum projeto').first();
-  const item = page.getByText(/Conectar pasta/i).first();
-  await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
-  await item.click();
-  await readNodes(page);
+  await connectEntries(page, files);
   await act(page);
 }
 

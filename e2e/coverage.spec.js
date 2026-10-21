@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act, open } from './ctx-helpers.js';
-import { connectZip } from './folder-helpers.js';
+import { connectEntries, connectZip } from './folder-helpers.js';
 
 // S9.1b Task 6: coverage analysis end to end (Projetos > Analisar cobertura) over fixtures/coverage-multi and friends.
 // Real menu, real folder walk (OPFS handle behind a stubbed showDirectoryPicker); the model is read from state.coverage.
@@ -27,32 +27,9 @@ const slowReads = (page) => page.evaluate(() => {
   l.readBytes = async (...a) => { try { await new Promise((r) => setTimeout(r, 700)); return await orig(...a); } finally { window.__reads++; } };
 });
 
-// Builds `entries` in OPFS and connects it through the same menu path as autocreate.spec.js.
+// Builds `entries` in OPFS and connects it through the shared folder harness, then binds window.__logic.
 async function connectFiles(page, entries) {
-  await page.addInitScript(() => {
-    window.showDirectoryPicker = async () => window.__proj;
-  });
-  await page.goto('/');
-  await page.evaluate(async (files) => {
-    const root = await navigator.storage.getDirectory();
-    try { await root.removeEntry('proj', { recursive: true }); } catch (e) { /* first run */ }
-    const dir = await root.getDirectoryHandle('proj', { create: true });
-    for (const [rel, text] of files) {
-      const parts = rel.split('/');
-      let d = dir;
-      for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
-      const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
-      await w.write(text);
-      await w.close();
-    }
-    window.__proj = dir;
-  }, entries);
-  const trigger = page.getByText('Nenhum projeto').first();
-  const item = page.getByText(/Conectar pasta/i).first();
-  await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
-  await item.click();
-  await readNodes(page);
+  await connectEntries(page, entries);
   await act(page);
 }
 
