@@ -1399,6 +1399,48 @@ describe('TreeWindow', () => {
   });
 });
 
+describe('TreeSlots', () => {
+  const rows = (n, h) => Array(n).fill(h);
+  const slots = (o) => core.treeSlots({ n: 100, win: { start: 40, end: 60 }, rowH: 22, rows: rows(100, null), overscan: 10, ...o });
+
+  it('TreeSlots_SemFoco_FaixaDaJanelaEDoisTrechosVazios', () => {
+    expect(slots({ keep: null })).toEqual({ ranges: [[40, 60]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 880 }] });
+  });
+
+  it('TreeSlots_FocoDentroDaFaixa_FaixaEstendidaAteFocoMaisSobra', () => {
+    expect(slots({ keep: 55 })).toEqual({ ranges: [[40, 66]], gaps: [{ at: 0, h: 880 }, { at: 66, h: 748 }] });
+  });
+
+  it('TreeSlots_FocoAbaixoDaJanela_DuasFaixasEUmTrechoVazioNoMeio', () => {
+    expect(slots({ keep: 80 })).toEqual({ ranges: [[40, 60], [80, 91]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 440 }, { at: 91, h: 198 }] });
+  });
+
+  it('TreeSlots_FocoAcimaDaJanela_FaixaDoFocoPrimeira', () => {
+    expect(slots({ keep: 5 })).toEqual({ ranges: [[5, 16], [40, 60]], gaps: [{ at: 0, h: 110 }, { at: 16, h: 528 }, { at: 60, h: 880 }] });
+  });
+
+  it('TreeSlots_FocoNoFimDaLista_SobraCortadaEmN', () => {
+    expect(slots({ keep: 99 })).toEqual({ ranges: [[40, 60], [99, 100]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 858 }] });
+  });
+
+  it('TreeSlots_FocoColadoNaJanela_FaixasFundidas', () => {
+    expect(slots({ keep: 60 })).toEqual({ ranges: [[40, 71]], gaps: [{ at: 0, h: 880 }, { at: 71, h: 638 }] });
+  });
+
+  it('TreeSlots_AlturasMedidas_GapSomaAlturasReais', () => {
+    const r = rows(100, null); r[10] = 200; r[70] = 150;
+    expect(slots({ keep: null, rows: r }).gaps).toEqual([{ at: 0, h: 1058 }, { at: 60, h: 1008 }]);
+  });
+
+  it('TreeSlots_JanelaNaPonta_SemTrechoVazioDoLado', () => {
+    expect(slots({ keep: null, win: { start: 0, end: 20 } })).toEqual({ ranges: [[0, 20]], gaps: [{ at: 20, h: 1760 }] });
+  });
+
+  it('TreeSlots_ListaVazia_SemFaixasNemTrechos', () => {
+    expect(core.treeSlots({ n: 0, win: { start: 0, end: 0 }, keep: null, rowH: 22, rows: [], overscan: 10 })).toEqual({ ranges: [], gaps: [] });
+  });
+});
+
 describe('MovedSince', () => {
   it('Rollback_ExternalChangeAfterApprove_ListsPath', () => {
     expect(core.movedSince({ 'a.css': 10, 'b.css': 20 }, { 'a.css': 10, 'b.css': 25 })).toEqual(['b.css']);

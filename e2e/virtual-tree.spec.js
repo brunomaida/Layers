@@ -364,7 +364,7 @@ test('VirtualTree_TextareaFocadaRolandoAteOFim_MontadasNaoCrescem', async ({ pag
   await open(page);
   const T = 4 + 22 * 180;
   await focusCodeAt(page, T);
-  const ch = await box(page).evaluate((el) => el.clientHeight);
+  const ch = await box(page).evaluate((el) => Math.max(el.clientHeight, window.innerHeight)); // the window is never shorter than the page
   const bound = Math.ceil(ch / 22) + 4 * OVERSCAN; // view + overscan both sides + the rows after the focused one + step lag
   let most = 0;
   for (let to = T; to < T + 6000; to += ch / 2) {
