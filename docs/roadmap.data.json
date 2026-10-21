@@ -2751,7 +2751,7 @@
             "title": "feature-261019-93-s9-1d-edicao-entre-layouts.md)"
           }
         ],
-        "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo. Acompanhamento do Espalhar (S9.1c): a entrada cheia congelada não tem teto e os `LodPlane` não têm culling nem agrupamento por `z` no arrasto; um total abaixo de 1.500 com entrada cheia (ex.: 700 + 700) não foi medido e pode cair abaixo de 50 fps sem aviso: desenhar a cheia congelada como LOD quando o total passar de `PLANES_MAX`, agrupar os `LodPlane` por `z` no arrasto e medir um caso de ~1.400 planos",
+        "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo. Acompanhamento do Espalhar (S9.1c) fechado em parte: o rebaixamento a LOD e o agrupamento por `z` no arrasto entraram e o caso de ~1.400 planos foi medido (700 + 700 orbita a ~47 fps sem aviso; limite 17 do Espalhar na ARCHITECTURE)",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
