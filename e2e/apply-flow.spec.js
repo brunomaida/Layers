@@ -167,7 +167,7 @@ test('Apply_DraftLoopThrows_StillClearsDrafting', async ({ page }) => {
 });
 
 // S9.1e Task 3 fix wave: the draft file and its mtime guard.
-const BOOM_DRAFT = () => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (p, ...a) => { if (/design-draft/.test(p)) { window.__inWrite = true; await new Promise((r) => setTimeout(r, 800)); await l.fileHandle(p, true); window.__thrown = true; throw new Error('boom'); } return orig(p, ...a); }; }; // creates the empty draft like writeText does, then fails
+const BOOM_DRAFT = (ms = 800) => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (p, ...a) => { if (/design-draft/.test(p)) { window.__inWrite = true; await new Promise((r) => setTimeout(r, ms)); await l.fileHandle(p, true); window.__thrown = true; throw new Error('boom'); } return orig(p, ...a); }; }; // creates the empty draft like writeText does, then fails
 
 test('Apply_DiscardThenDraftAgain_WritesTheNewDraft', async ({ page }) => {
   await editCard(page);
@@ -240,13 +240,42 @@ test('Apply_HandEditedDraft_SurvivesReopenAndGerar', async ({ page }) => {
   expect(await readDisk(page, 'style.design-draft.css'), 'the hand edit is not deleted').toBe(HAND);
 });
 
+// S9.1e R4: approve and discard act only on drafts the current run wrote.
+test('Apply_HandEditedDraftGerarRefusedThenAprovar_KeepsOriginalAndChangesPending', async ({ page }) => {
+  await handEditedDraft(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click(); // the guard refuses to overwrite the edit
+  await expect(page.getByText(/style\.css: .*mudou fora do LAYERS/)).toBeVisible();
+  await expect(page.getByText(/Rascunho incompleto/)).toBeVisible();
+  await expect(page.getByText(/Rascunho paralelo pronto/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Descartar rascunho/ })).toBeVisible();
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+  expect(await readDisk(page, 'style.css'), 'the hand edit is never promoted over the original').toBe(ORIGINAL);
+  expect(await page.evaluate(() => window.__logic.state.changes.length), 'the change is still pending').toBe(1);
+  expect(await readDisk(page, 'style.design-draft.css')).toBe(HAND);
+  await expect(page.getByText(/style\.css: sem rascunho gravado por este run/)).toBeVisible();
+});
+
+test('Apply_HandEditedDraftGerarRefusedThenDescartar_KeepsTheHandEdit', async ({ page }) => {
+  await handEditedDraft(page);
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect(page.getByText(/style\.css: .*mudou fora do LAYERS/)).toBeVisible();
+  await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
+  await page.getByRole('button', { name: /Descartar rascunho/ }).click();
+  await expect(page.getByText('Rascunho descartado.')).toBeVisible();
+  expect(await readDisk(page, 'style.design-draft.css'), 'a draft this run did not write is never deleted').toBe(HAND);
+  await expect(page.getByText(/style\.design-draft\.css mantido/)).toBeVisible();
+});
+
 test('Apply_SupersededRunWithPreExistingDraft_KeepsIt', async ({ page }) => {
   await handEditedDraft(page);
-  await page.evaluate(() => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (...a) => { window.__inWrite = true; await new Promise((r) => setTimeout(r, 800)); return orig(...a); }; });
+  await page.evaluate(() => { const l = window.__logic, orig = l.writeText.bind(l); l.writeText = async (...a) => { window.__inWrite = true; await new Promise((r) => setTimeout(r, 2500)); try { return await orig(...a); } finally { window.__settled = true; } }; }); // orig throws here (the guard): finally marks it settled
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
   await expect.poll(() => page.evaluate(() => !!window.__inWrite)).toBe(true);
   await page.getByRole('button', { name: 'Fechar' }).first().click();
   await openPlan(page);
+  await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toBeVisible();
+  expect(await page.evaluate(() => !!window.__settled), 'the write is still in flight: the run is superseded when it settles').toBe(false);
   await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
   expect(await readDisk(page, 'style.design-draft.css'), 'a draft the dead run never wrote stays').toBe(HAND);
 });
@@ -255,12 +284,13 @@ test('Apply_SupersededRunFailing_LogsNothingIntoTheNewModalAndLeavesNoDraft', as
   await editCard(page);
   await act(page);
   await openPlan(page);
-  await page.evaluate(BOOM_DRAFT);
+  await page.evaluate(BOOM_DRAFT, 2500);
   await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
   await expect.poll(() => page.evaluate(() => !!window.__inWrite)).toBe(true);
   await page.getByRole('button', { name: 'Fechar' }).first().click();
-  expect(await page.evaluate(() => !!window.__thrown), 'the write had not failed yet: the run is superseded when it throws').toBe(false);
   await openPlan(page);
+  await expect(page.getByRole('button', { name: /Gerar rascunho paralelo/ })).toBeVisible();
+  expect(await page.evaluate(() => !!window.__thrown), 'the new modal is up and the write has not failed yet: its error would land in it').toBe(false);
   await expect.poll(() => page.evaluate(() => !window.__logic.draftBusy)).toBe(true);
   expect(await page.evaluate(() => !!window.__thrown)).toBe(true);
   expect(await page.evaluate(() => window.__logic.state.modal.log.join('\n')), 'the dead run says nothing in the new modal').not.toMatch(/boom|rascunho gravado/);
