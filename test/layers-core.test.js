@@ -34,6 +34,34 @@ describe('SafePath', () => {
   });
 });
 
+describe('NormalizePath', () => {
+  it('LeadingSlash_DropsIt', () => {
+    expect(core.normalizePath('/x')).toBe('x');
+    expect(core.normalizePath('//a//b/')).toBe('a/b');
+  });
+
+  it('DotSegments_Collapse', () => {
+    expect(core.normalizePath('./a/./b')).toBe('a/b');
+    expect(core.normalizePath('a/b/../c')).toBe('a/c');
+  });
+
+  it('DotDotAboveRoot_CollapsesAndNeverEscapes', () => {
+    expect(core.normalizePath('../x')).toBe('x');
+    expect(core.normalizePath('a/../../b')).toBe('b');
+    expect(core.normalizePath('..')).toBe('');
+  });
+
+  it('Backslash_IsNotASeparator', () => {
+    expect(core.normalizePath('a\\b/c')).toBe('a\\b/c');
+    expect(core.normalizePath('..\\x')).toBe('..\\x');
+  });
+
+  it('NullOrEmpty_ReturnsEmpty', () => {
+    expect(core.normalizePath(null)).toBe('');
+    expect(core.normalizePath('')).toBe('');
+  });
+});
+
 describe('ParseSheet', () => {
   const css = [
     '/* comentario',
@@ -3545,6 +3573,29 @@ describe('CoverageModel', () => {
     expect(m.regions.map((r) => r.key).sort()).toEqual(['app/config.html', 'app/main.html', 'app/main.html#div#empty']);
     expect(m.models.mono.cobReg).toBeCloseTo(1 / 3, 5);
     expect(m.models.multi.mocks).toEqual(['main.html', 'config.html']);
+  });
+
+  // The mock text shares no tokens with the file, so the screen is visible only through the path match (fullPath).
+  const PATH_FILE = '<body><div id="app"><p>a</p></div></body>';
+  const PATH_MOCK = '<body><section class="zzz"><ul class="qqq"><li>x</li></ul></section></body>';
+
+  it('FullPath_LeadingSlashOrDotDot_MatchesTheLoaderCollapse', () => {
+    const cases = [
+      { man: { mock: '/index.html' }, path: 'index.html' },
+      { man: { mock: '../index.html' }, path: 'index.html' },
+      { man: { mock: '/index.html', base: 'app' }, path: 'app/index.html' }
+    ];
+    cases.forEach(({ man, path }) => {
+      const m = core.coverageModel({ man, files: [{ path, kind: 'html', text: PATH_FILE }], mocks: { [man.mock]: PATH_MOCK } });
+      expect(m.regions.map((r) => r.key)).toEqual([path]);
+      expect(m.models.mono.visible).toEqual([path]);
+    });
+  });
+
+  // Regression guard (green on the old code too): fails if fullPath stops resolving against base, e.g. returns the raw mock instead of `r` (a normalizePath-only fullPath is equivalent here).
+  it('FullPath_PlainRelativeMock_StillResolvesAgainstBase', () => {
+    const m = core.coverageModel({ man: { mock: 'sub/../index.html', base: 'app' }, files: [{ path: 'app/index.html', kind: 'html', text: PATH_FILE }], mocks: { 'sub/../index.html': PATH_MOCK } });
+    expect(m.models.mono.visible).toEqual(['app/index.html']);
   });
 
   it('SubRegiaoComOrdinal_BuscaTokenSemSufixo', () => {

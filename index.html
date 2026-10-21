@@ -1225,12 +1225,13 @@ const parseRepo = q => { const m = String(q).trim().replace(/\.git$/, '').match(
 // url() remota no CSS do projeto: neutralizada antes de escopar, para o shadow root nunca
 // disparar requisicao. O escopo em si e por AST (LayersCore.scopeAst).
 const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*['"]?((?:[a-z][a-z0-9+.-]*:)?\/\/[^'")]+?)['"]?\s*\)/gi, (m, u) => { warn.push('url() remota neutralizada no CSS: ' + u.slice(0, 60)); return 'url(about:blank)'; });
-const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = []; parts.forEach(x => { if (x === '..') out.pop(); else if (x && x !== '.') out.push(x); }); return out.join('/'); };
+const joinPath = (dir, p) => LayersCore.normalizePath(dir + p);
 // Project scan rules shared by the folder walker and the zip filter (autocreate and coverage).
 const SCAN_SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
 const SCAN_MAX = { depth: 6, entries: 5000, fileBytes: 3 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, scriptBytes: 8 * 1024 * 1024 };
 // Template data of the coverage overlay while closed (S9.1b): one shared object, the overlay's handlers only exist while it is open.
 const SP_NONE = Object.freeze({ spPop: false, spBtnBg: 'transparent', spExpanded: 'false', spWarnBtn: false, spBtnTitle: '', spSegs: Object.freeze([]), spRows: Object.freeze([]), spDistOn: false, spTotalOn: false, spTotal: '', spWarnOn: false, spWarn: '' }); // S9.1c: no Espalhar UI (1-layout project)
+const COV_LOADING = 'projeto ainda carregando';
 const COV_CLOSED = Object.freeze({ covOpen: false, covRunning: false, covError: false, covDone: false, covErrorMsg: '', covSub: '', covPartial: false, covLowConf: false,
   covRunBars: Object.freeze(['Monovisual', 'Monovisual + states', 'Múltiplos layouts'].map(label => Object.freeze({ label }))), covBars: Object.freeze([]), covWarns: Object.freeze([]), covRows: Object.freeze([]), closeCoverage: () => {}, copySnippet: () => {} });
 const scanKind = n => /\.html?$/i.test(n) ? 'html' : /\.css$/i.test(n) ? 'css' : /\.(tsx?|jsx?|mjs)$/i.test(n) && !/\.d\.ts$/i.test(n) ? 'script' : null;
@@ -1344,7 +1345,7 @@ class Component extends DCLogic {
     yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0, focus: null, spacing: 90, flat: false, explodeFrom: null, collapseAt: null, ctx: null, dragging: false, stageW: 800, stageH: 600, interact: false,
     project: null, coverage: null, spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadRev: 0, spreadMenu: false, lodHover: null, pageW: 1280, pageH: 760, interSel: 'mode', interSize: loadInterSize(), gearAnchor: null, interResizing: false, cbOpen: null, cbHover: null, measure: false, bmOpen: false, bmHover: null,
     buf: {}, units: {}, changes: [], history: [], modal: null, dir: null, dirName: '', scope: 'ask', pending: null, remember: true, ajOpen: true, diff: null, requests: [], reqSel: null, mdOpen: false,
-    layoutBadges: Object.create(null), toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
+    layoutBadges: Object.create(null), layoutPend: Object.create(null), toast: null, loadError: null, hoverLayer: null, wire: true, wireAlpha: 35, treeOpen: true, treeClosed: {}, grpClosed: {}, shortcuts: false, layerFocus: true, focusStr: 55, othersOp: 40, cssRules: {}, treeQ: '', treeMode: 'hl', splitPct: 65, splitDrag: false, pcOpen: false, elCode: {}, propQ: '', propMode: 'hl', originSel: {}, treeTab: 'hier', treeWin: { top: 0, h: 0, v: 0 }, elOpen: {}, codeBuf: {}, fileText: {}, hierCode: {}, topBarH: 38, colOpen: true, colScale: 1, rightPx: 340, navMin: false, navR: 12, navB: 52, navDrag: false, hovSl: null,
     ...loadUi() };
   // Semeado da sessao salva: sem isto, uma carga em que o projeto nao reabre sozinho grava
   // lastProjectId: null em cima do ponteiro e o ultimo projeto se perde de vez.
@@ -1606,8 +1607,8 @@ class Component extends DCLogic {
     const hash = this.srcHash(hs);
     const saved = this.pendingKey ? LayersCore.getPending(LS_STORE, this.pendingKey) : null;
     // S9.1a: badge and R<n> floor of the OTHER layouts, read once per load (never in writeConfig: it runs on every camera burst)
-    const layoutBadges = Object.create(null), otherRequests = Object.create(null); let reqFloor = 0;
-    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; if (e.requests.length) otherRequests[l.id] = e.requests; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
+    const layoutBadges = Object.create(null), layoutPend = Object.create(null), otherRequests = Object.create(null); let reqFloor = 0; // layoutPend: id -> stored CHANGES only (S9.1e: the Salvar badge)
+    if (baseKey !== null && baseKey !== undefined) layouts.forEach(l => { if (l.id === curLayout.id) return; const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(baseKey, l.id)); if (!e) return; const n = e.changes.length + e.requests.length; if (n > 0) layoutBadges[l.id] = n; if (e.changes.length) layoutPend[l.id] = e.changes.length; if (e.requests.length) otherRequests[l.id] = e.requests; e.requests.forEach(r => { const x = /^R(\d+)$/.exec(r.id); if (x) reqFloor = Math.max(reqFloor, +x[1]); }); });
     this.reqFloor = reqFloor; this.otherRequests = otherRequests;
     // fonte nao lida ou hash diferente: o alvo de cada requisicao restaurada fica "a confirmar" (confirm por requisicao, persistido, sem acao de confirmar nesta fatia)
     const plan0 = LayersCore.restorePlan(saved, hash);
@@ -1630,7 +1631,8 @@ class Component extends DCLogic {
     // S9.1d: a layout's steps survive only while its source is the one they were made against (the pending entry cannot tell: undone edits leave none)
     if (keepUndo && !newProject && (incomplete || (this.undoHash[curLayout.id] !== undefined && this.undoHash[curLayout.id] !== hash))) this.dropUndoFor(curLayout.id);
     this.undoHash[curLayout.id] = incomplete ? null : hash; // null: no trustworthy hash, so the next complete load drops what was stacked meanwhile
-    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId, true); else if (vw && this.state.selId !== '0') this.select(this.state.selId, true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
+    this.setState({ stale: null, drift: null, project: { name, man, warn, utility, snapMock, mockPath, states, stateName: curState ? curState.name : null, layouts: layouts.map(l => ({ id: l.id, name: l.name })), layoutId: curLayout.id, inter }, layoutBadges, layoutPend, loadError: null, pageW: W, pageH: H, selId: (keep && keep.selId) || (vw && vw.selId) || '0', isoId: (keep && keep.isoId) || (vw && vw.isoId) || null, changes: restored, requests: reqs, reqSel: null, mdOpen: false, pending: null, buf: {}, units: {}, codeBuf: {}, hierCode: {}, elCode: {}, elOpen: {}, treeClosed: {}, cssRules: {}, fileText: {}, interSel: 'mode', focus: null, ...(keep || keepCam ? {} : vw ? { yaw: vw.yaw, tilt: vw.tilt, zoom: vw.zoom, panX: vw.panX, panY: vw.panY, flat: vw.flat } : { yaw: 0, tilt: 0, zoom: 1, panX: 0, panY: 0 }), ...(keep ? {} : { explodeFrom: vw ? vw.explodeFrom : null, collapseAt: vw ? vw.collapseAt : null }), active: 0, solo: false }, () => { if (seq !== this.loadSeq) return; this.scan(); if (keep) this.select(keep.selId, true); else if (vw && this.state.selId !== '0') this.select(this.state.selId, true); if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.scanSoon()); if (fw && keepCam) { const sv = this.spreadView(); if (sv) this.setState({ focus: { x: fw.x - sv.offs[sv.ai], y: fw.y, zd: fw.zd } }); } if (ps) this.enterSpread(ps.spread, ps.cam, { seq, man, activeId: curLayout.id, pageW: W, pageH: H }); });
+    this.setState(s => ({ coverage: s.coverage && s.coverage.status === 'error' && s.coverage.error === COV_LOADING ? null : s.coverage })); // the "still loading" notice ends with the load; a real result or error stays
     setTimeout(() => { const n = this.state.nodes.length; if (this.state.project && n <= 1) this.setState({ loadError: { title: 'O mock tem só a raiz.', body: (autoNote ? autoNote + '\n\n' : '') + 'Isto costuma ser um shell de app (um <div id="app"> vazio): o DOM é montado por JavaScript, que o loader nunca executa. Rode tools/layers-snapshot.js no app aberto e salve o resultado como o mock.' } }); }, 400);
     this.toast('Projeto ' + name + ' · ' + W + '×' + H + ' · ' + css.length + ' folha(s) de estilo' + (warn.length ? ' · ' + warn.length + ' aviso(s): ' + warn[0] : '') + pendNote + reqNote + bak + '.', warn.length || dropped || anyConfirm ? 'warn' : 'ok');
     if (this.pendingDirty) this.persistSoon(); // hash diferente: a entrada antiga sai na proxima escrita
@@ -1739,7 +1741,7 @@ class Component extends DCLogic {
     prev.forEach(n => host.removeAttribute(n));
     this.hostApplied = hostAttrs.attrs.filter(a => !host.hasAttribute(a.name)).map(a => { host.setAttribute(a.name, a.value); return a.name; });
   }
-  unloadProject(why) { this.clearSpread(); this.clearProbe(); this.watchLayouts = {}; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.normalCam }); this.normalCam = null; this.normalCamOwner = null; this.pendingSpread = null; this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
+  unloadProject(why) { this.clearSpread(); this.clearProbe(); this.watchLayouts = {}; this.setState({ spread: { on: false, mode: 'all', picked: [], dist: 30 }, spreadMenu: false, lodHover: null, ...this.normalCam }); this.normalCam = null; this.normalCamOwner = null; this.pendingSpread = null; this.viewCache = Object.create(null); this.resetUndo(); this.pendingReady = false; this.pendingReqOnly = false; this.reqFloor = 0; this.otherRequests = Object.create(null); this.loadedSeq = this.loadSeq; this.dc = null; const host = this.pageRef.current; if (host && host.shadowRoot) host.shadowRoot.innerHTML = ''; this.applyHostAttrs(host, { attrs: [], vars: [] }); this.dropFaces(); if (this.mo) this.mo.disconnect(); this.mockRoot = null; this.loaded = null; this.structural = []; this.maskedCss = []; this.driftAck = {}; this.els = {}; this.varIdx = {}; this.setState({ project: null, coverage: null, layoutBadges: Object.create(null), layoutPend: Object.create(null), drift: null, loadError: why || null, nodes: [], byId: {}, maxDepth: 0, selId: '0', isoId: null, changes: [], requests: [], reqSel: null, mdOpen: false, buf: {}, units: {}, focus: null, active: 0, solo: false, explodeFrom: null, collapseAt: null, ctx: null }); }
   // Varre a pasta conectada e devolve o texto dos arquivos dos `kinds` pedidos ('html'|'css'|'script'); `exclude` = nomes de pasta extras a pular; `base` = subpasta onde a varredura comeca (caminhos seguem relativos a raiz).
   async collectProjectFiles(dir, kinds, exclude, base) {
     const { depth: MAX_DEPTH, entries: MAX_ENTRIES, fileBytes: MAX_FILE_BYTES, totalBytes: MAX_TOTAL_BYTES, scriptBytes: MAX_SCRIPT_BYTES } = SCAN_MAX;
@@ -1822,13 +1824,14 @@ class Component extends DCLogic {
   }
   // S9.1b: cobertura de regioes do projeto (so leitura; nada e gravado). Chamado por clique; o resultado vai para state.coverage.
   async analyzeCoverage() {
-    if (this.loadedSeq !== this.loadSeq) { this.setState({ coverage: { open: true, status: 'error', error: 'projeto ainda carregando' } }); return; }
+    if (this.state.coverage && this.state.coverage.status === 'running') return; // a second click while a scan is in flight is the same scan
+    if (this.loadedSeq !== this.loadSeq) { this.setState({ coverage: { open: true, status: 'error', error: COV_LOADING } }); return; }
     const dir = this.state.dir, seq = this.loadSeq, zip = this.zip; // capturados ANTES do 1o await: o resultado so vale para esta conexao
     const run = this.covRun = (this.covRun || 0) + 1, stale = () => this.state.dir !== dir || seq !== this.loadSeq || run !== this.covRun; // run: Fechar (or a newer click) invalidates this one
     this.setState({ coverage: { open: true, status: 'running' } });
     try {
       const proj = this.state.project; if (!proj) throw new Error('nenhum projeto carregado');
-      const base0 = proj.man.base ? String(proj.man.base).replace(/^\/+|\/+$/g, '') : '', baseDir = joinPath('', base0); // same collapse of ./ // ../ as the loader
+      const base0 = proj.man.base ? String(proj.man.base).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : '', baseDir = joinPath('', base0); // same collapse of ./ // ../ as the loader
       if (baseDir && !LayersCore.safePath(baseDir)) throw new Error('base inválida: ' + base0);
       const P = p => joinPath(baseDir ? baseDir + '/' : '', p);
       // the loader mounts layers/mock.html when the manifest names no mock and no state
@@ -2098,7 +2101,9 @@ class Component extends DCLogic {
       const tg = e.target; const typing = tg && (tg.tagName === 'TEXTAREA' || (tg.tagName === 'INPUT' && !/^(range|color|checkbox|radio|button)$/.test(tg.type)));
       if (!typing && (e.ctrlKey || e.metaKey) && !e.altKey) { const k = String(e.key).toLowerCase(); if (k === 'z' || k === 'y') { e.preventDefault(); if (k === 'y' || e.shiftKey) this.redo(); else this.undo(); return; } }
       if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
-      const id = LayersCore.keyAction(e.key); const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { if (this.state.ctx && id !== 'escape') this.closeCtx(); e.preventDefault(); fn(e); }
+      const id = LayersCore.keyAction(e.key), s = this.state; // an open overlay owns the keyboard: only Escape, Atalhos' own toggle and the reload guard (it toasts) get through
+      if (id && id !== 'escape' && id !== 'reload' && (s.modal || s.diff || (s.coverage && s.coverage.open) || s.shortcuts) && !(id === 'shortcuts' && s.shortcuts)) return;
+      const fn = id && this.keyRun[id]; if (fn && !e.ctrlKey && !e.metaKey) { if (this.state.ctx && id !== 'escape') this.closeCtx(); e.preventDefault(); fn(e); }
     };
     window.addEventListener('keydown', this.onKey);
     // recarregar nao desmonta o componente: sem isto, uma preferencia mudada nos ultimos
@@ -2199,6 +2204,8 @@ class Component extends DCLogic {
     const spread = { ...this.state.spread, mode: mode === 'pick' ? 'pick' : 'all', picked: Array.isArray(picked) ? picked.slice() : [] }; this.setState({ spread }); this.swapCam();
     if (spread.on && this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(e => console.warn('loadSpread', e));
   }
+  // S9.1e: Aplicar/Reverter rewrote files the frozen layouts were read from: re-read them when the Espalhar is on (off: nothing to touch)
+  refreshSpread() { const spread = this.state.spread; if (!spread.on) return; this.clearSpread(); if (this.loadedSeq === this.loadSeq) this.loadSpread(this.loadSeq, { spread }).catch(e => console.warn('loadSpread', e)); }
   setSpreadDist(n) { const dist = Math.min(100, Math.max(0, Math.round(+n))); if (Number.isFinite(dist)) this.setState({ spread: { ...this.state.spread, dist } }); }
   // Espalhar popover (S9.1c Task 5): UI state is state.spreadMenu; the selection logic stays in spreadOn/setSpreadPick/setSpreadDist.
   spToggle = () => this.setState(st => ({ spreadMenu: !st.spreadMenu }));
@@ -2925,6 +2932,8 @@ class Component extends DCLogic {
   originTag(list) { const ids = [...new Set(list.flatMap(c => c.layouts || []))]; if (!ids.length) return ''; const L = (this.state.project && this.state.project.layouts) || []; return ' [' + ids.map(id => (L.find(l => l.id === id) || { name: id }).name).join(', ') + ']'; }
   // S9.1d: the changes of the plan in front of the user: the set stored when Salvar opened (merged across layouts), else the active layout's
   planChanges() { const m = this.state.modal; return m && m.set ? m.set.changes : this.state.changes; }
+  // S9.1e: Salvar's badge = the active layout's changes + the stored changes of every other layout (layoutPend, read at load/approve). A hint of what is stored: Salvar merges equal edits and skips stale layouts, so its plan can count fewer
+  badgeText() { let n = this.state.changes.length; const p = this.state.layoutPend; for (const k in p) n += p[k]; return n ? '(' + n + ')' : ''; }
   // S9.1d: layouts other than the active one with stored adjustments (storage only, nothing is mounted)
   pendingLayouts() {
     const P = this.state.project; if (!P || !this.multiLayout() || this.baseKey === null || this.baseKey === undefined) return [];
@@ -2969,7 +2978,7 @@ class Component extends DCLogic {
     }).catch(e => { console.warn('buildSaveSet', e); if (this.state.modal && this.state.modal.tok === tok) this.setState({ modal: null }); });
   }
   // A plan that spans layouts was built against one load: another load since then, or one still being built, must not write.
-  planStale() { const m = this.state.modal; if (m && m.loading) return true; if (!m || !m.set || !m.set.others.length || m.set.seq === this.loadSeq) return false; this.log('✗ o projeto foi recarregado depois do plano — feche e abra Salvar de novo'); return true; }
+  planStale() { const m = this.state.modal; if (m && (m.loading || m.drafting)) return true; if (!m || !m.set || !m.set.others.length || m.set.seq === this.loadSeq) return false; this.log('✗ o projeto foi recarregado depois do plano — feche e abra Salvar de novo'); return true; }
   // Files the stored changes of a layout point at
   pendingFiles(id) { const e = LayersCore.getPending(LS_STORE, LayersCore.layoutPendingKey(this.baseKey, id)); return e ? e.changes.map(c => ruleOf(c)[0]) : []; }
   // The included layouts' stored changes go (their requests are user text and stay); returns the new badge map.
@@ -3001,16 +3010,17 @@ class Component extends DCLogic {
   // Template dc: o texto do load (this.dc.text) e a referencia do que o projeto viu; o atual e o que se grava.
   patchedDc(text, list) { return LayersCore.patchDc(this.dc.text, text, list.filter(isTplChange).map(c => ({ tplId: +ruleOf(c)[1].slice(4), prop: kebab(c.prop), to: c.to, c }))); }
   notCssCode(path) { const p = this.state.project; return p && p.snapMock && path === p.mockPath ? 'SNAPSHOT_STYLE' : 'SOURCE_NOT_CSS'; }
-  async draftDc(f) {
+  async draftDc(f, say = l => this.log(l), dir = this.state.dir) { // say: the calling run's logger (silent once that run was superseded)
     try {
       const r = this.patchedDc(await this.readText(f.path), f.list);
-      f.list.forEach(c => { if (c.ids.length > 1 || this.sharedIds(c.id).length > 1) this.log('⚠ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — TPL_FANOUT: ' + dcWhy({ code: 'TPL_FANOUT' })); });
-      f.list.filter(c => !isTplChange(c)).forEach(c => this.log('✗ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — SOURCE_NOT_CSS: ' + dcWhy({ code: 'SOURCE_NOT_CSS' })));
-      r.refused.forEach(x => this.log('✗ ' + f.path + ':' + (ruleOf(x.item.c)[2] || '?') + ' ' + x.item.prop + ' — ' + x.code + ': ' + dcWhy(x) + '\n    snippet: ' + x.item.prop + ': ' + x.item.to));
-      if (!r.applied) { this.log('· ' + f.path + ': nenhuma edição gravável — sem rascunho'); return; }
+      f.list.forEach(c => { if (c.ids.length > 1 || this.sharedIds(c.id).length > 1) say('⚠ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — TPL_FANOUT: ' + dcWhy({ code: 'TPL_FANOUT' })); });
+      f.list.filter(c => !isTplChange(c)).forEach(c => say('✗ ' + f.path + ':' + (ruleOf(c)[2] || '?') + ' ' + kebab(c.prop) + ' — SOURCE_NOT_CSS: ' + dcWhy({ code: 'SOURCE_NOT_CSS' })));
+      r.refused.forEach(x => say('✗ ' + f.path + ':' + (ruleOf(x.item.c)[2] || '?') + ' ' + x.item.prop + ' — ' + x.code + ': ' + dcWhy(x) + '\n    snippet: ' + x.item.prop + ': ' + x.item.to));
+      if (!r.applied) { say('· ' + f.path + ': nenhuma edição gravável — sem rascunho'); return; }
+      if (this.state.dir !== dir) throw new Error('a pasta conectada mudou — rascunho não gravado');
       await this.writeText(f.draft, r.text); this.draftedPaths.add(f.path);
-      this.log('✓ rascunho gravado: ' + f.draft + ' (' + r.applied + ' de ' + f.list.filter(isTplChange).length + ' edição(ões))');
-    } catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
+      say('✓ rascunho gravado: ' + f.draft + ' (' + r.applied + ' de ' + f.list.filter(isTplChange).length + ' edição(ões))');
+    } catch (e) { say('✗ ' + f.path + ': ' + e.message); await this.dropDraft(f.draft, true, dir); }
   }
   // Uma guarda so, no caminho de escrita: gravar patch numa classe utilitaria mudaria todo o
   // projeto de uma vez. Recusa com o nome da folha, em vez de gravar e surpreender depois.
@@ -3022,28 +3032,50 @@ class Component extends DCLogic {
   }
   async makeDraft() {
     if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
-    const files = this.filesOf(this.planChanges()); this.setState(s => ({ modal: { ...s.modal, stage: 'draft' } })); this.draftedPaths = new Set();
-    for (const f of files) {
-      if (f.dc) { await this.draftDc(f); continue; }
-      if (!/\.css$/.test(f.path)) { const code = this.notCssCode(f.path); this.log('⚠ ' + f.path + ': ' + code + ': ' + dcWhy({ code }) + ' (ajuste registrado)'); continue; }
-      if (!this.state.dir) { this.log('· ' + f.draft + ' (simulado — conecte a pasta para gravar)'); f.list.forEach(c => this.log('    ' + this.patchSel(c) + ' { ' + kebab(c.prop) + ': ' + c.to + ' }')); continue; }
-      try { await this.writeText(f.draft, this.patched(await this.readText(f.path), f.list)); this.log('✓ rascunho gravado: ' + f.draft); } catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
-    }
-    this.log('Rascunho paralelo pronto. Revise e aprove para substituir o arquivo original (o atual vai para .design-history/).');
+    if (this.draftBusy) { this.log('· o rascunho anterior ainda está sendo gravado — tente de novo em instantes'); return; } // a closed modal does not stop a write already in flight
+    const files = this.filesOf(this.planChanges()), run = this.draftRun = (this.draftRun || 0) + 1, wrote = [], dir0 = this.state.dir; this.draftBusy = run; this.draftedPaths = new Set(); // drafting: planStale() and the template hide Aprovar/Descartar until every file is written
+    try {
+      await new Promise(r => this.setState(s => ({ modal: { ...s.modal, stage: 'draft', drafting: run } }), r)); // flushed: gone() below reads this.state
+      const gone = () => { const m = this.state.modal; return this.draftRun !== run || !m || m.drafting !== run; }, say = l => { if (!gone()) this.log(l); }; // the modal was closed or replaced meanwhile: a dead run logs nothing into the next one
+      for (const f of files) {
+        if (gone()) break;
+        if (f.dc) { await this.draftDc(f, say, dir0); if (this.draftedPaths.has(f.path)) wrote.push(f.draft); continue; }
+        if (!/\.css$/.test(f.path)) { const code = this.notCssCode(f.path); say('⚠ ' + f.path + ': ' + code + ': ' + dcWhy({ code }) + ' (ajuste registrado)'); continue; }
+        if (!this.state.dir) { say('· ' + f.draft + ' (simulado — conecte a pasta para gravar)'); f.list.forEach(c => say('    ' + this.patchSel(c) + ' { ' + kebab(c.prop) + ': ' + c.to + ' }')); continue; }
+        try { const text = this.patched(await this.readText(f.path), f.list); if (this.state.dir !== dir0) throw new Error('a pasta conectada mudou — rascunho não gravado'); await this.writeText(f.draft, text); this.draftedPaths.add(f.path); wrote.push(f.draft); if (gone()) break; say('✓ rascunho gravado: ' + f.draft); } catch (e) { say('✗ ' + f.path + ': ' + e.message); await this.dropDraft(f.draft, true, dir0); } // only an EMPTY leftover goes: a write that failed after creating the file; a non-empty draft may be a hand edit the guard protected
+      }
+      if (gone()) { for (const d of wrote) await this.dropDraft(d, false, dir0); return; } // a superseded run leaves no draft behind
+      const missing = dir0 ? files.filter(f => (f.dc || /\.css$/.test(f.path)) && !this.draftedPaths.has(f.path)) : []; // exactly the files approve will refuse
+      if (missing.length) this.log('Rascunho incompleto: ' + missing.map(f => f.path).join(', ') + ' sem rascunho gravado por este run. Aprovar substitui só os arquivos com rascunho; os demais ficam pendentes.');
+      else this.log('Rascunho paralelo pronto. Revise e aprove para substituir o arquivo original (o atual vai para .design-history/).');
+    } finally { if (this.draftBusy === run) this.draftBusy = 0; this.setState(s => ({ modal: s.modal && s.modal.drafting === run ? { ...s.modal, drafting: false } : s.modal })); } // only this run's own flag: a closed or reopened modal is left alone
+  }
+  // Removes a draft file and forgets its mtime (writeText's external-change guard would refuse the next draft under the same name). onlyEmpty: failure cleanup, a non-empty file may be a hand edit the guard protected. Never creates folders; does nothing once the connected folder changed.
+  async dropDraft(path, onlyEmpty = false, dir = this.state.dir) {
+    try {
+      const ok = LayersCore.safePath(path); if (!ok || !dir || dir !== this.state.dir) return false;
+      const parts = ok.split('/'), name = parts.pop(); let d = dir; for (const part of parts) d = await d.getDirectoryHandle(part);
+      if (onlyEmpty && (await (await d.getFileHandle(name)).getFile()).size !== 0) return false;
+      delete this.mtimes[path]; await d.removeEntry(name); return true;
+    } catch (e) { return false; }
   }
   async discardDraft() {
+    if (this.planStale()) return;
     const files = this.filesOf(this.planChanges());
-    if (this.state.dir) for (const f of files) { try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); this.log('· rascunho removido: ' + f.draft); } catch (e) {} }
+    if (this.state.dir) for (const f of files) {
+      if (!(this.draftedPaths && this.draftedPaths.has(f.path))) { try { await this.fileHandle(f.draft, false); this.log('· ' + f.draft + ' mantido: não foi gravado por este run (pode ter edição manual)'); } catch (e) {} continue; } // never a silent delete of a file this run did not write
+      if (await this.dropDraft(f.draft)) { this.draftedPaths.delete(f.path); this.log('· rascunho removido: ' + f.draft); }
+    }
     this.setState(s => ({ modal: { ...s.modal, stage: 'plan' } })); this.log('Rascunho descartado.');
   }
   async approve() {
     if (this.readOnlyBlock() || this.utilityBlock() || this.planStale()) return;
     const changes = this.planChanges(), others = (this.state.modal.set || {}).others || []; const files = this.filesOf(changes); const { branch, msg } = this.state.modal; const entry = { ts: stamp(), branch, changes, layoutId: this.curLayoutId(), files: [], written: {} };
     for (const f of files) {
-      if (f.dc && !(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho — nada foi gravado neste arquivo'); continue; }
       if (!f.dc && !/\.css$/.test(f.path)) continue;
       if (!this.state.dir) { this.log('· ' + f.path + ' → ' + f.hist + ' (histórico) · rascunho promovido (simulado)'); entry.files.push(f); continue; }
-      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); entry.written[f.path] = this.mtimes[f.path]; entry.files.push(f); if (f.dc) this.dc.text = draft; this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); /* the file is replaced: rollback must see it even when the draft cleanup fails */ try { const dir = await this.dirOf(f.draft); await dir.removeEntry(f.draft.split('/').pop()); } catch (e) { this.log('⚠ ' + f.draft + ': rascunho não removido (' + e.message + ')'); } }
+      if (!(this.draftedPaths && this.draftedPaths.has(f.path))) { this.log('⚠ ' + f.path + ': sem rascunho gravado por este run — nada foi gravado neste arquivo'); continue; } // a draft this run did not write may be a stale or hand-edited file
+      try { const orig = await this.readText(f.path); const draft = await this.readText(f.draft); if (f.dc && this.patchedDc(orig, f.list).text !== draft) { this.log('✗ ' + f.path + ': o arquivo mudou depois do rascunho — refaça o rascunho (nada foi gravado)'); continue; } if (!f.dc && draft === '' && orig !== '') { this.log('✗ ' + f.path + ': rascunho vazio — refaça o rascunho (nada foi gravado)'); continue; } await this.writeText(f.hist, orig); await this.writeText(f.path, draft); entry.written[f.path] = this.mtimes[f.path]; entry.files.push(f); if (f.dc) this.dc.text = draft; this.log('✓ ' + f.path + ' substituído · histórico em ' + f.hist); /* the file is replaced: rollback must see it even when the draft cleanup fails */ try { const dir = await this.dirOf(f.draft); delete this.mtimes[f.draft]; await dir.removeEntry(f.draft.split('/').pop()); } catch (e) { this.log('⚠ ' + f.draft + ': rascunho não removido (' + e.message + ')'); } }
       catch (e) { this.log('✗ ' + f.path + ': ' + e.message); }
     }
     this.log('\n# Commit (rodar no repositório local — o navegador não executa git):\ngit checkout -b ' + branch + '\ngit add ' + files.map(f => f.path).join(' ') + ' .design-history\ngit commit -m "' + msg + '"');
@@ -3051,10 +3083,10 @@ class Component extends DCLogic {
     const left = this.state.changes.filter(c => unwritten.has(ruleOf(c)[0])); entry.dom = this.state.changes.filter(c => !left.includes(c)); // the active layout's own list (merging may collapse it): rollback restores THESE inline styles
     if (entry.dom.length) this.dropUndoFor(this.curLayoutId()); cleared.forEach(id => this.dropUndoFor(id)); // S9.1d: the steps of every layout whose changes went (written) go
     others.filter(id => !cleared.includes(id)).forEach(id => this.log('⚠ pendências de ' + ((this.state.project.layouts.find(l => l.id === id) || {}).name || id) + ' não aplicadas (arquivo não gravado); podem ser descartadas ao abrir o layout se a fonte compartilhada mudou'));
-    const badges = cleared.length ? this.clearOtherPending(cleared) : null;
-    this.clearProbe(); // the files changed on disk
+    const badges = cleared.length ? this.clearOtherPending(cleared) : null, pend = cleared.length ? Object.assign(Object.create(null), this.state.layoutPend) : null; if (pend) cleared.forEach(id => { delete pend[id]; }); // the stored changes of a cleared layout are gone (its requests stay in the badge)
+    this.clearProbe(); if (Object.keys(entry.written).length) this.refreshSpread(); // the files changed on disk
     if (this.state.dir && Object.keys(entry.written).length) this.refreshPendingHash(Object.keys(entry.written));
-    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: left, ...(badges ? { layoutBadges: badges } : {}) }));
+    this.setState(s => ({ modal: { ...s.modal, stage: 'done' }, history: [entry, ...s.history], changes: left, ...(badges ? { layoutBadges: badges, layoutPend: pend } : {}) }));
   }
   async rollback(h) {
     // vale tambem depois de um reload (this.mtimes zerado): compara com o mtime que o approve deixou
@@ -3066,12 +3098,16 @@ class Component extends DCLogic {
     }
     (!h.layoutId || h.layoutId === this.curLayoutId() ? (h.dom || h.changes) : []).forEach(c => c.ids.forEach(i => { const e2 = this.els[i]; if (e2) e2.style[c.prop] = c.fromInline[i] || ''; })); // S9.1d: the entry belongs to the layout it was approved in: another mounted layout's ids are not this DOM's
     if (this.state.dir) for (const f of h.files) { try { await this.writeText(f.path, await this.readText(f.hist)); } catch (e) {} }
-    this.clearProbe(); // the files changed on disk
+    this.clearProbe(); if (this.state.dir) this.refreshSpread(); // the files changed on disk
     if (this.state.dir) this.refreshPendingHash(h.files.map(f => f.path));
     this.setState(s => ({ history: s.history.filter(x => x !== h) })); this.scanSoon();
   }
   async openDiff() {
-    const files = this.filesOf(this.state.changes); const out = [];
+    const others = this.pendingLayouts(), set = others.length ? await this.buildSaveSet(others) : null; // S9.1e: with stored adjustments elsewhere the diff covers the merged set, else the active layout's own changes
+    if (others.length && !set) return; // the project changed meanwhile
+    if (set && !set.changes.length) { this.toast(set.warnings.join(' · '), 'warn'); return; } // every other layout was skipped and the active one has nothing: say why, like openSave
+    if (set && set.warnings.length) this.toast(set.warnings.join(' · '), 'warn');
+    const changes = set ? set.changes : this.state.changes, files = this.filesOf(changes); const out = [];
     for (const f of files) {
       const isCss = /\.css$/.test(f.path); let orig = null;
       if (this.state.dir && (isCss || f.dc)) { try { orig = await this.readText(f.path); } catch (e) {} }
@@ -3081,17 +3117,21 @@ class Component extends DCLogic {
           lines.push({ no: ln ? 'L' + ln : '', text: this.patchSel(c) + ' {', ...g }); lines.push({ no: '−', text: '  ' + kebab(c.prop) + ': ' + c.from + ';', color: 'var(--err)', bg: 'rgba(var(--errRgb),.08)' }); lines.push({ no: '+', text: '  ' + kebab(c.prop) + ': ' + c.to + ';', color: 'var(--ok)', bg: 'rgba(var(--okRgb),.08)' }); lines.push({ no: '', text: '}', ...g }); });
         out.push({ path: f.path, note: isCss || f.dc ? '(simulado — conecte a pasta para o diff real)' : '(fonte TS — só registro, patch manual)', lines }); }
     }
-    this.setState({ diff: out });
+    this.setState({ diff: out, diffN: set ? changes.length : null });
   }
   async exportFull() {
     if (this.readOnlyBlock() || this.utilityBlock()) return;
-    if (!this.state.changes.length) return;
+    const others = this.pendingLayouts(); // S9.1e: stored adjustments of the other layouts are exported too
+    if (!this.state.changes.length && !others.length) return;
     if (!window.showDirectoryPicker) { this.toast('A exportação usa a File System Access API — abra no Chrome ou Edge.'); return; }
     if (!this.state.dir) { this.toast('Conecte primeiro a pasta do projeto para ler os arquivos originais.'); return; }
     let target; try { target = await window.showDirectoryPicker({ mode: 'readwrite', id: 'layers-export' }); } catch (e) { return; }
-    const files = this.filesOf(this.state.changes); const log = [];
+    const set = others.length ? await this.buildSaveSet(others) : null; // after the picker: its user gesture must not wait for the probe
+    if (others.length && !set) return; // the project changed meanwhile
+    if (set && !set.changes.length) { this.toast(set.warnings.join(' · '), 'warn'); return; } // nothing to export: same answer as Salvar
+    const changes = set ? set.changes : this.state.changes, files = this.filesOf(changes); const log = set ? [...set.warnings] : [];
     for (const f of files) { if (f.dc) { try { const r = this.patchedDc(await this.readText(f.path), f.list); if (!r.applied) { log.push('⚠ ' + f.path + ': nenhuma edição gravável'); continue; } await writeInto(target, f.path, r.text); log.push('✓ ' + f.path + ' (' + r.applied + '/' + f.list.length + ')'); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } continue; } if (!/\.css$/.test(f.path)) { log.push('⚠ ' + f.path + ': fonte TS — não exportado'); continue; } try { await writeInto(target, f.path, this.patched(await this.readText(f.path), f.list)); log.push('✓ ' + f.path); } catch (e) { log.push('✗ ' + f.path + ': ' + e.message); } }
-    const manifest = this.state.changes.map(c => ({ file: ruleOf(c)[0], selector: this.patchSel(c), line: ruleOf(c)[2], property: kebab(c.prop), from: c.from, to: c.to, elements: c.ids.length, scope: c.scope }));
+    const manifest = changes.map(c => ({ file: ruleOf(c)[0], selector: this.patchSel(c), line: ruleOf(c)[2], property: kebab(c.prop), from: c.from, to: c.to, elements: c.ids.length, scope: c.scope }));
     try { await writeInto(target, 'layers-changes.json', JSON.stringify(manifest, null, 2)); log.push('✓ layers-changes.json (manifesto)'); } catch (e) { log.push('✗ manifesto: ' + e.message); }
     // F:70 — what this session wrote: path, when, size before/after, SHA-256 before/after (format v2)
     if ((this.writeLog || []).length) { try { await writeInto(target, 'layers-export.log', LayersCore.writeLogText(this.writeLog)); log.push('✓ layers-export.log (' + this.writeLog.length + ' gravação(ões))'); } catch (e) { log.push('✗ layers-export.log: ' + e.message); } }
@@ -3451,9 +3491,9 @@ class Component extends DCLogic {
       selName: sel.name, selDepth: sel.depth, selFile, selLine: selSelector + (selLine ? ' · L' + selLine : ''), selSize: Math.round(sel.w) + ' × ' + Math.round(sel.h) + ' px',
       tipCloseEsc: TIP.closeEsc, tipRepoAdd: TIP.repoAdd, tipRepoCancel: TIP.repoCancel, isoSelTitle: s.isoId ? TIP.isoExit : TIP.isolate, isoLabel: s.isoId ? '⤢ Mostrar tudo' : '⤡ Isolar ramo', frameSel: () => this.frame(s.selId),
       hasSibs, noSibs: !hasSibs, scopeOpts, alsoShow: !!alsoLine, alsoText: alsoLine,
-      propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: s.changes.length ? '(' + s.changes.length + ')' : '', ...this.reqVals(),
+      propGroups, changes, history, changeCount: s.changes.length, noChanges: s.changes.length === 0, changeBadge: this.badgeText(), ...this.reqVals(),
       ajOpen: s.ajOpen, ajChevron: s.ajOpen ? '▾' : '▸', toggleAj: flip('ajOpen'), menuOpen: s.menu === 'acoes', toggleMenu: this.menuH.acoes.click, acoesRef: this.acoesRef, acoesEnter: this.menuH.acoes.enter, acoesLeave: this.menuH.acoes.leave, acoesBlur: this.menuH.acoes.blur, acoesInside: this.menuH.acoes.inside,
-      openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + s.changes.length + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
+      openDiff: this.menuAct(() => this.openDiff()), exportFull: this.menuAct(() => this.exportFull()), diffOpen: !!s.diff, diffFiles: s.diff || [], diffSummary: s.diff ? s.diff.length + ' arquivo(s) · ' + (s.diffN != null ? s.diffN : s.changes.length) + ' ajuste(s)' : '', closeDiff: () => this.setState({ diff: null }), stop: e => e.stopPropagation(),
       promptOpen: !!p, promptCount: p ? p.count : 0, promptTitle: p ? 'Aplicar a todos os ' + p.count + ' elementos de ' + p.selector + '?' : '', promptBody: p ? p.name + ' compartilha a regra CSS ' + p.selector + ' com outros ' + (p.count - 1) + ' elementos. A alteração já está visível só neste; escolha o alcance.' + (alsoPrompt ? ' ' + alsoPrompt.charAt(0).toUpperCase() + alsoPrompt.slice(1) + '.' : '') : '',
       promptOne: () => this.decide(false), promptAll: () => this.decide(true), remember: s.remember, toggleRemember: () => this.setState(st => ({ remember: !st.remember })),
       toggleFlat: () => this.setState(st => ({ flat: !st.flat })), persp: s.persp, setPersp: e => this.setState({ persp: +e.target.value }), setSpacing: e => this.setState({ spacing: +e.target.value }), resetView: () => this.resetView(),
@@ -3491,7 +3531,7 @@ class Component extends DCLogic {
       isApply: !!m && m.stage !== 'export' && m.stage !== 'confirm',
       isConfirm: !!m && m.stage === 'confirm', confirmText: m && m.stage === 'confirm' ? m.text : '',
       confirmLabel: (m && m.label) || 'Carregar', confirmYes: () => { const go = m && m.onYes; this.setState({ modal: null }, () => { if (go) go(); }); },
-      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan' && !m.loading, isDraft: !!m && m.stage === 'draft',
+      stageLabel: m ? ({ plan: '1 · plano', draft: '2 · rascunho paralelo gerado', done: '3 · aprovado e substituído', export: 'versões completas gravadas', confirm: 'confirmação' })[m.stage] : '', isPlan: !!m && m.stage === 'plan' && !m.loading, isDraft: !!m && m.stage === 'draft' && !m.drafting,
       branch: m ? m.branch : '', msg: m ? m.msg : '', setBranch: e => this.setState(st => ({ modal: { ...st.modal, branch: e.target.value } })), setMsg: e => this.setState(st => ({ modal: { ...st.modal, msg: e.target.value } })),
       modalFiles: m ? (m.loading ? [] : this.filesOf(m.stage === 'done' ? (s.history[0] ? s.history[0].changes : []) : this.planChanges())) : [], modalLog: m ? m.log.join('\n') : '',
       closeModal: () => this.setState({ modal: null }), makeDraft: () => this.makeDraft(), discardDraft: () => this.discardDraft(), approve: () => this.approve(),

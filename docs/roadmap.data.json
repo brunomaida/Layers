@@ -2535,12 +2535,12 @@
     "name": "Layouts múltiplos",
     "start": "2026-10-17",
     "end": "2026-10-20",
-    "status": "wip",
-    "statusLabel": "In Progress",
+    "status": "done",
+    "statusLabel": "Completed",
     "tags": [
       "scaffold"
     ],
-    "progress": 92,
+    "progress": 100,
     "docs": [],
     "children": [
       {
@@ -2549,12 +2549,12 @@
         "name": "Layouts newlogic",
         "start": "2026-10-17",
         "end": "2026-10-19",
-        "status": "wip",
-        "statusLabel": "In Progress",
+        "status": "done",
+        "statusLabel": "Completed",
         "tags": [
           "scaffold"
         ],
-        "progress": 60,
+        "progress": 100,
         "docs": [
           {
             "name": "2026-10-17-s9-1-layouts-newlogic.md)",
@@ -2669,7 +2669,7 @@
             "title": "feature-261018-89-s9-1b-cobertura-layouts.md)"
           }
         ],
-        "reason": "Regiões detectadas, cob_reg e cob_el, regra de decisão e painel de resultado",
+        "reason": "Regiões detectadas, cob_reg e cob_el, regra de decisão e modal de resultado",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -2713,7 +2713,7 @@
             "title": "feature-261019-91-s9-1c-espalhar-lod.md)"
           }
         ],
-        "reason": "Hosts por layout, câmera de visão geral, popover Ver todos / 1–N, aviso acima de 1.500 planos",
+        "reason": "Retratos LOD congelados (um só host vivo), câmera de visão geral, popover Foco / Todos / 1–N, aviso acima de 1.500 planos",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,
@@ -2751,7 +2751,45 @@
             "title": "feature-261019-93-s9-1d-edicao-entre-layouts.md)"
           }
         ],
-        "reason": "Undo e watch por layout, escopo all nas edições e Aplicar junta tudo. Acompanhamento do Espalhar (S9.1c): a entrada cheia congelada não tem teto e os `LodPlane` não têm culling nem agrupamento por `z` no arrasto; um total abaixo de 1.500 com entrada cheia (ex.: 700 + 700) não foi medido e pode cair abaixo de 50 fps sem aviso: desenhar a cheia congelada como LOD quando o total passar de `PLANES_MAX`, agrupar os `LodPlane` por `z` no arrasto e medir um caso de ~1.400 planos",
+        "reason": "Undo único entre layouts (cada passo com layoutId), watch dos outros layouts, aviso \"também afeta\" no escopo all e Aplicar junta tudo. Acompanhamento do Espalhar (S9.1c) fechado em parte: o rebaixamento a LOD e o agrupamento por `z` no arrasto entraram e o caso de ~1.400 planos foi medido (700 + 700 orbita a ~47 fps sem aviso; limite 17 do Espalhar na ARCHITECTURE)",
+        "is_branch": false,
+        "start_synthetic": false,
+        "end_synthetic": false,
+        "version": "Unreleased"
+      },
+      {
+        "id": "S9.1e",
+        "type": "spec",
+        "name": "Varredura final da S9.1 e pendências",
+        "start": "2026-10-17",
+        "end": "2026-10-20",
+        "status": "done",
+        "statusLabel": "Completed",
+        "tags": [
+          "scaffold"
+        ],
+        "progress": 100,
+        "docs": [
+          {
+            "name": "2026-10-17-s9-1-layouts-newlogic.md)",
+            "type": "spec",
+            "path": "/[](text-specs/2026-10-17-s9-1-layouts-newlogic.md)",
+            "title": "2026-10-17-s9-1-layouts-newlogic.md)"
+          },
+          {
+            "name": "2026-10-20-s9-1e-varredura-final-da-s9.md)",
+            "type": "spec",
+            "path": "/[](superpowers/plans/2026-10-20-s9-1e-varredura-final-da-s9.md)",
+            "title": "2026-10-20-s9-1e-varredura-final-da-s9.md)"
+          },
+          {
+            "name": "feature-261020-95-s9-1e-varredura-final.md)",
+            "type": "report",
+            "path": "/[](../changelog.d/feature-261020-95-s9-1e-varredura-final.md)",
+            "title": "feature-261020-95-s9-1e-varredura-final.md)"
+          }
+        ],
+        "reason": "Bugs funcionais (Aprovar durante o rascunho, Cobertura), badge/diff/exportar e retratos LOD entre layouts, lacunas de teste e caminhos, decisões fechadas e varredura manual",
         "is_branch": false,
         "start_synthetic": false,
         "end_synthetic": false,

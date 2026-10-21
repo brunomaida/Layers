@@ -92,6 +92,10 @@ unpkg. `lib/layers-core.js` resolve `csstree` a cada uso, não na carga. O
 `.githooks/pre-push` bloqueia a volta de CDN/unpkg e a edição de `support.js`, mas não
 verifica a ordem das tags.
 
+Hosts transitórios `[data-lod-host]` (`position:fixed; left:-20000px`) existem ao lado do host do
+layout ativo durante as leituras LOD do Espalhar e a sonda dos outros layouts (S9.1c/S9.1d); cada
+um é removido no `finally`, então não sobra DOM fora da tela entre as leituras.
+
 ## Fronteiras
 
 | Fronteira | Como atravessa | Estado |

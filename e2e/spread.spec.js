@@ -250,6 +250,58 @@ test('Spread_ReloadAndRestructure_ReReadEveryLayout', async ({ page }) => {
   expect(await page.evaluate(() => window.__logic.spreadFrozen.size)).toBe(0);
 });
 
+// S9.1e Task 3: Aplicar and Reverter rewrite the files the frozen layouts were read from, so the LOD snapshots are read again (Espalhar on only).
+const SHADOW_EDIT = '0 0 0 3px rgb(1, 2, 3)';
+async function editMainTitle(page) {
+  await act(page, 'select', '0.0');
+  const field = page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
+  await field.click({ clickCount: 3 });
+  await page.keyboard.type(SHADOW_EDIT);
+  await page.keyboard.press('Tab');
+  await page.waitForTimeout(300);
+}
+async function approveMainEdit(page) {
+  await page.getByText('Ações', { exact: false }).first().click();
+  await page.getByText('Aplicar nos arquivos', { exact: false }).first().click();
+  await page.getByRole('button', { name: /Gerar rascunho paralelo/ }).click();
+  await expect.poll(() => readDisk(page, 'layers/shared.design-draft.css')).toMatch(/box-shadow/); // real content: writeText creates an empty file first
+  await page.getByRole('button', { name: /Aprovar, substituir e commitar/ }).click();
+  await expect(page.getByText('3 · aprovado e substituído')).toBeVisible();
+}
+
+test('Spread_ApplyAndRollback_ReReadEveryFrozenLayout', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await editMainTitle(page);
+  await act(page, 'spreadOn', true);
+  await settled(page, 3);
+  const keep = () => page.evaluate(() => { window.__ids = new Map(window.__logic.spreadFrozen); });
+  const renewed = () => page.evaluate(() => { const L = window.__logic, o = window.__ids; return L.spreadFrozen.size === o.size && [...o].every(([k, v]) => L.spreadFrozen.has(k) && L.spreadFrozen.get(k) !== v); });
+  await keep();
+  await approveMainEdit(page);
+  await expect.poll(renewed, 'approve re-reads every frozen layout').toBe(true);
+  await settled(page, 3);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await keep();
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await expect.poll(renewed, 'rollback re-reads every frozen layout').toBe(true);
+  await settled(page, 3);
+});
+
+test('Spread_Off_ApplyDoesNotTouchTheSpread', async ({ page }) => {
+  await connectFixture(page, 'multi-layout');
+  await act(page);
+  await editMainTitle(page);
+  await page.evaluate(() => { const l = window.__logic, o = l.loadSpread.bind(l); window.__ls = 0; window.__seq0 = l.spreadSeq; l.loadSpread = (...a) => { window.__ls++; return o(...a); }; });
+  await approveMainEdit(page);
+  await page.getByRole('button', { name: 'Fechar' }).first().click();
+  await page.getByRole('button', { name: 'Rollback' }).click();
+  await page.waitForTimeout(500);
+  expect(await page.evaluate(() => window.__ls), 'no snapshot read with the Espalhar off').toBe(0);
+  expect(await page.evaluate(() => window.__logic.spreadSeq), 'and the spread generation is untouched').toBe(await page.evaluate(() => window.__seq0));
+  expect(await page.evaluate(() => window.__logic.spreadFrozen.size)).toBe(0);
+});
+
 test('Spread_ReconnectSameFolder_ReadsFreshSnapshots', async ({ page }) => {
   await connectFixture(page, 'multi-layout');
   await act(page);

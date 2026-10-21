@@ -164,3 +164,23 @@ test('Scope_AllEdit_StartsTheProbeSoTheSharedWriteIsNotSilent', async ({ page })
   await expect.poll(() => page.evaluate(() => window.__logic.layoutProbe.size)).toBe(3);
   await expect(page.getByText('também afeta Config (3 usos) · Replay (1 uso)').first()).toBeVisible();
 });
+
+// S9.1e Task 3 (Part A): the floating "Aplicar a todos?" prompt has no backdrop, so it must not swallow the camera keys.
+test('Scope_PromptVisible_CameraKeysStillWork', async ({ page }) => {
+  await page.goto('/?layers=fixtures/axai/');
+  await readNodes(page);
+  await (await treeRow(page, { title: '.sum-stat' })).click(); // scope stays "ask": the edit raises the prompt
+  const field = page.locator('xpath=//*[normalize-space(text())="Sombra"]/ancestor::*[.//input[@type="text"]][1]//input[@type="text"]').first();
+  await field.click({ clickCount: 3 });
+  await page.keyboard.type('0 0 0 3px rgb(1, 2, 3)');
+  await page.keyboard.press('Tab');
+  await expect(page.getByText(/Aplicar a todos os \d+ elementos de/)).toBeVisible();
+  await act(page);
+  const cam = () => page.evaluate(() => { const s = window.__logic.state; return { panX: s.panX, zoom: s.zoom }; });
+  const before = await cam();
+  await page.keyboard.press('+');
+  await expect.poll(async () => (await cam()).zoom).toBeGreaterThan(before.zoom);
+  await page.keyboard.press('ArrowLeft');
+  await expect.poll(async () => (await cam()).panX).not.toBe(before.panX);
+  await expect(page.getByText(/Aplicar a todos os \d+ elementos de/), 'the prompt is still up').toBeVisible();
+});

@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act } from './ctx-helpers.js';
+import { connectEntries } from './folder-helpers.js';
 
 // S9.1b Task 5: Projetos ▾ › Analisar cobertura opens the coverage overlay (board S91CoberturaModal).
 // The folder is built in OPFS and handed to the app through a stubbed showDirectoryPicker (same harness as autocreate.spec.js).
@@ -9,30 +10,7 @@ const OTHER = '<!doctype html><html><body><section id="cfg"><ul class="opts"><li
 const FILES = [['layers.json', '{"name":"Demo","mock":"index.html"}'], ['index.html', MAIN], ['other.html', OTHER]];
 
 async function connect(page, files = FILES) {
-  await page.addInitScript(() => {
-    window.showDirectoryPicker = async () => window.__proj;
-  });
-  await page.goto('/');
-  await page.evaluate(async (entries) => {
-    const root = await navigator.storage.getDirectory();
-    try { await root.removeEntry('proj', { recursive: true }); } catch (e) { /* first run */ }
-    const dir = await root.getDirectoryHandle('proj', { create: true });
-    for (const [rel, text] of entries) {
-      const parts = rel.split('/');
-      let d = dir;
-      for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
-      const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
-      await w.write(text);
-      await w.close();
-    }
-    window.__proj = dir;
-  }, files);
-  const trigger = page.getByText('Nenhum projeto').first();
-  const item = page.getByText(/Conectar pasta/i).first();
-  await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
-  await item.click();
-  await readNodes(page);
+  await connectEntries(page, files);
   await act(page);
 }
 
@@ -121,6 +99,56 @@ test('Coverage_CloseWhileRunning_DiscardsTheResult', async ({ page }) => {
   await page.evaluate(() => new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)))); // let its continuation run
   expect(await page.evaluate(() => window.__logic.state.coverage)).toBeNull();
   await expect(page.getByText('Veredito', { exact: true })).toHaveCount(0);
+});
+
+test('Coverage_DoubleClick_RunsOneScan', async ({ page }) => {
+  await connect(page);
+  await slowReads(page);
+  await page.evaluate(() => window.__logic.analyzeCoverage()); // a lone run sets the baseline of reads per scan
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  const once = await page.evaluate(() => window.__reads);
+  expect(once).toBeGreaterThan(0);
+  await page.keyboard.press('Escape');
+  await page.evaluate(() => { const l = window.__logic; window.__reads = 0; l.analyzeCoverage(); l.analyzeCoverage(); });
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  await page.waitForTimeout(1200); // a second scan would still be reading here
+  expect(await page.evaluate(() => window.__reads), 'a double click reads the files once').toBe(once);
+});
+
+test('Coverage_LoadingErrorOverlay_ClearsWhenLoadFinishes', async ({ page }) => {
+  await connect(page);
+  await page.evaluate(async () => {
+    const l = window.__logic, orig = l.readText.bind(l);
+    l.readText = async (...a) => { await new Promise((r) => setTimeout(r, 600)); return orig(...a); };
+    l.loadProject(); // the load is in flight: loadedSeq !== loadSeq
+    await new Promise((r) => setTimeout(r, 50));
+    l.analyzeCoverage();
+  });
+  await expect(page.getByText('projeto ainda carregando')).toBeVisible();
+  await page.waitForFunction(() => window.__logic.loadedSeq === window.__logic.loadSeq);
+  await expect(page.getByText('projeto ainda carregando')).toHaveCount(0);
+  expect(await page.evaluate(() => window.__logic.state.coverage)).toBeNull();
+});
+
+test('Coverage_OverlayOpen_BlocksCameraAndShortcutKeys', async ({ page }) => {
+  await connect(page);
+  await openCoverage(page);
+  await expect(page.getByText('Veredito', { exact: true })).toBeVisible();
+  const cam = () => page.evaluate(() => { const s = window.__logic.state; return { yaw: s.yaw, tilt: s.tilt, zoom: s.zoom, panX: s.panX, panY: s.panY, active: s.active, shortcuts: s.shortcuts }; });
+  const before = await cam();
+  for (const k of ['?', 'ArrowLeft', '+', 'q', 'f', '0', 'PageUp']) await page.keyboard.press(k);
+  await page.waitForTimeout(300);
+  expect(await cam()).toEqual(before);
+  expect(before.shortcuts).toBe(false);
+  await page.keyboard.press('Escape');
+  await expect(page.getByText('Veredito', { exact: true })).toHaveCount(0);
+  await page.keyboard.press('?'); // nothing open: the toggle works again
+  expect(await page.evaluate(() => window.__logic.state.shortcuts)).toBe(true);
+  await page.keyboard.press('+');
+  await page.waitForTimeout(300);
+  expect((await cam()).zoom, 'the Atalhos panel blocks the camera keys too').toBe(before.zoom);
+  await page.keyboard.press('?'); // and its own key closes it
+  expect(await page.evaluate(() => window.__logic.state.shortcuts)).toBe(false);
 });
 
 test('Coverage_OpenOverlay_BlocksReloadShortcut', async ({ page }) => {

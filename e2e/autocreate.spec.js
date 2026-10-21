@@ -1,36 +1,13 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
-import { readDisk } from './folder-helpers.js';
+import { connectEntries, readDisk } from './folder-helpers.js';
 import { act } from './ctx-helpers.js';
 
 // Characterization of autoCreateLayersJson (S9.1b Task 4): the folder-walk refactor must not change what it writes.
 // The folder is built inside the test in OPFS (no layers.json) and handed to the app through a stubbed showDirectoryPicker.
 
-async function connect(page, files) {
-  await page.addInitScript(() => {
-    window.showDirectoryPicker = async () => window.__proj;
-  });
-  await page.goto('/');
-  await page.evaluate(async (entries) => {
-    const root = await navigator.storage.getDirectory();
-    try { await root.removeEntry('proj', { recursive: true }); } catch (e) { /* first run */ }
-    const dir = await root.getDirectoryHandle('proj', { create: true });
-    for (const [rel, text] of entries) {
-      const parts = rel.split('/');
-      let d = dir;
-      for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
-      const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
-      await w.write(text);
-      await w.close();
-    }
-    window.__proj = dir;
-  }, files);
-  const trigger = page.getByText('Nenhum projeto').first();
-  const item = page.getByText(/Conectar pasta/i).first();
-  await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
-  await item.click();
-}
+// settle:false keeps the old harness behavior: the callers wait for the tree themselves (a skipped-only folder has none)
+const connect = (page, files) => connectEntries(page, files, { settle: false });
 
 test('autoCreate_FolderWithHtmlAndCss_WritesMinimalManifest', async ({ page }) => {
   await connect(page, [
@@ -83,6 +60,18 @@ test('analyzeCoverage_BaseWithDotSlash_NormalizesLikeTheLoader', async ({ page }
   const c = await coverageOf(page);
   expect(c.status).toBe('done');
   expect(c.keys).toEqual(['app/index.html']);
+});
+
+test('analyzeCoverage_BaseWithBackslash_NormalizesLikeASlash', async ({ page }) => {
+  // The project is loaded straight from a manifest spelling the base with '\': every read goes through safePath, which converts it to '/'.
+  await connect(page, [['layers.json', '{"name":"x","base":"app\\\\sub","mock":"index.html"}'], ['app/sub/index.html', PAGE], ['app/other.html', PAGE], ['other.html', PAGE]]);
+  await readNodes(page);
+  await act(page);
+  const c = await coverageOf(page);
+  expect(c.error).toBeUndefined();
+  expect(c.status).toBe('done');
+  expect(c.keys).toEqual(['app/sub/index.html']);
+  expect(c.mono).toEqual(['index.html']);
 });
 
 test('analyzeCoverage_LoadInFlight_ReportsStillLoading', async ({ page }) => {

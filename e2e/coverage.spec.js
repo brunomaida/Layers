@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { readNodes } from './tree-helpers.js';
 import { act, open } from './ctx-helpers.js';
+import { connectEntries, connectZip } from './folder-helpers.js';
 
 // S9.1b Task 6: coverage analysis end to end (Projetos > Analisar cobertura) over fixtures/coverage-multi and friends.
 // Real menu, real folder walk (OPFS handle behind a stubbed showDirectoryPicker); the model is read from state.coverage.
@@ -26,32 +27,9 @@ const slowReads = (page) => page.evaluate(() => {
   l.readBytes = async (...a) => { try { await new Promise((r) => setTimeout(r, 700)); return await orig(...a); } finally { window.__reads++; } };
 });
 
-// Builds `entries` in OPFS and connects it through the same menu path as autocreate.spec.js.
+// Builds `entries` in OPFS and connects it through the shared folder harness, then binds window.__logic.
 async function connectFiles(page, entries) {
-  await page.addInitScript(() => {
-    window.showDirectoryPicker = async () => window.__proj;
-  });
-  await page.goto('/');
-  await page.evaluate(async (files) => {
-    const root = await navigator.storage.getDirectory();
-    try { await root.removeEntry('proj', { recursive: true }); } catch (e) { /* first run */ }
-    const dir = await root.getDirectoryHandle('proj', { create: true });
-    for (const [rel, text] of files) {
-      const parts = rel.split('/');
-      let d = dir;
-      for (const p of parts.slice(0, -1)) d = await d.getDirectoryHandle(p, { create: true });
-      const w = await (await d.getFileHandle(parts[parts.length - 1], { create: true })).createWritable();
-      await w.write(text);
-      await w.close();
-    }
-    window.__proj = dir;
-  }, entries);
-  const trigger = page.getByText('Nenhum projeto').first();
-  const item = page.getByText(/Conectar pasta/i).first();
-  await trigger.click();
-  if (!(await item.isVisible())) await trigger.click();
-  await item.click();
-  await readNodes(page);
+  await connectEntries(page, entries);
   await act(page);
 }
 
@@ -263,4 +241,72 @@ test('Coverage_MoreThan200ScriptFiles_StopsAtTheCapAndFlagsPartial', async ({ pa
   expect(c.model.regions.filter((r) => r.key.startsWith('s/f') && r.kind === 'diálogo')).toHaveLength(200);
   await expect(page.getByText('cobertura parcial', { exact: true })).toBeVisible();
   await expect(page.getByText('Varredura parcial: arquivos ou tamanho acima dos tetos', { exact: false })).toBeVisible();
+});
+
+// S9.1e Task 4: the zip branch of the scan (collectZipFiles) and the byte cap of the script total, until now without a test.
+// connectZip opens a real stored archive through the zip menu entry; connectFiles does the same for a folder.
+const WARN_PARTIAL = 'Varredura parcial: arquivos ou tamanho acima dos tetos';
+const ZIP_MANIFEST = '{"name":"x","mock":"index.html"}';
+// 33 scripts of 262000 bytes (under the 256 KiB per-file cap, 8 646 000 in total) cross the 8 MiB script budget at the 33rd file: 32 fit.
+const BYTE_CAP_SCRIPTS = Array.from({ length: 33 }, (_, i) => ['s/f' + i + '.js', ('var a = "<dialog>"; // ' + i + ' ').padEnd(262000, 'x')]);
+const dialogsOf = (c) => c.model.regions.filter((r) => r.key.startsWith('s/f') && r.kind === 'diálogo').length;
+
+test('Coverage_Zip_BaseMissing_ReportsAnHonestError', async ({ page }) => {
+  // '../index.html' climbs out of the missing base, so the loader still mounts the mock from the archive root
+  await connectZip(page, [['layers.json', '{"name":"x","base":"gone","mock":"../index.html"}'], ['index.html', PAGE]], 'repo-main/');
+  await act(page);
+  const c = await analyze(page);
+  expect(c.status).toBe('error');
+  expect(c.error).toBe('base "gone" não encontrada na pasta');
+  await expect(page.getByText('Não foi possível analisar.')).toBeVisible();
+});
+
+test.describe('Coverage_Zip_OversizedFile_FlagsPartial', () => {
+  const big = (n, fill) => fill.repeat(Math.ceil(n / fill.length));
+  // regionKey is what the skipped file would have contributed: scripts are keyed path + ':dialog', so the marker makes the absence checkable
+  const cases = [
+    ['Html3MB', 'big.html', 'big.html', '<!doctype html><html><body>' + big(3 * 1024 * 1024 + 16, '<p>x</p>') + '</body></html>'],
+    ['Script256KB', 's/big.js', 's/big.js:dialog', 'var a = "<dialog>"; // ' + big(256 * 1024 + 16, 'x')]
+  ];
+  for (const [name, path, regionKey, text] of cases) {
+    test(name, async ({ page }) => {
+      await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], [path, text]]);
+      await act(page);
+      const c = await analyze(page);
+      expect(c.status).toBe('done');
+      expect(c.capped).toBe(true);
+      expect(c.model.regions.map((r) => r.key)).not.toContain(regionKey);
+      await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
+    });
+  }
+});
+
+test('Coverage_Zip_ScriptCaps_MoreThan200FilesFlagsPartial', async ({ page }) => {
+  const scripts = Array.from({ length: 201 }, (_, i) => ['s/f' + i + '.js', 'var a = "<dialog>"; // ' + i]);
+  await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], ...scripts]);
+  await act(page);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  expect(c.capped).toBe(true);
+  expect(dialogsOf(c)).toBe(200);
+  await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
+});
+
+test('Coverage_Zip_ScriptCaps_EightMiBOfScriptsFlagsPartial', async ({ page }) => {
+  await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], ...BYTE_CAP_SCRIPTS]);
+  await act(page);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  expect(c.capped).toBe(true);
+  expect(dialogsOf(c)).toBe(32); // the 33rd would pass 8 MiB: skipped alone
+  await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
+});
+
+test('Coverage_Folder_ScriptBytesCap_EightMiBOfScriptsFlagsPartial', async ({ page }) => {
+  await connectFiles(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], ...BYTE_CAP_SCRIPTS]);
+  const c = await analyze(page);
+  expect(c.status).toBe('done');
+  expect(c.capped).toBe(true);
+  expect(dialogsOf(c)).toBe(32);
+  await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
 });
