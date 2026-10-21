@@ -1141,7 +1141,7 @@ async function writeInto(dir, path, text) { const ok = LayersCore.safePath(path)
 const CULL_MARGIN = 0.15; // fraction of the larger stage side kept around the viewport (outline); flat-mode shadows are exempt
 // S4.10: janela de linhas da árvore (LayersCore.treeWindow): altura da linha, padding vertical do contêiner, sobra em linhas e passo de scroll (meia sobra) que reconstrói a faixa
 const TREE_ROW_H = 22, TREE_PAD = 4, TREE_OVERSCAN = 10, TREE_SCROLL_STEP = TREE_OVERSCAN / 2 * TREE_ROW_H;
-// S4.11: slot vazio da lista da árvore (a linha fora da faixa); o sc-for chaveia por índice, então cada linha fica sempre no slot do seu índice
+// S4.11: slot vazio da lista da árvore (a linha fora da faixa); o sc-for chaveia por índice, então, enquanto a lista não muda, cada linha fica no slot do seu índice
 const TREE_GAP_NONE = Object.freeze({}), treeRowKey = r => r.isCode ? 'c:' + r.codeKey : r.id !== undefined ? r.id : r.nodeId;
 // plano memoizado: só re-renderiza quando a geometria/estado derivado dele muda
 const Plane = React.memo(function Plane(p) {

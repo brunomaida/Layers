@@ -1412,15 +1412,15 @@ describe('TreeSlots', () => {
   });
 
   it('TreeSlots_FocoAbaixoDaJanela_DuasFaixasEUmTrechoVazioNoMeio', () => {
-    expect(slots({ keep: 80 })).toEqual({ ranges: [[40, 60], [80, 91]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 440 }, { at: 91, h: 198 }] });
+    expect(slots({ keep: 80 })).toEqual({ ranges: [[40, 60], [70, 91]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 220 }, { at: 91, h: 198 }] });
   });
 
   it('TreeSlots_FocoAcimaDaJanela_FaixaDoFocoPrimeira', () => {
-    expect(slots({ keep: 5 })).toEqual({ ranges: [[5, 16], [40, 60]], gaps: [{ at: 0, h: 110 }, { at: 16, h: 528 }, { at: 60, h: 880 }] });
+    expect(slots({ keep: 5 })).toEqual({ ranges: [[0, 16], [40, 60]], gaps: [{ at: 16, h: 528 }, { at: 60, h: 880 }] });
   });
 
   it('TreeSlots_FocoNoFimDaLista_SobraCortadaEmN', () => {
-    expect(slots({ keep: 99 })).toEqual({ ranges: [[40, 60], [99, 100]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 858 }] });
+    expect(slots({ keep: 99 })).toEqual({ ranges: [[40, 60], [89, 100]], gaps: [{ at: 0, h: 880 }, { at: 60, h: 638 }] });
   });
 
   it('TreeSlots_FocoColadoNaJanela_FaixasFundidas', () => {

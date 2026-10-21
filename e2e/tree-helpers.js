@@ -101,7 +101,7 @@ export async function lastTreeRow(page) {
 // Geometry of the mounted slice. mounted = `[data-node-id]` rows; padTop/padBot = height of the
 // leading/trailing container children that are neither a row nor a code block (the spacers; 0
 // without the window); contiguous = children touch and add up to scrollHeight - container padding;
-// covers = the mounted slice spans the visible rectangle (a spacer edge never shows).
+// covers = the mounted slice spans the visible rectangle (no spacer edge, and no spacer anywhere, shows).
 export function treeWindowState(page) {
   return page.evaluate(() => {
     let box = document.querySelector('[data-node-id]');
@@ -123,7 +123,8 @@ export function treeWindowState(page) {
     let contiguous = kids.length > 0 && Math.abs(kids[0].y - padT) <= 1 && Math.abs(sum(kids) - (box.scrollHeight - padT - padB)) <= 1;
     for (let i = 1; i < kids.length; i++) if (Math.abs(kids[i].y - (kids[i - 1].y + kids[i - 1].h)) > 1) contiguous = false;
     const visTop = box.scrollTop, visBot = box.scrollTop + box.clientHeight;
-    const covers = first >= 0 && (padTop === 0 || kids[first].y <= visTop + 0.5) && (padBot === 0 || kids[last].y + kids[last].h >= visBot - 0.5);
+    const covers = first >= 0 && (padTop === 0 || kids[first].y <= visTop + 0.5) && (padBot === 0 || kids[last].y + kids[last].h >= visBot - 0.5)
+      && kids.every((k) => k.real || k.h <= 0.5 || k.y + k.h <= visTop + 0.5 || k.y >= visBot - 0.5); // S4.11: a spacer between two mounted ranges must stay out of the view
     return {
       mounted: box.querySelectorAll('[data-node-id]').length,
       scrollHeight: box.scrollHeight,

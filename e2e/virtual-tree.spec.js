@@ -223,7 +223,7 @@ test('VirtualTree_DigitandoNoCodigo_RolagemNaoTrocaARegra', async ({ page }) => 
   await scrollTo(page, T);
   await box(page).locator(`[data-code-key="${k1}"] textarea`).click();
   await scrollTo(page, T + h1 + 41 * 22);
-  await expectCovered(page, 'textarea focused, scrolled one screen down'); // the frozen start must not leave the view blank
+  await expectCovered(page, 'textarea focused, scrolled one screen down'); // the mounted slice must not leave the view blank
   await page.keyboard.type('/*y*/');
   const active = await page.evaluate(() => {
     const t = document.activeElement, c = t.closest('[data-code-key]');
@@ -258,7 +258,7 @@ test('VirtualTree_BotaoComFoco_RolagemNaoTrocaONo', async ({ page }) => {
   const above = await rowsAbove(at.id);
   await box(page).evaluate((el) => { el.scrollTop += 2000; });
   await frames2(page);
-  await expectCovered(page, 'button focused by Tab, scrolled 2000 px down'); // the frozen start must not leave the view blank
+  await expectCovered(page, 'button focused by Tab, scrolled 2000 px down'); // the mounted slice must not leave the view blank
   expect((await info()).id, 'focus stays on the same node after scrolling').toBe(at.id);
   await page.keyboard.press('Enter');
   await scrollTo(page, 0);
@@ -302,7 +302,7 @@ test('VirtualTree_TabPelasLinhas_FocoNaoEscapaNemTravaAJanela', async ({ page })
     }
   }
   expect(seen.size, 'Tab went past the rows mounted at the start').toBeGreaterThan(mountedAtStart);
-  await page.locator('input[placeholder="Buscar camada…"]').focus(); // focus leaves the tree: the frozen window catches up
+  await page.locator('input[placeholder="Buscar camada…"]').focus(); // focus leaves the tree: the window follows the scroll position again
   await frames2(page);
   await frames2(page);
   const st = await treeWindowState(page);
@@ -317,6 +317,14 @@ async function focusCodeAt(page, T) {
   const k = (await codeKeys(page))[0];
   await box(page).locator(`[data-code-key="${k}"] textarea`).click();
   return k;
+}
+
+// The textarea of block `k` still holds the focus and a typed key lands in it.
+async function expectTyping(page, k, what) {
+  const active = await page.evaluate(() => { const t = document.activeElement, c = t.closest('[data-code-key]'); return { tag: t.localName, key: c && c.dataset.codeKey }; });
+  expect(active, `${what}: the textarea keeps the focus`).toEqual({ tag: 'textarea', key: k });
+  await page.keyboard.type('/*z*/');
+  await expect(box(page).locator(`[data-code-key="${k}"] textarea`), `${what}: the typed text lands in the same rule`).toHaveValue(/\/\*z\*\//);
 }
 
 // id of the row that shows the selection badge
@@ -350,7 +358,7 @@ test('VirtualTree_CliqueEmLinhaAposRolarComTextareaFocada_SelecionaONoClicado', 
 test('VirtualTree_RolarParaCimaComTextareaFocada_VistaCoberta', async ({ page }) => {
   await open(page);
   const T = 4 + 22 * 180;
-  await focusCodeAt(page, T);
+  const k = await focusCodeAt(page, T);
   const ch = await box(page).evaluate((el) => el.clientHeight);
   await scrollTo(page, T + ch);
   await expectCovered(page, 'textarea focused, scrolled one screen down');
@@ -358,14 +366,15 @@ test('VirtualTree_RolarParaCimaComTextareaFocada_VistaCoberta', async ({ page })
     await scrollTo(page, to);
     await expectCovered(page, `textarea focused, scrolled back up to ${to}`);
   }
+  await expectTyping(page, k, 'scrolled back up past the old window start');
 });
 
 test('VirtualTree_TextareaFocadaRolandoAteOFim_MontadasNaoCrescem', async ({ page }) => {
   await open(page);
   const T = 4 + 22 * 180;
-  await focusCodeAt(page, T);
+  const k = await focusCodeAt(page, T);
   const ch = await box(page).evaluate((el) => Math.max(el.clientHeight, window.innerHeight)); // the window is never shorter than the page
-  const bound = Math.ceil(ch / 22) + 4 * OVERSCAN; // view + overscan both sides + the rows after the focused one + step lag
+  const bound = Math.ceil(ch / 22) + 5 * OVERSCAN; // view + overscan both sides + the focused row with its overscan both sides + step lag
   let most = 0;
   for (let to = T; to < T + 6000; to += ch / 2) {
     await scrollTo(page, to);
@@ -374,6 +383,7 @@ test('VirtualTree_TextareaFocadaRolandoAteOFim_MontadasNaoCrescem', async ({ pag
   await scrollTo(page, 'end');
   most = Math.max(most, (await treeWindowState(page)).mounted);
   expect(most, 'mounted rows stay bounded while the focus stays in the textarea').toBeLessThanOrEqual(bound);
+  await expectTyping(page, k, 'scrolled to the end');
 });
 
 test('VirtualTree_SelecionarRaiz_NaoMoveScrollTop', async ({ page }) => {
