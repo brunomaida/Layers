@@ -3592,6 +3592,7 @@ describe('CoverageModel', () => {
     });
   });
 
+  // Regression guard (green on the old code too): fails if fullPath stops resolving against base, e.g. returns the raw mock instead of `r` (a normalizePath-only fullPath is equivalent here).
   it('FullPath_PlainRelativeMock_StillResolvesAgainstBase', () => {
     const m = core.coverageModel({ man: { mock: 'sub/../index.html', base: 'app' }, files: [{ path: 'app/index.html', kind: 'html', text: PATH_FILE }], mocks: { 'sub/../index.html': PATH_MOCK } });
     expect(m.models.mono.visible).toEqual(['app/index.html']);

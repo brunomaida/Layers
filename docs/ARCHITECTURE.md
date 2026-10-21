@@ -458,13 +458,13 @@ O trecho `layouts` (`JSON.stringify({ layouts })` de `layoutsSnippet`, com Copia
 | 7 | Tetos por arquivo (HTML/CSS 3 MB, script 256 KB) e de scripts (200 arquivos, 8 MB no total) | Um arquivo acima do próprio teto é pulado sozinho, e passar de 200 scripts ou de 8 MB também; todos marcam a varredura como parcial ("Varredura parcial: arquivos ou tamanho acima dos tetos; parte da pasta ficou fora.") |
 | 8 | Sem teste automatizado: `.zip` cujo `base` não existe, teto de 8 MB de scripts e a marca de parcial do teto por arquivo em `collectZipFiles` | Fechado (S9.1e Task 4): `connectZip` (e2e/folder-helpers.js) abre um `.zip` de verdade pelo menu; testes `Coverage_Zip_*` e `Coverage_Folder_ScriptBytesCap_*` em e2e/coverage.spec.js |
 | 9 | Barras arredondadas, texto da regra truncado | Perto dos limiares a barra mostra 85 % enquanto a regra diz 84 % (o texto trunca para não contradizer a comparação estrita) |
-| 10 | `base` com barras invertidas não é normalizado | Fechado (S9.1e Task 4): `analyzeCoverage` troca `\` por `/` em `base` antes do `joinPath`. O loader não faz essa troca (um `base` assim não monta o mock), então o caso só aparece com o manifesto trocado depois da carga |
+| 10 | `base` com barras invertidas não é normalizado | Fechado (S9.1e Task 4): `analyzeCoverage` troca `\` por `/` em `base` antes do `joinPath`. O loader monta o mesmo `base`: toda leitura passa por `safePath`, que troca `\` por `/`; só o ramo `readText` de fixtures HTTP não passa por `safePath` |
 | 11 | Duplo clique em Analisar cobertura dispara duas varreduras | `covRun` descarta a primeira, mas o custo é dobrado |
 | 12 | `?` abre Atalhos por baixo da Cobertura | Mesma paridade do modal de Diff; as teclas de câmera também não são bloqueadas |
 | 13 | O erro `projeto ainda carregando` sobrevive à carga | O overlay fica até o usuário fechá-lo |
 | 14 | A regra 4 só dispara com melhor monovisual ≥ 85 % | Um monovisual abaixo disso com layout acima de 1.500 planos cai na regra 3, sem a marca "dividir" |
 | 15 | `coverageModel` continua quadrático quando muitas páginas distintas compartilham tokens de chrome | 3.000 páginas com nav/rodapé comuns e sub-regiões ocultas levam ~1,8 s (1.000 páginas ~0,2 s); sob demanda e síncrono |
-| 16 | Mock com `/` inicial ou `..` acima da raiz faz `joinPath` (index.html) e `resolvePosix` (lib/layers-core.js) divergirem | Fechado (S9.1e Task 4): `normalizePath` (core) é o único colapso; `joinPath` o chama e `coverageModel.fullPath` cai nele quando `resolvePosix` devolve `null` |
+| 16 | Mock com `/` inicial ou `..` acima da raiz faz `joinPath` (index.html) e `resolvePosix` (lib/layers-core.js) divergirem | Fechado (S9.1e Task 4): mesmo colapso para `/` e `..`: `joinPath` chama `normalizePath` (core) e `coverageModel.fullPath` cai nele quando `resolvePosix` devolve `null`; uma `\` dentro do caminho do mock ainda diverge (`fullPath` a mantém, o `safePath` do loader a converte) |
 
 ### Espalhar (S9.1c)
 

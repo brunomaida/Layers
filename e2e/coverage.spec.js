@@ -252,10 +252,9 @@ const BYTE_CAP_SCRIPTS = Array.from({ length: 33 }, (_, i) => ['s/f' + i + '.js'
 const dialogsOf = (c) => c.model.regions.filter((r) => r.key.startsWith('s/f') && r.kind === 'diálogo').length;
 
 test('Coverage_Zip_BaseMissing_ReportsAnHonestError', async ({ page }) => {
-  await connectZip(page, [['layers.json', '{"name":"x","base":"app","mock":"index.html"}'], ['app/index.html', PAGE]], 'repo-main/');
+  // '../index.html' climbs out of the missing base, so the loader still mounts the mock from the archive root
+  await connectZip(page, [['layers.json', '{"name":"x","base":"gone","mock":"../index.html"}'], ['index.html', PAGE]], 'repo-main/');
   await act(page);
-  // the loader needs the base to mount the mock, so the manifest is pointed at a folder the archive lacks only after the load
-  await page.evaluate(() => { const l = window.__logic, p = l.state.project; l.setState({ project: { ...p, man: { ...p.man, base: 'gone' } } }); });
   const c = await analyze(page);
   expect(c.status).toBe('error');
   expect(c.error).toBe('base "gone" não encontrada na pasta');
@@ -264,18 +263,19 @@ test('Coverage_Zip_BaseMissing_ReportsAnHonestError', async ({ page }) => {
 
 test.describe('Coverage_Zip_OversizedFile_FlagsPartial', () => {
   const big = (n, fill) => fill.repeat(Math.ceil(n / fill.length));
+  // regionKey is what the skipped file would have contributed: scripts are keyed path + ':dialog', so the marker makes the absence checkable
   const cases = [
-    ['Html3MB', 'big.html', '<!doctype html><html><body>' + big(3 * 1024 * 1024 + 16, '<p>x</p>') + '</body></html>'],
-    ['Script256KB', 's/big.js', 'var a = 1; // ' + big(256 * 1024 + 16, 'x')]
+    ['Html3MB', 'big.html', 'big.html', '<!doctype html><html><body>' + big(3 * 1024 * 1024 + 16, '<p>x</p>') + '</body></html>'],
+    ['Script256KB', 's/big.js', 's/big.js:dialog', 'var a = "<dialog>"; // ' + big(256 * 1024 + 16, 'x')]
   ];
-  for (const [name, path, text] of cases) {
+  for (const [name, path, regionKey, text] of cases) {
     test(name, async ({ page }) => {
       await connectZip(page, [['layers.json', ZIP_MANIFEST], ['index.html', PAGE], [path, text]]);
       await act(page);
       const c = await analyze(page);
       expect(c.status).toBe('done');
       expect(c.capped).toBe(true);
-      expect(c.model.regions.map((r) => r.key)).not.toContain(path);
+      expect(c.model.regions.map((r) => r.key)).not.toContain(regionKey);
       await expect(page.getByText(WARN_PARTIAL, { exact: false })).toBeVisible();
     });
   }
