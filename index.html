@@ -1225,7 +1225,7 @@ const parseRepo = q => { const m = String(q).trim().replace(/\.git$/, '').match(
 // url() remota no CSS do projeto: neutralizada antes de escopar, para o shadow root nunca
 // disparar requisicao. O escopo em si e por AST (LayersCore.scopeAst).
 const dropRemoteUrls = (css, warn) => css.replace(/url\(\s*['"]?((?:[a-z][a-z0-9+.-]*:)?\/\/[^'")]+?)['"]?\s*\)/gi, (m, u) => { warn.push('url() remota neutralizada no CSS: ' + u.slice(0, 60)); return 'url(about:blank)'; });
-const joinPath = (dir, p) => { const parts = (dir + p).split('/'); const out = []; parts.forEach(x => { if (x === '..') out.pop(); else if (x && x !== '.') out.push(x); }); return out.join('/'); };
+const joinPath = (dir, p) => LayersCore.normalizePath(dir + p);
 // Project scan rules shared by the folder walker and the zip filter (autocreate and coverage).
 const SCAN_SKIP = new Set(['node_modules', '.git', '.vs', '.vscode', 'bin', 'obj', 'dist', 'build', 'coverage', 'packages', '.idea', 'test-results', 'playwright-report']);
 const SCAN_MAX = { depth: 6, entries: 5000, fileBytes: 3 * 1024 * 1024, totalBytes: 20 * 1024 * 1024, scriptBytes: 8 * 1024 * 1024 };
@@ -1831,7 +1831,7 @@ class Component extends DCLogic {
     this.setState({ coverage: { open: true, status: 'running' } });
     try {
       const proj = this.state.project; if (!proj) throw new Error('nenhum projeto carregado');
-      const base0 = proj.man.base ? String(proj.man.base).replace(/^\/+|\/+$/g, '') : '', baseDir = joinPath('', base0); // same collapse of ./ // ../ as the loader
+      const base0 = proj.man.base ? String(proj.man.base).replace(/\\/g, '/').replace(/^\/+|\/+$/g, '') : '', baseDir = joinPath('', base0); // same collapse of ./ // ../ as the loader
       if (baseDir && !LayersCore.safePath(baseDir)) throw new Error('base inválida: ' + base0);
       const P = p => joinPath(baseDir ? baseDir + '/' : '', p);
       // the loader mounts layers/mock.html when the manifest names no mock and no state

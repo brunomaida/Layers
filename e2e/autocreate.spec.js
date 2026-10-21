@@ -85,6 +85,20 @@ test('analyzeCoverage_BaseWithDotSlash_NormalizesLikeTheLoader', async ({ page }
   expect(c.keys).toEqual(['app/index.html']);
 });
 
+test('analyzeCoverage_BaseWithBackslash_NormalizesLikeASlash', async ({ page }) => {
+  // The loader cannot mount a base spelled with '\' (it reads 'app\sub/index.html'), so the project is loaded with the
+  // slash form and the backslash spelling is put on the manifest afterwards: only analyzeCoverage's own normalization is under test.
+  await connect(page, [['layers.json', '{"name":"x","base":"app/sub","mock":"index.html"}'], ['app/sub/index.html', PAGE], ['app/other.html', PAGE], ['other.html', PAGE]]);
+  await readNodes(page);
+  await act(page);
+  await page.evaluate(() => { const l = window.__logic, p = l.state.project; l.setState({ project: { ...p, man: { ...p.man, base: 'app\\sub' } } }); });
+  const c = await coverageOf(page);
+  expect(c.error).toBeUndefined();
+  expect(c.status).toBe('done');
+  expect(c.keys).toEqual(['app/sub/index.html']);
+  expect(c.mono).toEqual(['index.html']);
+});
+
 test('analyzeCoverage_LoadInFlight_ReportsStillLoading', async ({ page }) => {
   await connect(page, [['layers.json', '{"name":"x","mock":"index.html"}'], ['index.html', PAGE]]);
   await readNodes(page);
